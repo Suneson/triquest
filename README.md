@@ -165,13 +165,17 @@ If `localStorage` is unavailable (private mode, storage blocked), the app transp
 
 ## 🌐 Deploy (GitHub Pages)
 
-The repo root **is** the site, so Pages serves it directly:
+The repo root **is** the site (no build step). Deployment is automated by
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml): every push to `main`
+publishes the repo root to GitHub Pages via the official Pages actions. The workflow
+self-enables Pages on its first run (`actions/configure-pages` with `enablement: true`),
+so no manual Settings toggle is needed.
 
-1. Push to `main`.
-2. Repo **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`**.
-3. The site goes live at `https://<user>.github.io/triquest/`.
+The site goes live at `https://<user>.github.io/triquest/`.
 
-No build step and no `gh-pages` branch are required.
+> Prefer the classic branch-based deploy instead? Delete `pages.yml` and set
+> **Settings → Pages → Deploy from a branch → `main` / `/ (root)`** — it works the
+> same because everything is already at the repo root.
 
 ---
 

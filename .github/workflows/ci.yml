@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No runtime or dev dependencies — the test runner is built into Node.
+      - name: Run tests
+        run: npm test
+
+      - name: Regenerate icons (verify the generator runs)
+        run: node tools/gen-icons.mjs

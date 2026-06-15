@@ -1,0 +1,16 @@
+{
+  "name": "triquest",
+  "version": "1.0.0",
+  "description": "TriQuest — a gamified, offline-first triathlon training tracker. Pure static site, zero runtime dependencies.",
+  "type": "module",
+  "private": true,
+  "author": "Alberto Marrero Suneson",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test",
+    "serve": "node --version >/dev/null && python -m http.server 8080 || npx --yes serve ."
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

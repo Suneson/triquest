@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TriQuest">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a2230"/>
+      <stop offset="1" stop-color="#0b0e13"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe39a"/>
+      <stop offset="1" stop-color="#ff8c42"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g fill="none" stroke="url(#gold)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="256" y1="150" x2="256" y2="430"/>
+    <path d="M150 210 H362"/>
+    <path d="M150 210 V120 q0 -14 14 -14"/>
+    <line x1="256" y1="210" x2="256" y2="96"/>
+    <path d="M362 210 V120 q0 -14 -14 -14"/>
+    <path d="M214 430 h84"/>
+  </g>
+  <g fill="url(#gold)" stroke="none">
+    <path d="M256 70 l16 30 h-32 z"/>
+    <path d="M150 86 l16 28 h-32 z"/>
+    <path d="M362 86 l16 28 h-32 z"/>
+  </g>
+  <circle cx="256" cy="256" r="232" fill="none" stroke="#ffd166" stroke-opacity="0.18" stroke-width="8"/>
+</svg>

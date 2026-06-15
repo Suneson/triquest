@@ -1,0 +1,13 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Node (no runtime deps, but keep this clean if any are ever added)
+node_modules/
+npm-debug.log*
+
+# Local backups exported from the app
+triquest-backup-*.json

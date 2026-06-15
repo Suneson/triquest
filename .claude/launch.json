@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "triquest",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/serve.mjs", "8744"],
+      "port": 8744
+    }
+  ]
+}

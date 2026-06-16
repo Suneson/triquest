@@ -36,9 +36,12 @@
   <main id="view" class="view" role="main" aria-live="polite"></main>
 
   <nav class="tabs" aria-label="Views">
-    <button class="tab active" data-action="tab" data-tab="today"><span>📅</span>Today</button>
-    <button class="tab" data-action="tab" data-tab="week"><span>🗓️</span>Week</button>
-    <button class="tab" data-action="tab" data-tab="progress"><span>📈</span>Progress</button>
+    <button class="tab active" data-action="tab" data-tab="today">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><circle cx="12" cy="15" r="1.6" fill="currentColor" stroke="none"/></svg></span>Today</button>
+    <button class="tab" data-action="tab" data-tab="week">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7.5 13h.01M12 13h.01M16.5 13h.01M7.5 17h.01M12 17h.01"/></svg></span>Week</button>
+    <button class="tab" data-action="tab" data-tab="progress">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v15h16"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>Progress</button>
   </nav>
 
   <button id="fab" class="fab" aria-label="Add a session">+</button>

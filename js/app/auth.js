@@ -157,13 +157,14 @@ export function openAuthModal() {
     try {
       if (pwMode === 'up') {
         const c = await client();
-        const { error } = await c.auth.signUp({ email, password });
+        const { data, error } = await c.auth.signUp({ email, password });
         if (error) throw error;
-        msg('Account created — if confirmation is on, check your email.', true);
+        if (data.session) { close(); return; } // confirmation off → signed in immediately
+        msg('Account created — confirm your email, then sign in. (Or disable email confirmation in Supabase.)', true);
       } else {
         await signInWithPassword(email, password);
+        close();
       }
-      if (currentUser()) close();
     } catch (err) { msg(err.message || 'Sign-in failed'); }
   });
 }

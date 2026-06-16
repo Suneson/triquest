@@ -315,6 +315,26 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast-icon { font-size: 1.6rem; }
 
+/* ---- auth / sync ---- */
+.sync-banner, #sync-banner:empty { }
+.sync-prompt { margin: 10px 14px 0; padding: 9px 12px; border-radius: var(--radius-sm); background: rgba(61,169,252,.12); border: 1px solid rgba(61,169,252,.35); font-size: .85rem; display: flex; align-items: center; gap: 8px; }
+.sync-prompt span { flex: 1; }
+.btn.block { width: 100%; }
+.signed-in { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-3); border-radius: var(--radius-sm); padding: 10px 12px; }
+.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .8rem; margin: 4px 0; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.btn.provider { width: 100%; }
+.auth-pw { margin-top: 6px; }
+.auth-pw summary { cursor: pointer; color: var(--muted); font-size: .85rem; padding: 6px 0; }
+.auth-msg { font-size: .85rem; color: var(--danger); }
+.auth-msg.ok { color: var(--good); }
+.strava-block { margin-top: 10px; }
+.powered-by-strava { margin-top: 8px; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: #fc4c02; font-weight: 800; }
+.actual-vs-planned { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.avp { background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; font-size: .76rem; }
+.avp b { color: var(--c-swim); }
+.strava-link { color: #fc4c02; font-weight: 700; font-size: .78rem; }
+
 @media (min-width: 720px) {
   .week-grid { grid-template-columns: 1fr 1fr; }
 }

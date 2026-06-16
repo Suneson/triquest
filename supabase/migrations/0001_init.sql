@@ -45,7 +45,8 @@ create trigger on_auth_user_created
 -- updated_at is client-supplied for last-write-wins; never auto-overwritten.
 -- ---------------------------------------------------------------------------
 create table if not exists public.workouts (
-  id                 uuid primary key default gen_random_uuid(),
+  -- text (not uuid): the app supplies its own ids, e.g. 'seed-2026-07-06-0'.
+  id                 text primary key default gen_random_uuid()::text,
   user_id            uuid not null references auth.users (id) on delete cascade,
   date               date not null,
   type               text not null,
@@ -65,6 +66,7 @@ create table if not exists public.workouts (
   strava_activity_id bigint,
   source             text not null default 'custom'
                        check (source in ('plan', 'custom', 'strava')),
+  extra              jsonb not null default '{}'::jsonb, -- app-only display flags
   updated_at         timestamptz not null default now()
 );
 
@@ -98,7 +100,12 @@ create table if not exists public.strava_accounts (
 );
 
 alter table public.strava_accounts enable row level security;
--- Intentionally NO policies: authenticated/anon clients cannot read tokens.
+-- No SELECT/INSERT/UPDATE policies: clients cannot read or write tokens
+-- (only the service-role Edge Functions can). A user may delete their own row
+-- to disconnect — DELETE returns no column data, so tokens stay unreadable.
+drop policy if exists "disconnect own strava" on public.strava_accounts;
+create policy "disconnect own strava" on public.strava_accounts
+  for delete using (auth.uid() = user_id);
 
 -- Safe, token-free connection status for the signed-in user.
 create or replace function public.strava_status()
@@ -116,3 +123,18 @@ as $$
 $$;
 
 grant execute on function public.strava_status() to authenticated;
+
+-- Lock down SECURITY DEFINER functions so they aren't callable as public RPCs.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.strava_status() from public, anon;
+
+-- Enable realtime for cross-device live updates (idempotent).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'workouts'
+  ) then
+    alter publication supabase_realtime add table public.workouts;
+  end if;
+end $$;

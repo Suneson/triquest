@@ -8,9 +8,9 @@
 // to v1). Fill them in after creating your Supabase project, then redeploy.
 
 export const CONFIG = {
-  supabaseUrl: '',      // e.g. 'https://abcdefgh.supabase.co'
-  supabaseAnonKey: '',  // the project's anon / public key
-  stravaClientId: '',   // Strava app Client ID (public; NOT the secret)
+  supabaseUrl: 'https://kmanszmqgmyninoplwbt.supabase.co',
+  supabaseAnonKey: 'sb_publishable_43Vs_xVwx_uY9vRZZNTG9w_SQt-YWKe',
+  stravaClientId: '',   // Strava app Client ID (public; NOT the secret) — fill after creating the Strava app
 };
 
 // Feature flag: sync + accounts UI only appear once Supabase is configured.

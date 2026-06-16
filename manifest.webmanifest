@@ -1,13 +1,13 @@
 {
-  "name": "TriQuest — Triathlon Training Tracker",
-  "short_name": "TriQuest",
+  "name": "MOSKE — Triathlon Training Tracker",
+  "short_name": "MOSKE",
   "description": "A gamified, offline-first triathlon training tracker. Tick off sessions, earn XP, keep your streak.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0e1116",
-  "theme_color": "#0e1116",
+  "theme_color": "#11182b",
   "categories": ["health", "fitness", "sports"],
   "icons": [
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },

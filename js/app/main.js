@@ -267,7 +267,7 @@ function doExport() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `triquest-backup-${todayISO()}.json`;
+  a.download = `moske-backup-${todayISO()}.json`;
   a.click();
   URL.revokeObjectURL(url);
   toast('Backup exported ⬇');

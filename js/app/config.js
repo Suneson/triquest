@@ -10,7 +10,7 @@
 export const CONFIG = {
   supabaseUrl: 'https://kmanszmqgmyninoplwbt.supabase.co',
   supabaseAnonKey: 'sb_publishable_43Vs_xVwx_uY9vRZZNTG9w_SQt-YWKe',
-  stravaClientId: '',   // Strava app Client ID (public; NOT the secret) — fill after creating the Strava app
+  stravaClientId: '258518', // Strava app Client ID (public; NOT the secret)
 };
 
 // Feature flag: sync + accounts UI only appear once Supabase is configured.

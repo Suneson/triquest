@@ -68,7 +68,7 @@ button { font: inherit; cursor: pointer; }
   padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 10px;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand .logo { font-size: 1.6rem; }
+.brand .logo { width: 36px; height: 36px; border-radius: 9px; display: block; }
 .brand strong { display: block; font-size: 1.15rem; }
 .brand small { color: var(--muted); font-size: .72rem; }
 .header-settings { margin-left: auto; font-size: 1.3rem; background: none; border: none; }

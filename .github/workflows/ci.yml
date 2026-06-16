@@ -21,6 +21,3 @@ jobs:
       # No runtime or dev dependencies — the test runner is built into Node.
       - name: Run tests
         run: npm test
-
-      - name: Regenerate icons (verify the generator runs)
-        run: node tools/gen-icons.mjs

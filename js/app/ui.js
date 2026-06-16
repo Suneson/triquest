@@ -125,6 +125,31 @@ function fuellingChip(w) {
   return `<div class="fuel-chip" title="Fuelling reminder">⛽ Practice 60–90 g carbs/h</div>`;
 }
 
+// ---- actual vs planned (from Strava or manual logging) ----------------------
+
+function avp(label, actual, planned) {
+  return `<div class="avp">${esc(label)}: <b>${esc(actual)}</b>${planned ? ` <span class="muted">/ ${esc(planned)} plan</span>` : ''}</div>`;
+}
+
+function actualsBlock(w, units) {
+  const a = w.actual;
+  if (!a) return '';
+  const planKm = w.metrics?.distanceKm;
+  const cells = [];
+  if (a.distanceKm != null) cells.push(avp('Distance', fmtKm(a.distanceKm, units), planKm ? fmtKm(planKm, units) : null));
+  if (a.durationMin != null) cells.push(avp('Time', formatDuration(a.durationMin), w.durationMin ? formatDuration(w.durationMin) : null));
+  if (a.avgHr) cells.push(avp('Avg HR', `${Math.round(a.avgHr)} bpm`));
+  if (a.avgWatts) cells.push(avp('Avg power', `${Math.round(a.avgWatts)} W`));
+  if (a.avgCadence) cells.push(avp('Cadence', `${Math.round(a.avgCadence)}`));
+  if (a.elevationGainM) cells.push(avp('Elevation', `${Math.round(a.elevationGainM)} m`));
+  if (a.calories) cells.push(avp('Calories', `${Math.round(a.calories)}`));
+  const link = a.stravaLink
+    ? `<a class="strava-link" href="${esc(a.stravaLink)}" target="_blank" rel="noopener noreferrer">View on Strava ↗</a>` : '';
+  return `<div class="block">
+    <h4>Actual ${a.stravaId ? '· <span class="powered-by-strava">Powered by Strava</span>' : ''}</h4>
+    <div class="actual-vs-planned">${cells.join('')}</div>${link}</div>`;
+}
+
 // ---- session card -----------------------------------------------------------
 
 export function sessionCard(w, units, { compact = false } = {}) {
@@ -133,6 +158,7 @@ export function sessionCard(w, units, { compact = false } = {}) {
   if (w.isRace) tags.push('<span class="tag race">RACE</span>');
   if (w.deload) tags.push(`<span class="tag deload">${/taper/i.test(w.title) ? 'taper' : 'deload'}</span>`);
   if (w.optional) tags.push('<span class="tag optional">optional</span>');
+  if (w.strava_activity_id) tags.push('<span class="tag strava">Strava</span>');
 
   const meta = [
     `<span class="chip type-${w.type}">${d.icon} ${d.label}</span>`,
@@ -177,6 +203,7 @@ export function sessionCard(w, units, { compact = false } = {}) {
     <article class="card type-${w.type} ${w.completed ? 'completed' : ''}" data-card="${esc(w.id)}">
       ${head}
       ${fuellingChip(w)}
+      ${actualsBlock(w, units)}
       ${segs ? `<div class="block">${segs}</div>` : ''}
       ${exercises}
       ${notes}

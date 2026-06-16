@@ -139,6 +139,7 @@ button { font: inherit; cursor: pointer; }
 .tag.race { background: var(--c-vo2); color: #1a0608; }
 .tag.deload { background: var(--bg-4); color: var(--accent); }
 .tag.optional { background: var(--bg-3); color: var(--muted); border: 1px solid var(--border); }
+.tag.strava { background: #fc4c02; color: #fff; }
 
 .fuel-chip { margin-top: 10px; font-size: .78rem; background: rgba(255,140,66,.14); border: 1px solid rgba(255,140,66,.35); color: var(--c-brick); padding: 5px 10px; border-radius: var(--radius-sm); display: inline-block; }
 

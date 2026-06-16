@@ -1,147 +1,95 @@
-# TriQuest — Backend Setup (accounts, sync & Strava)
+# TriQuest — Backend Setup
 
-TriQuest works **fully offline and local-only with no setup** — this guide is only
-needed to turn on the optional cloud features: multi-device sync (Workstream A) and
-Strava auto-sync (Workstream B). Until you fill in the values below, the app behaves
-exactly like v1 and every sync/Strava feature stays hidden behind a flag.
+TriQuest works **fully offline and local-only with no setup**. The cloud features
+(multi-device sync + Strava auto-sync) are optional and gated behind config flags.
 
-You'll create two accounts (Supabase + Strava), paste a few public values into
-`js/app/config.js`, and store the secrets in Supabase (never in the frontend).
+## ✅ Already done (provisioned via the Supabase connector)
 
-Legend: 🟢 = safe to commit / public · 🔴 = secret, server-only, never in git.
+- Supabase project **`triquest`** created (`kmanszmqgmyninoplwbt`, region eu-west-3).
+- Schema + RLS applied (`profiles`, `workouts`, `strava_accounts`), definer functions
+  locked down, realtime enabled. Mirrored in `supabase/migrations/0001_init.sql`.
+- Project URL + anon key wired into `js/app/config.js`.
+- The three Edge Functions deployed: `strava-callback`, `strava-webhook`, `strava-sync`.
 
----
-
-## 1. Supabase project
-
-1. Go to **https://supabase.com** → sign in → **New project**. Pick a name (e.g.
-   `triquest`), a strong database password, and a region near you. Wait ~2 min.
-2. **Project Settings → API**. Copy:
-   - 🟢 **Project URL** → e.g. `https://abcdefgh.supabase.co`
-   - 🟢 **anon public** key
-   - 🔴 **service_role** key (you'll paste this into function secrets, step 4 — never the frontend)
-
-### Run the database migration
-Either:
-- **CLI** (recommended): install the [Supabase CLI](https://supabase.com/docs/guides/cli), then:
-  ```bash
-  supabase link --project-ref <your-project-ref>
-  supabase db push
-  ```
-  This applies `supabase/migrations/0001_init.sql` (tables, RLS, triggers).
-- **Or SQL editor**: open **SQL Editor**, paste the contents of
-  `supabase/migrations/0001_init.sql`, and **Run**.
-
-### Enable the auth providers you want
-**Authentication → Providers**:
-- **Email** — on by default (magic links). Under **URL Configuration**, set
-  **Site URL** to `https://suneson.github.io/triquest/` and add it to
-  **Redirect URLs**.
-- **Google** / **Apple** (optional) — follow Supabase's provider guides, then add
-  the same redirect URL.
-
-### Put the public values in the frontend
-Edit `js/app/config.js`:
-```js
-export const CONFIG = {
-  supabaseUrl: 'https://abcdefgh.supabase.co', // 🟢 your Project URL
-  supabaseAnonKey: 'eyJhbGciOi...',            // 🟢 your anon public key
-  stravaClientId: '',                          // fill in step 3
-};
-```
-Commit and redeploy (push to `main`). The **Sign in to sync** UI now appears.
-**At this point Workstream A (accounts + multi-device sync) is fully live.**
+**Multi-device sync is live now** — open the app, *Settings → Sign in to sync*.
 
 ---
 
-## 2. (Strava) Create a Strava API application
+## 🔶 To turn on Strava — your remaining steps (~10 min)
 
-1. Go to **https://www.strava.com/settings/api**.
-2. Create an application:
-   - **Application Name**: TriQuest
-   - **Category**: anything (e.g. Training)
-   - **Website**: `https://suneson.github.io/triquest/`
-   - **Authorization Callback Domain**: 🟢 your Supabase **functions** domain
-     **without scheme** — e.g. `abcdefgh.functions.supabase.co`
-3. After creating, note:
-   - 🟢 **Client ID**
-   - 🔴 **Client Secret**
+You only need to create the Strava app and set two secrets; everything else is deployed.
 
-Add the Client ID to `js/app/config.js` (`stravaClientId`), commit, redeploy.
+### 1. Create a Strava API application
+Go to **https://www.strava.com/settings/api** → create an app:
+- **Website**: `https://suneson.github.io/triquest/`
+- **Authorization Callback Domain** (no `https://`): `kmanszmqgmyninoplwbt.functions.supabase.co`
 
----
+Note your **Client ID** (public) and **Client Secret** (🔴 keep private).
 
-## 3. Deploy the Edge Functions
+### 2. Set the Edge Function secrets
+**Supabase Dashboard → Project Settings → Edge Functions → Secrets** (no CLI needed),
+add:
 
-Install/login the Supabase CLI (`supabase login`), then from the repo root:
+| Name | Value |
+|---|---|
+| `STRAVA_CLIENT_ID` | your Strava Client ID |
+| `STRAVA_CLIENT_SECRET` | 🔴 your Strava Client Secret |
+| `STRAVA_WEBHOOK_VERIFY_TOKEN` | any random string you invent (only needed for step 4) |
+
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
+`APP_REDIRECT_URL` defaults to the live site — only set it if you fork the URL.
+
+### 3. Add the public Client ID to the frontend
+Put your Client ID in `js/app/config.js` → `stravaClientId`, commit, and push
+(or just send me the Client ID — it's public — and I'll commit it). The
+**Connect Strava** button then appears in Settings.
+
+Now: **Settings → Connect Strava → authorize → Sync now.** Activities import and
+auto-match to your planned sessions. This works on polling alone.
+
+### 4. (Optional) Live push via webhook
+For instant import the moment you finish an activity, register the push
+subscription once (uses the secret you set; run anywhere with Deno, or use curl):
 
 ```bash
-# public (Strava calls these) — disable JWT verification:
-supabase functions deploy strava-callback --no-verify-jwt
-supabase functions deploy strava-webhook  --no-verify-jwt
-# requires the signed-in user's JWT:
-supabase functions deploy strava-sync
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+  -F client_id=<CLIENT_ID> \
+  -F client_secret=<CLIENT_SECRET> \
+  -F callback_url=https://kmanszmqgmyninoplwbt.functions.supabase.co/strava-webhook \
+  -F verify_token=<STRAVA_WEBHOOK_VERIFY_TOKEN>
 ```
-(The same `verify_jwt` settings are declared in `supabase/config.toml`.)
+Strava immediately validates the callback (the function echoes the challenge).
+A Deno helper with `list`/`delete` subcommands is at
+`supabase/functions/_scripts/register-webhook.ts`.
 
 ---
 
-## 4. Set the Edge Function secrets  🔴
+## What stays secret vs public
 
-Generate a random webhook verify token (any unguessable string), then:
-
-```bash
-supabase secrets set \
-  STRAVA_CLIENT_ID="<your client id>" \
-  STRAVA_CLIENT_SECRET="<your client secret>" \
-  STRAVA_WEBHOOK_VERIFY_TOKEN="<random string you choose>" \
-  APP_REDIRECT_URL="https://suneson.github.io/triquest/"
-```
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically by the
-platform — you do **not** need to set them. (If running functions locally, add
-them to `supabase/.env`.)
-
----
-
-## 5. Register the Strava webhook (one command)
-
-After the functions are deployed and secrets are set:
-
-```bash
-STRAVA_CLIENT_ID="<id>" STRAVA_CLIENT_SECRET="<secret>" \
-STRAVA_WEBHOOK_VERIFY_TOKEN="<same random string>" \
-CALLBACK_URL="https://<project-ref>.functions.supabase.co/strava-webhook" \
-deno run -A supabase/functions/_scripts/register-webhook.ts
-```
-Strava will immediately GET your webhook to validate it (the function echoes the
-challenge). `list` and `delete <id>` subcommands are available for management.
-
-> No webhook? You can skip step 5 — the app still imports activities via the
-> **Sync now** button and on app open (polling fallback, `strava-sync`).
-
----
-
-## What you provide vs. what's already built
-
-| You provide | Where it goes | Secret? |
-|---|---|---|
-| Supabase Project URL | `js/app/config.js` | 🟢 |
-| Supabase anon key | `js/app/config.js` | 🟢 |
-| Strava Client ID | `js/app/config.js` | 🟢 |
-| Supabase service_role key | auto-injected to functions | 🔴 |
-| Strava Client Secret | `supabase secrets set` | 🔴 |
-| Webhook verify token | `supabase secrets set` + register script | 🔴 |
-
-Everything else — schema, RLS, auth UI, sync engine, the Strava OAuth/callback,
-webhook, polling sync, and the matching algorithm — is in the repo. If any value is
-missing the related feature stays flagged off and the app still builds and deploys.
+| Public (safe to commit) | Secret (never in git/chat) |
+|---|---|
+| Supabase URL, anon key | Supabase service_role key (auto-injected) |
+| Strava Client ID | Strava Client Secret |
+|  | Webhook verify token |
 
 ---
 
 ## Strava API compliance
 
-TriQuest follows Strava's brand and platform guidelines:
-- The **"Powered by Strava"** mark is shown next to synced data.
+- The **"Powered by Strava"** mark is shown on every synced session card.
 - Synced sessions **link back** to the original activity on Strava.
-- A user only ever sees **their own** data (enforced by Postgres RLS).
+- Each user only ever sees **their own** data (enforced by Postgres RLS).
 - Strava data is **not** used to train any models.
+
+---
+
+## Re-deploying from source (optional, needs Supabase CLI)
+
+Everything is also reproducible from the repo:
+```bash
+supabase link --project-ref kmanszmqgmyninoplwbt
+supabase db push                                   # applies migrations
+supabase functions deploy strava-callback --no-verify-jwt
+supabase functions deploy strava-webhook  --no-verify-jwt
+supabase functions deploy strava-sync
+```

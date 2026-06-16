@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v2';
+const CACHE = 'triquest-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -47,23 +47,22 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const { request } = e;
   if (request.method !== 'GET') return;
+  const sameOrigin = new URL(request.url).origin === self.location.origin;
 
-  e.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
+  // Network-first for same-origin app code so updates always apply when online;
+  // cache is the offline fallback. (Avoids the stale-asset trap of cache-first.)
+  if (sameOrigin) {
+    e.respondWith(
+      fetch(request)
         .then((res) => {
-          // Cache same-origin successful responses for next time.
-          if (res.ok && new URL(request.url).origin === self.location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
-          }
+          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(request, copy)); }
           return res;
         })
-        .catch(() => {
-          if (request.mode === 'navigate') return caches.match('./index.html');
-          throw new Error('offline and uncached');
-        });
-    })
-  );
+        .catch(() => caches.match(request).then((c) => c || (request.mode === 'navigate' ? caches.match('./index.html') : Promise.reject(new Error('offline')))))
+    );
+    return;
+  }
+
+  // Cross-origin (e.g. CDN): cache-first.
+  e.respondWith(caches.match(request).then((c) => c || fetch(request)));
 });

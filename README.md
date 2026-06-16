@@ -163,6 +163,42 @@ If `localStorage` is unavailable (private mode, storage blocked), the app transp
 
 ---
 
+## ☁️ v2 — Accounts, multi-device sync & Strava
+
+Optional cloud features layered on top of the static app, **off by default** — with
+`js/app/config.js` blank, TriQuest behaves exactly like v1 (local-only). See
+[SETUP.md](SETUP.md) for provisioning.
+
+**Architecture.** The frontend stays static on GitHub Pages and holds no secrets.
+A [Supabase](https://supabase.com) backend provides Auth, Postgres (with Row-Level
+Security) and Edge Functions (Deno) for anything needing the Strava secret. The anon
+key is safe to ship (RLS-protected); the Strava client secret and service-role key
+live only in Edge Function env.
+
+**Store abstraction.** The app talks to a store interface (`hydrate/list/get/upsert/
+delete/setMeta`). `LocalStore` (localStorage) backs the logged-out path; signing in
+swaps in `SupabaseStore`, which uses `LocalStore` as an offline write-through cache
+and Postgres as the synced source of truth. Conflict resolution is **last-write-wins
+by `updated_at`**; remote edits stream in over Supabase realtime. Fully usable offline
+at the gym; reconciles on reconnect.
+
+**Strava auto-sync.** Connect via OAuth (`activity:read_all`). A finished activity
+arrives by webhook (or the polling `strava-sync` fallback), is mapped to an app type,
+and **matched to a planned session** of the same type that day (closest planned
+duration), auto-ticking it and filling in actuals (distance, time, HR, power,
+elevation, calories) — otherwise it's added as an unplanned completed session. The
+matching/mapping/merge logic is pure and unit-tested (`js/core/strava.js`,
+`sync.js`); the server mirror lives in `supabase/functions`.
+
+**Schema & migrations** are in `supabase/migrations/`. **Data model**: `workouts`
+columns mirror the app shape, with an `extra` jsonb for app-only display flags and an
+`actual` jsonb for logged/Strava results. `strava_accounts` holds tokens and is
+service-role-only (a user may only delete their own row to disconnect).
+
+**Strava compliance**: the "Powered by Strava" mark is shown on synced cards, every
+synced session links back to Strava, users only ever see their own data (RLS), and the
+data is never used to train models.
+
 ## 🌐 Deploy (GitHub Pages)
 
 The repo root **is** the site, so Pages serves it directly with no build step:

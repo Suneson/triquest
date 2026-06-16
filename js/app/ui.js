@@ -6,21 +6,13 @@ import { poseSvgFor, cuesFor } from '../core/poses.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
+import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
+import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 
-export const DISCIPLINES = {
-  run: { label: 'Run', icon: '🏃', color: 'var(--c-run)' },
-  bike: { label: 'Bike', icon: '🚴', color: 'var(--c-bike)' },
-  swim: { label: 'Swim', icon: '🏊', color: 'var(--c-swim)' },
-  gym: { label: 'Gym', icon: '🏋️', color: 'var(--c-gym)' },
-  brick: { label: 'Brick', icon: '🧱', color: 'var(--c-brick)' },
-  mobility: { label: 'Mobility', icon: '🧘', color: 'var(--c-mobility)' },
-  other: { label: 'Other', icon: '✨', color: 'var(--c-other)' },
-};
+export { DISCIPLINES, INTENSITIES };
 
-export const INTENSITIES = {
-  easy: 'Easy', steady: 'Steady', moderate: 'Moderate',
-  threshold: 'Threshold', vo2: 'VO₂', quality: 'Quality', race: 'Race',
-};
+const PHASE_HOURS_TARGET = { base: 12, specific: 12, bridge: 9 };
+const BIKE_WEEK_FLOOR = 200;
 
 const SEG_INTENSITY = {
   easy: 'Easy', moderate: 'Moderate', threshold: 'Threshold', vo2: 'VO₂', steady: 'Steady',
@@ -143,6 +135,7 @@ function actualsBlock(w, units) {
   if (a.avgCadence) cells.push(avp('Cadence', `${Math.round(a.avgCadence)}`));
   if (a.elevationGainM) cells.push(avp('Elevation', `${Math.round(a.elevationGainM)} m`));
   if (a.calories) cells.push(avp('Calories', `${Math.round(a.calories)}`));
+  if (a.rpe) cells.push(avp('RPE', `${a.rpe}`));
   const link = a.stravaLink
     ? `<a class="strava-link" href="${esc(a.stravaLink)}" target="_blank" rel="noopener noreferrer">View on Strava ↗</a>` : '';
   return `<div class="block">
@@ -150,21 +143,39 @@ function actualsBlock(w, units) {
     <div class="actual-vs-planned">${cells.join('')}</div>${link}</div>`;
 }
 
+// Manual result logging (used when a session isn't Strava-linked).
+function actualEntry(w) {
+  const a = w.actual || {};
+  const field = (label, key, mode) =>
+    `<label>${label}<input inputmode="${mode}" value="${esc(a[key] ?? '')}" placeholder="–"
+       data-action="actual-field" data-id="${esc(w.id)}" data-field="${key}"></label>`;
+  return `<div class="block"><h4>Log actual result</h4>
+    <div class="ex-log actual-entry">
+      ${field('km', 'distanceKm', 'decimal')}
+      ${field('min', 'durationMin', 'numeric')}
+      ${field('avg HR', 'avgHr', 'numeric')}
+      ${field('RPE', 'rpe', 'decimal')}
+    </div></div>`;
+}
+
 // ---- session card -----------------------------------------------------------
 
-export function sessionCard(w, units, { compact = false } = {}) {
+export function sessionCard(w, units, { compact = false, isNext = false } = {}) {
   const d = DISCIPLINES[w.type] || DISCIPLINES.other;
   const tags = [];
+  if (isNext) tags.push('<span class="tag next">NEXT</span>');
   if (w.isRace) tags.push('<span class="tag race">RACE</span>');
   if (w.deload) tags.push(`<span class="tag deload">${/taper/i.test(w.title) ? 'taper' : 'deload'}</span>`);
   if (w.optional) tags.push('<span class="tag optional">optional</span>');
   if (w.strava_activity_id) tags.push('<span class="tag strava">Strava</span>');
 
+  const pace = paceHint(w.type, w.intensity);
   const meta = [
     `<span class="chip type-${w.type}">${d.icon} ${d.label}</span>`,
     `<span class="chip">${formatDuration(w.durationMin)}</span>`,
     w.metrics?.distanceKm ? `<span class="chip">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
     `<span class="chip intensity-${w.intensity}">${INTENSITIES[w.intensity] || w.intensity}</span>`,
+    pace ? `<span class="chip pace" title="Planned pace / zone">🎯 ${esc(pace)}</span>` : '',
   ].filter(Boolean).join('');
 
   const head = `
@@ -180,7 +191,7 @@ export function sessionCard(w, units, { compact = false } = {}) {
     </div>`;
 
   if (compact) {
-    return `<article class="card type-${w.type} ${w.completed ? 'completed' : ''}" data-card="${esc(w.id)}">
+    return `<article class="card type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-card="${esc(w.id)}" data-swipe="${esc(w.id)}">
       ${head}
       <div class="card-foot">
         <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">Edit</button>
@@ -199,13 +210,15 @@ export function sessionCard(w, units, { compact = false } = {}) {
     </div>`;
   const packing = `<div class="block"><h4>Packing</h4>${packingList(w)}</div>`;
 
+  const actuals = w.strava_activity_id ? actualsBlock(w, units) : actualEntry(w);
+
   return `
-    <article class="card type-${w.type} ${w.completed ? 'completed' : ''}" data-card="${esc(w.id)}">
+    <article class="card type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-card="${esc(w.id)}" data-swipe="${esc(w.id)}">
       ${head}
       ${fuellingChip(w)}
-      ${actualsBlock(w, units)}
       ${segs ? `<div class="block">${segs}</div>` : ''}
       ${exercises}
+      ${actuals}
       ${notes}
       ${packing}
       <div class="card-foot">
@@ -222,15 +235,23 @@ export function renderToday(ctx) {
   const { today, workouts, units } = ctx;
   const sessions = workouts.filter((w) => w.date === today).sort(sortSessions);
   const phase = sessions[0]?.phase;
+  const left = sessions.filter((w) => !w.completed).length;
+  const firstIncomplete = sessions.find((w) => !w.completed);
+
+  const leftCue = sessions.length
+    ? (left ? `<span class="left-cue">${left} session${left === 1 ? '' : 's'} left</span>`
+            : '<span class="left-cue done">all done 🎉</span>')
+    : '';
 
   const header = `
     <div class="day-header">
       <div><h2>Today</h2><p class="sub">${weekdayName(today)} · ${shortLabel(today)}${phase ? ` · <span class="phase-pill">${esc(phase)}</span>` : ''}</p></div>
+      ${leftCue}
     </div>`;
 
   let body;
   if (sessions.length) {
-    body = sessions.map((w) => sessionCard(w, units)).join('');
+    body = sessions.map((w) => sessionCard(w, units, { isNext: w === firstIncomplete })).join('');
   } else {
     const next = nextSession(workouts, today);
     body = `<div class="empty card">
@@ -240,7 +261,28 @@ export function renderToday(ctx) {
     </div>`;
   }
 
-  return header + body + packForTomorrow(ctx);
+  return header + runWarningBanner(workouts, today) + raceChecklist(workouts, today) + body + packForTomorrow(ctx);
+}
+
+// Run-volume guardrail (>10% week-over-week) — the user has a run-injury history.
+function runWarningBanner(workouts, today) {
+  const r = runVolumeJump(workouts, today);
+  if (!r.warn) return '';
+  return `<div class="warn-banner">⚠️ Run volume is up <b>${r.pctChange}%</b> on last week (${r.lastKm}→${r.thisKm} km). Keep weekly run jumps under ~10% to protect against injury.</div>`;
+}
+
+// Race-day checklist surfaces when a race is within 10 days.
+function raceChecklist(workouts, today) {
+  const race = RACES.find((r) => { const d = diffDays(r.date, today); return d >= 0 && d <= 10; });
+  if (!race) return '';
+  const session = workouts.find((w) => w.date === race.date && w.isRace);
+  if (!session) return '';
+  const items = (session.packing || []).map((p, i) =>
+    `<li class="${p.checked ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-pack" data-id="${esc(session.id)}" data-pi="${i}" ${p.checked ? 'checked' : ''}><span>${esc(p.item)}</span></label></li>`).join('');
+  const days = diffDays(race.date, today);
+  return `<section class="card accent race-checklist">
+    <h3>${race.emoji} Race-day checklist — ${esc(race.title)} <span class="muted">in ${days} day${days === 1 ? '' : 's'}</span></h3>
+    <ul class="pack-items big-pack">${items}</ul></section>`;
 }
 
 function packForTomorrow(ctx) {
@@ -316,22 +358,94 @@ export function renderWeek(ctx, weekStartIso) {
       </div>`;
   }).join('');
 
-  return `<div class="day-header"><h2>Week</h2></div>${nav}<div class="week-grid">${dayBlocks}</div>`;
+  return `<div class="day-header"><h2>Week</h2></div>${nav}${weekSummary(workouts, weekStartIso, weekEnd, sample?.phaseId)}<div class="week-grid">${dayBlocks}</div>`;
+}
+
+export function ring(pct, big, small, colorVar) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)));
+  return `<div class="ring" style="--p:${p}; --rc:${colorVar}" role="img" aria-label="${esc(small)} ${p}%">
+    <div class="ring-c"><b>${big}</b><small>${esc(small)}</small></div></div>`;
+}
+
+// Weekly target rings: completion, bike km vs the 200 km floor, hours vs phase target.
+function weekSummary(workouts, weekStartIso, weekEnd, phaseId) {
+  const inWeek = workouts.filter((w) => w.date >= weekStartIso && w.date <= weekEnd && !w.optional);
+  const total = inWeek.length;
+  if (!total) return '';
+  const done = inWeek.filter((w) => w.completed).length;
+  const bk = weekKm(workouts, weekStartIso, 'bike');
+  const hrs = weekHours(workouts, weekStartIso);
+  const tgt = PHASE_HOURS_TARGET[phaseId] || 11;
+  return `<section class="card week-summary"><div class="rings">
+    ${ring((done / total) * 100, `${done}/${total}`, 'sessions', 'var(--good)')}
+    ${ring((bk / BIKE_WEEK_FLOOR) * 100, `${Math.round(bk)}`, `/ ${BIKE_WEEK_FLOOR} km bike`, 'var(--c-bike)')}
+    ${ring((hrs / tgt) * 100, hrs.toFixed(1), `/ ${tgt} h`, 'var(--accent)')}
+  </div></section>`;
 }
 
 // ---- PROGRESS ---------------------------------------------------------------
 
 export function renderProgress(ctx) {
-  const { workouts, stats, streaks, today, units } = ctx;
+  const { workouts, stats, streaks, today, units, settings } = ctx;
   return [
     `<div class="day-header"><h2>Progress</h2></div>`,
     totalsStrip(stats, streaks, units),
+    loadPanel(workouts, today),
     weeklyVolumeChart(workouts, today),
     disciplineBreakdown(stats),
+    bodyMetricsPanel(settings, today),
     streakHeatmap(workouts, today, streaks),
     badgeWall(ctx.unlockedBadges),
     referenceCards(),
   ].join('');
+}
+
+// Training load + acute:chronic workload ratio (with the injury guardrail).
+function loadPanel(workouts, today) {
+  const a = acwr(workouts, today);
+  const rv = runVolumeJump(workouts, today);
+  const zoneLabel = { ok: 'in the sweet spot', high: 'elevated — watch fatigue',
+    danger: 'spiking — back off', detraining: 'low — room to build', unknown: 'building baseline' }[a.zone];
+  const rvLine = rv.pctChange == null ? 'No run last week to compare.'
+    : `Run volume ${rv.pctChange >= 0 ? '+' : ''}${rv.pctChange}% vs last week (${rv.lastKm}→${rv.thisKm} km).`;
+  return `<section class="card">
+    <h3>Training load</h3>
+    <div class="load-grid">
+      <div class="load-cell"><small>Acute (7d)</small><b>${a.acute}</b></div>
+      <div class="load-cell"><small>Chronic (weekly)</small><b>${a.chronicWeekly}</b></div>
+      <div class="load-cell acwr-${a.zone}"><small>ACWR</small><b>${a.ratio || '—'}</b></div>
+    </div>
+    <p class="muted small">Acute:chronic ratio is <b>${zoneLabel}</b>. Aim for ~0.8–1.3. ${esc(rvLine)}</p>
+  </section>`;
+}
+
+function bodyMetricsPanel(settings, today) {
+  const log = (settings?.bodyMetrics || []).slice().sort((x, y) => x.date.localeCompare(y.date));
+  const latest = log[log.length - 1] || {};
+  const spark = (key, color) => {
+    const pts = log.filter((e) => e[key] != null);
+    if (pts.length < 2) return '';
+    const vals = pts.map((e) => Number(e[key]));
+    const min = Math.min(...vals); const max = Math.max(...vals); const span = max - min || 1;
+    const d = pts.map((e, i) => `${(i / (pts.length - 1)) * 100},${30 - ((Number(e[key]) - min) / span) * 28}`).join(' ');
+    return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline points="${d}" fill="none" stroke="${color}" stroke-width="2"/></svg>`;
+  };
+  const row = (label, key, unit, color) =>
+    `<div class="metric-row"><span>${label}</span>${spark(key, color)}<b>${latest[key] != null ? latest[key] + unit : '–'}</b></div>`;
+  return `<section class="card">
+    <h3>Body metrics</h3>
+    <div class="metrics">
+      ${row('Weight', 'weight', ' kg', 'var(--c-bike)')}
+      ${row('Resting HR', 'rhr', ' bpm', 'var(--c-run)')}
+      ${row('Sleep', 'sleep', ' h', 'var(--c-swim)')}
+    </div>
+    <form class="metric-log" data-action="log-metric" data-date="${esc(today)}">
+      <input type="number" step="0.1" name="weight" placeholder="kg" aria-label="Weight kg">
+      <input type="number" step="1" name="rhr" placeholder="RHR" aria-label="Resting HR">
+      <input type="number" step="0.1" name="sleep" placeholder="sleep h" aria-label="Sleep hours">
+      <button type="submit" class="btn tiny">Log today</button>
+    </form>
+  </section>`;
 }
 
 function weeklyVolumeChart(workouts, today) {

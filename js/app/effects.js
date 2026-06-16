@@ -124,13 +124,20 @@ export function playBadge() {
 
 // ---- toasts ----------------------------------------------------------------
 
-export function toast(html, { duration = 3800, icon = '' } = {}) {
+export function toast(html, { duration = 3800, icon = '', actionLabel = '', onAction = null } = {}) {
   const wrap = document.getElementById('toast-wrap');
   if (!wrap) return;
   const el = document.createElement('div');
   el.className = 'toast';
   el.setAttribute('role', 'status');
-  el.innerHTML = icon ? `<span class="toast-icon">${icon}</span><div>${html}</div>` : html;
+  el.innerHTML = (icon ? `<span class="toast-icon">${icon}</span>` : '') + `<div>${html}</div>`;
+  if (actionLabel && onAction) {
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = actionLabel;
+    btn.addEventListener('click', () => { onAction(); el.classList.remove('show'); setTimeout(() => el.remove(), 200); });
+    el.appendChild(btn);
+  }
   wrap.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => {

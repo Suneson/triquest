@@ -24,6 +24,7 @@ const appState = {
 };
 
 let deferredInstall = null;
+const scrollPos = {};
 
 // ---- derived context --------------------------------------------------------
 
@@ -36,6 +37,7 @@ function buildCtx() {
     stats: computeStats(workouts),
     streaks: computeStreaks(workouts, today),
     units: store.getSettings().units,
+    settings: store.getSettings(),
     unlockedBadges: store.getState().unlockedBadges,
   };
 }
@@ -97,8 +99,11 @@ function onClick(e) {
 
   switch (action) {
     case 'tab':
+      scrollPos[appState.tab] = window.scrollY;
       appState.tab = el.dataset.tab;
+      localStorage.setItem('moske-tab', appState.tab);
       render();
+      requestAnimationFrame(() => window.scrollTo(0, scrollPos[appState.tab] || 0));
       break;
     case 'toggle-complete': {
       const w = store.workoutById(id);
@@ -108,6 +113,7 @@ function onClick(e) {
         const r = el.getBoundingClientRect();
         confetti(r.left + r.width / 2, r.top + r.height / 2, 70);
         playComplete();
+        toast('Completed ✓', { icon: '💪', duration: 5000, actionLabel: 'Undo', onAction: () => store.toggleComplete(id, false) });
       }
       break;
     }
@@ -169,6 +175,12 @@ function onInput(e) {
     const w = store.workoutById(id);
     w.exercises[+el.dataset.ex][el.dataset.field] = el.value;
     store.save();
+  } else if (action === 'actual-field') {
+    const w = store.workoutById(id);
+    w.actual = w.actual || {};
+    const v = el.value.trim();
+    w.actual[el.dataset.field] = v === '' ? null : Number(v);
+    store.touchWorkout(id); // stamps updated_at + persists/syncs (no re-render)
   }
 }
 
@@ -176,8 +188,25 @@ function onSubmit(e) {
   const el = e.target.closest('[data-action]');
   if (!el) return;
   e.preventDefault();
+
+  if (el.dataset.action === 'log-metric') {
+    const date = el.dataset.date;
+    const entry = { date };
+    let any = false;
+    ['weight', 'rhr', 'sleep'].forEach((k) => {
+      const v = el.elements[k].value.trim();
+      if (v !== '') { entry[k] = Number(v); any = true; }
+    });
+    if (!any) return;
+    const log = (store.getSettings().bodyMetrics || []).filter((m) => m.date !== date);
+    log.push({ ...((store.getSettings().bodyMetrics || []).find((m) => m.date === date) || {}), ...entry });
+    store.setSetting('bodyMetrics', log);
+    toast('Logged today’s metrics 📈');
+    return;
+  }
+
   const input = el.querySelector('input[type="text"]');
-  const val = input.value.trim();
+  const val = input ? input.value.trim() : '';
   if (!val) return;
 
   if (el.dataset.action === 'pack-add') {
@@ -218,6 +247,7 @@ function openSettings() {
         <div class="row">
           <button class="btn ghost" data-set-do="export">⬇ Export JSON</button>
           <button class="btn ghost" data-set-do="import">⬆ Import JSON</button>
+          <button class="btn ghost" data-set-do="export-ics">📅 Calendar (.ics)</button>
         </div>
         <input type="file" id="import-file" accept="application/json" hidden>
 
@@ -241,6 +271,7 @@ function openSettings() {
   root.querySelectorAll('[data-set-do]').forEach((b) => b.addEventListener('click', () => {
     const act = b.dataset.setDo;
     if (act === 'export') doExport();
+    else if (act === 'export-ics') doExportICS();
     else if (act === 'import') root.querySelector('#import-file').click();
     else if (act === 'reseed') { if (confirm('Reset everything and reload the original plan? Your logged progress will be lost.')) { doExport(); store.reseed(); appState.lastLevel = null; close(); toast('Backup exported, plan reseeded'); } }
     else if (act === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; close(); }
@@ -271,6 +302,19 @@ function doExport() {
   a.click();
   URL.revokeObjectURL(url);
   toast('Backup exported ⬇');
+}
+
+function doExportICS() {
+  import('../core/calendar.js').then(({ toICS }) => {
+    const blob = new Blob([toICS(store.getWorkouts())], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'moske-training.ics';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Calendar exported 📅');
+  });
 }
 
 // ---- account / sync UI ------------------------------------------------------
@@ -330,6 +374,71 @@ function handleRedirectParams() {
   if (location.hash.includes('access_token')) history.replaceState({}, '', location.pathname + location.search);
 }
 
+// ---- onboarding -------------------------------------------------------------
+
+function maybeOnboard() {
+  if (localStorage.getItem('moske-onboarded')) return;
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  const cards = [
+    { icon: '✅', t: 'Tick off sessions', b: 'Tap the big check to complete a workout — earn XP, keep your streak, and unlock badges.' },
+    { icon: '➕', t: 'Make it yours', b: 'Hit the + button to add a custom session for any day, with intervals, exercises and a packing list.' },
+    { icon: '📲', t: 'Add to Home Screen', b: 'Install MOSKE for a fullscreen, offline app at the gym. Sign in to sync across devices.' },
+  ];
+  let i = 0;
+  const draw = () => {
+    const c = cards[i];
+    root.innerHTML = `<div class="modal-backdrop"></div>
+      <div class="modal onboard" role="dialog" aria-modal="true" aria-label="Welcome to MOSKE">
+        <div class="modal-body onboard-body">
+          <div class="onboard-icon">${c.icon}</div>
+          <h2>${c.t}</h2><p class="muted">${c.b}</p>
+          <div class="onboard-dots">${cards.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+        </div>
+        <footer class="modal-foot"><button class="btn ghost" data-ob="skip">Skip</button><span class="spacer"></span>
+          <button class="btn primary" data-ob="next">${i === cards.length - 1 ? 'Start training' : 'Next'}</button></footer>
+      </div>`;
+    const done = () => { localStorage.setItem('moske-onboarded', '1'); root.innerHTML = ''; root.classList.remove('open'); };
+    root.querySelector('[data-ob="skip"]').addEventListener('click', done);
+    root.querySelector('[data-ob="next"]').addEventListener('click', () => { if (i === cards.length - 1) done(); else { i++; draw(); } });
+  };
+  draw();
+}
+
+// ---- swipe-to-complete ------------------------------------------------------
+
+function wireSwipe() {
+  let startX = 0, startY = 0, card = null;
+  document.addEventListener('touchstart', (e) => {
+    card = e.target.closest('[data-swipe]');
+    if (!card || e.target.closest('input,textarea,button,a')) { card = null; return; }
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if (!card) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && dx > 0) card.style.transform = `translateX(${Math.min(dx, 90)}px)`;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (!card) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const el = card; el.style.transform = '';
+    if (dx > 80) {
+      const id = el.dataset.swipe;
+      const w = store.workoutById(id);
+      if (w && !w.completed) {
+        store.toggleComplete(id, true);
+        const r = el.getBoundingClientRect();
+        confetti(r.left + r.width / 2, r.top + r.height / 2, 60);
+        playComplete();
+        toast('Completed ✓', { icon: '💪', duration: 5000, actionLabel: 'Undo', onAction: () => store.toggleComplete(id, false) });
+      }
+    }
+    card = null;
+  }, { passive: true });
+}
+
 // ---- boot -------------------------------------------------------------------
 
 async function boot() {
@@ -337,6 +446,9 @@ async function boot() {
   const today = todayISO();
   // Start the Week view on the plan's first week if we're not in the plan yet.
   appState.weekStart = diffDays(today, PLAN_START) < 0 ? mondayOf(PLAN_START) : mondayOf(today);
+  // Restore last tab.
+  const savedTab = localStorage.getItem('moske-tab');
+  if (['today', 'week', 'progress'].includes(savedTab)) appState.tab = savedTab;
 
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
@@ -344,6 +456,7 @@ async function boot() {
   document.addEventListener('submit', onSubmit);
   document.getElementById('fab').addEventListener('click', () => openEditor(null, todayISO()));
   document.getElementById('settings-btn').addEventListener('click', openSettings);
+  wireSwipe();
 
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
 
@@ -351,6 +464,12 @@ async function boot() {
   render();
   appState.booted = true;
 
+  // Auto-focus the next (first incomplete) session when opening on Today.
+  if (appState.tab === 'today') {
+    requestAnimationFrame(() => document.querySelector('#view .card.is-next')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+  }
+
+  maybeOnboard();
   handleRedirectParams();
   if (SYNC_ENABLED) auth.initAuth(onAuthChange);
 

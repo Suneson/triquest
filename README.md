@@ -199,6 +199,20 @@ service-role-only (a user may only delete their own row to disconnect).
 synced session links back to Strava, users only ever see their own data (RLS), and the
 data is never used to train models.
 
+### UX & feature pass (Workstreams C/D)
+
+One-tap and **swipe-to-complete** from the lists, an **Undo** toast on completion,
+**auto-focus** of the next session with a NEXT badge and a "sessions left" cue,
+inline **planned pace/zone** chips, persisted last tab + scroll, high-contrast HUD,
+**prefers-reduced-motion** support, and first-run onboarding. Plus **weekly target
+rings** (sessions, bike km vs the 200 km floor, hours vs the phase target), a
+**training-load / ACWR panel** with the >10% run-volume injury guardrail, **manual
+actual-vs-planned logging** (auto-filled by Strava when linked), a **race-day
+checklist**, **body-metrics quick-log** (weight / resting HR / sleep with sparklines,
+synced via the profile), and **calendar (.ics) export** alongside the existing JSON
+backup. (Multi-season plans, coach share links and push reminders are the planned
+next phase.)
+
 ## 🌐 Deploy (GitHub Pages)
 
 The repo root **is** the site, so Pages serves it directly with no build step:

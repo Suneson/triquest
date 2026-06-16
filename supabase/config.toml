@@ -1,0 +1,13 @@
+# Supabase local/project config. The two Strava endpoints Strava itself calls
+# must be public (no JWT); the polling sync requires the user's JWT.
+
+project_id = "triquest"
+
+[functions.strava-callback]
+verify_jwt = false
+
+[functions.strava-webhook]
+verify_jwt = false
+
+[functions.strava-sync]
+verify_jwt = true

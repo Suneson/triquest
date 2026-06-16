@@ -19,7 +19,7 @@ function blankWorkout(date) {
     type: 'run', title: '', intensity: 'easy', durationMin: 45,
     completed: false, completedAt: null, metrics: { distanceKm: '' },
     segments: [], exercises: [], packing: [], notes: '', seeded: false,
-    deload: false, isRace: false,
+    deload: false, isRace: false, source: 'custom', strava_activity_id: null,
   };
 }
 

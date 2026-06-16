@@ -1,53 +1,13 @@
-// store.js — app state + defensive persistence.
-// localStorage is the source of truth on disk; if it's blocked (private mode,
-// disabled cookies) we transparently fall back to an in-memory store and raise
-// a flag so the UI can warn the user.
+// store.js — app-facing state facade over a pluggable store implementation.
+//
+// The facade holds the live snapshot (`state.current`) that the render layer
+// reads synchronously, and delegates persistence (and, when signed in, remote
+// sync) to the active store. Today the active store is always LocalStore;
+// Phase 2 swaps in SupabaseStore on sign-in without changing this surface.
 
-import { expandPlan } from '../core/plan.js';
+import { LocalStore, freshState, migrate } from './stores/local-store.js';
 
-const KEY = 'triquest.v1';
-const VERSION = 1;
-
-// ---- defensive storage backend -------------------------------------------
-
-function makeBackend() {
-  try {
-    const probe = '__triquest_probe__';
-    localStorage.setItem(probe, '1');
-    localStorage.removeItem(probe);
-    return { persistent: true, store: localStorage };
-  } catch {
-    // In-memory shim implementing the bits of the Storage API we use.
-    const mem = new Map();
-    return {
-      persistent: false,
-      store: {
-        getItem: (k) => (mem.has(k) ? mem.get(k) : null),
-        setItem: (k, v) => mem.set(k, String(v)),
-        removeItem: (k) => mem.delete(k),
-      },
-    };
-  }
-}
-
-const backend = makeBackend();
-export const isPersistent = () => backend.persistent;
-
-// ---- defaults + state ------------------------------------------------------
-
-function defaultSettings() {
-  return { sound: false, units: 'metric', weekStart: 1, reduceMotion: false };
-}
-
-function freshState() {
-  return {
-    version: VERSION,
-    settings: defaultSettings(),
-    workouts: expandPlan(),
-    unlockedBadges: [],
-    seededAt: new Date().toISOString(),
-  };
-}
+let activeStore = new LocalStore();
 
 export const state = { current: null };
 const listeners = new Set();
@@ -61,41 +21,19 @@ function emit() {
   for (const fn of listeners) fn(state.current);
 }
 
-export function save() {
-  try {
-    backend.store.setItem(KEY, JSON.stringify(state.current));
-  } catch {
-    /* quota or blocked — already running in-memory, nothing else to do */
-  }
-}
+export const isPersistent = () => activeStore.persistent;
+export const storeKind = () => activeStore.kind;
 
-/** Persist + notify subscribers. */
-export function commit() {
-  save();
+/** Swap the active store (e.g. to SupabaseStore on sign-in). Returns new snapshot. */
+export async function useStore(store) {
+  activeStore = store;
+  state.current = await store.hydrate();
   emit();
+  return state.current;
 }
 
-function migrate(data) {
-  // Future-proofing hook. v1 is the baseline; merge in any new default settings.
-  data.settings = { ...defaultSettings(), ...(data.settings || {}) };
-  if (!Array.isArray(data.workouts)) data.workouts = expandPlan();
-  if (!Array.isArray(data.unlockedBadges)) data.unlockedBadges = [];
-  data.version = VERSION;
-  return data;
-}
-
-export function init() {
-  const raw = backend.store.getItem(KEY);
-  if (raw) {
-    try {
-      state.current = migrate(JSON.parse(raw));
-    } catch {
-      state.current = freshState();
-    }
-  } else {
-    state.current = freshState();
-  }
-  save();
+export async function init() {
+  state.current = await activeStore.hydrate();
   return state.current;
 }
 
@@ -109,9 +47,21 @@ export const workoutById = (id) => state.current.workouts.find((w) => w.id === i
 
 // ---- mutations -------------------------------------------------------------
 
+/** Persist the whole snapshot + notify (used for bulk/inline edits). */
+export function commit() {
+  activeStore.flush();
+  emit();
+}
+
+/** Persist the whole snapshot without re-rendering (silent text edits). */
+export function save() {
+  activeStore.flush();
+}
+
 export function setSetting(key, value) {
   state.current.settings[key] = value;
-  commit();
+  activeStore.setMeta({ settings: state.current.settings });
+  emit();
 }
 
 export function toggleComplete(id, completed) {
@@ -119,26 +69,33 @@ export function toggleComplete(id, completed) {
   if (!w) return;
   w.completed = completed;
   w.completedAt = completed ? new Date().toISOString() : null;
-  commit();
+  activeStore.upsert(w);
+  emit();
 }
 
 export function updateWorkout(id, patch) {
   const w = workoutById(id);
   if (!w) return;
   Object.assign(w, patch);
-  commit();
+  activeStore.upsert(w);
+  emit();
+}
+
+/** Persist a single workout's current state (stamps updated_at). */
+export function touchWorkout(id) {
+  const w = workoutById(id);
+  if (w) activeStore.upsert(w);
 }
 
 export function upsertWorkout(workout) {
-  const idx = state.current.workouts.findIndex((w) => w.id === workout.id);
-  if (idx >= 0) state.current.workouts[idx] = workout;
-  else state.current.workouts.push(workout);
-  commit();
+  if (!workout.source) workout.source = 'custom';
+  activeStore.upsert(workout);
+  emit();
 }
 
 export function deleteWorkout(id) {
-  state.current.workouts = state.current.workouts.filter((w) => w.id !== id);
-  commit();
+  activeStore.delete(id);
+  emit();
 }
 
 export function duplicateWorkout(id) {
@@ -150,14 +107,16 @@ export function duplicateWorkout(id) {
   copy.completed = false;
   copy.completedAt = null;
   copy.seeded = false;
-  state.current.workouts.push(copy);
-  commit();
+  copy.source = 'custom';
+  copy.strava_activity_id = null;
+  activeStore.upsert(copy);
+  emit();
   return copy;
 }
 
 export function setUnlockedBadges(ids) {
   state.current.unlockedBadges = ids;
-  save(); // no emit: badge sync runs inside the render cycle
+  activeStore.setMeta({ unlockedBadges: ids }); // no emit: runs inside the render cycle
 }
 
 let _counter = 0;
@@ -169,9 +128,11 @@ export function newId() {
 
 export function reseed() {
   const settings = state.current.settings;
-  state.current = freshState();
-  state.current.settings = settings; // keep the user's preferences
-  commit();
+  const snap = freshState();
+  snap.settings = settings; // keep the user's preferences
+  activeStore.replaceAll(snap);
+  state.current = activeStore.snapshot();
+  emit();
 }
 
 export function exportData() {
@@ -180,6 +141,7 @@ export function exportData() {
 
 export function importData(json) {
   const data = migrate(JSON.parse(json));
-  state.current = data;
-  commit();
+  activeStore.replaceAll(data);
+  state.current = activeStore.snapshot();
+  emit();
 }

@@ -352,6 +352,7 @@ function finalize(session, iso, phase, idx, deload, isRace) {
     deload: !!deload,
     isRace: !!isRace,
     seeded: true,
+    source: 'plan',
     completedAt: null,
     ...session,
   };

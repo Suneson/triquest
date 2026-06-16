@@ -262,8 +262,8 @@ function doExport() {
 
 // ---- boot -------------------------------------------------------------------
 
-function boot() {
-  store.init();
+async function boot() {
+  await store.init();
   const today = todayISO();
   // Start the Week view on the plan's first week if we're not in the plan yet.
   appState.weekStart = diffDays(today, PLAN_START) < 0 ? mondayOf(PLAN_START) : mondayOf(today);

@@ -272,8 +272,8 @@ button { font: inherit; cursor: pointer; }
 .fab {
   position: fixed; right: 16px; bottom: calc(70px + var(--safe-b)); z-index: 61;
   width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 2rem; line-height: 1;
-  background: linear-gradient(135deg, var(--accent-2), var(--c-gym)); color: #fff;
-  box-shadow: 0 8px 24px rgba(255,90,95,.4);
+  background: #0047AB; color: #fff;
+  box-shadow: 0 8px 24px rgba(0,71,171,.45);
 }
 .fab:active { transform: scale(.94); }
 

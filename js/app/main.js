@@ -7,17 +7,19 @@ import { evaluateBadges, BADGES } from '../core/badges.js';
 import { PLAN_START } from '../core/plan.js';
 import { addDays, diffDays } from '../core/dates.js';
 import {
-  renderHud, renderToday, renderWeek, renderProgress, raceBanner, mondayOf, esc,
+  renderHud, renderHome, renderProgress, raceBanner, mondayOf, esc,
 } from './ui.js';
+import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { openEditor } from './editor.js';
-import { confetti, playComplete, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
+import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const appState = {
-  tab: 'today',
+  tab: 'home',
+  lbView: 'season',
   weekStart: null,
   lastLevel: null,
   booted: false,
@@ -83,9 +85,14 @@ function render() {
     t.classList.toggle('active', t.dataset.tab === appState.tab));
 
   const view = document.getElementById('view');
-  if (appState.tab === 'today') view.innerHTML = renderToday(ctx);
-  else if (appState.tab === 'week') view.innerHTML = renderWeek(ctx, appState.weekStart);
-  else view.innerHTML = renderProgress(ctx);
+  if (appState.tab === 'leaderboards') {
+    view.innerHTML = leaderboardShell(appState.lbView, ctx.today);
+    loadLeaderboard(appState.lbView, ctx.today);
+  } else if (appState.tab === 'progress') {
+    view.innerHTML = renderProgress(ctx);
+  } else {
+    view.innerHTML = renderHome(ctx);
+  }
 
   document.getElementById('storage-banner').hidden = store.isPersistent();
 }
@@ -105,18 +112,7 @@ function onClick(e) {
       render();
       requestAnimationFrame(() => window.scrollTo(0, scrollPos[appState.tab] || 0));
       break;
-    case 'toggle-complete': {
-      const w = store.workoutById(id);
-      const willComplete = !w.completed;
-      store.toggleComplete(id, willComplete); // triggers render
-      if (willComplete) {
-        const r = el.getBoundingClientRect();
-        confetti(r.left + r.width / 2, r.top + r.height / 2, 70);
-        playComplete();
-        toast('Completed ✓', { icon: '💪', duration: 5000, actionLabel: 'Undo', onAction: () => store.toggleComplete(id, false) });
-      }
-      break;
-    }
+    case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'edit': openEditor(id); break;
     case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
     case 'delete':
@@ -382,7 +378,7 @@ function maybeOnboard() {
   const root = document.getElementById('modal-root');
   root.classList.add('open');
   const cards = [
-    { icon: '✅', t: 'Tick off sessions', b: 'Tap the big check to complete a workout — earn XP, keep your streak, and unlock badges.' },
+    { icon: '🛰️', t: 'Verified by Strava', b: 'Sessions complete automatically when a matching Strava activity is verified — earn XP, climb the leaderboard, keep your streak.' },
     { icon: '➕', t: 'Make it yours', b: 'Hit the + button to add a custom session for any day, with intervals, exercises and a packing list.' },
     { icon: '📲', t: 'Add to Home Screen', b: 'Install MOSKE for a fullscreen, offline app at the gym. Sign in to sync across devices.' },
   ];
@@ -406,40 +402,6 @@ function maybeOnboard() {
   draw();
 }
 
-// ---- swipe-to-complete ------------------------------------------------------
-
-function wireSwipe() {
-  let startX = 0, startY = 0, card = null;
-  document.addEventListener('touchstart', (e) => {
-    card = e.target.closest('[data-swipe]');
-    if (!card || e.target.closest('input,textarea,button,a')) { card = null; return; }
-    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-  }, { passive: true });
-  document.addEventListener('touchmove', (e) => {
-    if (!card) return;
-    const dx = e.touches[0].clientX - startX;
-    const dy = e.touches[0].clientY - startY;
-    if (Math.abs(dx) > Math.abs(dy) && dx > 0) card.style.transform = `translateX(${Math.min(dx, 90)}px)`;
-  }, { passive: true });
-  document.addEventListener('touchend', (e) => {
-    if (!card) return;
-    const dx = e.changedTouches[0].clientX - startX;
-    const el = card; el.style.transform = '';
-    if (dx > 80) {
-      const id = el.dataset.swipe;
-      const w = store.workoutById(id);
-      if (w && !w.completed) {
-        store.toggleComplete(id, true);
-        const r = el.getBoundingClientRect();
-        confetti(r.left + r.width / 2, r.top + r.height / 2, 60);
-        playComplete();
-        toast('Completed ✓', { icon: '💪', duration: 5000, actionLabel: 'Undo', onAction: () => store.toggleComplete(id, false) });
-      }
-    }
-    card = null;
-  }, { passive: true });
-}
-
 // ---- boot -------------------------------------------------------------------
 
 async function boot() {
@@ -449,7 +411,7 @@ async function boot() {
   appState.weekStart = diffDays(today, PLAN_START) < 0 ? mondayOf(PLAN_START) : mondayOf(today);
   // Restore last tab.
   const savedTab = localStorage.getItem('moske-tab');
-  if (['today', 'week', 'progress'].includes(savedTab)) appState.tab = savedTab;
+  if (['home', 'leaderboards', 'progress'].includes(savedTab)) appState.tab = savedTab;
 
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
@@ -457,7 +419,6 @@ async function boot() {
   document.addEventListener('submit', onSubmit);
   document.getElementById('fab').addEventListener('click', () => openEditor(null, todayISO()));
   document.getElementById('settings-btn').addEventListener('click', openSettings);
-  wireSwipe();
 
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
 
@@ -465,8 +426,8 @@ async function boot() {
   render();
   appState.booted = true;
 
-  // Auto-focus the next (first incomplete) session when opening on Today.
-  if (appState.tab === 'today') {
+  // Auto-focus the next (first incomplete) session when opening on Home.
+  if (appState.tab === 'home') {
     requestAnimationFrame(() => document.querySelector('#view .card.is-next')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   }
 

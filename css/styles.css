@@ -384,6 +384,42 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .onboard-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--bg-4); }
 .onboard-dots i.on { background: var(--accent); }
 
+/* ---- anti-cheat status ---- */
+.check.locked { background: var(--bg-3); border: 2px dashed var(--bg-4); cursor: default; }
+.check.locked svg { stroke: var(--muted); stroke-dashoffset: 0; }
+.check.on { cursor: default; }
+
+/* ---- leaderboards ---- */
+.lb-toggle { display: flex; gap: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 99px; padding: 4px; }
+.lb-tab { flex: 1; background: none; border: none; color: var(--muted); padding: 9px; border-radius: 99px; font-weight: 700; }
+.lb-tab.on { background: #0047AB; color: #fff; }
+.lb-countdown { text-align: center; background: rgba(0,71,171,.14); border: 1px solid rgba(0,71,171,.4); border-radius: var(--radius-sm); padding: 9px; font-size: .9rem; }
+.lb-countdown b { color: var(--accent); font-size: 1.1rem; }
+.lb-loading { text-align: center; padding: 20px; }
+
+.podium { display: grid; grid-template-columns: 1fr 1.2fr 1fr; align-items: end; gap: 8px; margin: 6px 0 4px; }
+.pod { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 6px; text-align: center; }
+.pod.pod-1 { border-color: var(--accent); transform: translateY(-6px); }
+.pod.me { box-shadow: 0 0 0 2px var(--good); }
+.medal { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 6px; display: grid; place-items: center; font-weight: 900; color: #1a1305; box-shadow: var(--shadow); }
+.medal span { font-size: 1.1rem; }
+.medal.m1 { background: radial-gradient(circle at 35% 30%, #ffe79a, #FFD700); }
+.medal.m2 { background: radial-gradient(circle at 35% 30%, #f2f2f2, #C0C0C0); }
+.medal.m3 { background: radial-gradient(circle at 35% 30%, #e8b27e, #CD7F32); }
+.pod-name { font-weight: 700; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pod-xp { font-size: .78rem; color: var(--accent); }
+.pod-bar { margin-top: 6px; background: #0047AB; color: #fff; border-radius: 6px; font-size: .68rem; padding: 3px; }
+.pod-1 .pod-bar { padding: 8px 3px; }
+.pod-3 .pod-bar { padding: 1px 3px; }
+
+.lb-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.lb-list li { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; }
+.lb-list li.me { box-shadow: 0 0 0 2px var(--good); }
+.lb-rank { width: 26px; text-align: center; color: var(--muted); font-weight: 700; }
+.lb-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-lvl { font-size: .76rem; color: var(--muted); }
+.lb-xp { color: var(--accent); }
+
 @media (min-width: 720px) {
   .week-grid { grid-template-columns: 1fr 1fr; }
 }

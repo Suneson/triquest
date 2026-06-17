@@ -178,12 +178,15 @@ export function sessionCard(w, units, { compact = false, isNext = false } = {}) 
     pace ? `<span class="chip pace" title="Planned pace / zone">🎯 ${esc(pace)}</span>` : '',
   ].filter(Boolean).join('');
 
+  // Anti-cheat: completion is read-only — set only by verified Strava activity.
+  const status = w.completed
+    ? `<div class="check on" title="Completed (verified via Strava)" aria-label="Completed">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></div>`
+    : `<div class="check locked" title="Completes automatically when a matching Strava activity is verified" aria-label="Awaiting Strava">
+         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="9" rx="2"/></svg></div>`;
   const head = `
     <div class="card-head">
-      <button class="check ${w.completed ? 'on' : ''}" data-action="toggle-complete" data-id="${esc(w.id)}"
-              aria-pressed="${w.completed}" aria-label="${w.completed ? 'Mark incomplete' : 'Mark complete'}">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
-      </button>
+      ${status}
       <div class="card-title">
         <h3>${esc(w.title)}</h3>
         <div class="meta">${meta}${tags.join('')}</div>
@@ -317,6 +320,26 @@ function packForTomorrow(ctx) {
            </form>`
         : `<p class="muted">Nothing planned tomorrow — enjoy the rest day.</p>`}
     </section>`;
+}
+
+// ---- HOME (today details + remaining week) ----------------------------------
+
+export function renderHome(ctx) {
+  const { today, workouts, units } = ctx;
+  const weekEnd = addDays(mondayOf(today), 6);
+  const blocks = [];
+  for (let iso = addDays(today, 1); iso <= weekEnd; iso = addDays(iso, 1)) {
+    const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
+    if (!sessions.length) continue;
+    blocks.push(`<div class="week-day">
+      <div class="week-day-head"><b>${weekdayName(iso).slice(0, 3)}</b><span>${shortLabel(iso).replace(/^\w+ /, '')}</span></div>
+      <div class="week-day-body">${sessions.map((w) => sessionCard(w, units, { compact: true })).join('')}</div>
+    </div>`);
+  }
+  const rest = `<div class="day-header"><h2>Rest of the week</h2></div>` +
+    (blocks.length ? `<div class="week-grid">${blocks.join('')}</div>`
+                   : '<p class="muted">Nothing left this week — nice work.</p>');
+  return renderToday(ctx) + rest;
 }
 
 // ---- WEEK -------------------------------------------------------------------

@@ -36,6 +36,7 @@ export async function initAuth(onChange) {
   if (session?.user) await activateUser(session.user, { silent: !fromRedirect });
 
   _client.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') { cleanAuthUrl(); openSetPassword(); return; }
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
       if (!_user || _user.id !== session.user.id) {
         await activateUser(session.user);
@@ -84,6 +85,42 @@ export async function signInWithEmail(email) {
   if (error) throw error;
 }
 
+export async function resetPassword(email) {
+  const c = await client();
+  const { error } = await c.auth.resetPasswordForEmail(email, { redirectTo: redirectTo() });
+  if (error) throw error;
+}
+
+// Shown after the user follows the password-reset email link (PASSWORD_RECOVERY).
+function openSetPassword() {
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  root.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Set a new password">
+      <header class="modal-head"><h2>🔑 Set a new password</h2></header>
+      <div class="modal-body">
+        <form data-set-pw>
+          <label class="field"><span>New password</span>
+            <input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+          <button class="btn primary" type="submit">Update password</button>
+        </form>
+        <p class="auth-msg" role="status" hidden></p>
+      </div>
+    </div>`;
+  const msgEl = root.querySelector('.auth-msg');
+  root.querySelector('[data-set-pw]').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const c = await client();
+      const { error } = await c.auth.updateUser({ password: e.target.password.value });
+      if (error) throw error;
+      root.innerHTML = ''; root.classList.remove('open');
+      toast('Password updated — you’re signed in ✅', { icon: '🔑' });
+    } catch (err) { msgEl.hidden = false; msgEl.textContent = err.message || 'Could not update password'; }
+  });
+}
+
 export async function signInWithPassword(email, password) {
   const c = await client();
   const { error } = await c.auth.signInWithPassword({ email, password });
@@ -122,6 +159,7 @@ export function openAuthModal() {
             <button class="btn primary" type="submit" data-pw-mode="in">Sign in</button>
             <button class="btn ghost" type="submit" data-pw-mode="up">Create account</button>
           </div>
+          <button type="button" class="link" data-auth-forgot>Forgot password?</button>
         </form>
         <p class="auth-msg" role="status" hidden></p>
       </div>
@@ -140,6 +178,13 @@ export function openAuthModal() {
     const email = e.target.email.value.trim();
     try { await signInWithEmail(email); msg('Check your email for the magic link ✉️', true); }
     catch (err) { msg(err.message || 'Could not send link'); }
+  });
+
+  root.querySelector('[data-auth-forgot]').addEventListener('click', async () => {
+    const email = root.querySelector('[data-auth-password] [name=email]').value.trim();
+    if (!email) { msg('Enter your email above first, then tap Forgot password.'); return; }
+    try { await resetPassword(email); msg('Check your email for a password-reset link 🔑', true); }
+    catch (err) { msg(err.message || 'Could not send reset email'); }
   });
 
   let pwMode = 'in';

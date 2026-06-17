@@ -324,22 +324,9 @@ function packForTomorrow(ctx) {
 
 // ---- HOME (today details + remaining week) ----------------------------------
 
-export function renderHome(ctx) {
-  const { today, workouts, units } = ctx;
-  const weekEnd = addDays(mondayOf(today), 6);
-  const blocks = [];
-  for (let iso = addDays(today, 1); iso <= weekEnd; iso = addDays(iso, 1)) {
-    const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
-    if (!sessions.length) continue;
-    blocks.push(`<div class="week-day">
-      <div class="week-day-head"><b>${weekdayName(iso).slice(0, 3)}</b><span>${shortLabel(iso).replace(/^\w+ /, '')}</span></div>
-      <div class="week-day-body">${sessions.map((w) => sessionCard(w, units, { compact: true })).join('')}</div>
-    </div>`);
-  }
-  const rest = `<div class="day-header"><h2>Rest of the week</h2></div>` +
-    (blocks.length ? `<div class="week-grid">${blocks.join('')}</div>`
-                   : '<p class="muted">Nothing left this week — nice work.</p>');
-  return renderToday(ctx) + rest;
+export function renderHome(ctx, weekStart) {
+  // Navigable Mon–Sun week (arrows, today highlighted) + today's details below.
+  return renderWeek(ctx, weekStart || mondayOf(ctx.today)) + renderToday(ctx);
 }
 
 // ---- WEEK -------------------------------------------------------------------

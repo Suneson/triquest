@@ -91,7 +91,7 @@ function render() {
   } else if (appState.tab === 'progress') {
     view.innerHTML = renderProgress(ctx);
   } else {
-    view.innerHTML = renderHome(ctx);
+    view.innerHTML = renderHome(ctx, appState.weekStart);
   }
 
   document.getElementById('storage-banner').hidden = store.isPersistent();
@@ -407,8 +407,8 @@ function maybeOnboard() {
 async function boot() {
   await store.init();
   const today = todayISO();
-  // Start the Week view on the plan's first week if we're not in the plan yet.
-  appState.weekStart = diffDays(today, PLAN_START) < 0 ? mondayOf(PLAN_START) : mondayOf(today);
+  // Home always opens on the current week (Mon–Sun); arrows navigate from there.
+  appState.weekStart = mondayOf(today);
   // Restore last tab.
   const savedTab = localStorage.getItem('moske-tab');
   if (['home', 'leaderboards', 'progress'].includes(savedTab)) appState.tab = savedTab;

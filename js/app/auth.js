@@ -21,6 +21,12 @@ export async function client() { if (!_client) _client = await getSupabase(); re
 export async function initAuth(onChange) {
   _onChange = onChange;
   if (!SYNC_ENABLED) return null;
+
+  // Capture URL flags BEFORE the client is created — detectSessionInUrl may
+  // consume & clean the hash during createClient.
+  const fromRedirect = /[#&?](access_token|code)=/.test(location.href);
+  const isRecovery = /[#&?]type=recovery/.test(location.href);
+
   try {
     _client = await getSupabase();
   } catch (e) {
@@ -28,12 +34,11 @@ export async function initAuth(onChange) {
     return null;
   }
 
-  // Was this load a return from a magic-link / OAuth redirect? (Capture before
-  // the client consumes & cleans the URL.) If so, greet the user, not silent.
-  const fromRedirect = /[#&?](access_token|code)=/.test(location.href);
-
   const { data: { session } } = await _client.auth.getSession();
-  if (session?.user) await activateUser(session.user, { silent: !fromRedirect });
+  // Recovery: a session exists (so updateUser works) but DON'T sign in — prompt
+  // for a new password instead. (The event often fires before this listener.)
+  if (isRecovery) { cleanAuthUrl(); openSetPassword(); }
+  else if (session?.user) await activateUser(session.user, { silent: !fromRedirect });
 
   _client.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') { cleanAuthUrl(); openSetPassword(); return; }
@@ -94,6 +99,7 @@ export async function resetPassword(email) {
 // Shown after the user follows the password-reset email link (PASSWORD_RECOVERY).
 function openSetPassword() {
   const root = document.getElementById('modal-root');
+  if (root.querySelector('[data-set-pw]')) return; // already showing
   root.classList.add('open');
   root.innerHTML = `
     <div class="modal-backdrop"></div>
@@ -103,6 +109,8 @@ function openSetPassword() {
         <form data-set-pw>
           <label class="field"><span>New password</span>
             <input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+          <label class="field"><span>Confirm new password</span>
+            <input type="password" name="confirm" required minlength="6" autocomplete="new-password"></label>
           <button class="btn primary" type="submit">Update password</button>
         </form>
         <p class="auth-msg" role="status" hidden></p>
@@ -111,11 +119,15 @@ function openSetPassword() {
   const msgEl = root.querySelector('.auth-msg');
   root.querySelector('[data-set-pw]').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const password = e.target.password.value;
+    if (password !== e.target.confirm.value) { msgEl.hidden = false; msgEl.textContent = 'Passwords don’t match.'; return; }
     try {
       const c = await client();
-      const { error } = await c.auth.updateUser({ password: e.target.password.value });
+      const { error } = await c.auth.updateUser({ password });
       if (error) throw error;
       root.innerHTML = ''; root.classList.remove('open');
+      const { data: { user } } = await c.auth.getUser();
+      if (user && !_user) { await activateUser(user, { silent: true }); if (_onChange) _onChange(_user); }
       toast('Password updated — you’re signed in ✅', { icon: '🔑' });
     } catch (err) { msgEl.hidden = false; msgEl.textContent = err.message || 'Could not update password'; }
   });

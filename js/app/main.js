@@ -371,7 +371,8 @@ function handleRedirectParams() {
       setTimeout(() => import('./strava-client.js').then((m) => m.syncNow().then(() => store.commit()).catch(() => {})), 1200);
     }
   }
-  if (location.hash.includes('access_token')) history.replaceState({}, '', location.pathname + location.search);
+  // NOTE: do NOT strip a #access_token / ?code here — the Supabase client
+  // (detectSessionInUrl) needs to consume it first; it cleans the URL itself.
 }
 
 // ---- onboarding -------------------------------------------------------------

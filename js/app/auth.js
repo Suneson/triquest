@@ -28,8 +28,12 @@ export async function initAuth(onChange) {
     return null;
   }
 
+  // Was this load a return from a magic-link / OAuth redirect? (Capture before
+  // the client consumes & cleans the URL.) If so, greet the user, not silent.
+  const fromRedirect = /[#&?](access_token|code)=/.test(location.href);
+
   const { data: { session } } = await _client.auth.getSession();
-  if (session?.user) await activateUser(session.user, { silent: true });
+  if (session?.user) await activateUser(session.user, { silent: !fromRedirect });
 
   _client.auth.onAuthStateChange(async (event, session) => {
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
@@ -49,8 +53,15 @@ export async function initAuth(onChange) {
   return _user;
 }
 
+function cleanAuthUrl() {
+  if (/[#&?](access_token|refresh_token|code|type)=/.test(location.href)) {
+    history.replaceState({}, '', location.origin + location.pathname);
+  }
+}
+
 async function activateUser(user, { silent = false } = {}) {
   _user = user;
+  cleanAuthUrl(); // remove the token from the URL right away (don't wait on hydrate)
   _store = new SupabaseStore(_client, user.id, {
     onRemoteChange: () => { if (_onChange) _onChange(_user, { remote: true }); },
   });

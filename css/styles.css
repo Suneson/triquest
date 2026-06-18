@@ -258,10 +258,12 @@ button { font: inherit; cursor: pointer; }
 
 /* ---- tabs / fab ---- */
 .tabs {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  background: rgba(14,17,22,.92); backdrop-filter: blur(12px); border-top: 1px solid var(--border);
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: rgba(14,17,22,.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border);
   padding-bottom: var(--safe-b);
+  transform: translateZ(0); /* iOS Safari: avoid scroll jitter / repaint glitches */
+  -webkit-transform: translateZ(0); will-change: transform;
 }
 .tab { background: none; border: none; color: var(--muted); padding: 10px 0 12px; font-size: .72rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
 .tab .tab-ico { display: flex; }
@@ -351,6 +353,18 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .toast-action { margin-left: auto; background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; padding: 5px 12px; font-weight: 700; }
 
 .week-summary { padding: 16px; }
+.rings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rings-head h3 { font-size: .95rem; }
+
+/* ---- shop ---- */
+.shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.shop-card { text-align: left; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; padding: 0; color: var(--fg); display: flex; flex-direction: column; }
+.shop-card:active { transform: scale(.98); }
+.shop-card img, .shop-noimg { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--bg-3); display: block; }
+.shop-info { padding: 10px; }
+.shop-title { font-weight: 700; font-size: .85rem; line-height: 1.25; }
+.shop-price { color: var(--accent); font-size: .82rem; margin-top: 4px; }
+@media (min-width: 560px) { .shop-grid { grid-template-columns: repeat(3, 1fr); } }
 .rings { display: flex; gap: 12px; justify-content: space-around; flex-wrap: wrap; }
 .ring { position: relative; width: 92px; height: 92px; border-radius: 50%;
   background: conic-gradient(var(--rc) calc(var(--p) * 1%), var(--bg-4) 0); display: grid; place-items: center; }

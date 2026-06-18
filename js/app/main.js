@@ -10,6 +10,7 @@ import {
   renderHud, renderHome, renderProgress, raceBanner, mondayOf, esc,
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
+import { shopShell, loadShop } from './shop.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -88,6 +89,9 @@ function render() {
   if (appState.tab === 'leaderboards') {
     view.innerHTML = leaderboardShell(appState.lbView, ctx.today);
     loadLeaderboard(appState.lbView, ctx.today);
+  } else if (appState.tab === 'shop') {
+    view.innerHTML = shopShell();
+    loadShop();
   } else if (appState.tab === 'progress') {
     view.innerHTML = renderProgress(ctx);
   } else {
@@ -113,6 +117,8 @@ function onClick(e) {
       requestAnimationFrame(() => window.scrollTo(0, scrollPos[appState.tab] || 0));
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
+    case 'edit-goals': openGoalEditor(); break;
+    case 'shop-open': window.open(el.dataset.url, '_blank', 'noopener,noreferrer'); break;
     case 'edit': openEditor(id); break;
     case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
     case 'delete':
@@ -313,6 +319,36 @@ function doExportICS() {
   });
 }
 
+function openGoalEditor() {
+  const g = store.getSettings().goals || { sessions: 5, km: 50, hours: 8 };
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  root.innerHTML = `
+    <div class="modal-backdrop" data-goal-close></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Edit weekly goals">
+      <header class="modal-head"><h2>🎯 Weekly goals</h2><button class="icon-btn" data-goal-close aria-label="Close">✕</button></header>
+      <div class="modal-body">
+        <form data-goal-form>
+          <label class="field"><span>Planned sessions</span><input type="number" name="sessions" min="0" step="1" value="${g.sessions}" required></label>
+          <label class="field"><span>Distance / volume (km)</span><input type="number" name="km" min="0" step="1" value="${g.km}" required></label>
+          <label class="field"><span>Training hours</span><input type="number" name="hours" min="0" step="0.5" value="${g.hours}" required></label>
+          <button class="btn primary" type="submit">Save goals</button>
+        </form>
+      </div>
+    </div>`;
+  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  root.querySelectorAll('[data-goal-close]').forEach((b) => b.addEventListener('click', close));
+  root.querySelector('[data-goal-form]').addEventListener('submit', (e) => {
+    e.preventDefault();
+    store.setSetting('goals', {
+      sessions: Math.max(0, Math.round(+e.target.sessions.value) || 0),
+      km: Math.max(0, +e.target.km.value || 0),
+      hours: Math.max(0, +e.target.hours.value || 0),
+    });
+    close(); render(); toast('Goals updated 🎯');
+  });
+}
+
 // ---- account / sync UI ------------------------------------------------------
 
 function accountSectionHtml() {
@@ -411,7 +447,7 @@ async function boot() {
   appState.weekStart = mondayOf(today);
   // Restore last tab.
   const savedTab = localStorage.getItem('moske-tab');
-  if (['home', 'leaderboards', 'progress'].includes(savedTab)) appState.tab = savedTab;
+  if (['home', 'leaderboards', 'shop', 'progress'].includes(savedTab)) appState.tab = savedTab;
 
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);

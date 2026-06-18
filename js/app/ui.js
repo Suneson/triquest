@@ -325,8 +325,12 @@ function packForTomorrow(ctx) {
 // ---- HOME (today details + remaining week) ----------------------------------
 
 export function renderHome(ctx, weekStart) {
-  // Navigable Mon–Sun week (arrows, today highlighted) + today's details below.
-  return renderWeek(ctx, weekStart || mondayOf(ctx.today)) + renderToday(ctx);
+  const ws = weekStart || mondayOf(ctx.today);
+  // Order: goal rings → today's details → Mon-onward week grid.
+  return goalRings(ctx, ws)
+    + renderToday(ctx)
+    + `<div class="day-header"><h2>This week</h2></div>`
+    + renderWeek(ctx, ws);
 }
 
 // ---- WEEK -------------------------------------------------------------------
@@ -368,7 +372,7 @@ export function renderWeek(ctx, weekStartIso) {
       </div>`;
   }).join('');
 
-  return `<div class="day-header"><h2>Week</h2></div>${nav}${weekSummary(workouts, weekStartIso, weekEnd, sample?.phaseId)}<div class="week-grid">${dayBlocks}</div>`;
+  return `${nav}<div class="week-grid">${dayBlocks}</div>`;
 }
 
 export function ring(pct, big, small, colorVar) {
@@ -377,20 +381,22 @@ export function ring(pct, big, small, colorVar) {
     <div class="ring-c"><b>${big}</b><small>${esc(small)}</small></div></div>`;
 }
 
-// Weekly target rings: completion, bike km vs the 200 km floor, hours vs phase target.
-function weekSummary(workouts, weekStartIso, weekEnd, phaseId) {
-  const inWeek = workouts.filter((w) => w.date >= weekStartIso && w.date <= weekEnd && !w.optional);
-  const total = inWeek.length;
-  if (!total) return '';
-  const done = inWeek.filter((w) => w.completed).length;
-  const bk = weekKm(workouts, weekStartIso, 'bike');
+// Editable weekly goal rings: planned sessions, distance (km), training hours.
+function goalRings(ctx, weekStartIso) {
+  const { workouts } = ctx;
+  const g = ctx.settings?.goals || { sessions: 5, km: 50, hours: 8 };
+  const end = addDays(weekStartIso, 6);
+  const inWeek = workouts.filter((w) => w.completed && w.date >= weekStartIso && w.date <= end);
+  const sessions = inWeek.length;
+  const km = inWeek.reduce((a, w) => a + (Number(w.metrics?.distanceKm) || 0), 0);
   const hrs = weekHours(workouts, weekStartIso);
-  const tgt = PHASE_HOURS_TARGET[phaseId] || 11;
-  return `<section class="card week-summary"><div class="rings">
-    ${ring((done / total) * 100, `${done}/${total}`, 'sessions', 'var(--good)')}
-    ${ring((bk / BIKE_WEEK_FLOOR) * 100, `${Math.round(bk)}`, `/ ${BIKE_WEEK_FLOOR} km bike`, 'var(--c-bike)')}
-    ${ring((hrs / tgt) * 100, hrs.toFixed(1), `/ ${tgt} h`, 'var(--accent)')}
-  </div></section>`;
+  return `<section class="card week-summary">
+    <div class="rings-head"><h3>This week’s goals</h3><button class="btn tiny ghost" data-action="edit-goals">✏️ Edit</button></div>
+    <div class="rings">
+      ${ring((sessions / g.sessions) * 100, `${sessions}/${g.sessions}`, 'sessions', 'var(--good)')}
+      ${ring((km / g.km) * 100, `${Math.round(km)}`, `/ ${g.km} km`, 'var(--c-bike)')}
+      ${ring((hrs / g.hours) * 100, hrs.toFixed(1), `/ ${g.hours} h`, 'var(--accent)')}
+    </div></section>`;
 }
 
 // ---- PROGRESS ---------------------------------------------------------------
@@ -398,7 +404,7 @@ function weekSummary(workouts, weekStartIso, weekEnd, phaseId) {
 export function renderProgress(ctx) {
   const { workouts, stats, streaks, today, units, settings } = ctx;
   return [
-    `<div class="day-header"><h2>Progress</h2></div>`,
+    `<div class="day-header"><h2>Profile</h2></div>`,
     totalsStrip(stats, streaks, units),
     loadPanel(workouts, today),
     weeklyVolumeChart(workouts, today),

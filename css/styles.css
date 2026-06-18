@@ -357,6 +357,9 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 
 .week-summary { padding: 16px; }
 .ai-cta { background: linear-gradient(135deg, #0047AB, var(--c-gym)); border: none; }
+.plan-actions { display: flex; gap: 8px; }
+.plan-actions .btn { flex: 1; }
+.lb-banner { position: sticky; top: 0; z-index: 40; margin: -14px -14px 0; padding: 12px 14px; background: #0e1116; border-bottom: 1px solid var(--border); font-weight: 800; font-size: .82rem; text-align: center; color: var(--fg); }
 .rings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .rings-head h3 { font-size: .95rem; }
 

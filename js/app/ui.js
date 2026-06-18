@@ -324,10 +324,27 @@ function packForTomorrow(ctx) {
 
 // ---- HOME (today details + remaining week) ----------------------------------
 
+export function eventBanner(ctx) {
+  const evs = (ctx.settings?.events || []).filter((e) => e.date && e.date >= ctx.today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (!evs.length) return '';
+  return `<div class="race-banner">🏁 NEXT EVENT: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
+}
+
+function planCta(ctx) {
+  const hasPlan = ctx.workouts.some((w) => w.source === 'custom' && w.date >= ctx.today);
+  return hasPlan
+    ? `<div class="plan-actions">
+         <button class="btn ai-cta" data-action="ai-wizard">♻️ Regenerate plan</button>
+         <button class="btn ghost danger" data-action="clear-future">🗑 Clear future workouts</button>
+       </div>`
+    : '<button class="btn primary block ai-cta" data-action="ai-wizard">✨ Create custom workout plan</button>';
+}
+
 export function renderHome(ctx, weekStart) {
   const ws = weekStart || mondayOf(ctx.today);
   // Order: goal rings → today's details → Mon-onward week grid.
-  return '<button class="btn primary block ai-cta" data-action="ai-wizard">✨ Create custom workout plan</button>'
+  return planCta(ctx)
     + goalRings(ctx, ws)
     + renderToday(ctx)
     + `<div class="day-header"><h2>This week</h2></div>`

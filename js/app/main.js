@@ -7,7 +7,7 @@ import { evaluateBadges, BADGES } from '../core/badges.js';
 import { PLAN_START } from '../core/plan.js';
 import { addDays, diffDays } from '../core/dates.js';
 import {
-  renderHud, renderHome, renderProgress, raceBanner, mondayOf, esc,
+  renderHud, renderHome, renderProgress, eventBanner, mondayOf, esc,
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
@@ -80,7 +80,7 @@ function render() {
   syncProgress(ctx);
 
   document.getElementById('hud').innerHTML = renderHud(ctx.stats, ctx.streaks, ctx.units);
-  document.getElementById('race-banner').innerHTML = raceBanner(ctx.today);
+  document.getElementById('race-banner').innerHTML = eventBanner(ctx);
   renderSyncBanner();
 
   document.querySelectorAll('.tab').forEach((t) =>
@@ -120,6 +120,13 @@ function onClick(e) {
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'edit-goals': openGoalEditor(); break;
     case 'ai-wizard': openAIWizard(); break;
+    case 'clear-future': {
+      if (!confirm('Clear all future AI/custom workouts from today onward?')) break;
+      const t = todayISO();
+      store.getWorkouts().filter((w) => w.source === 'custom' && w.date >= t).forEach((w) => store.deleteWorkout(w.id));
+      toast('Future workouts cleared');
+      break;
+    }
     case 'shop-open': window.open(el.dataset.url, '_blank', 'noopener,noreferrer'); break;
     case 'edit': openEditor(id); break;
     case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
@@ -354,7 +361,7 @@ function openGoalEditor() {
 function openAIWizard() {
   if (!auth.currentUser()) { auth.openAuthModal(); return; }
   const SPORTS = ['Gym', 'Cycling', 'Running', 'Swimming', 'Pilates', 'Hiking', 'Custom'];
-  const state = { sports: [], days: 4, events: [{ title: '', date: '' }] };
+  const state = { sports: [], days: 4, maxDoubles: 0, events: [{ title: '', date: '' }] };
   let page = 0;
   const root = document.getElementById('modal-root');
   root.classList.add('open');
@@ -364,7 +371,9 @@ function openAIWizard() {
     if (page === 0) {
       bodyHtml = `<h3>Which sports?</h3>${SPORTS.map((s) => `<label class="toggle"><span>${s}</span><input type="checkbox" data-sport="${s}" ${state.sports.includes(s) ? 'checked' : ''}></label>`).join('')}`;
     } else if (page === 1) {
-      bodyHtml = `<h3>How many days a week?</h3><label class="field"><span><b id="dn">${state.days}</b> days / week</span><input type="range" min="1" max="7" value="${state.days}" data-days></label>`;
+      bodyHtml = `<h3>How many days a week?</h3>
+        <label class="field"><span><b id="dn">${state.days}</b> days / week</span><input type="range" min="1" max="7" value="${state.days}" data-days></label>
+        <label class="field"><span>Max double-training days per week: <b id="ddn">${state.maxDoubles}</b></span><input type="range" min="0" max="5" value="${state.maxDoubles}" data-doubles></label>`;
     } else {
       bodyHtml = `<h3>Upcoming events</h3>${state.events.map((e, i) => `<div class="row"><input class="grow" type="text" placeholder="Title" value="${esc(e.title)}" data-ev="${i}" data-f="title"><input type="date" value="${esc(e.date)}" data-ev="${i}" data-f="date"></div>`).join('')}<button class="btn tiny ghost" data-add-ev>+ Add more</button>`;
     }
@@ -380,6 +389,8 @@ function openAIWizard() {
     }));
     const rng = root.querySelector('[data-days]');
     if (rng) rng.addEventListener('input', () => { state.days = +rng.value; root.querySelector('#dn').textContent = rng.value; });
+    const dbl = root.querySelector('[data-doubles]');
+    if (dbl) dbl.addEventListener('input', () => { state.maxDoubles = +dbl.value; root.querySelector('#ddn').textContent = dbl.value; });
     root.querySelectorAll('[data-ev]').forEach((i) => i.addEventListener('input', () => { state.events[+i.dataset.ev][i.dataset.f] = i.value; }));
     root.querySelector('[data-add-ev]')?.addEventListener('click', () => { state.events.push({ title: '', date: '' }); draw(); });
     root.querySelector('[data-wz-back]')?.addEventListener('click', () => { page -= 1; draw(); });
@@ -389,7 +400,8 @@ function openAIWizard() {
       btn.disabled = true; btn.textContent = 'Generating…';
       try {
         const events = state.events.filter((ev) => ev.title && ev.date);
-        const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, events }, stravaSummary(store.getWorkouts()));
+        store.setSetting('events', events); // power the dynamic Home "next event" banner
+        const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, max_double_days: state.maxDoubles, events }, stravaSummary(store.getWorkouts()));
         close();
         toast(`Added ${r.inserted} AI sessions to your calendar ✨`, { icon: '✨' });
         setTimeout(() => store.commit(), 1500); // realtime brings the new rows in

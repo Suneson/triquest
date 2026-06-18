@@ -32,7 +32,9 @@ Deno.serve(async (req) => {
   if (!key) return json({ error: "GROQ_API_KEY not configured" }, 500);
 
   const body = await req.json().catch(() => ({}));
+  const maxDoubles = Math.max(0, Math.min(5, parseInt(body.wizard?.max_double_days) || 0));
   const prompt = `Today is ${new Date().toISOString().slice(0, 10)}.
+HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sessions (two-a-day / double training). Every other day must have at most one session. Never exceed ${maxDoubles} double days in any single weekly cycle.
 Questionnaire: ${JSON.stringify(body.wizard || {})}
 Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`;
 

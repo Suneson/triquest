@@ -433,6 +433,23 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .pod-1 .pod-bar { padding: 8px 3px; }
 .pod-3 .pod-bar { padding: 1px 3px; }
 
+.pod { cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.pod:hover { transform: translateY(-9px); box-shadow: 0 8px 22px rgba(0,0,0,.4); }
+.pod.pod-1:hover { transform: translateY(-12px); }
+.lb-list li { cursor: pointer; transition: transform .12s, background .15s; }
+.lb-list li:hover { transform: scale(1.015); background: var(--bg-3); }
+
+/* public profile overlay */
+.pp-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.pp-avatar { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 1.5rem; font-weight: 900; color: #fff; background: linear-gradient(135deg, #0047AB, var(--c-gym)); }
+.pp-name { font-size: 1.2rem; font-weight: 800; }
+.pp-tier { color: var(--accent); font-size: .82rem; }
+.pp-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.pp-h4 { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 16px 0 8px; }
+.sk { background: linear-gradient(90deg, var(--bg-3) 25%, var(--bg-4) 50%, var(--bg-3) 75%); background-size: 200% 100%; animation: sk 1.2s infinite; min-height: 60px; border: none; }
+.badge.sk { min-height: 84px; }
+@keyframes sk { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
 .lb-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
 .lb-list li { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; }
 .lb-list li.me { box-shadow: 0 0 0 2px var(--good); }

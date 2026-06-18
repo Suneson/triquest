@@ -55,7 +55,7 @@ const xp = (n) => Number(n).toLocaleString();
 function podium(rows, me) {
   const order = [rows[1], rows[0], rows[2]].filter(Boolean); // 2nd · 1st · 3rd
   return `<div class="podium">${order.map((r) => `
-    <div class="pod pod-${r.rank} ${r.user_id === me ? 'me' : ''}">
+    <div class="pod pod-${r.rank} ${r.user_id === me ? 'me' : ''}" data-action="open-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
       <div class="medal m${r.rank}"><span>${r.rank}</span></div>
       <div class="pod-name">${esc(r.display_name)}</div>
       <div class="pod-xp">${xp(r.xp)} XP</div>
@@ -67,7 +67,7 @@ function list(rows, me) {
   const rest = rows.slice(3);
   if (!rest.length) return '';
   return `<ul class="lb-list">${rest.map((r) => `
-    <li class="${r.user_id === me ? 'me' : ''}">
+    <li class="${r.user_id === me ? 'me' : ''}" data-action="open-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
       <span class="lb-rank">${r.rank}</span>
       <span class="lb-name">${esc(r.display_name)}</span>
       <span class="lb-lvl">Lv ${r.level}</span>

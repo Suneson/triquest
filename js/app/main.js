@@ -12,6 +12,7 @@ import {
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
+import { openPublicProfile } from './profile.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -118,6 +119,7 @@ function onClick(e) {
       requestAnimationFrame(() => window.scrollTo(0, scrollPos[appState.tab] || 0));
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
+    case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
     case 'edit-goals': openGoalEditor(); break;
     case 'ai-wizard': openAIWizard(); break;
     case 'clear-future': {

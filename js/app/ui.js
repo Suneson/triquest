@@ -327,7 +327,8 @@ function packForTomorrow(ctx) {
 export function renderHome(ctx, weekStart) {
   const ws = weekStart || mondayOf(ctx.today);
   // Order: goal rings → today's details → Mon-onward week grid.
-  return goalRings(ctx, ws)
+  return '<button class="btn primary block ai-cta" data-action="ai-wizard">✨ Create custom workout plan</button>'
+    + goalRings(ctx, ws)
     + renderToday(ctx)
     + `<div class="day-header"><h2>This week</h2></div>`
     + renderWeek(ctx, ws);

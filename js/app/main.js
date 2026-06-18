@@ -11,6 +11,7 @@ import {
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
+import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -118,6 +119,7 @@ function onClick(e) {
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'edit-goals': openGoalEditor(); break;
+    case 'ai-wizard': openAIWizard(); break;
     case 'shop-open': window.open(el.dataset.url, '_blank', 'noopener,noreferrer'); break;
     case 'edit': openEditor(id); break;
     case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
@@ -347,6 +349,54 @@ function openGoalEditor() {
     });
     close(); render(); toast('Goals updated 🎯');
   });
+}
+
+function openAIWizard() {
+  if (!auth.currentUser()) { auth.openAuthModal(); return; }
+  const SPORTS = ['Gym', 'Cycling', 'Running', 'Swimming', 'Pilates', 'Hiking', 'Custom'];
+  const state = { sports: [], days: 4, events: [{ title: '', date: '' }] };
+  let page = 0;
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const draw = () => {
+    let bodyHtml = '';
+    if (page === 0) {
+      bodyHtml = `<h3>Which sports?</h3>${SPORTS.map((s) => `<label class="toggle"><span>${s}</span><input type="checkbox" data-sport="${s}" ${state.sports.includes(s) ? 'checked' : ''}></label>`).join('')}`;
+    } else if (page === 1) {
+      bodyHtml = `<h3>How many days a week?</h3><label class="field"><span><b id="dn">${state.days}</b> days / week</span><input type="range" min="1" max="7" value="${state.days}" data-days></label>`;
+    } else {
+      bodyHtml = `<h3>Upcoming events</h3>${state.events.map((e, i) => `<div class="row"><input class="grow" type="text" placeholder="Title" value="${esc(e.title)}" data-ev="${i}" data-f="title"><input type="date" value="${esc(e.date)}" data-ev="${i}" data-f="date"></div>`).join('')}<button class="btn tiny ghost" data-add-ev>+ Add more</button>`;
+    }
+    root.innerHTML = `<div class="modal-backdrop" data-wz-close></div>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Custom plan">
+        <header class="modal-head"><h2>✨ Custom plan · ${page + 1}/3</h2><button class="icon-btn" data-wz-close aria-label="Close">✕</button></header>
+        <div class="modal-body">${bodyHtml}<p class="auth-msg" role="status" hidden></p></div>
+        <footer class="modal-foot">${page > 0 ? '<button class="btn ghost" data-wz-back>Back</button>' : ''}<span class="spacer"></span><button class="btn primary" data-wz-next>${page < 2 ? 'Next' : 'Generate ✨'}</button></footer>
+      </div>`;
+    root.querySelectorAll('[data-wz-close]').forEach((b) => b.addEventListener('click', close));
+    root.querySelectorAll('[data-sport]').forEach((c) => c.addEventListener('change', () => {
+      if (c.checked) state.sports.push(c.dataset.sport); else state.sports = state.sports.filter((x) => x !== c.dataset.sport);
+    }));
+    const rng = root.querySelector('[data-days]');
+    if (rng) rng.addEventListener('input', () => { state.days = +rng.value; root.querySelector('#dn').textContent = rng.value; });
+    root.querySelectorAll('[data-ev]').forEach((i) => i.addEventListener('input', () => { state.events[+i.dataset.ev][i.dataset.f] = i.value; }));
+    root.querySelector('[data-add-ev]')?.addEventListener('click', () => { state.events.push({ title: '', date: '' }); draw(); });
+    root.querySelector('[data-wz-back]')?.addEventListener('click', () => { page -= 1; draw(); });
+    root.querySelector('[data-wz-next]').addEventListener('click', async (e) => {
+      if (page < 2) { page += 1; draw(); return; }
+      const btn = e.target; const msg = root.querySelector('.auth-msg');
+      btn.disabled = true; btn.textContent = 'Generating…';
+      try {
+        const events = state.events.filter((ev) => ev.title && ev.date);
+        const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, events }, stravaSummary(store.getWorkouts()));
+        close();
+        toast(`Added ${r.inserted} AI sessions to your calendar ✨`, { icon: '✨' });
+        setTimeout(() => store.commit(), 1500); // realtime brings the new rows in
+      } catch (err) { msg.hidden = false; msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Generate ✨'; }
+    });
+  };
+  draw();
 }
 
 // ---- account / sync UI ------------------------------------------------------

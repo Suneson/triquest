@@ -58,7 +58,7 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
       generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.7 },
     }),
   });
-  if (!gRes.ok) return json({ error: `Gemini error ${gRes.status}` }, 502);
+  if (!gRes.ok) return json({ error: `Gemini ${gRes.status}`, detail: (await gRes.text()).slice(0, 500) }, 502);
   const g = await gRes.json();
   let plan: any[];
   try { plan = JSON.parse(g.candidates?.[0]?.content?.parts?.[0]?.text || "[]"); } catch { return json({ error: "AI returned invalid JSON" }, 502); }

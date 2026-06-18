@@ -1,7 +1,7 @@
-// ai-plan — generates a personalized plan via Gemini and batch-inserts it into
-// the authenticated user's calendar (user_id from their JWT). Deploy with JWT:
-//   supabase functions deploy ai-plan
-// Secret required: GEMINI_API_KEY
+// ai-plan — generates a personalized plan via Groq (Llama-4-Scout) and
+// batch-inserts it into the authenticated user's calendar (user_id from JWT).
+// Deploy with JWT:  supabase functions deploy ai-plan
+// Secret required:  GROQ_API_KEY
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
@@ -14,21 +14,7 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const TYPES = ["run", "bike", "swim", "gym", "brick", "mobility", "other"];
 const INTEN = ["easy", "steady", "moderate", "threshold", "quality", "vo2", "race"];
 
-const SYSTEM = `You are an elite endurance coach. Build a personalized training plan as a JSON array.
-Each item must match exactly: { "title": string, "type": one of ${TYPES.join("|")}, "intensity": one of ${INTEN.join("|")}, "date": "YYYY-MM-DD" (future dates only, starting tomorrow), "duration": integer minutes, "notes": string }.
-Respect the chosen sports, the weekly training frequency, and taper toward each event date. Use the Strava history to set realistic volume/intensity. Return ONLY the JSON array.`;
-
-const SCHEMA = {
-  type: "ARRAY",
-  items: {
-    type: "OBJECT",
-    properties: {
-      title: { type: "STRING" }, type: { type: "STRING" }, intensity: { type: "STRING" },
-      date: { type: "STRING" }, duration: { type: "INTEGER" }, notes: { type: "STRING" },
-    },
-    required: ["title", "type", "intensity", "date", "duration"],
-  },
-};
+const SYSTEM = `You are an elite endurance coach. Return ONLY a JSON object of the form {"workouts": [ ... ]} where each item has exactly these properties: "title" (string), "type" (one of ${TYPES.join("|")}), "intensity" (one of ${INTEN.join("|")}), "date" ("YYYY-MM-DD", future dates only starting tomorrow), "duration_min" (integer minutes), "notes" (string). Respect the chosen sports, the weekly training frequency, and taper toward each event date. Use the Strava history to set realistic volume and intensity.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -42,35 +28,39 @@ Deno.serve(async (req) => {
   if (uErr || !u?.user) return json({ error: "invalid token" }, 401);
   const userId = u.user.id;
 
-  const key = Deno.env.get("GEMINI_API_KEY");
-  if (!key) return json({ error: "GEMINI_API_KEY not configured" }, 500);
+  const key = Deno.env.get("GROQ_API_KEY");
+  if (!key) return json({ error: "GROQ_API_KEY not configured" }, 500);
 
   const body = await req.json().catch(() => ({}));
   const prompt = `Today is ${new Date().toISOString().slice(0, 10)}.
 Questionnaire: ${JSON.stringify(body.wizard || {})}
 Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`;
 
-  const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
+  const gRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.7 },
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [{ role: "system", content: SYSTEM }, { role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
     }),
   });
-  if (!gRes.ok) return json({ error: `Gemini ${gRes.status}`, detail: (await gRes.text()).slice(0, 500) }, 502);
+  if (!gRes.ok) return json({ error: `Groq ${gRes.status}`, detail: (await gRes.text()).slice(0, 500) }, 502);
+
   const g = await gRes.json();
-  let plan: any[];
-  try { plan = JSON.parse(g.candidates?.[0]?.content?.parts?.[0]?.text || "[]"); } catch { return json({ error: "AI returned invalid JSON" }, 502); }
+  let parsed: any;
+  try { parsed = JSON.parse(g.choices?.[0]?.message?.content || "{}"); } catch { return json({ error: "AI returned invalid JSON" }, 502); }
+  const plan = Array.isArray(parsed) ? parsed : (parsed.workouts || parsed.plan || parsed.sessions || []);
   if (!Array.isArray(plan) || !plan.length) return json({ error: "AI returned no sessions" }, 502);
 
   const now = new Date().toISOString();
-  const rows = plan.slice(0, 120).filter((p) => p?.date && p?.type).map((p) => ({
+  const rows = plan.slice(0, 120).filter((p: any) => p?.date && p?.type).map((p: any) => ({
     id: crypto.randomUUID(), user_id: userId, date: String(p.date).slice(0, 10),
     type: TYPES.includes(p.type) ? p.type : "other",
     title: String(p.title || "AI session").slice(0, 120),
     intensity: INTEN.includes(p.intensity) ? p.intensity : "moderate",
-    duration_min: Math.max(10, Math.min(360, parseInt(p.duration) || 45)),
+    duration_min: Math.max(10, Math.min(360, parseInt(p.duration_min ?? p.duration) || 45)),
     notes: String(p.notes || ""), completed: false, source: "custom",
     segments: [], exercises: [], packing: [], extra: { ai: true }, updated_at: now,
   }));

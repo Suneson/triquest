@@ -29,7 +29,6 @@ const appState = {
 };
 
 let deferredInstall = null;
-const scrollPos = {};
 
 // ---- derived context --------------------------------------------------------
 
@@ -112,11 +111,10 @@ function onClick(e) {
 
   switch (action) {
     case 'tab':
-      scrollPos[appState.tab] = window.scrollY;
       appState.tab = el.dataset.tab;
       localStorage.setItem('moske-tab', appState.tab);
       render();
-      requestAnimationFrame(() => window.scrollTo(0, scrollPos[appState.tab] || 0));
+      window.scrollTo(0, 0); // consistent across all tabs (incl. async-loaded ones)
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;

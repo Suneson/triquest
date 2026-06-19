@@ -158,6 +158,22 @@ function actualEntry(w) {
     </div></div>`;
 }
 
+// Neon intensity-zone badge (hr_zone 1-5).
+export function zoneBadge(z) {
+  const n = Math.max(1, Math.min(5, parseInt(z) || 1));
+  return `<span class="zone zone-${n}" title="Heart-rate zone ${n}">Z${n}</span>`;
+}
+
+// Parse "[Warmup] … [Main Set] … [Cooldown] …" notes into labelled blocks.
+function structuredBlocks(w) {
+  const n = w.notes || '';
+  if (!/\[[^\]]+\]/.test(n)) return '';
+  const segs = [...n.matchAll(/\[([^\]]+)\]\s*([^[]*)/g)].map((m) => ({ label: m[1].trim(), text: m[2].trim() })).filter((s) => s.text);
+  if (!segs.length) return '';
+  return `<div class="block"><h4>Session</h4><div class="struct">${segs.map((s) => `
+    <div class="struct-row"><span class="struct-label">${esc(s.label)}</span><span class="struct-text mono">${esc(s.text)}</span></div>`).join('')}</div></div>`;
+}
+
 // ---- session card -----------------------------------------------------------
 
 export function sessionCard(w, units, { compact = false, isNext = false } = {}) {
@@ -172,8 +188,9 @@ export function sessionCard(w, units, { compact = false, isNext = false } = {}) 
   const pace = paceHint(w.type, w.intensity);
   const meta = [
     `<span class="chip type-${w.type}">${d.icon} ${d.label}</span>`,
-    `<span class="chip">${formatDuration(w.durationMin)}</span>`,
-    w.metrics?.distanceKm ? `<span class="chip">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
+    w.hr_zone ? zoneBadge(w.hr_zone) : '',
+    `<span class="chip mono">${formatDuration(w.durationMin)}</span>`,
+    w.metrics?.distanceKm ? `<span class="chip mono">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
     `<span class="chip intensity-${w.intensity}">${INTENSITIES[w.intensity] || w.intensity}</span>`,
     pace ? `<span class="chip pace" title="Planned pace / zone">🎯 ${esc(pace)}</span>` : '',
   ].filter(Boolean).join('');
@@ -219,6 +236,7 @@ export function sessionCard(w, units, { compact = false, isNext = false } = {}) 
     <article class="card type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-card="${esc(w.id)}" data-swipe="${esc(w.id)}">
       ${head}
       ${fuellingChip(w)}
+      ${structuredBlocks(w)}
       ${segs ? `<div class="block">${segs}</div>` : ''}
       ${exercises}
       ${actuals}

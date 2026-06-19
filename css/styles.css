@@ -103,9 +103,31 @@ button { font: inherit; cursor: pointer; }
 
 /* ---- cards ---- */
 .card {
-  background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+  background: rgba(18, 22, 28, 0.7); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 16px;
   padding: 14px; box-shadow: var(--shadow); position: relative; overflow: hidden;
 }
+/* monospaced numerics for timestamps, weights, distances, durations */
+.mono, .stat b, .total b, .ring-c b, .lb-xp, .pp-stats .total b, .ex-prescribed,
+.load-cell b, .xp-top, .week-range b, .vbar span {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+}
+
+/* neon intensity-zone badges */
+.zone { font-family: ui-monospace, monospace; font-weight: 800; font-size: .72rem; padding: 2px 9px;
+  border-radius: 99px; border: 1px solid currentColor; }
+.zone-1, .zone-2 { color: #00f0ff; box-shadow: 0 0 8px rgba(0,240,255,.55); text-shadow: 0 0 6px rgba(0,240,255,.6); }
+.zone-3 { color: #39ff14; box-shadow: 0 0 8px rgba(57,255,20,.55); text-shadow: 0 0 6px rgba(57,255,20,.6); }
+.zone-4 { color: #ffaa00; box-shadow: 0 0 8px rgba(255,170,0,.55); text-shadow: 0 0 6px rgba(255,170,0,.6); }
+.zone-5 { color: #ff0055; box-shadow: 0 0 9px rgba(255,0,85,.6); text-shadow: 0 0 6px rgba(255,0,85,.65); }
+
+/* structured session blocks */
+.struct { display: grid; gap: 6px; }
+.struct-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: baseline;
+  background: var(--bg-3); border-radius: 10px; padding: 8px 10px; }
+.struct-label { font-size: .64rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 800; }
+.struct-text { font-size: .82rem; line-height: 1.35; }
 .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--c-other); }
 .card.type-run::before { background: var(--c-run); }
 .card.type-bike::before { background: var(--c-bike); }

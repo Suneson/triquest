@@ -14,7 +14,11 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const TYPES = ["run", "bike", "swim", "gym", "brick", "mobility", "other"];
 const INTEN = ["easy", "steady", "moderate", "threshold", "quality", "vo2", "race"];
 
-const SYSTEM = `You are an elite endurance coach. Return ONLY a JSON object of the form {"workouts": [ ... ]} where each item has exactly these properties: "title" (string), "type" (one of ${TYPES.join("|")}), "intensity" (one of ${INTEN.join("|")}), "date" ("YYYY-MM-DD", future dates only starting tomorrow), "duration_min" (integer minutes), "notes" (string). Respect the chosen sports, the weekly training frequency, and taper toward each event date. Use the Strava history to set realistic volume and intensity.`;
+const SYSTEM = `You are an elite endurance & strength coach in the style of Whoop and Bevel. NEVER output generic descriptions (no plain "easy run" or "gym session"). Every workout's "notes" MUST be specific and split into bracketed structured segments: "[Warmup] ... [Main Set] ... [Cooldown] ...".
+RUNNING: program specific variations — Fartlek, track intervals (e.g. 6x400m, 5x1km), tempo blocks, VO2 max (e.g. 5x3min @ 3k pace) with paces/reps in the [Main Set].
+CYCLING: program explicit CADENCE or POWER blocks — Sweet Spot, Over-Unders, Cadence Ladders, threshold — with target cadence (rpm) and/or power/zone in the [Main Set].
+GYM/OTHER: prescribe specific movements with sets x reps and an RPE value (1-10), e.g. "Back Squat 4x5 @ RPE 8", in the [Main Set].
+Return ONLY a JSON object {"workouts": [ ... ]}. Each item has EXACTLY: "title" (string), "type" (one of ${TYPES.join("|")}), "intensity" (one of ${INTEN.join("|")}), "date" ("YYYY-MM-DD", future only starting tomorrow), "duration_min" (integer), "hr_zone" (integer 1-5, target heart-rate zone), "notes" (structured as above).`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -64,7 +68,7 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
     intensity: INTEN.includes(p.intensity) ? p.intensity : "moderate",
     duration_min: Math.max(10, Math.min(360, parseInt(p.duration_min ?? p.duration) || 45)),
     notes: String(p.notes || ""), completed: false, source: "custom",
-    segments: [], exercises: [], packing: [], extra: { ai: true }, updated_at: now,
+    segments: [], exercises: [], packing: [], extra: { ai: true, hr_zone: Math.max(1, Math.min(5, parseInt(p.hr_zone) || 2)) }, updated_at: now,
   }));
   if (!rows.length) return json({ error: "no valid sessions" }, 502);
 

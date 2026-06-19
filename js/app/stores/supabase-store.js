@@ -7,7 +7,7 @@ import { LocalStore } from './local-store.js';
 import { mergeByUpdatedAt, applyRemoteChange } from '../../core/sync.js';
 
 // app-only display flags that live in the `extra` jsonb column
-const EXTRA_KEYS = ['isRace', 'optional', 'phaseId', 'weekNum', 'seeded'];
+const EXTRA_KEYS = ['isRace', 'optional', 'phaseId', 'weekNum', 'seeded', 'hr_zone', 'ai'];
 
 export function workoutToRow(w, userId) {
   const extra = {};

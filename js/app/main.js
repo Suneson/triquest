@@ -13,6 +13,7 @@ import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openPublicProfile } from './profile.js';
+import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -361,6 +362,12 @@ function openGoalEditor() {
 function openAIWizard() {
   if (!auth.currentUser()) { auth.openAuthModal(); return; }
   const SPORTS = ['Gym', 'Cycling', 'Running', 'Swimming', 'Pilates', 'Hiking', 'Custom'];
+  const PRESETS = ['5K', '10K', 'Half Marathon', 'Marathon', '70.3 Tri', 'Full Ironman', 'Cycling Event'];
+  const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONTHS = Array.from({ length: 12 }, (_, k) => {
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + k + 1);
+    return { label: `${MO[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`, date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01` };
+  });
   const state = { sports: [], days: 4, maxDoubles: 0, events: [{ title: '', date: '' }] };
   let page = 0;
   const root = document.getElementById('modal-root');
@@ -375,13 +382,17 @@ function openAIWizard() {
         <label class="field"><span><b id="dn">${state.days}</b> days / week</span><input type="range" min="1" max="7" value="${state.days}" data-days></label>
         <label class="field"><span>Max double-training days per week: <b id="ddn">${state.maxDoubles}</b></span><input type="range" min="0" max="5" value="${state.maxDoubles}" data-doubles></label>`;
     } else {
-      bodyHtml = `<h3>Upcoming events</h3>${state.events.map((e, i) => `<div class="row"><input class="grow" type="text" placeholder="Title" value="${esc(e.title)}" data-ev="${i}" data-f="title"><input type="date" value="${esc(e.date)}" data-ev="${i}" data-f="date"></div>`).join('')}<button class="btn tiny ghost" data-add-ev>+ Add more</button>`;
+      bodyHtml = `<h3>Upcoming events</h3>${state.events.map((e, i) => `
+        <div class="wz-event">
+          <div class="cap-row">${PRESETS.map((p) => `<button type="button" class="cap ${e.title === p ? 'on' : ''}" data-ev="${i}" data-pick="title" data-val="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+          <div class="cap-row">${MONTHS.map((m) => `<button type="button" class="cap ${e.date === m.date ? 'on' : ''}" data-ev="${i}" data-pick="date" data-val="${m.date}">${m.label}</button>`).join('')}</div>
+        </div>`).join('')}<button class="btn tiny ghost" data-add-ev>+ Add another event</button>`;
     }
     root.innerHTML = `<div class="modal-backdrop" data-wz-close></div>
       <div class="modal" role="dialog" aria-modal="true" aria-label="Custom plan">
-        <header class="modal-head"><h2>✨ Custom plan · ${page + 1}/3</h2><button class="icon-btn" data-wz-close aria-label="Close">✕</button></header>
+        <header class="modal-head"><h2>Custom plan · ${page + 1}/3</h2><button class="icon-btn" data-wz-close aria-label="Close">✕</button></header>
         <div class="modal-body">${bodyHtml}<p class="auth-msg" role="status" hidden></p></div>
-        <footer class="modal-foot">${page > 0 ? '<button class="btn ghost" data-wz-back>Back</button>' : ''}<span class="spacer"></span><button class="btn primary" data-wz-next>${page < 2 ? 'Next' : 'Generate ✨'}</button></footer>
+        <footer class="modal-foot">${page > 0 ? '<button class="btn ghost" data-wz-back>Back</button>' : ''}<span class="spacer"></span><button class="btn primary" data-wz-next>${page < 2 ? 'Next' : 'Generate'}</button></footer>
       </div>`;
     root.querySelectorAll('[data-wz-close]').forEach((b) => b.addEventListener('click', close));
     root.querySelectorAll('[data-sport]').forEach((c) => c.addEventListener('change', () => {
@@ -391,7 +402,9 @@ function openAIWizard() {
     if (rng) rng.addEventListener('input', () => { state.days = +rng.value; root.querySelector('#dn').textContent = rng.value; });
     const dbl = root.querySelector('[data-doubles]');
     if (dbl) dbl.addEventListener('input', () => { state.maxDoubles = +dbl.value; root.querySelector('#ddn').textContent = dbl.value; });
-    root.querySelectorAll('[data-ev]').forEach((i) => i.addEventListener('input', () => { state.events[+i.dataset.ev][i.dataset.f] = i.value; }));
+    root.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
+      state.events[+b.dataset.ev][b.dataset.pick] = b.dataset.val; draw();
+    }));
     root.querySelector('[data-add-ev]')?.addEventListener('click', () => { state.events.push({ title: '', date: '' }); draw(); });
     root.querySelector('[data-wz-back]')?.addEventListener('click', () => { page -= 1; draw(); });
     root.querySelector('[data-wz-next]').addEventListener('click', async (e) => {
@@ -403,9 +416,9 @@ function openAIWizard() {
         store.setSetting('events', events); // power the dynamic Home "next event" banner
         const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, max_double_days: state.maxDoubles, events }, stravaSummary(store.getWorkouts()));
         close();
-        toast(`Added ${r.inserted} AI sessions to your calendar ✨`, { icon: '✨' });
+        toast(`Added ${r.inserted} AI sessions to your calendar`, { icon: svg('spark') });
         setTimeout(() => store.commit(), 1500); // realtime brings the new rows in
-      } catch (err) { msg.hidden = false; msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Generate ✨'; }
+      } catch (err) { msg.hidden = false; msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Generate'; }
     });
   };
   draw();

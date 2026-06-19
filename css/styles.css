@@ -480,6 +480,30 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .lb-lvl { font-size: .76rem; color: var(--muted); }
 .lb-xp { color: var(--accent); }
 
+/* ---- inline icons ---- */
+.ic { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; flex: none; }
+.chip .ic { width: 14px; height: 14px; vertical-align: -2px; }
+.btn .ic { width: 15px; height: 15px; vertical-align: -3px; }
+.stat-ico { display: inline-flex; color: var(--muted); }
+.stat-ico .ic { width: 18px; height: 18px; }
+.lb-banner .ic, .race-banner .ic { color: var(--accent); vertical-align: -4px; }
+.left-cue.done .ic { width: 14px; height: 14px; }
+
+/* ---- keyboard-free wizard capsules ---- */
+.wz-event { margin-bottom: 14px; }
+.cap-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.cap-row::-webkit-scrollbar { display: none; }
+.cap { white-space: nowrap; padding: 9px 14px; border-radius: 99px; border: none; font-weight: 700; font-size: .82rem;
+  color: var(--fg); background: linear-gradient(180deg, var(--bg-3), var(--bg-2)); }
+.cap.on { background: #0047AB; color: #fff; box-shadow: 0 0 12px rgba(0,71,171,.5); }
+
+/* ---- premium polish: borderless, gradient-separated blocks ---- */
+.chip { border-color: transparent; background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); }
+.stat, .total, .load-cell { border: none; background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.01)); }
+.exercise { border-top-color: rgba(255,255,255,.05); }
+.week-day { border-color: rgba(255,255,255,.04); background: rgba(18,22,28,.55); }
+.badge { border-color: rgba(255,255,255,.05); background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)); }
+
 @media (min-width: 720px) {
   .week-grid { grid-template-columns: 1fr 1fr; }
 }

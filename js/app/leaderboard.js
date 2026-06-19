@@ -5,6 +5,7 @@ import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { levelFromTotalXp } from '../core/scoring.js';
 import { esc } from './ui.js';
+import { svg } from '../core/icons.js';
 
 const SEASON_EPOCH = new Date('2026-01-01T00:00:00'); // monthly seasons
 const SEASON_MONTHS = 1;
@@ -21,8 +22,8 @@ export function seasonInfo(todayIso) {
 export function leaderboardShell(view, today) {
   const s = seasonInfo(today);
   const countdown = view === 'season'
-    ? `<div class="lb-countdown">⏳ <b>${s.daysRemaining}</b> days remaining · Season ${s.number} <span class="muted">(resets monthly)</span></div>` : '';
-  return `<div class="lb-banner">🏆 Season Reset: Monthly &nbsp;|&nbsp; 🥇 1st Place wins a 20% discount coupon on your next Moske order!</div>
+    ? `<div class="lb-countdown">${svg('clock')} <b>${s.daysRemaining}</b> days remaining · Season ${s.number} <span class="muted">(resets monthly)</span></div>` : '';
+  return `<div class="lb-banner">${svg('trophy', 'tint')} Season Reset: Monthly &nbsp;|&nbsp; ${svg('medal', 'tint')} 1st Place wins a 20% discount coupon on your next Moske order!</div>
     <div class="day-header"><h2>Leaderboards</h2></div>
     <div class="lb-toggle">
       <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">Season</button>

@@ -8,6 +8,7 @@ import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
 import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
+import { svg } from '../core/icons.js';
 
 export { DISCIPLINES, INTENSITIES };
 
@@ -41,10 +42,10 @@ export function renderHud(stats, streaks, units) {
       </div>
     </div>
     <div class="hud-stats">
-      <div class="stat" title="Current streak (longest ${streaks.longest})"><span class="stat-ico">🔥</span><b>${streaks.current}</b><small>day streak</small></div>
-      <div class="stat" title="Total training time"><span class="stat-ico">⏱️</span><b>${stats.totalHours.toFixed(1)}</b><small>hours</small></div>
-      <div class="stat" title="Total distance"><span class="stat-ico">📏</span><b>${Math.round(totalKm)}</b><small>${units === 'imperial' ? 'mi*' : 'km'}</small></div>
-      <div class="stat" title="Sessions completed"><span class="stat-ico">✅</span><b>${stats.completedCount}</b><small>done</small></div>
+      <div class="stat" title="Current streak (longest ${streaks.longest})"><span class="stat-ico">${svg('flame')}</span><b>${streaks.current}</b><small>day streak</small></div>
+      <div class="stat" title="Total training time"><span class="stat-ico">${svg('clock')}</span><b>${stats.totalHours.toFixed(1)}</b><small>hours</small></div>
+      <div class="stat" title="Total distance"><span class="stat-ico">${svg('route')}</span><b>${Math.round(totalKm)}</b><small>${units === 'imperial' ? 'mi*' : 'km'}</small></div>
+      <div class="stat" title="Sessions completed"><span class="stat-ico">${svg('check')}</span><b>${stats.completedCount}</b><small>done</small></div>
     </div>`;
 }
 
@@ -114,7 +115,7 @@ function packingList(w) {
 function fuellingChip(w) {
   const long = (w.durationMin >= 90) && ['run', 'bike', 'brick'].includes(w.type);
   if (!long) return '';
-  return `<div class="fuel-chip" title="Fuelling reminder">⛽ Practice 60–90 g carbs/h</div>`;
+  return `<div class="fuel-chip" title="Fuelling reminder">${svg('flame')} Practice 60–90 g carbs/h</div>`;
 }
 
 // ---- actual vs planned (from Strava or manual logging) ----------------------
@@ -187,7 +188,7 @@ export function sessionCard(w, units, { compact = false, isNext = false } = {}) 
 
   const pace = paceHint(w.type, w.intensity);
   const meta = [
-    `<span class="chip type-${w.type}">${d.icon} ${d.label}</span>`,
+    `<span class="chip type-${w.type}">${svg(w.type, 'tint')} ${d.label}</span>`,
     w.hr_zone ? zoneBadge(w.hr_zone) : '',
     `<span class="chip mono">${formatDuration(w.durationMin)}</span>`,
     w.metrics?.distanceKm ? `<span class="chip mono">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
@@ -243,9 +244,9 @@ export function sessionCard(w, units, { compact = false, isNext = false } = {}) 
       ${notes}
       ${packing}
       <div class="card-foot">
-        <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">✏️ Edit</button>
-        <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">⧉ Duplicate</button>
-        <button class="btn tiny ghost danger" data-action="delete" data-id="${esc(w.id)}">🗑 Delete</button>
+        <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">${svg('edit')} Edit</button>
+        <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">Duplicate</button>
+        <button class="btn tiny ghost danger" data-action="delete" data-id="${esc(w.id)}">${svg('trash')} Delete</button>
       </div>
     </article>`;
 }
@@ -261,7 +262,7 @@ export function renderToday(ctx) {
 
   const leftCue = sessions.length
     ? (left ? `<span class="left-cue">${left} session${left === 1 ? '' : 's'} left</span>`
-            : '<span class="left-cue done">all done 🎉</span>')
+            : `<span class="left-cue done">${svg('check')} all done</span>`)
     : '';
 
   const header = `
@@ -276,7 +277,7 @@ export function renderToday(ctx) {
   } else {
     const next = nextSession(workouts, today);
     body = `<div class="empty card">
-      <p class="big">🌙 No planned session today — rest &amp; recover.</p>
+      <p class="big">${svg('moon')} No planned session today — rest &amp; recover.</p>
       ${next ? `<p class="muted">Next up: <b>${esc(next.title)}</b> on ${shortLabel(next.date)}.</p>` : ''}
       <button class="btn" data-action="open-editor-new" data-date="${esc(today)}">+ Add a session for today</button>
     </div>`;
@@ -289,7 +290,7 @@ export function renderToday(ctx) {
 function runWarningBanner(workouts, today) {
   const r = runVolumeJump(workouts, today);
   if (!r.warn) return '';
-  return `<div class="warn-banner">⚠️ Run volume is up <b>${r.pctChange}%</b> on last week (${r.lastKm}→${r.thisKm} km). Keep weekly run jumps under ~10% to protect against injury.</div>`;
+  return `<div class="warn-banner">${svg('warn')} Run volume is up <b>${r.pctChange}%</b> on last week (${r.lastKm}→${r.thisKm} km). Keep weekly run jumps under ~10% to protect against injury.</div>`;
 }
 
 // Race-day checklist surfaces when a race is within 10 days.
@@ -302,7 +303,7 @@ function raceChecklist(workouts, today) {
     `<li class="${p.checked ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-pack" data-id="${esc(session.id)}" data-pi="${i}" ${p.checked ? 'checked' : ''}><span>${esc(p.item)}</span></label></li>`).join('');
   const days = diffDays(race.date, today);
   return `<section class="card accent race-checklist">
-    <h3>${race.emoji} Race-day checklist — ${esc(race.title)} <span class="muted">in ${days} day${days === 1 ? '' : 's'}</span></h3>
+    <h3>${svg('flag')} Race-day checklist — ${esc(race.title)} <span class="muted">in ${days} day${days === 1 ? '' : 's'}</span></h3>
     <ul class="pack-items big-pack">${items}</ul></section>`;
 }
 
@@ -328,7 +329,7 @@ function packForTomorrow(ctx) {
 
   return `
     <section class="pack-tomorrow card accent">
-      <h3>🎒 Pack for tomorrow</h3>
+      <h3>${svg('bag')} Pack for tomorrow</h3>
       ${tmrSessions.length
         ? `<p class="sub">${esc(titles)} · ${shortLabel(tomorrow)}</p>
            <ul class="pack-items big-pack">${items || '<li class="muted">Tomorrow’s sessions have no packing items.</li>'}</ul>
@@ -346,17 +347,17 @@ export function eventBanner(ctx) {
   const evs = (ctx.settings?.events || []).filter((e) => e.date && e.date >= ctx.today)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!evs.length) return '';
-  return `<div class="race-banner">🏁 NEXT EVENT: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
+  return `<div class="race-banner">${svg('flag')} NEXT EVENT: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
 }
 
 function planCta(ctx) {
   const hasPlan = ctx.workouts.some((w) => w.source === 'custom' && w.date >= ctx.today);
   return hasPlan
     ? `<div class="plan-actions">
-         <button class="btn ai-cta" data-action="ai-wizard">♻️ Regenerate plan</button>
-         <button class="btn ghost danger" data-action="clear-future">🗑 Clear future workouts</button>
+         <button class="btn ai-cta" data-action="ai-wizard">${svg('regen')} Regenerate plan</button>
+         <button class="btn ghost danger" data-action="clear-future">${svg('trash')} Clear future workouts</button>
        </div>`
-    : '<button class="btn primary block ai-cta" data-action="ai-wizard">✨ Create custom workout plan</button>';
+    : `<button class="btn primary block ai-cta" data-action="ai-wizard">${svg('spark')} Create custom workout plan</button>`;
 }
 
 export function renderHome(ctx, weekStart) {
@@ -427,7 +428,7 @@ function goalRings(ctx, weekStartIso) {
   const km = inWeek.reduce((a, w) => a + (Number(w.metrics?.distanceKm) || 0), 0);
   const hrs = weekHours(workouts, weekStartIso);
   return `<section class="card week-summary">
-    <div class="rings-head"><h3>This week’s goals</h3><button class="btn tiny ghost" data-action="edit-goals">✏️ Edit</button></div>
+    <div class="rings-head"><h3>This week’s goals</h3><button class="btn tiny ghost" data-action="edit-goals">${svg('edit')} Edit</button></div>
     <div class="rings">
       ${ring((sessions / g.sessions) * 100, `${sessions}/${g.sessions}`, 'sessions', 'var(--good)')}
       ${ring((km / g.km) * 100, `${Math.round(km)}`, `/ ${g.km} km`, 'var(--c-bike)')}

@@ -1,12 +1,13 @@
 /* TriQuest — dark, discipline-coloured, mobile-first. */
 :root {
-  --bg: #0e1116;
-  --bg-2: #161b22;
-  --bg-3: #1f2630;
-  --bg-4: #2a323d;
-  --fg: #e8edf2;
-  --muted: #8a97a6;
-  --border: #2a323d;
+  /* Bevel-style ultra-dark off-blue palette */
+  --bg: #070a12;
+  --bg-2: #0d1322;
+  --bg-3: #141c30;
+  --bg-4: #1e2842;
+  --fg: #eaeefa;
+  --muted: #828ea8;
+  --border: #1a2236;
   --accent: #ffd166;
   --accent-2: #ff5a5f;
   --good: #2ec4b6;
@@ -33,10 +34,10 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { background: #0e1116; } /* kill white overscroll gap behind the fixed nav */
+html { background: #070a12; } /* kill white overscroll gap behind the fixed nav */
 html, body { margin: 0; }
 body {
-  background: radial-gradient(1200px 600px at 50% -10%, #1a2230 0%, var(--bg) 60%) fixed;
+  background: radial-gradient(1200px 600px at 50% -10%, #0f1a30 0%, var(--bg) 60%) fixed;
   color: var(--fg);
   font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -64,7 +65,7 @@ button { font: inherit; cursor: pointer; }
 /* ---- header / HUD ---- */
 .app-header {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(14, 17, 22, .82); backdrop-filter: blur(12px);
+  background: rgba(7,10,18,.82); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 10px;
 }
@@ -103,7 +104,7 @@ button { font: inherit; cursor: pointer; }
 
 /* ---- cards ---- */
 .card {
-  background: rgba(18, 22, 28, 0.7); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  background: rgba(13, 19, 34, 0.7); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 16px;
   padding: 14px; box-shadow: var(--shadow); position: relative; overflow: hidden;
 }
@@ -283,13 +284,13 @@ button { font: inherit; cursor: pointer; }
 .tabs {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
   display: grid; grid-template-columns: repeat(4, 1fr);
-  background: rgba(14,17,22,.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border);
+  background: rgba(7,10,18,.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border);
   padding-bottom: var(--safe-b);
   transform: translateZ(0); /* iOS Safari: avoid scroll jitter / repaint glitches */
   -webkit-transform: translateZ(0);
 }
 /* solid fill through the home-indicator safe area so no white edge shows */
-.tabs::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 60px; background: #0e1116; }
+.tabs::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 60px; background: var(--bg); }
 .tab { background: none; border: none; color: var(--muted); padding: 10px 0 12px; font-size: .72rem; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 3px; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
 .tab .tab-ico { display: flex; }
 .tab .tab-ico svg { width: 24px; height: 24px; display: block; }
@@ -381,7 +382,7 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .ai-cta { background: linear-gradient(135deg, #0047AB, var(--c-gym)); border: none; }
 .plan-actions { display: flex; gap: 8px; }
 .plan-actions .btn { flex: 1; }
-.lb-banner { position: sticky; top: 0; z-index: 40; margin: 0 -14px 12px; padding: 12px 14px; background: #0e1116; border-bottom: 1px solid var(--border); font-weight: 800; font-size: .82rem; text-align: center; color: var(--fg); }
+.lb-banner { position: sticky; top: 0; z-index: 40; margin: 0 -14px 12px; padding: 12px 14px; background: var(--bg); border-bottom: 1px solid var(--border); font-weight: 800; font-size: .82rem; text-align: center; color: var(--fg); }
 .rings-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .rings-head h3 { font-size: .95rem; }
 
@@ -507,6 +508,31 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 @media (min-width: 720px) {
   .week-grid { grid-template-columns: 1fr 1fr; }
 }
+/* ---- bento compact workout cards ---- */
+.card.bento { padding: 13px 14px; cursor: pointer; }
+.card.bento:hover { border-color: rgba(255,255,255,.08); }
+.bento-top { display: flex; align-items: center; gap: 8px; }
+.bento-top h3 { font-size: 1rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bg-4); flex: none; }
+.status-dot.on { background: var(--good); box-shadow: 0 0 8px var(--good); }
+.bento-metrics { display: flex; gap: 22px; margin-top: 11px; }
+.bm { display: flex; flex-direction: column; gap: 3px; }
+.bm-ico { color: var(--muted); display: inline-flex; }
+.bm-ico .ic { width: 15px; height: 15px; }
+.bm b { font-size: 1.35rem; line-height: 1; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+.bm small { color: var(--muted); font-size: .58rem; text-transform: uppercase; letter-spacing: .05em; }
+
+/* ---- power interval bars (cycling) ---- */
+.pwr { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding-top: 14px; }
+.pwr-bar { flex: 1; min-width: 6px; border-radius: 4px 4px 0 0; position: relative; min-height: 3px; }
+.pwr-bar span { position: absolute; top: -13px; left: 0; right: 0; text-align: center; font-size: .55rem; color: var(--muted); font-family: ui-monospace, monospace; }
+.zcol-1 { background: #00f0ff; } .zcol-3 { background: #39ff14; } .zcol-4 { background: #ffaa00; } .zcol-5 { background: #ff0055; }
+.pwr-ftp { font-size: .7rem; color: var(--muted); margin-top: 6px; font-family: ui-monospace, monospace; }
+
+/* ---- wizard / settings inputs ---- */
+.wz-input, .wz-date { width: 100%; margin-top: 8px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--fg); font: inherit; }
+.pack-presets .field input { font-size: .85rem; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }

@@ -175,80 +175,88 @@ function structuredBlocks(w) {
     <div class="struct-row"><span class="struct-label">${esc(s.label)}</span><span class="struct-text mono">${esc(s.text)}</span></div>`).join('')}</div></div>`;
 }
 
-// ---- session card -----------------------------------------------------------
+const KCAL = { run: 11, bike: 9, swim: 9, gym: 6, brick: 10, mobility: 4, other: 8 };
+const kcalEst = (w) => Math.round(w.actual?.calories || (w.durationMin || 0) * (KCAL[w.type] || 8));
 
-export function sessionCard(w, units, { compact = false, isNext = false } = {}) {
+// CSS power-interval chart: watts parsed from notes, scaled to the user's FTP.
+function powerChart(w, ftp) {
+  if (w.type !== 'bike') return '';
+  const watts = [...(w.notes || '').matchAll(/(\d{2,4})\s*w\b/gi)].map((m) => +m[1]).filter((x) => x >= 50 && x <= 2000);
+  if (!watts.length) return '';
+  const max = Math.max(ftp * 1.4, ...watts);
+  const bars = watts.map((p) => {
+    const z = p / ftp; const c = z < 0.76 ? '1' : z < 0.9 ? '3' : z < 1.05 ? '4' : '5';
+    return `<div class="pwr-bar zcol-${c}" style="height:${Math.round((p / max) * 100)}%"><span>${p}</span></div>`;
+  }).join('');
+  return `<div class="block"><h4>Power</h4><div class="pwr">${bars}</div><div class="pwr-ftp">FTP ${ftp} W</div></div>`;
+}
+
+// Read-only packing checklist driven by the per-sport preset configured in Settings.
+function packingChecklist(w, settings) {
+  const preset = settings?.packing?.[w.type] || [];
+  if (!preset.length) return '';
+  const packed = new Set(w.packed || []);
+  return `<div class="block"><h4>Packing</h4><ul class="pack-items">${preset.map((item) => `
+    <li class="${packed.has(item) ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-preset-pack" data-id="${esc(w.id)}" data-item="${esc(item)}" ${packed.has(item) ? 'checked' : ''}><span>${esc(item)}</span></label></li>`).join('')}</ul></div>`;
+}
+
+function metaChips(w, units) {
   const d = DISCIPLINES[w.type] || DISCIPLINES.other;
+  const pace = paceHint(w.type, w.intensity);
   const tags = [];
-  if (isNext) tags.push('<span class="tag next">NEXT</span>');
   if (w.isRace) tags.push('<span class="tag race">RACE</span>');
   if (w.deload) tags.push(`<span class="tag deload">${/taper/i.test(w.title) ? 'taper' : 'deload'}</span>`);
-  if (w.optional) tags.push('<span class="tag optional">optional</span>');
   if (w.strava_activity_id) tags.push('<span class="tag strava">Strava</span>');
-
-  const pace = paceHint(w.type, w.intensity);
-  const meta = [
+  return [
     `<span class="chip type-${w.type}">${svg(w.type, 'tint')} ${d.label}</span>`,
     w.hr_zone ? zoneBadge(w.hr_zone) : '',
     `<span class="chip mono">${formatDuration(w.durationMin)}</span>`,
     w.metrics?.distanceKm ? `<span class="chip mono">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
     `<span class="chip intensity-${w.intensity}">${INTENSITIES[w.intensity] || w.intensity}</span>`,
-    pace ? `<span class="chip pace" title="Planned pace / zone">🎯 ${esc(pace)}</span>` : '',
-  ].filter(Boolean).join('');
+    pace ? `<span class="chip pace">${esc(pace)}</span>` : '',
+  ].filter(Boolean).join('') + tags.join('');
+}
 
-  // Anti-cheat: completion is read-only — set only by verified Strava activity.
-  const status = w.completed
-    ? `<div class="check on" title="Completed (verified via Strava)" aria-label="Completed">
-         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></div>`
-    : `<div class="check locked" title="Completes automatically when a matching Strava activity is verified" aria-label="Awaiting Strava">
-         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="9" rx="2"/></svg></div>`;
-  const head = `
-    <div class="card-head">
-      ${status}
-      <div class="card-title">
-        <h3>${esc(w.title)}</h3>
-        <div class="meta">${meta}${tags.join('')}</div>
-      </div>
-    </div>`;
+// ---- compact bento card (Home/Week list) ------------------------------------
 
-  if (compact) {
-    return `<article class="card type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-card="${esc(w.id)}" data-swipe="${esc(w.id)}">
-      ${head}
-      <div class="card-foot">
-        <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">Edit</button>
-      </div>
-    </article>`;
-  }
+export function sessionCard(w, units, { isNext = false } = {}) {
+  const km = w.metrics?.distanceKm;
+  return `<article class="card bento type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-action="open-workout" data-id="${esc(w.id)}">
+    <div class="bento-top">
+      <span class="status-dot ${w.completed ? 'on' : ''}" title="${w.completed ? 'Completed' : 'Planned'}"></span>
+      <h3>${esc(w.title)}</h3>
+      ${isNext ? '<span class="tag next">NEXT</span>' : ''}${w.hr_zone ? zoneBadge(w.hr_zone) : ''}
+    </div>
+    <div class="bento-metrics">
+      <div class="bm"><span class="bm-ico">${svg('clock')}</span><b>${w.durationMin || 0}</b><small>min</small></div>
+      ${km ? `<div class="bm"><span class="bm-ico">${svg('route')}</span><b>${km % 1 ? km.toFixed(1) : km}</b><small>${units === 'imperial' ? 'mi' : 'km'}</small></div>` : ''}
+      <div class="bm"><span class="bm-ico">${svg('flame')}</span><b>${kcalEst(w)}</b><small>kcal</small></div>
+    </div>
+  </article>`;
+}
 
+// ---- expanded detail (modal) ------------------------------------------------
+
+export function renderWorkoutDetail(w, units, ctx) {
+  const ftp = ctx?.settings?.ftp || 250;
+  const detail = w.type === 'bike' ? (powerChart(w, ftp) || structuredBlocks(w)) : structuredBlocks(w);
   const segs = segmentBar(w.segments);
   const exercises = (w.exercises || []).length
-    ? `<div class="block"><h4>Exercises</h4>${w.exercises.map((e, i) => exerciseRow(w, e, i)).join('')}</div>`
-    : '';
-  const notes = `
-    <div class="block">
-      <h4>Notes &amp; plan</h4>
-      <textarea class="notes" data-action="notes" data-id="${esc(w.id)}" rows="2" placeholder="Targets, paces, how you felt, reminders…">${esc(w.notes)}</textarea>
-    </div>`;
-  const packing = `<div class="block"><h4>Packing</h4>${packingList(w)}</div>`;
-
+    ? `<div class="block"><h4>Exercises</h4>${w.exercises.map((e, i) => exerciseRow(w, e, i)).join('')}</div>` : '';
   const actuals = w.strava_activity_id ? actualsBlock(w, units) : actualEntry(w);
-
   return `
-    <article class="card type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-card="${esc(w.id)}" data-swipe="${esc(w.id)}">
-      ${head}
-      ${fuellingChip(w)}
-      ${structuredBlocks(w)}
-      ${segs ? `<div class="block">${segs}</div>` : ''}
-      ${exercises}
-      ${actuals}
-      ${notes}
-      ${packing}
-      <div class="card-foot">
-        <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">${svg('edit')} Edit</button>
-        <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">Duplicate</button>
-        <button class="btn tiny ghost danger" data-action="delete" data-id="${esc(w.id)}">${svg('trash')} Delete</button>
-      </div>
-    </article>`;
+    <div class="meta">${metaChips(w, units)}</div>
+    ${fuellingChip(w)}
+    ${detail}
+    ${segs ? `<div class="block">${segs}</div>` : ''}
+    ${exercises}
+    ${actuals}
+    ${packingChecklist(w, ctx?.settings)}
+    <div class="card-foot">
+      <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">${svg('edit')} Edit</button>
+      <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">Duplicate</button>
+      <button class="btn tiny ghost danger" data-action="delete" data-id="${esc(w.id)}">${svg('trash')} Delete</button>
+    </div>`;
 }
 
 // ---- TODAY ------------------------------------------------------------------
@@ -308,36 +316,21 @@ function raceChecklist(workouts, today) {
 }
 
 function packForTomorrow(ctx) {
-  const { today, workouts } = ctx;
+  const { today, workouts, settings } = ctx;
   const tomorrow = addDays(today, 1);
   const tmrSessions = workouts.filter((w) => w.date === tomorrow);
-  // Aggregate unique packing items across tomorrow's sessions.
-  const map = new Map(); // item -> {refs:[{id,idx}], allChecked}
-  for (const w of tmrSessions) {
-    (w.packing || []).forEach((p, idx) => {
-      if (!map.has(p.item)) map.set(p.item, { refs: [], checked: true });
-      const rec = map.get(p.item);
-      rec.refs.push({ id: w.id, idx });
-      if (!p.checked) rec.checked = false;
-    });
-  }
+  const types = [...new Set(tmrSessions.map((w) => w.type))];
+  const items = [...new Set(types.flatMap((t) => settings?.packing?.[t] || []))];
+  const packed = new Set(tmrSessions.flatMap((w) => w.packed || []));
   const titles = tmrSessions.map((w) => w.title).join(' + ');
-  const items = [...map.entries()].map(([item, rec]) => `
-    <li class="${rec.checked ? 'checked' : ''}">
-      <label><input type="checkbox" data-action="toggle-tomorrow-pack" data-item="${esc(item)}" ${rec.checked ? 'checked' : ''}><span>${esc(item)}</span></label>
-    </li>`).join('');
-
   return `
     <section class="pack-tomorrow card accent">
       <h3>${svg('bag')} Pack for tomorrow</h3>
-      ${tmrSessions.length
+      ${tmrSessions.length && items.length
         ? `<p class="sub">${esc(titles)} · ${shortLabel(tomorrow)}</p>
-           <ul class="pack-items big-pack">${items || '<li class="muted">Tomorrow’s sessions have no packing items.</li>'}</ul>
-           <form class="pack-add" data-action="tomorrow-pack-add" data-date="${esc(tomorrow)}">
-             <input type="text" placeholder="Add to tomorrow’s bag…" aria-label="Add packing item for tomorrow">
-             <button type="submit" class="btn tiny">Add</button>
-           </form>`
-        : `<p class="muted">Nothing planned tomorrow — enjoy the rest day.</p>`}
+           <ul class="pack-items big-pack">${items.map((item) => `
+             <li class="${packed.has(item) ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-tomorrow-pack" data-date="${esc(tomorrow)}" data-item="${esc(item)}" ${packed.has(item) ? 'checked' : ''}><span>${esc(item)}</span></label></li>`).join('')}</ul>`
+        : `<p class="muted">${tmrSessions.length ? 'No packing presets for tomorrow’s sports — set them in Settings.' : 'Nothing planned tomorrow — enjoy the rest day.'}</p>`}
     </section>`;
 }
 

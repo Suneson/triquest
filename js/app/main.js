@@ -7,7 +7,7 @@ import { evaluateBadges, BADGES } from '../core/badges.js';
 import { PLAN_START } from '../core/plan.js';
 import { addDays, diffDays } from '../core/dates.js';
 import {
-  renderHud, renderHome, renderProgress, eventBanner, mondayOf, esc,
+  renderHud, renderHome, renderProgress, eventBanner, renderWorkoutDetail, mondayOf, esc,
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
@@ -119,6 +119,7 @@ function onClick(e) {
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
+    case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
     case 'ai-wizard': openAIWizard(); break;
     case 'clear-future': {
@@ -132,7 +133,7 @@ function onClick(e) {
     case 'edit': openEditor(id); break;
     case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
     case 'delete':
-      if (confirm('Delete this session?')) { store.deleteWorkout(id); toast('Session deleted'); }
+      if (confirm('Delete this session?')) { store.deleteWorkout(id); if (_detailId === id) closeModalRoot(); toast('Session deleted'); }
       break;
     case 'open-editor-new': openEditor(null, el.dataset.date); break;
     case 'prev-week': appState.weekStart = addDays(appState.weekStart, -7); render(); break;
@@ -155,21 +156,28 @@ function onChange(e) {
   if (!el) return;
   const { action, id } = el.dataset;
 
+  const togglePacked = (w, item, on) => {
+    const set = new Set(w.packed || []);
+    if (on) set.add(item); else set.delete(item);
+    w.packed = [...set];
+    store.touchWorkout(id || w.id);
+  };
+
   if (action === 'toggle-exercise') {
     const w = store.workoutById(id);
     w.exercises[+el.dataset.ex].done = el.checked;
-    store.commit();
-  } else if (action === 'toggle-pack') {
-    const w = store.workoutById(id);
-    w.packing[+el.dataset.pi].checked = el.checked;
-    store.commit();
+    store.touchWorkout(id);
+    refreshDetail(id);
+  } else if (action === 'toggle-preset-pack') {
+    togglePacked(store.workoutById(id), el.dataset.item, el.checked);
+    refreshDetail(id);
   } else if (action === 'toggle-tomorrow-pack') {
-    // Toggle all underlying packing items matching this aggregated item.
+    // Apply to every tomorrow session whose sport preset includes this item.
     const item = el.dataset.item;
-    const tomorrow = addDays(todayISO(), 1);
-    store.getWorkouts().filter((w) => w.date === tomorrow).forEach((w) =>
-      (w.packing || []).forEach((p) => { if (p.item === item) p.checked = el.checked; }));
-    store.commit();
+    store.getWorkouts().filter((w) => w.date === el.dataset.date).forEach((w) => {
+      if ((store.getSettings().packing?.[w.type] || []).includes(item)) togglePacked(w, item, el.checked);
+    });
+    render();
   }
 }
 
@@ -266,6 +274,15 @@ function openSettings() {
         ${deferredInstall ? '<hr><button class="btn primary" data-set-do="install">📲 Install app</button>' : ''}
 
         <hr>
+        <h3>Training</h3>
+        <label class="field"><span>Bike FTP (Watts)</span><input type="number" min="0" step="5" data-set="ftp" value="${s.ftp || 250}"></label>
+
+        <hr>
+        <h3>Packing presets</h3>
+        <div class="pack-presets">${['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'].map((t) =>
+          `<label class="field"><span>${t}</span><input type="text" data-pack-preset="${t}" value="${esc((s.packing?.[t] || []).join(', '))}" placeholder="item, item, …"></label>`).join('')}</div>
+
+        <hr>
         <h3>Danger zone</h3>
         <button class="btn ghost danger" data-set-do="reseed">↻ Reset &amp; reseed plan</button>
       </div>
@@ -278,7 +295,13 @@ function openSettings() {
     const key = el.dataset.set;
     let val = el.type === 'checkbox' ? el.checked : el.value;
     if (key === 'weekStart') val = Number(val);
+    if (key === 'ftp') val = Math.max(0, Number(val) || 0);
     store.setSetting(key, val);
+  }));
+  root.querySelectorAll('[data-pack-preset]').forEach((el) => el.addEventListener('change', () => {
+    const packing = { ...(store.getSettings().packing || {}) };
+    packing[el.dataset.packPreset] = el.value.split(',').map((x) => x.trim()).filter(Boolean);
+    store.setSetting('packing', packing);
   }));
   root.querySelectorAll('[data-set-do]').forEach((b) => b.addEventListener('click', () => {
     const act = b.dataset.setDo;
@@ -359,16 +382,37 @@ function openGoalEditor() {
   });
 }
 
+let _detailId = null;
+function openWorkoutDetail(id) {
+  const w = store.workoutById(id);
+  if (!w) return;
+  _detailId = id;
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
+    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(w.title)}">
+      <header class="modal-head"><h2>${esc(w.title)}</h2><button class="icon-btn" data-wd-close aria-label="Close">✕</button></header>
+      <div class="modal-body" id="wd-body">${renderWorkoutDetail(w, store.getSettings().units, buildCtx())}</div>
+    </div>`;
+  root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
+}
+function refreshDetail(id) {
+  if (_detailId !== id) return;
+  const body = document.getElementById('wd-body');
+  const w = store.workoutById(id);
+  if (body && w) body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
+}
+function closeModalRoot() {
+  _detailId = null;
+  const root = document.getElementById('modal-root');
+  root.innerHTML = ''; root.classList.remove('open');
+}
+
 function openAIWizard() {
   if (!auth.currentUser()) { auth.openAuthModal(); return; }
   const SPORTS = ['Gym', 'Cycling', 'Running', 'Swimming', 'Pilates', 'Hiking', 'Custom'];
-  const PRESETS = ['5K', '10K', 'Half Marathon', 'Marathon', '70.3 Tri', 'Full Ironman', 'Cycling Event'];
-  const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const MONTHS = Array.from({ length: 12 }, (_, k) => {
-    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + k + 1);
-    return { label: `${MO[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`, date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01` };
-  });
-  const state = { sports: [], days: 4, maxDoubles: 0, events: [{ title: '', date: '' }] };
+  const EV = ['Ironman', '5k', '10k', '21k', '42k', 'Other'];
+  const state = { sports: [], days: 4, maxDoubles: 0, ftp: store.getSettings().ftp || 250, events: [{ type: '', custom: '', date: '' }] };
   let page = 0;
   const root = document.getElementById('modal-root');
   root.classList.add('open');
@@ -376,7 +420,8 @@ function openAIWizard() {
   const draw = () => {
     let bodyHtml = '';
     if (page === 0) {
-      bodyHtml = `<h3>Which sports?</h3>${SPORTS.map((s) => `<label class="toggle"><span>${s}</span><input type="checkbox" data-sport="${s}" ${state.sports.includes(s) ? 'checked' : ''}></label>`).join('')}`;
+      bodyHtml = `<h3>Which sports?</h3>${SPORTS.map((s) => `<label class="toggle"><span>${s}</span><input type="checkbox" data-sport="${s}" ${state.sports.includes(s) ? 'checked' : ''}></label>`).join('')}
+        ${state.sports.includes('Cycling') ? `<label class="field"><span>Enter Bike FTP (Watts)</span><input class="wz-input" type="number" min="0" step="5" data-ftp value="${state.ftp}"></label>` : ''}`;
     } else if (page === 1) {
       bodyHtml = `<h3>How many days a week?</h3>
         <label class="field"><span><b id="dn">${state.days}</b> days / week</span><input type="range" min="1" max="7" value="${state.days}" data-days></label>
@@ -384,8 +429,9 @@ function openAIWizard() {
     } else {
       bodyHtml = `<h3>Upcoming events</h3>${state.events.map((e, i) => `
         <div class="wz-event">
-          <div class="cap-row">${PRESETS.map((p) => `<button type="button" class="cap ${e.title === p ? 'on' : ''}" data-ev="${i}" data-pick="title" data-val="${esc(p)}">${esc(p)}</button>`).join('')}</div>
-          <div class="cap-row">${MONTHS.map((m) => `<button type="button" class="cap ${e.date === m.date ? 'on' : ''}" data-ev="${i}" data-pick="date" data-val="${m.date}">${m.label}</button>`).join('')}</div>
+          <div class="cap-row">${EV.map((p) => `<button type="button" class="cap ${e.type === p ? 'on' : ''}" data-ev="${i}" data-pick="type" data-val="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+          ${e.type === 'Other' ? `<input class="wz-input" type="text" data-evtext="${i}" placeholder="Event name" value="${esc(e.custom)}">` : ''}
+          <input class="wz-date" type="date" data-evdate="${i}" value="${esc(e.date)}">
         </div>`).join('')}<button class="btn tiny ghost" data-add-ev>+ Add another event</button>`;
     }
     root.innerHTML = `<div class="modal-backdrop" data-wz-close></div>
@@ -397,27 +443,30 @@ function openAIWizard() {
     root.querySelectorAll('[data-wz-close]').forEach((b) => b.addEventListener('click', close));
     root.querySelectorAll('[data-sport]').forEach((c) => c.addEventListener('change', () => {
       if (c.checked) state.sports.push(c.dataset.sport); else state.sports = state.sports.filter((x) => x !== c.dataset.sport);
+      draw();
     }));
+    root.querySelector('[data-ftp]')?.addEventListener('input', (ev) => { state.ftp = Math.max(0, +ev.target.value || 0); });
     const rng = root.querySelector('[data-days]');
     if (rng) rng.addEventListener('input', () => { state.days = +rng.value; root.querySelector('#dn').textContent = rng.value; });
     const dbl = root.querySelector('[data-doubles]');
     if (dbl) dbl.addEventListener('input', () => { state.maxDoubles = +dbl.value; root.querySelector('#ddn').textContent = dbl.value; });
-    root.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => {
-      state.events[+b.dataset.ev][b.dataset.pick] = b.dataset.val; draw();
-    }));
-    root.querySelector('[data-add-ev]')?.addEventListener('click', () => { state.events.push({ title: '', date: '' }); draw(); });
+    root.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => { state.events[+b.dataset.ev].type = b.dataset.val; draw(); }));
+    root.querySelectorAll('[data-evtext]').forEach((i) => i.addEventListener('input', () => { state.events[+i.dataset.evtext].custom = i.value; }));
+    root.querySelectorAll('[data-evdate]').forEach((i) => i.addEventListener('change', () => { state.events[+i.dataset.evdate].date = i.value; }));
+    root.querySelector('[data-add-ev]')?.addEventListener('click', () => { state.events.push({ type: '', custom: '', date: '' }); draw(); });
     root.querySelector('[data-wz-back]')?.addEventListener('click', () => { page -= 1; draw(); });
     root.querySelector('[data-wz-next]').addEventListener('click', async (e) => {
       if (page < 2) { page += 1; draw(); return; }
       const btn = e.target; const msg = root.querySelector('.auth-msg');
       btn.disabled = true; btn.textContent = 'Generating…';
       try {
-        const events = state.events.filter((ev) => ev.title && ev.date);
-        store.setSetting('events', events); // power the dynamic Home "next event" banner
-        const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, max_double_days: state.maxDoubles, events }, stravaSummary(store.getWorkouts()));
+        const events = state.events.map((ev) => ({ title: ev.type === 'Other' ? ev.custom : ev.type, date: ev.date })).filter((ev) => ev.title && ev.date);
+        store.setSetting('events', events);
+        if (state.sports.includes('Cycling')) store.setSetting('ftp', state.ftp);
+        const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, max_double_days: state.maxDoubles, ftp: state.ftp, events }, stravaSummary(store.getWorkouts()));
         close();
         toast(`Added ${r.inserted} AI sessions to your calendar`, { icon: svg('spark') });
-        setTimeout(() => store.commit(), 1500); // realtime brings the new rows in
+        setTimeout(() => store.commit(), 1500);
       } catch (err) { msg.hidden = false; msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Generate'; }
     });
   };

@@ -26,7 +26,16 @@ export const SCHEMA_VERSION = 2;          // v2 adds `source` + `updated_at` to 
 export const nowISO = () => new Date().toISOString();
 
 export function defaultSettings() {
-  return { sound: false, units: 'metric', weekStart: 1, reduceMotion: false, goals: { sessions: 5, km: 50, hours: 8 } };
+  return {
+    sound: false, units: 'metric', weekStart: 1, reduceMotion: false,
+    goals: { sessions: 5, km: 50, hours: 8 }, ftp: 250,
+    packing: {
+      run: ['shoes', 'watch', 'gels', 'cap'],
+      bike: ['bib', 'shoes', 'bottles', 'helmet'],
+      swim: ['trunks', 'goggles', 'cap', 'towel'],
+      gym: ['shoes', 'belt', 'water'],
+    },
+  };
 }
 
 /** localStorage if available, else an in-memory shim (private mode / blocked). */

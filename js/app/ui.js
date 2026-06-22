@@ -1,7 +1,7 @@
 // ui.js — pure-ish HTML rendering. Functions return HTML strings that main.js
 // injects; all interactivity is wired via delegated data-action attributes.
 
-import { formatDuration, levelForType, sportProgress } from '../core/scoring.js';
+import { formatDuration, sportProgress } from '../core/scoring.js';
 import { poseSvgFor, cuesFor } from '../core/poses.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
@@ -225,8 +225,12 @@ export function sportLevelCarousel(type, level) {
   const items = frames.map((f) => {
     const state = f.level === level ? 'current' : (f.level < level ? 'past' : 'future');
     const lock = state === 'future' ? `<span class="lvl-lock">${svg('lock')}</span>` : '';
+    // The focused (current) level becomes a tap target that opens the fullscreen lightbox.
+    const zoom = state === 'current'
+      ? `data-action="open-lightbox" data-src="${esc(f.src)}" data-sport="${esc(type)}" role="button" tabindex="0" aria-label="Zoom level ${f.level}"`
+      : '';
     return `<div class="lvl-frame --${esc(type)} is-${state}" data-level="${f.level}">
-      <div class="lvl-frame-art"><img src="${esc(f.src)}" alt="${esc(type)} level ${f.level}" loading="lazy" onerror="this.style.visibility='hidden'">${lock}</div>
+      <div class="lvl-frame-art" ${zoom}><img src="${esc(f.src)}" alt="${esc(type)} level ${f.level}" loading="lazy" onerror="this.style.visibility='hidden'">${lock}</div>
       <span class="lvl-frame-tag">LVL ${f.level}</span>
     </div>`;
   }).join('');
@@ -253,19 +257,6 @@ function sportLeveling(ctx) {
   }).filter(Boolean).join('');
   if (!rows) return '';
   return `<section class="card lvl-section"><h3>Sport levels</h3><div class="lvl-rows">${rows}</div></section>`;
-}
-
-// Pressable 3D card showing the athlete's current level artwork for this sport.
-function levelCard(w, ctx) {
-  if (!SPORT_ART[w.type]) return '';
-  const level = levelForType(ctx?.workouts || [], w.type);
-  const src = sportArtSrc(w.type, level);
-  if (!src) return '';
-  return `<div class="block lvl-block">
-    <div class="isometric-card-btn --${w.type}">
-      <img class="lvl-art" src="${esc(src)}" alt="${esc(w.type)} level ${level}" loading="lazy" onerror="this.closest('.lvl-block').style.display='none'">
-      <span class="lvl-badge">LVL ${level}</span>
-    </div></div>`;
 }
 
 const KCAL = { run: 11, bike: 9, swim: 9, gym: 6, brick: 10, mobility: 4, other: 8 };
@@ -345,7 +336,6 @@ export function renderWorkoutDetail(w, units, ctx) {
   const actuals = w.strava_activity_id ? actualsBlock(w, units) : actualEntry(w);
   return `
     <div class="meta">${metaChips(w, units)}</div>
-    ${levelCard(w, ctx)}
     ${fuellingChip(w)}
     ${detail}
     ${segs ? `<div class="block">${segs}</div>` : ''}

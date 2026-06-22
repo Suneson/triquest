@@ -121,6 +121,7 @@ function onClick(e) {
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
+    case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
     case 'ai-wizard': openAIWizard(); break;
@@ -404,7 +405,7 @@ function openSportLevels(sport) {
   const root = document.getElementById('modal-root');
   root.classList.add('open');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
-    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(sport)} levels">
+    <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(sport)} levels">
       <header class="modal-head"><h2>Levels</h2><button class="icon-btn" data-wd-close aria-label="Close">✕</button></header>
       <div class="modal-body">${sportLevelCarousel(sport, level)}</div>
     </div>`;
@@ -412,6 +413,18 @@ function openSportLevels(sport) {
   // Centre the current-level frame in the swipeable strip.
   const cur = root.querySelector('.lvl-frame.is-current');
   if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
+// Fullscreen immersive lightbox for a single level frame. Tapping anywhere fades it out.
+function openLightbox(src, sport) {
+  if (!src) return;
+  const box = document.createElement('div');
+  box.className = `level-lightbox --${sport || 'other'}`;
+  box.innerHTML = `<img src="${esc(src)}" alt="Level artwork">`;
+  const dismiss = () => { box.classList.remove('show'); setTimeout(() => box.remove(), 200); };
+  box.addEventListener('click', dismiss);
+  document.body.appendChild(box);
+  requestAnimationFrame(() => box.classList.add('show'));
 }
 function refreshDetail(id) {
   if (_detailId !== id) return;

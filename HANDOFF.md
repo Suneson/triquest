@@ -177,6 +177,7 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 
 ## ✅ Done (recent)
 Accounts+sync, Strava OAuth/webhook/polling/matching + actual-vs-planned, UX pass (undo/auto-focus/onboarding), load/ACWR + run-volume guardrail, body metrics, .ics, race checklist, MOSKE rebrand + real logo, leaderboards (monthly season + all-time + public profile), Shop, AI wizard (Groq) + FTP + double-day cap, editable goal rings, dynamic event banner, plan-state CTAs + clear-future, emoji→SVG, keyboard-free wizard (native date + event capsules + Other), Bevel blue theme + bento cards + detail modal + power bars + packing-preset matrix, forgot-password.
+**Structured power + 3D level cards (pending #5 done):** ai-plan now emits a `power:[{min,watts}]` array for bike sessions (in `extra`, round-tripped via `EXTRA_KEYS`+`'power'`); `powerChart` renders width=duration / height=watts Zwift bars from it (regex-from-notes kept as legacy fallback). New `levelForType(workouts,type)` in `scoring.js` (per-discipline XP via existing curve). Detail modal shows a pressable `.isometric-card-btn --{bike|gym|run}` 3D card with pixel-art `icons/Pixelart/{BIKE|GYM|RUN}/…` — filenames are **non-uniform** (BIKELVL{n}, GYM_LVL{n}, RUN: RUNGENERAL_LVL1 then RUNLVL{2-5}); `sportArtSrc()` resolves+clamps to highest real art (bike 10/gym 9/run 5), swim+other get no card. `structuredBlocks` explodes comma/`;`/` / `-separated movements into one `.move-pill` per line. SW→v20. **ai-plan redeployed v15** (connector, verify_jwt true) — now emitting structured `power`; frontend stays back-compat with old `…W`-in-notes plans via the regex fallback.
 
 ## ⏳ PENDING / not built
 1. **Strava webhook registration** for instant push — function deployed but subscription not registered. Polling ("Sync now" + on-connect) works. Run `supabase/functions/_scripts/register-webhook.ts` (or curl in SETUP.md §4) once `STRAVA_WEBHOOK_VERIFY_TOKEN` is set.
@@ -184,6 +185,7 @@ Accounts+sync, Strava OAuth/webhook/polling/matching + actual-vs-planned, UX pas
 3. **PWA push reminders** (iOS 16.4+ installed PWA) — not built (needs VAPID + push sender Edge Function + SW push handler). Note: iOS Safari has no vibrate API.
 4. **Emoji scrub incomplete** outside Home/Leaderboard/Wizard: emojis remain in `editor.js`, `auth.js` (toasts), `main.js` settings buttons (↻⬇⬆📅📲), badge wall icons (Profile), `plan.js`/`badges.js`, toast icons. Replace with `svg()` for full consistency.
 4b. Profile/Settings tabs not yet given the full Bevel facelift pass (Home/cards done).
-5. **AI power chart** depends on the model emitting `…W` in notes; consider returning a structured `power:[{min,watts}]` array for exact bars instead of regex parse.
+5. ✅ **DONE** — AI power chart uses structured `power:[{min,watts}]`; ai-plan deployed v15 (see Done section).
 6. Optional: store per-workout packing-checked state UI is `extra.packed`; pack-for-tomorrow toggles across tomorrow sessions — verify multi-session edge cases.
+7. RUN levels 6-10 + GYM level 10 are placeholder `templvl*.png` art — `sportArtSrc()` clamps below them, so high-level runners/lifters cap at the last finished frame until real art lands.
 ```

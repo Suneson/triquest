@@ -1,7 +1,7 @@
 // ui.js — pure-ish HTML rendering. Functions return HTML strings that main.js
 // injects; all interactivity is wired via delegated data-action attributes.
 
-import { formatDuration } from '../core/scoring.js';
+import { formatDuration, levelForType, sportProgress } from '../core/scoring.js';
 import { poseSvgFor, cuesFor } from '../core/poses.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
@@ -166,29 +166,128 @@ export function zoneBadge(z) {
 }
 
 // Parse "[Warmup] … [Main Set] … [Cooldown] …" notes into labelled blocks.
+// Any comma / slash / semicolon-separated movement list is exploded into one
+// pill per line so gym sets read as a clean vertical index, not a run-on row.
 function structuredBlocks(w) {
   const n = w.notes || '';
   if (!/\[[^\]]+\]/.test(n)) return '';
   const segs = [...n.matchAll(/\[([^\]]+)\]\s*([^[]*)/g)].map((m) => ({ label: m[1].trim(), text: m[2].trim() })).filter((s) => s.text);
   if (!segs.length) return '';
-  return `<div class="block"><h4>Session</h4><div class="struct">${segs.map((s) => `
-    <div class="struct-row"><span class="struct-label">${esc(s.label)}</span><span class="struct-text mono">${esc(s.text)}</span></div>`).join('')}</div></div>`;
+  return `<div class="block"><h4>Session</h4><div class="struct">${segs.map((s) => {
+    const moves = s.text.split(/\s*[,;]\s*|\s+\/\s+/).map((t) => t.trim()).filter(Boolean);
+    const body = moves.length > 1
+      ? `<ul class="move-list">${moves.map((m) => `<li class="move-pill mono">${esc(m)}</li>`).join('')}</ul>`
+      : `<span class="struct-text mono">${esc(s.text)}</span>`;
+    return `<div class="struct-row"><span class="struct-label">${esc(s.label)}</span>${body}</div>`;
+  }).join('')}</div></div>`;
+}
+
+// ---- 3D isometric sport-level card -----------------------------------------
+
+const ART_BASE = 'icons/Pixelart';
+// Map each discipline to its REAL asset filenames (they are not uniform) and the
+// highest level that has finished (non-placeholder) art, so we never 404 or show
+// a temp graphic. Swim + everything else degrade gracefully (no card).
+const SPORT_ART = {
+  bike: { dir: 'BIKE', max: 10, file: (n) => `BIKELVL${n}.png` },
+  gym: { dir: 'GYM', max: 9, file: (n) => `GYM_LVL${n}.png` },
+  run: { dir: 'RUN', max: 5, file: (n) => (n <= 1 ? 'RUNGENERAL_LVL1.png' : `RUNLVL${n}.png`) },
+};
+
+export function sportArtSrc(type, level) {
+  const cfg = SPORT_ART[type];
+  if (!cfg) return null;
+  const n = Math.max(1, Math.min(cfg.max, parseInt(level) || 1));
+  return `${ART_BASE}/${cfg.dir}/${cfg.file(n)}`;
+}
+
+// Full 1→10 frame list per sport using the REAL (non-uniform) filenames; levels
+// past the finished art fall back to the placeholder `templvl*.png` frames so the
+// carousel always shows ten locked future scenes.
+const SPORT_FRAMES = {
+  bike: Array.from({ length: 10 }, (_, i) => `BIKELVL${i + 1}.png`),
+  gym: [...Array.from({ length: 9 }, (_, i) => `GYM_LVL${i + 1}.png`), 'templvl10.png'],
+  run: ['RUNGENERAL_LVL1.png', 'RUNLVL2.png', 'RUNLVL3.png', 'RUNLVL4.png', 'RUNLVL5.png',
+    'templvl6.png', 'templvl7.png', 'templvl8.png', 'templvl9.png', 'templvl10.png'],
+};
+function sportFrames(type) {
+  const cfg = SPORT_ART[type]; const list = SPORT_FRAMES[type];
+  if (!cfg || !list) return [];
+  return list.map((f, i) => ({ level: i + 1, src: `${ART_BASE}/${cfg.dir}/${f}` }));
+}
+
+// Horizontally-swipeable level carousel (modal body). Current level centred +
+// themed border, past levels scaled down (left), future levels dimmed + locked.
+export function sportLevelCarousel(type, level) {
+  const frames = sportFrames(type);
+  if (!frames.length) return '<p class="muted">No levels for this sport yet.</p>';
+  const d = DISCIPLINES[type] || DISCIPLINES.other;
+  const items = frames.map((f) => {
+    const state = f.level === level ? 'current' : (f.level < level ? 'past' : 'future');
+    const lock = state === 'future' ? `<span class="lvl-lock">${svg('lock')}</span>` : '';
+    return `<div class="lvl-frame --${esc(type)} is-${state}" data-level="${f.level}">
+      <div class="lvl-frame-art"><img src="${esc(f.src)}" alt="${esc(type)} level ${f.level}" loading="lazy" onerror="this.style.visibility='hidden'">${lock}</div>
+      <span class="lvl-frame-tag">LVL ${f.level}</span>
+    </div>`;
+  }).join('');
+  return `<div class="lvl-carousel-head"><b>${svg(type, 'tint')} ${esc(d.label)}</b><span class="lvl-tag">Current: LVL ${level}</span></div>
+    <div class="lvl-carousel" data-current="${level}">${items}</div>
+    <p class="muted small">Complete more ${esc(d.label.toLowerCase())} sessions to unlock the next scene.</p>`;
+}
+
+// Profile dashboard: one tappable row per sport the athlete has earned XP in.
+function sportLeveling(ctx) {
+  const rows = ['run', 'bike', 'gym'].map((t) => {
+    const p = sportProgress(ctx.workouts, t);
+    if (!(p.totalXp > 0)) return '';               // only show sports with XP
+    const pct = Math.round(p.progress * 100);
+    const d = DISCIPLINES[t];
+    return `<button class="lvl-row" data-action="open-sport-levels" data-sport="${t}">
+      <span class="lvl-thumb --${t}"><img src="${esc(sportArtSrc(t, p.level))}" alt="" loading="lazy" onerror="this.style.opacity=0"></span>
+      <span class="lvl-row-body">
+        <span class="lvl-row-head"><b>${svg(t, 'tint')} ${esc(d.label)}</b><span class="lvl-tag">LVL ${p.level}</span></span>
+        <span class="lvl-track"><span class="lvl-fill --${t}" style="width:${pct}%"></span></span>
+        <small class="lvl-foot">${p.toNext} XP to LVL ${p.level + 1}</small>
+      </span>
+    </button>`;
+  }).filter(Boolean).join('');
+  if (!rows) return '';
+  return `<section class="card lvl-section"><h3>Sport levels</h3><div class="lvl-rows">${rows}</div></section>`;
+}
+
+// Pressable 3D card showing the athlete's current level artwork for this sport.
+function levelCard(w, ctx) {
+  if (!SPORT_ART[w.type]) return '';
+  const level = levelForType(ctx?.workouts || [], w.type);
+  const src = sportArtSrc(w.type, level);
+  if (!src) return '';
+  return `<div class="block lvl-block">
+    <div class="isometric-card-btn --${w.type}">
+      <img class="lvl-art" src="${esc(src)}" alt="${esc(w.type)} level ${level}" loading="lazy" onerror="this.closest('.lvl-block').style.display='none'">
+      <span class="lvl-badge">LVL ${level}</span>
+    </div></div>`;
 }
 
 const KCAL = { run: 11, bike: 9, swim: 9, gym: 6, brick: 10, mobility: 4, other: 8 };
 const kcalEst = (w) => Math.round(w.actual?.calories || (w.durationMin || 0) * (KCAL[w.type] || 8));
 
-// CSS power-interval chart: watts parsed from notes, scaled to the user's FTP.
+// CSS power-interval chart (Zwift-style). Prefers the structured `power` array
+// ([{min,watts}]); falls back to regex-parsing watts from notes for legacy plans.
+// Bar height = watts / scale; bar width = block minutes / total.
 function powerChart(w, ftp) {
   if (w.type !== 'bike') return '';
-  const watts = [...(w.notes || '').matchAll(/(\d{2,4})\s*w\b/gi)].map((m) => +m[1]).filter((x) => x >= 50 && x <= 2000);
-  if (!watts.length) return '';
-  const max = Math.max(ftp * 1.4, ...watts);
-  const bars = watts.map((p) => {
-    const z = p / ftp; const c = z < 0.76 ? '1' : z < 0.9 ? '3' : z < 1.05 ? '4' : '5';
-    return `<div class="pwr-bar zcol-${c}" style="height:${Math.round((p / max) * 100)}%"><span>${p}</span></div>`;
+  const blocks = Array.isArray(w.power) && w.power.length
+    ? w.power.map((b) => ({ min: Math.max(1, Number(b.min) || 1), watts: Number(b.watts) || 0 }))
+    : [...(w.notes || '').matchAll(/(\d{2,4})\s*w\b/gi)].map((m) => ({ min: 1, watts: +m[1] }));
+  const segs = blocks.filter((b) => b.watts >= 50 && b.watts <= 2000);
+  if (!segs.length) return '';
+  const max = Math.max(ftp * 1.4, ...segs.map((s) => s.watts));
+  const totalMin = segs.reduce((a, s) => a + s.min, 0) || segs.length;
+  const bars = segs.map((s) => {
+    const z = s.watts / ftp; const c = z < 0.76 ? '1' : z < 0.9 ? '3' : z < 1.05 ? '4' : '5';
+    return `<div class="pwr-bar zcol-${c}" style="height:${Math.round((s.watts / max) * 100)}%; flex:${(s.min / totalMin).toFixed(3)}" title="${s.min} min @ ${s.watts} W (${Math.round(z * 100)}% FTP)"><span>${s.watts}</span></div>`;
   }).join('');
-  return `<div class="block"><h4>Power</h4><div class="pwr">${bars}</div><div class="pwr-ftp">FTP ${ftp} W</div></div>`;
+  return `<div class="block"><h4>Power</h4><div class="pwr">${bars}</div><div class="pwr-ftp">FTP ${ftp} W · scaled to your profile</div></div>`;
 }
 
 // Read-only packing checklist driven by the per-sport preset configured in Settings.
@@ -246,6 +345,7 @@ export function renderWorkoutDetail(w, units, ctx) {
   const actuals = w.strava_activity_id ? actualsBlock(w, units) : actualEntry(w);
   return `
     <div class="meta">${metaChips(w, units)}</div>
+    ${levelCard(w, ctx)}
     ${fuellingChip(w)}
     ${detail}
     ${segs ? `<div class="block">${segs}</div>` : ''}
@@ -436,6 +536,7 @@ export function renderProgress(ctx) {
   return [
     `<div class="day-header"><h2>Profile</h2></div>`,
     totalsStrip(stats, streaks, units),
+    sportLeveling(ctx),
     loadPanel(workouts, today),
     weeklyVolumeChart(workouts, today),
     disciplineBreakdown(stats),

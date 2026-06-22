@@ -66,6 +66,24 @@ export function levelFromTotalXp(totalXp) {
 }
 
 /**
+ * Per-discipline progress: run the same XP curve over only this discipline's
+ * completed-workout XP. A cyclist who only rides levels up BIKE, not RUN.
+ * Returns the full {level, totalXp, into, span, toNext, progress} shape.
+ */
+export function sportProgress(workouts, type) {
+  let xp = 0;
+  for (const w of workouts) {
+    if (w.completed && w.type === type) xp += xpForWorkout(w);
+  }
+  return levelFromTotalXp(xp);
+}
+
+/** Convenience: just the per-discipline level number. */
+export function levelForType(workouts, type) {
+  return sportProgress(workouts, type).level;
+}
+
+/**
  * Aggregate stats over the workout list.
  * Only *completed* sessions contribute to XP, volume and counts.
  */

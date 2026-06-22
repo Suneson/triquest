@@ -1,13 +1,14 @@
 // main.js — bootstrap, derived state, rendering orchestration and event wiring.
 
 import * as store from './store.js';
-import { computeStats } from '../core/scoring.js';
+import { computeStats, sportProgress } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
 import { evaluateBadges, BADGES } from '../core/badges.js';
 import { PLAN_START } from '../core/plan.js';
 import { addDays, diffDays } from '../core/dates.js';
 import {
   renderHud, renderHome, renderProgress, eventBanner, renderWorkoutDetail, mondayOf, esc,
+  sportLevelCarousel,
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
@@ -119,6 +120,7 @@ function onClick(e) {
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
+    case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
     case 'ai-wizard': openAIWizard(); break;
@@ -395,6 +397,21 @@ function openWorkoutDetail(id) {
       <div class="modal-body" id="wd-body">${renderWorkoutDetail(w, store.getSettings().units, buildCtx())}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
+}
+function openSportLevels(sport) {
+  if (!sport) return;
+  const level = sportProgress(store.getWorkouts(), sport).level;
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
+    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(sport)} levels">
+      <header class="modal-head"><h2>Levels</h2><button class="icon-btn" data-wd-close aria-label="Close">✕</button></header>
+      <div class="modal-body">${sportLevelCarousel(sport, level)}</div>
+    </div>`;
+  root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
+  // Centre the current-level frame in the swipeable strip.
+  const cur = root.querySelector('.lvl-frame.is-current');
+  if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 function refreshDetail(id) {
   if (_detailId !== id) return;

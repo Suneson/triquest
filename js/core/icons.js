@@ -23,6 +23,7 @@ const P = {
   flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
   moon: '<path d="M20 14a8 8 0 1 1-10-10 7 7 0 0 0 10 10Z"/>',
   warn: '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
 };
 export function svg(name, cls = '') {
   return `<svg viewBox="0 0 24 24" class="ic ${cls}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || P.other}</svg>`;

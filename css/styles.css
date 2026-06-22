@@ -529,6 +529,89 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .zcol-1 { background: #00f0ff; } .zcol-3 { background: #39ff14; } .zcol-4 { background: #ffaa00; } .zcol-5 { background: #ff0055; }
 .pwr-ftp { font-size: .7rem; color: var(--muted); margin-top: 6px; font-family: ui-monospace, monospace; }
 
+/* ---- 3D isometric sport-level card ---- */
+.lvl-block { display: flex; justify-content: center; padding: 6px 0 14px; }
+.isometric-card-btn {
+  position: relative; transition: transform 0.1s ease; border-radius: 16px;
+  border: 4px solid var(--sport-border); background: var(--bg-3);
+  padding: 10px; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 6px 6px 0px 0px var(--sport-shadow);
+}
+.isometric-card-btn:active { transform: translate(6px, 6px); box-shadow: 0px 0px 0px 0px transparent; }
+.isometric-card-btn.--bike { --sport-border: #264885; --sport-shadow: #152d59; }
+.isometric-card-btn.--gym  { --sport-border: #fed26a; --sport-shadow: #bfa050; }
+.isometric-card-btn.--run  { --sport-border: #ff5a5f; --sport-shadow: #c43b40; }
+.lvl-art { width: 132px; height: 132px; object-fit: contain; image-rendering: pixelated; display: block; }
+.lvl-badge {
+  position: absolute; bottom: -11px; left: 50%; transform: translateX(-50%);
+  background: var(--sport-border); color: #06101f; font-weight: 800; font-size: .6rem;
+  letter-spacing: .09em; padding: 3px 11px; border-radius: 999px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap;
+}
+
+/* ---- vertical movement pills (gym de-clutter) ---- */
+.move-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.move-pill {
+  background: var(--bg-4); border: 1px solid var(--border); border-radius: 8px;
+  padding: 5px 9px; font-size: .8rem; line-height: 1.3;
+}
+
+/* ---- profile sport-level rows ---- */
+.lvl-section .lvl-rows { display: grid; gap: 10px; }
+.lvl-row {
+  display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center;
+  width: 100%; text-align: left; background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: 14px; padding: 10px; color: var(--fg); transition: transform .08s ease, border-color .15s ease;
+}
+.lvl-row:active { transform: scale(.985); }
+.lvl-thumb {
+  width: 64px; height: 64px; border-radius: 12px; overflow: hidden; flex: none;
+  border: 2px solid var(--sport-border, var(--border)); background: var(--bg-4);
+}
+.lvl-thumb.--bike { --sport-border: #264885; } .lvl-thumb.--gym { --sport-border: #fed26a; } .lvl-thumb.--run { --sport-border: #ff5a5f; }
+.lvl-thumb img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+.lvl-row-body { display: grid; gap: 6px; min-width: 0; }
+.lvl-row-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lvl-row-head b { display: inline-flex; align-items: center; gap: 6px; font-size: .92rem; }
+.lvl-tag {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .6rem; font-weight: 800;
+  letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; background: var(--bg-4); color: var(--muted);
+}
+.lvl-track { height: 8px; border-radius: 999px; background: var(--bg-4); overflow: hidden; }
+.lvl-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.lvl-fill.--bike { background: #3da9fc; } .lvl-fill.--gym { background: #fed26a; } .lvl-fill.--run { background: #ff5a5f; }
+.lvl-foot { color: var(--muted); font-size: .72rem; font-family: ui-monospace, monospace; }
+
+/* ---- sport-level carousel (modal) ---- */
+.lvl-carousel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.lvl-carousel-head b { display: inline-flex; align-items: center; gap: 6px; }
+.lvl-carousel {
+  display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 24px 42%; margin: 0 -16px; -webkit-overflow-scrolling: touch;
+}
+.lvl-carousel::-webkit-scrollbar { height: 0; }
+.lvl-frame { flex: none; scroll-snap-align: center; display: grid; gap: 8px; justify-items: center; transition: transform .2s ease, opacity .2s ease; }
+.lvl-frame-art {
+  position: relative; width: 180px; height: 180px; border-radius: 16px; overflow: hidden;
+  border: 4px solid var(--border); background: var(--bg-3);
+}
+.lvl-frame-art img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+.lvl-frame.--bike.is-current .lvl-frame-art { border-color: #264885; box-shadow: 0 0 0 4px rgba(38, 72, 133, .3); }
+.lvl-frame.--gym.is-current  .lvl-frame-art { border-color: #fed26a; box-shadow: 0 0 0 4px rgba(254, 210, 106, .3); }
+.lvl-frame.--run.is-current  .lvl-frame-art { border-color: #ff5a5f; box-shadow: 0 0 0 4px rgba(255, 90, 95, .3); }
+.lvl-frame.is-past { transform: scale(.82); }
+.lvl-frame.is-future { opacity: .40; }
+.lvl-lock {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--fg);
+}
+.lvl-lock .ic { width: 40px; height: 40px; }
+.lvl-frame-tag {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .68rem; font-weight: 800;
+  letter-spacing: .08em; color: var(--muted);
+}
+.lvl-frame.is-current .lvl-frame-tag { color: var(--fg); }
+
 /* ---- wizard / settings inputs ---- */
 .wz-input, .wz-date { width: 100%; margin-top: 8px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--fg); font: inherit; }
 .pack-presets .field input { font-size: .85rem; }

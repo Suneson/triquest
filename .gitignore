@@ -11,3 +11,6 @@ npm-debug.log*
 
 # Local backups exported from the app
 triquest-backup-*.json
+
+# Pixel-art source files — ship only the exported PNGs, not the heavy PSDs
+*.psd

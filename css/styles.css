@@ -611,6 +611,63 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .level-lightbox.--gym img  { border-color: #fed26a; }
 .level-lightbox.--run img  { border-color: #ff5a5f; }
 
+/* ---- profile "game" environment ---- */
+.pg-screen { display: flex; flex-direction: column; gap: 12px; min-height: calc(100dvh - 120px); }
+.pg-topbar { display: flex; align-items: center; gap: 10px; }
+.pg-sports { display: flex; gap: 6px; flex: 1; min-width: 0; }
+.pg-sport {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px; border-radius: 12px; background: var(--bg-3); border: 1px solid var(--border);
+  color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .02em;
+  transition: transform .08s ease, border-color .15s ease, color .15s ease;
+}
+.pg-sport .ic { width: 20px; height: 20px; }
+.pg-sport:active { transform: scale(.94); }
+.pg-sport.active { color: var(--fg); border-color: #3da9fc; background: rgba(61, 169, 252, .12); box-shadow: 0 0 0 1px #3da9fc inset; }
+.pg-avatar {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--accent);
+  background: var(--bg-4); color: var(--fg); font-weight: 800; font-size: 1.1rem; display: grid; place-items: center;
+}
+.pg-avatar:active { transform: scale(.94); }
+
+.pg-stage {
+  position: relative; flex: 1; min-height: 440px; border-radius: 20px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 0%, #11203a 0%, #06101f 70%); border: 1px solid var(--border);
+}
+.pg-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; pointer-events: none; }
+.pg-bg { z-index: 1; }
+.pg-platform { z-index: 2; }
+.pg-char { z-index: 3; }
+
+.pg-hud {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 28px 16px 16px;
+  background: linear-gradient(180deg, transparent, rgba(6, 16, 31, .85)55%);
+  display: grid; gap: 8px;
+}
+.pg-hud-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pg-sport-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: .95rem; }
+.pg-level-badge {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 800; font-size: .72rem; letter-spacing: .06em;
+  padding: 4px 11px; border-radius: 999px; background: #3da9fc; color: #04121f;
+}
+.pg-xpbar { height: 12px; border-radius: 999px; background: rgba(255, 255, 255, .12); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.pg-xpfill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #3da9fc, #00f0ff); transition: width .5s cubic-bezier(.2, .8, .2, 1); box-shadow: 0 0 12px rgba(0, 240, 255, .5); }
+.pg-xptext { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .72rem; color: var(--muted); }
+
+/* ---- decluttered profile card modal ---- */
+.pc-modal { position: relative; max-width: 360px; padding: 40px 28px 36px; text-align: center; }
+.pc-x { position: absolute; top: 12px; right: 12px; }
+.pc-head { display: grid; justify-items: center; gap: 14px; margin-bottom: 34px; }
+.pc-avatar {
+  width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 2.1rem; font-weight: 800; color: var(--fg); background: var(--bg-4); border: 2px solid var(--accent);
+}
+.pc-name { font-size: 1.3rem; font-weight: 800; letter-spacing: -.01em; }
+.pc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 16px; }
+.pc-stat { display: grid; gap: 6px; }
+.pc-stat b { font-size: 1.6rem; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+.pc-stat small { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+
 /* ---- wizard / settings inputs ---- */
 .wz-input, .wz-date { width: 100%; margin-top: 8px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--fg); font: inherit; }
 .pack-presets .field input { font-size: .85rem; }

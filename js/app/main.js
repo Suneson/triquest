@@ -14,6 +14,7 @@ import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openPublicProfile } from './profile.js';
+import { renderProfileGame, openProfileCard } from './profile-game.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
@@ -96,7 +97,7 @@ function render() {
     view.innerHTML = shopShell();
     loadShop();
   } else if (appState.tab === 'progress') {
-    view.innerHTML = renderProgress(ctx);
+    view.innerHTML = renderProfileGame(ctx);
   } else {
     view.innerHTML = renderHome(ctx, appState.weekStart);
   }
@@ -122,6 +123,15 @@ function onClick(e) {
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
+    case 'pg-profile': openProfileCard(buildCtx()); break;
+    case 'pg-sport': {
+      const s = el.dataset.sport;
+      if (s !== 'bike') {
+        const names = { swim: 'Swimming', run: 'Running', gym: 'Gym' };
+        toast(`${names[s] || 'This sport'} is a work in progress — coming soon!`, { icon: svg('warn') });
+      }
+      break;
+    }
     case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
     case 'ai-wizard': openAIWizard(); break;

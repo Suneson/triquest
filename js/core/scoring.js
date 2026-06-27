@@ -36,14 +36,16 @@ export function xpForWorkout(w) {
 
 /**
  * Total cumulative XP required to *be* at a given level.
- * Level 1 = 0 XP. Each level costs a little more than the last (linear ramp),
- * which gives a smooth, ever-lengthening progress bar.
+ * Level 1 = 0 XP. The per-level cost grows super-linearly (≈ level^1.6), so the
+ * early levels come quickly but reaching Level 10 is a real grind — each new
+ * level costs noticeably more than the last.
+ *   cost(L→L+1) = round(100 * L^1.6);  threshold(L) = Σ cost(1..L-1)
  */
 export function xpToReachLevel(level) {
   if (level <= 1) return 0;
-  const n = level - 1;
-  // sum_{k=1..n} (150 + (k-1)*75)
-  return 150 * n + 75 * ((n * (n - 1)) / 2);
+  let total = 0;
+  for (let L = 1; L < level; L++) total += Math.round(100 * Math.pow(L, 1.6));
+  return total;
 }
 
 /** Derive level + progress within the level from a total XP value. */

@@ -28,27 +28,6 @@ export function fmtKm(km, units = 'metric') {
   return `${km % 1 ? km.toFixed(1) : km} km`;
 }
 
-// ---- HUD --------------------------------------------------------------------
-
-export function renderHud(stats, streaks, units) {
-  const pct = Math.round(stats.progress * 100);
-  const totalKm = Object.values(stats.kmByType).reduce((a, b) => a + b, 0);
-  return `
-    <div class="hud-level">
-      <div class="level-badge" title="Level ${stats.level}">${stats.level}</div>
-      <div class="xp">
-        <div class="xp-top"><span>Level ${stats.level}</span><span>${stats.into} / ${stats.span} XP</span></div>
-        <div class="xp-bar"><div class="xp-fill" style="width:${pct}%"></div></div>
-      </div>
-    </div>
-    <div class="hud-stats">
-      <div class="stat" title="Current streak (longest ${streaks.longest})"><span class="stat-ico">${svg('flame')}</span><b>${streaks.current}</b><small>day streak</small></div>
-      <div class="stat" title="Total training time"><span class="stat-ico">${svg('clock')}</span><b>${stats.totalHours.toFixed(1)}</b><small>hours</small></div>
-      <div class="stat" title="Total distance"><span class="stat-ico">${svg('route')}</span><b>${Math.round(totalKm)}</b><small>${units === 'imperial' ? 'mi*' : 'km'}</small></div>
-      <div class="stat" title="Sessions completed"><span class="stat-ico">${svg('check')}</span><b>${stats.completedCount}</b><small>done</small></div>
-    </div>`;
-}
-
 // ---- segment visualizer -----------------------------------------------------
 
 export function segmentBar(segments) {
@@ -349,174 +328,150 @@ export function renderWorkoutDetail(w, units, ctx) {
     </div>`;
 }
 
-// ---- TODAY ------------------------------------------------------------------
-
-export function renderToday(ctx) {
-  const { today, workouts, units } = ctx;
-  const sessions = workouts.filter((w) => w.date === today).sort(sortSessions);
-  const phase = sessions[0]?.phase;
-  const left = sessions.filter((w) => !w.completed).length;
-  const firstIncomplete = sessions.find((w) => !w.completed);
-
-  const leftCue = sessions.length
-    ? (left ? `<span class="left-cue">${left} session${left === 1 ? '' : 's'} left</span>`
-            : `<span class="left-cue done">${svg('check')} all done</span>`)
-    : '';
-
-  const header = `
-    <div class="day-header">
-      <div><h2>Today</h2><p class="sub">${weekdayName(today)} · ${shortLabel(today)}${phase ? ` · <span class="phase-pill">${esc(phase)}</span>` : ''}</p></div>
-      ${leftCue}
-    </div>`;
-
-  let body;
-  if (sessions.length) {
-    body = sessions.map((w) => sessionCard(w, units, { isNext: w === firstIncomplete })).join('');
-  } else {
-    const next = nextSession(workouts, today);
-    body = `<div class="empty card">
-      <p class="big">${svg('moon')} No planned session today — rest &amp; recover.</p>
-      ${next ? `<p class="muted">Next up: <b>${esc(next.title)}</b> on ${shortLabel(next.date)}.</p>` : ''}
-      <button class="btn" data-action="open-editor-new" data-date="${esc(today)}">+ Add a session for today</button>
-    </div>`;
-  }
-
-  return header + runWarningBanner(workouts, today) + raceChecklist(workouts, today) + body + packForTomorrow(ctx);
-}
-
-// Run-volume guardrail (>10% week-over-week) — the user has a run-injury history.
-function runWarningBanner(workouts, today) {
-  const r = runVolumeJump(workouts, today);
-  if (!r.warn) return '';
-  return `<div class="warn-banner">${svg('warn')} Run volume is up <b>${r.pctChange}%</b> on last week (${r.lastKm}→${r.thisKm} km). Keep weekly run jumps under ~10% to protect against injury.</div>`;
-}
-
-// Race-day checklist surfaces when a race is within 10 days.
-function raceChecklist(workouts, today) {
-  const race = RACES.find((r) => { const d = diffDays(r.date, today); return d >= 0 && d <= 10; });
-  if (!race) return '';
-  const session = workouts.find((w) => w.date === race.date && w.isRace);
-  if (!session) return '';
-  const items = (session.packing || []).map((p, i) =>
-    `<li class="${p.checked ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-pack" data-id="${esc(session.id)}" data-pi="${i}" ${p.checked ? 'checked' : ''}><span>${esc(p.item)}</span></label></li>`).join('');
-  const days = diffDays(race.date, today);
-  return `<section class="card accent race-checklist">
-    <h3>${svg('flag')} Race-day checklist — ${esc(race.title)} <span class="muted">in ${days} day${days === 1 ? '' : 's'}</span></h3>
-    <ul class="pack-items big-pack">${items}</ul></section>`;
-}
-
-function packForTomorrow(ctx) {
-  const { today, workouts, settings } = ctx;
-  const tomorrow = addDays(today, 1);
-  const tmrSessions = workouts.filter((w) => w.date === tomorrow);
-  const types = [...new Set(tmrSessions.map((w) => w.type))];
-  const items = [...new Set(types.flatMap((t) => settings?.packing?.[t] || []))];
-  const packed = new Set(tmrSessions.flatMap((w) => w.packed || []));
-  const titles = tmrSessions.map((w) => w.title).join(' + ');
-  return `
-    <section class="pack-tomorrow card accent">
-      <h3>${svg('bag')} Pack for tomorrow</h3>
-      ${tmrSessions.length && items.length
-        ? `<p class="sub">${esc(titles)} · ${shortLabel(tomorrow)}</p>
-           <ul class="pack-items big-pack">${items.map((item) => `
-             <li class="${packed.has(item) ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-tomorrow-pack" data-date="${esc(tomorrow)}" data-item="${esc(item)}" ${packed.has(item) ? 'checked' : ''}><span>${esc(item)}</span></label></li>`).join('')}</ul>`
-        : `<p class="muted">${tmrSessions.length ? 'No packing presets for tomorrow’s sports — set them in Settings.' : 'Nothing planned tomorrow — enjoy the rest day.'}</p>`}
-    </section>`;
-}
-
-// ---- HOME (today details + remaining week) ----------------------------------
+// ---- HOME (today's snapshot: rings → insight → focus) ------------------------
 
 export function eventBanner(ctx) {
   const evs = (ctx.settings?.events || []).filter((e) => e.date && e.date >= ctx.today)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!evs.length) return '';
-  return `<div class="race-banner">${svg('flag')} NEXT EVENT: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
+  return `<div class="race-banner">${svg('flag')} Next event: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
 }
 
-function planCta(ctx) {
-  const hasPlan = ctx.workouts.some((w) => w.source === 'custom' && w.date >= ctx.today);
-  return hasPlan
-    ? `<div class="plan-actions">
-         <button class="btn ai-cta" data-action="ai-wizard">${svg('regen')} Regenerate plan</button>
-         <button class="btn ghost danger" data-action="clear-future">${svg('trash')} Clear future workouts</button>
-       </div>`
-    : `<button class="btn primary block ai-cta" data-action="ai-wizard">${svg('spark')} Create custom workout plan</button>`;
+export function renderHome(ctx) {
+  const ws = mondayOf(ctx.today);
+  return ringsCard(ctx, ws) + insightLine(ctx, ws) + focusCard(ctx);
 }
 
-export function renderHome(ctx, weekStart) {
-  const ws = weekStart || mondayOf(ctx.today);
-  // Order: goal rings → today's details → Mon-onward week grid.
-  return planCta(ctx)
-    + goalRings(ctx, ws)
-    + renderToday(ctx)
-    + `<div class="day-header"><h2>This week</h2></div>`
-    + renderWeek(ctx, ws);
-}
-
-// ---- WEEK -------------------------------------------------------------------
-
-export function renderWeek(ctx, weekStartIso) {
-  const { workouts, units, today } = ctx;
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartIso, i));
-  const weekEnd = days[6];
-  const sample = workouts.find((w) => w.date >= weekStartIso && w.date <= weekEnd);
-  const phase = sample?.phase;
-  const deload = workouts.some((w) => w.date >= weekStartIso && w.date <= weekEnd && w.deload && !/taper/i.test(w.title));
-  const taper = workouts.some((w) => w.date >= weekStartIso && w.date <= weekEnd && /taper/i.test(w.title));
-  const raceThisWeek = RACES.find((r) => r.date >= weekStartIso && r.date <= weekEnd);
-
-  const flags = [
-    phase ? `<span class="phase-pill">${esc(phase)}</span>` : '',
-    deload ? '<span class="tag deload">deload week</span>' : '',
-    taper ? '<span class="tag deload">taper week</span>' : '',
-    raceThisWeek ? `<span class="tag race">${raceThisWeek.emoji} race week</span>` : '',
-  ].filter(Boolean).join(' ');
-
-  const nav = `
-    <div class="week-nav">
-      <button class="btn icon" data-action="prev-week" aria-label="Previous week">‹</button>
-      <div class="week-range"><b>${shortLabel(weekStartIso)} – ${shortLabel(weekEnd)}</b><div class="flags">${flags}</div></div>
-      <button class="btn icon" data-action="next-week" aria-label="Next week">›</button>
-    </div>`;
-
-  const dayBlocks = days.map((iso) => {
-    const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
-    const isToday = iso === today;
-    const cards = sessions.length
-      ? sessions.map((w) => sessionCard(w, units, { compact: true })).join('')
-      : `<div class="rest-day">Rest day · <button class="link" data-action="open-editor-new" data-date="${esc(iso)}">+ add</button></div>`;
-    return `
-      <div class="week-day ${isToday ? 'is-today' : ''}">
-        <div class="week-day-head"><b>${weekdayName(iso).slice(0, 3)}</b><span>${shortLabel(iso).replace(/^\w+ /, '')}</span>${isToday ? '<em>today</em>' : ''}</div>
-        <div class="week-day-body">${cards}</div>
-      </div>`;
-  }).join('');
-
-  return `${nav}<div class="week-grid">${dayBlocks}</div>`;
-}
-
-export function ring(pct, big, small, colorVar) {
-  const p = Math.max(0, Math.min(100, Math.round(pct)));
-  return `<div class="ring" style="--p:${p}; --rc:${colorVar}" role="img" aria-label="${esc(small)} ${p}%">
-    <div class="ring-c"><b>${big}</b><small>${esc(small)}</small></div></div>`;
-}
-
-// Editable weekly goal rings: planned sessions, distance (km), training hours.
-function goalRings(ctx, weekStartIso) {
-  const { workouts } = ctx;
+// Weekly goal progress vs the three configured targets.
+function weekGoalState(ctx, weekStartIso) {
   const g = ctx.settings?.goals || { sessions: 5, km: 50, hours: 8 };
   const end = addDays(weekStartIso, 6);
-  const inWeek = workouts.filter((w) => w.completed && w.date >= weekStartIso && w.date <= end);
-  const sessions = inWeek.length;
+  const inWeek = ctx.workouts.filter((w) => w.completed && w.date >= weekStartIso && w.date <= end);
   const km = inWeek.reduce((a, w) => a + (Number(w.metrics?.distanceKm) || 0), 0);
-  const hrs = weekHours(workouts, weekStartIso);
-  return `<section class="card week-summary">
-    <div class="rings-head"><h3>This week’s goals</h3><button class="btn tiny ghost" data-action="edit-goals">${svg('edit')} Edit</button></div>
-    <div class="rings">
-      ${ring((sessions / g.sessions) * 100, `${sessions}/${g.sessions}`, 'sessions', 'var(--good)')}
-      ${ring((km / g.km) * 100, `${Math.round(km)}`, `/ ${g.km} km`, 'var(--c-bike)')}
-      ${ring((hrs / g.hours) * 100, hrs.toFixed(1), `/ ${g.hours} h`, 'var(--accent)')}
-    </div></section>`;
+  const hours = weekHours(ctx.workouts, weekStartIso);
+  const frac = (v, goal) => (goal > 0 ? v / goal : 1);
+  return {
+    g, sessions: inWeek.length, km, hours,
+    fracs: { sessions: frac(inWeek.length, g.sessions), km: frac(km, g.km), hours: frac(hours, g.hours) },
+  };
+}
+
+// Single matte widget: three side-by-side metric rings (Whoop-style columns),
+// each with its percentage in the centre and label + target underneath.
+function metricRing(grad, frac, label, target) {
+  const p = Math.max(0, Math.min(100, Math.round(frac * 100)));
+  // Arc length is driven by stroke-dashoffset (100 = empty), so the CSS entry
+  // animation can glide it into place on every load / data update.
+  const offset = 100 - Math.max(p, 0.5);
+  return `<div class="mring-col" role="img" aria-label="${esc(label)} ${p}%">
+    <div class="mring">
+      <svg viewBox="0 0 84 84">
+        <defs><linearGradient id="mrg-${grad}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--ring-${grad}-a)"/><stop offset="1" stop-color="var(--ring-${grad}-b)"/>
+        </linearGradient></defs>
+        <circle class="track" cx="42" cy="42" r="36" stroke-width="6"></circle>
+        <circle class="prog" cx="42" cy="42" r="36" stroke-width="6" stroke="url(#mrg-${grad})"
+          pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}" transform="rotate(-90 42 42)"></circle>
+      </svg>
+      <b class="mring-pct">${p}%</b>
+    </div>
+    <div class="mring-meta">
+      <b class="mring-label">${esc(label)}</b>
+      <span class="mring-target">${esc(target)}</span>
+    </div>
+  </div>`;
+}
+
+function ringsCard(ctx, weekStartIso) {
+  const s = weekGoalState(ctx, weekStartIso);
+  return `<section class="card rings-card">
+    ${metricRing('lime', s.fracs.sessions, 'Sessions', `${s.sessions} of ${s.g.sessions}`)}
+    ${metricRing('indigo', s.fracs.km, 'Distance', `${Math.round(s.km)} of ${s.g.km} km`)}
+    ${metricRing('mint', s.fracs.hours, 'Hours', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
+    <button class="rings-edit" data-action="edit-goals">Edit</button>
+  </section>`;
+}
+
+// One understated sentence pointing at the goal that needs the most work.
+function insightLine(ctx, weekStartIso) {
+  const s = weekGoalState(ctx, weekStartIso);
+  const entries = Object.entries(s.fracs).sort((a, b) => a[1] - b[1]);
+  const [worst, frac] = entries[0];
+  let text;
+  if (frac >= 1) text = 'All three weekly goals hit — a perfect week.';
+  else if (worst === 'km') text = `You are ${Math.max(1, Math.ceil(s.g.km - s.km))} km away from hitting your weekly distance goal.`;
+  else if (worst === 'hours') text = `${Math.max(0.5, (s.g.hours - s.hours)).toFixed(1)} hours of training left to hit your weekly goal.`;
+  else { const n = Math.max(1, s.g.sessions - s.sessions); text = `${n} more session${n === 1 ? '' : 's'} this week to hit your goal.`; }
+  return `<p class="insight">${esc(text)}</p>`;
+}
+
+// A single ultra-clean card for today's targeted assignment.
+function focusCard(ctx) {
+  const { today, workouts, units } = ctx;
+  const sessions = workouts.filter((w) => w.date === today).sort(sortSessions);
+
+  if (!sessions.length) {
+    const next = nextSession(workouts, today);
+    return `<section class="card focus-card" data-action="open-editor-new" data-date="${esc(today)}">
+      <div class="focus-top"><span class="sport-dot"></span><span class="focus-sport">Today</span></div>
+      <div class="focus-big">REST</div>
+      <div class="focus-sub">${next ? `Next up: ${esc(next.title)} · ${shortLabel(next.date)}` : 'Nothing scheduled — tap to add a session.'}</div>
+    </section>`;
+  }
+
+  const focus = sessions.find((w) => !w.completed) || sessions[sessions.length - 1];
+  const d = DISCIPLINES[focus.type] || DISCIPLINES.other;
+  const sub = [
+    focus.metrics?.distanceKm ? fmtKm(focus.metrics.distanceKm, units) : '',
+    `${kcalEst(focus)} kcal`,
+    INTENSITIES[focus.intensity] || '',
+  ].filter(Boolean).join(' · ');
+  const others = sessions.length - 1;
+  return `<section class="card focus-card" data-action="open-workout" data-id="${esc(focus.id)}">
+      <div class="focus-top"><span class="sport-dot type-${esc(focus.type)}"></span>
+        <span class="focus-sport">${esc(d.label)}</span>
+        <span class="focus-state">${focus.completed ? 'Done' : 'Next up'}</span></div>
+      <h3 class="focus-title">${esc(focus.title)}</h3>
+      <div class="focus-big">${focus.durationMin || 0} <small>MIN</small></div>
+      <div class="focus-sub">${esc(sub)}</div>
+    </section>`
+    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today — see Journal.</p>` : '');
+}
+
+// ---- JOURNAL (horizontal week strip + one day at a time) ---------------------
+
+export function renderJournal(ctx, selectedIso) {
+  const { workouts, units, today } = ctx;
+  const sel = selectedIso || today;
+  const ws = mondayOf(sel);
+  const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  const chips = letters.map((L, i) => {
+    const iso = addDays(ws, i);
+    const isSel = iso === sel;
+    const isToday = iso === today;
+    return `<button class="jr-day ${isSel ? 'is-active' : ''}" data-action="jr-day" data-date="${esc(iso)}"
+      aria-pressed="${isSel}" aria-label="${weekdayName(iso)} ${shortLabel(iso)}">
+      <small>${L}</small><b>${parseInt(iso.slice(8, 10), 10)}</b>${isToday ? '<i class="jr-dot"></i>' : ''}</button>`;
+  }).join('');
+
+  const monthLabel = parseISO(sel).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  const sessions = workouts.filter((w) => w.date === sel).sort(sortSessions);
+  const body = sessions.length
+    ? sessions.map((w) => sessionCard(w, units, { isNext: false })).join('')
+    : `<div class="card jr-empty">
+        <p>${sel === today ? 'Rest day — nothing planned today.' : 'Nothing planned this day.'}</p>
+        <button class="btn ghost" data-action="open-editor-new" data-date="${esc(sel)}">+ Add a session</button>
+      </div>`;
+
+  return `
+    <div class="jr-head"><h2>Journal</h2><span class="jr-month">${esc(monthLabel)}</span></div>
+    <div class="jr-strip">
+      <button class="jr-week-nav" data-action="jr-week" data-dir="-1" aria-label="Previous week">‹</button>
+      <div class="jr-days">${chips}</div>
+      <button class="jr-week-nav" data-action="jr-week" data-dir="1" aria-label="Next week">›</button>
+    </div>
+    ${body}`;
 }
 
 // ---- PROGRESS ---------------------------------------------------------------

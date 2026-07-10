@@ -5,7 +5,8 @@
 
 import { sportProgress } from '../core/scoring.js';
 import { svg } from '../core/icons.js';
-import { esc } from './ui.js';
+import { esc, mondayOf } from './ui.js';
+import { addDays } from '../core/dates.js';
 import { currentUser } from './auth.js';
 
 const BIKE = 'icons/Pixelart/BIKE';
@@ -82,6 +83,39 @@ function accountAge(ctx) {
   return `${y} years`;
 }
 
+// Weekly consistency: a quiet 7-column mini graph of this week's completed
+// training minutes. Active days fill with a soft pastel; rest days stay as a
+// flat charcoal baseline chip.
+function consistencyGraph(ctx) {
+  const ws = mondayOf(ctx.today);
+  const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const days = letters.map((L, i) => {
+    const iso = addDays(ws, i);
+    const min = ctx.workouts
+      .filter((w) => w.completed && w.date === iso)
+      .reduce((a, w) => a + (Number(w.durationMin) || 0), 0);
+    return { iso, L, min, isToday: iso === ctx.today };
+  });
+  const max = Math.max(60, ...days.map((d) => d.min));
+  const activeCount = days.filter((d) => d.min > 0).length;
+  const totalH = days.reduce((a, d) => a + d.min, 0) / 60;
+
+  const cols = days.map((d) => {
+    const h = d.min > 0 ? Math.max(14, Math.round((d.min / max) * 100)) : 0;
+    return `<div class="pc-day ${d.min > 0 ? 'active' : 'rest'} ${d.isToday ? 'is-today' : ''}"
+      title="${esc(d.iso)}${d.min ? ` · ${d.min} min` : ' · rest'}">
+      <div class="pc-day-track"><div class="pc-day-fill" style="height:${h}%"></div></div>
+      <small>${d.L}</small>
+    </div>`;
+  }).join('');
+
+  return `<div class="pc-week">
+    <div class="pc-week-head"><span>This week</span>
+      <span>${activeCount} active day${activeCount === 1 ? '' : 's'} · ${totalH.toFixed(1)} h</span></div>
+    <div class="pc-week-grid">${cols}</div>
+  </div>`;
+}
+
 export function openProfileCard(ctx) {
   const root = document.getElementById('modal-root');
   root.classList.add('open');
@@ -103,6 +137,7 @@ export function openProfileCard(ctx) {
         ${stat(accountAge(ctx), 'Account age')}
         ${stat(ctx.stats?.level ?? 1, 'Overall level')}
       </div>
+      ${consistencyGraph(ctx)}
     </div>`;
   root.querySelectorAll('[data-pc-close]').forEach((b) => b.addEventListener('click', close));
 }

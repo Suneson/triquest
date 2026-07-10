@@ -23,11 +23,12 @@
 
   <header class="app-header">
     <div class="brand">
-      <img class="logo" src="icons/icon-192.png" alt="MOSKE" width="36" height="36">
-      <div><strong>MOSKE</strong><small>train · level up · race</small></div>
-      <button id="settings-btn" class="icon-btn header-settings" aria-label="Settings">⚙️</button>
+      <strong>MOSKE</strong>
+      <div class="header-actions">
+        <button id="settings-btn" class="header-settings" aria-label="Settings">⚙</button>
+        <button id="header-avatar" class="avatar-btn" data-action="pg-profile" aria-label="Open profile">A</button>
+      </div>
     </div>
-    <div id="hud" class="hud"></div>
   </header>
 
   <div id="race-banner"></div>
@@ -36,14 +37,16 @@
   <main id="view" class="view" role="main" aria-live="polite"></main>
 
   <nav class="tabs" aria-label="Views">
-    <button class="tab active" data-action="tab" data-tab="home">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg></span>Home</button>
-    <button class="tab" data-action="tab" data-tab="leaderboards">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3"/><path d="M9 20h6M12 14v6"/></svg></span>Leaderboards</button>
-    <button class="tab" data-action="tab" data-tab="shop">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span>Shop</button>
-    <button class="tab" data-action="tab" data-tab="progress">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>Profile</button>
+    <button class="tab active" data-action="tab" data-tab="home" aria-label="Home">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg></span></button>
+    <button class="tab" data-action="tab" data-tab="journal" aria-label="Journal">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 3v18"/><path d="M12 8h5M12 12h5"/></svg></span></button>
+    <button class="tab" data-action="tab" data-tab="leaderboards" aria-label="Leaderboards">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3"/><path d="M9 20h6M12 14v6"/></svg></span></button>
+    <button class="tab" data-action="tab" data-tab="shop" aria-label="Shop">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span></button>
+    <button class="tab" data-action="tab" data-tab="progress" aria-label="Profile">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span></button>
   </nav>
 
   <button id="fab" class="fab" aria-label="Add a session">+</button>

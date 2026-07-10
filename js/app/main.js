@@ -7,7 +7,7 @@ import { evaluateBadges, BADGES } from '../core/badges.js';
 import { PLAN_START } from '../core/plan.js';
 import { addDays, diffDays } from '../core/dates.js';
 import {
-  renderHud, renderHome, renderProgress, eventBanner, renderWorkoutDetail, mondayOf, esc,
+  renderHome, renderJournal, eventBanner, renderWorkoutDetail, esc,
   sportLevelCarousel,
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
@@ -26,7 +26,7 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const appState = {
   tab: 'home',
   lbView: 'season',
-  weekStart: null,
+  journalDate: null, // ISO date selected in the Journal strip (null = today)
   lastLevel: null,
   booted: false,
 };
@@ -82,9 +82,14 @@ function render() {
   const ctx = buildCtx();
   syncProgress(ctx);
 
-  document.getElementById('hud').innerHTML = renderHud(ctx.stats, ctx.streaks, ctx.units);
   document.getElementById('race-banner').innerHTML = eventBanner(ctx);
   renderSyncBanner();
+
+  // Header avatar mirrors the signed-in athlete's initial.
+  const u = auth.currentUser?.();
+  const name = (u?.user_metadata?.display_name || u?.email || 'A').trim();
+  const avatarEl = document.getElementById('header-avatar');
+  if (avatarEl) avatarEl.textContent = (name[0] || 'A').toUpperCase();
 
   document.querySelectorAll('.tab').forEach((t) =>
     t.classList.toggle('active', t.dataset.tab === appState.tab));
@@ -101,8 +106,10 @@ function render() {
     loadShop();
   } else if (appState.tab === 'progress') {
     view.innerHTML = renderProfileGame(ctx);
+  } else if (appState.tab === 'journal') {
+    view.innerHTML = renderJournal(ctx, appState.journalDate || ctx.today);
   } else {
-    view.innerHTML = renderHome(ctx, appState.weekStart);
+    view.innerHTML = renderHome(ctx);
   }
 
   document.getElementById('storage-banner').hidden = store.isPersistent();
@@ -118,9 +125,15 @@ function onClick(e) {
   switch (action) {
     case 'tab':
       appState.tab = el.dataset.tab;
+      if (appState.tab === 'journal') appState.journalDate = todayISO(); // strip anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
       render();
       window.scrollTo(0, 0); // consistent across all tabs (incl. async-loaded ones)
+      break;
+    case 'jr-day': appState.journalDate = el.dataset.date; render(); break;
+    case 'jr-week':
+      appState.journalDate = addDays(appState.journalDate || todayISO(), Number(el.dataset.dir) * 7);
+      render();
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
@@ -152,8 +165,6 @@ function onClick(e) {
       if (confirm('Delete this session?')) { store.deleteWorkout(id); if (_detailId === id) closeModalRoot(); toast('Session deleted'); }
       break;
     case 'open-editor-new': openEditor(null, el.dataset.date); break;
-    case 'prev-week': appState.weekStart = addDays(appState.weekStart, -7); render(); break;
-    case 'next-week': appState.weekStart = addDays(appState.weekStart, 7); render(); break;
     case 'remove-pack': {
       const w = store.workoutById(id);
       w.packing.splice(+el.dataset.pi, 1);
@@ -292,6 +303,10 @@ function openSettings() {
         <hr>
         <h3>Training</h3>
         <label class="field"><span>Bike FTP (Watts)</span><input type="number" min="0" step="5" data-set="ftp" value="${s.ftp || 250}"></label>
+        <div class="row">
+          <button class="btn ghost" data-set-do="ai-plan">✨ AI workout plan</button>
+          <button class="btn ghost danger" data-action="clear-future">Clear future workouts</button>
+        </div>
 
         <hr>
         <h3>Packing presets</h3>
@@ -326,6 +341,7 @@ function openSettings() {
     else if (act === 'import') root.querySelector('#import-file').click();
     else if (act === 'reseed') { if (confirm('Reset everything and reload the original plan? Your logged progress will be lost.')) { doExport(); store.reseed(); appState.lastLevel = null; close(); toast('Backup exported, plan reseeded'); } }
     else if (act === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; close(); }
+    else if (act === 'ai-plan') { close(); openAIWizard(); }
     else if (act === 'signin') { close(); auth.openAuthModal(); }
     else if (act === 'signout') { if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); close(); } }
     else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed'))); }
@@ -610,11 +626,10 @@ function maybeOnboard() {
 async function boot() {
   await store.init();
   const today = todayISO();
-  // Home always opens on the current week (Mon–Sun); arrows navigate from there.
-  appState.weekStart = mondayOf(today);
+  appState.journalDate = today;
   // Restore last tab.
   const savedTab = localStorage.getItem('moske-tab');
-  if (['home', 'leaderboards', 'shop', 'progress'].includes(savedTab)) appState.tab = savedTab;
+  if (['home', 'journal', 'leaderboards', 'shop', 'progress'].includes(savedTab)) appState.tab = savedTab;
 
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
@@ -628,11 +643,6 @@ async function boot() {
   store.subscribe(render);
   render();
   appState.booted = true;
-
-  // Auto-focus the next (first incomplete) session when opening on Home.
-  if (appState.tab === 'home') {
-    requestAnimationFrame(() => document.querySelector('#view .card.is-next')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
-  }
 
   maybeOnboard();
   handleRedirectParams();

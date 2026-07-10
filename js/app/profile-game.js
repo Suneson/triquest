@@ -36,6 +36,12 @@ export function renderProfileGame(ctx) {
 
   return `
   <section class="pg-screen">
+    <div class="pg-world">
+      <img class="pg-layer pg-bg" src="${BIKE}/BACKGROUND/background.png" alt="" aria-hidden="true">
+      <img class="pg-layer pg-platform" src="${BIKE}/PLATFORMS/${platformFile(level)}" alt="" aria-hidden="true">
+      <img class="pg-char" src="${BIKE}/CHARACTERS/bikelvl${level}_char.webp" alt="Cycling level ${level} character">
+    </div>
+
     <div class="pg-topbar">
       <div class="pg-sports">
         ${sportBtn('bike', 'bike', 'Cycling', true)}
@@ -46,23 +52,17 @@ export function renderProfileGame(ctx) {
       <button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${initial}</button>
     </div>
 
-    <div class="pg-stage">
-      <img class="pg-layer pg-bg" src="${BIKE}/BACKGROUND/background.png" alt="" aria-hidden="true">
-      <img class="pg-layer pg-platform" src="${BIKE}/PLATFORMS/${platformFile(level)}" alt="" aria-hidden="true">
-      <img class="pg-layer pg-char" src="${BIKE}/CHARACTERS/bikelvl${level}_char.webp" alt="Cycling level ${level} character">
-
-      <div class="pg-hud">
-        <div class="pg-hud-top">
-          <span class="pg-sport-name">${svg('bike', 'tint')} Cycling</span>
-          <span class="pg-level-badge">${maxed ? 'MAX · ' : ''}Level ${real}</span>
-        </div>
-        <div class="pg-xpbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
-          <div class="pg-xpfill" style="width:${pct}%"></div>
-        </div>
-        <div class="pg-xptext">${maxed
-          ? 'Max level reached — legend status'
-          : `${p.into.toLocaleString()} / ${p.span.toLocaleString()} XP · ${p.toNext.toLocaleString()} to Level ${level + 1}`}</div>
+    <div class="pg-hud">
+      <div class="pg-hud-top">
+        <span class="pg-sport-name">${svg('bike', 'tint')} Cycling</span>
+        <span class="pg-level-badge">${maxed ? 'MAX · ' : ''}Level ${real}</span>
       </div>
+      <div class="pg-xpbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+        <div class="pg-xpfill" style="width:${pct}%"></div>
+      </div>
+      <div class="pg-xptext">${maxed
+        ? 'Max level reached — legend status'
+        : `${p.into.toLocaleString()} / ${p.span.toLocaleString()} XP · ${p.toNext.toLocaleString()} to Level ${level + 1}`}</div>
     </div>
   </section>`;
 }

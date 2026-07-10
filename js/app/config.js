@@ -8,8 +8,8 @@
 // to v1). Fill them in after creating your Supabase project, then redeploy.
 
 export const CONFIG = {
-  supabaseUrl: 'https://kmanszmqgmyninoplwbt.supabase.co',
-  supabaseAnonKey: 'sb_publishable_43Vs_xVwx_uY9vRZZNTG9w_SQt-YWKe',
+  supabaseUrl: 'https://vopzemijzoxezathmrai.supabase.co',
+  supabaseAnonKey: 'sb_publishable_Swiz6YuHXjnjnE4fMqgIaw_S_f1Xvf3',
   stravaClientId: '258518', // Strava app Client ID (public; NOT the secret)
 };
 

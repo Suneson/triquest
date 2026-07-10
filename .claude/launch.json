@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["tools/serve.mjs", "8744"],
       "port": 8744
+    },
+    {
+      "name": "triquest-ps",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tools/serve.ps1", "8744"],
+      "port": 8744
     }
   ]
 }

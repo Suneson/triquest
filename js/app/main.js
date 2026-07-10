@@ -89,6 +89,9 @@ function render() {
   document.querySelectorAll('.tab').forEach((t) =>
     t.classList.toggle('active', t.dataset.tab === appState.tab));
 
+  // Profile tab is a sealed full-screen game viewport: hide app chrome, lock scroll.
+  document.body.classList.toggle('pg-mode', appState.tab === 'progress');
+
   const view = document.getElementById('view');
   if (appState.tab === 'leaderboards') {
     view.innerHTML = leaderboardShell(appState.lbView, ctx.today);

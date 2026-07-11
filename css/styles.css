@@ -21,6 +21,14 @@
   --ring-indigo-a: #8A8DF0; --ring-indigo-b: #4B46C8;
   --ring-mint-a: #83CBB2; --ring-mint-b: #3E8E7E;
 
+  /* chart accent palette (reference-matched: orange line, periwinkle wave,
+     purple band, green target zone, teal 3+ chips) */
+  --acc-orange: #EFA05C;
+  --acc-peri: #A3A3F5;
+  --acc-purple: #6E66C8;
+  --acc-green: #63C97B;
+  --acc-teal: #4FB8E8;
+
   --c-run: #ff5a5f;
   --c-bike: #3da9fc;
   --c-swim: #2ec4b6;
@@ -444,12 +452,13 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .jr-row-head b { font-size: .92rem; color: var(--fg); }
 .jr-row-head span { color: var(--muted); font-size: .76rem; }
 .jr-row-head em { margin-left: auto; font-style: normal; font-size: .64rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #B5D96B; }
-/* explicit high-contrast focus block anchoring today's row */
+/* explicit high-contrast focus block anchoring today's row — bigger + spot-lit */
 .jr-row.is-today {
-  background: var(--bg-2); border-radius: var(--radius); padding: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .16);
+  background: var(--bg-2); border-radius: var(--radius); padding: 14px 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .55), inset 0 0 0 1.5px rgba(163, 163, 245, .5);
 }
-.jr-row.is-today .jr-row-head b { color: #fff; }
+.jr-row.is-today .jr-row-head b { color: #fff; font-size: 1.25rem; letter-spacing: -.01em; }
+.jr-row.is-today .jr-row-head span { font-size: .84rem; }
 .jr-row.is-today .card { background: var(--bg-3); box-shadow: none; }
 
 .load-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 6px; }
@@ -553,7 +562,18 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .exercise { border-top-color: rgba(255,255,255,.05); }
 .badge { border-color: transparent; background: var(--bg-3); }
 /* ---- bento compact workout cards ---- */
-.card.bento { padding: 13px 14px; cursor: pointer; }
+.card.bento { padding: 13px 14px 13px 20px; cursor: pointer; }
+/* slim sport-coloured spine — quiet separation between different exercises */
+.card.bento::before {
+  content: ''; position: absolute; left: 8px; top: 12px; bottom: 12px; width: 3px;
+  border-radius: 3px; background: var(--c-other);
+}
+.card.bento.type-run::before { background: var(--c-run); }
+.card.bento.type-bike::before { background: var(--c-bike); }
+.card.bento.type-swim::before { background: var(--c-swim); }
+.card.bento.type-gym::before { background: var(--c-gym); }
+.card.bento.type-brick::before { background: var(--c-brick); }
+.card.bento.type-mobility::before { background: var(--c-mobility); }
 .card.bento:hover { border-color: rgba(255,255,255,.08); }
 .bento-top { display: flex; align-items: center; gap: 8px; }
 .bento-top h3 { font-size: 1rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -790,30 +810,49 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .fh-area { opacity: .16; }
 .fh-target { stroke: rgba(255, 255, 255, .4); stroke-dasharray: 4 5; stroke-width: 1; }
 
-/* 30-day activity calendar matrix */
-.cal-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
-.cal-chip { display: block; width: 100%; aspect-ratio: 1; border-radius: 6px; background: var(--bg-3); }
-.cal-chip.lo { background: var(--ring-lime-a); }
-.cal-chip.mid { background: #6FBFAE; }
-.cal-chip.hi { background: var(--ring-indigo-a); }
-.cal-legend { display: flex; gap: 14px; align-items: center; margin-top: 12px; color: var(--muted); font-size: .68rem; }
+/* calendar-aligned activity matrix (weekday columns, pill chips) */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px 8px; }
+.cal-head { display: block; text-align: center; font-style: normal; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .04em; }
+.cal-chip { display: block; width: 100%; aspect-ratio: 2.1 / 1; border-radius: 5px; background: var(--bg-3); }
+.cal-chip.lo { background: var(--ring-lime-a); box-shadow: 0 0 8px rgba(181, 217, 107, .35); }
+.cal-chip.mid { background: var(--acc-green); box-shadow: 0 0 8px rgba(99, 201, 123, .35); }
+.cal-chip.hi { background: var(--acc-teal); box-shadow: 0 0 8px rgba(79, 184, 232, .4); }
+.cal-chip.future { opacity: .35; }
+.cal-chip.is-today { box-shadow: 0 0 0 1.5px var(--acc-peri); }
+.cal-legend { display: flex; gap: 14px; align-items: center; margin-top: 12px; color: var(--muted); font-size: .68rem; flex-wrap: wrap; }
 .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
-.cal-legend .cal-chip { width: 10px; height: 10px; aspect-ratio: auto; border-radius: 3px; }
+.cal-legend .cal-chip { width: 11px; height: 11px; aspect-ratio: auto; border-radius: 50%; box-shadow: none; }
 
-/* cardio drill-down entry + status breakdown */
-.fh-cardio { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; color: var(--fg); font: inherit; cursor: pointer; }
-.fh-cardio-body { flex: 1; display: grid; gap: 2px; }
+/* big stat + range under block titles */
+.fh-big { font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; color: #fff; line-height: 1.1; }
+.fh-range { color: var(--muted); font-size: .78rem; margin: 2px 0 10px; }
+.fh-dot { fill: var(--acc-orange); stroke: var(--bg-2); stroke-width: 1.5; }
+.fh-dot.end { filter: drop-shadow(0 0 6px rgba(239, 160, 92, .9)); }
+
+/* strain: stat left, waveform right */
+.fh-strain { display: flex; align-items: center; gap: 18px; }
+.fh-strain-stat { flex: none; min-width: 96px; }
+.fh-strain-lbl { font-size: .8rem; font-weight: 600; margin-top: 2px; }
+.fh-strain-svg { flex: 1; min-width: 0; }
+
+/* cardio drill-down entry + status breakdown table */
+.fh-cardio { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; color: var(--fg); font: inherit; cursor: pointer; }
+.fh-cardio-body { flex: none; display: grid; gap: 2px; min-width: 92px; }
 .fh-cardio-body small { font-size: .62rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.fh-cardio-body b { font-size: 1.05rem; color: #fff; }
-.fh-chev { color: var(--muted); font-size: 1.3rem; }
+.fh-status { font-size: .84rem; font-weight: 700; }
+.fh-cardio-mini { flex: 1; min-width: 0; height: auto; }
+.fh-chev { color: var(--muted); font-size: 1.2rem; flex: none; }
 .cs-list { display: grid; gap: 8px; }
 .cs-row {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-  padding: 12px 14px; border-radius: 12px; background: var(--bg-3); color: var(--muted); font-size: .84rem;
+  display: grid; grid-template-columns: 92px 34px 1fr 40px; align-items: center; gap: 10px;
+  padding: 11px 14px; border-radius: 12px; background: var(--bg-3); color: var(--muted); font-size: .82rem;
 }
-.cs-row b { color: inherit; font-size: .9rem; }
-.cs-row.on { background: rgba(94, 92, 230, .2); color: #E4E4F5; box-shadow: inset 0 0 0 1px #5E5CE6; }
-.cs-row.on b { color: #fff; }
+.cs-row b { color: inherit; font-size: .88rem; }
+.cs-days { font-variant-numeric: tabular-nums; }
+.cs-pct { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.cs-bar { display: block; height: 8px; border-radius: 99px; background: var(--bg-4); overflow: hidden; }
+.cs-fill { display: block; height: 100%; border-radius: 99px; min-width: 0; }
+.cs-row.on { background: rgba(94, 92, 230, .18); color: #E4E4F5; box-shadow: inset 0 0 0 1px #5E5CE6; }
 
 /* ---- wizard / settings inputs ---- */
 .wz-input, .wz-date { width: 100%; margin-top: 8px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--fg); font: inherit; }

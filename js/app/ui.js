@@ -341,7 +341,7 @@ export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
   return homeDateHeader(ctx)
     + ringsCard(ctx, ws)
-    + insightLine(ctx, ws)
+    + coachingCard(ctx, ws)
     + `<div class="home-sec">Today's Target</div>`
     + focusCard(ctx)
     + tomorrowGlance(ctx)
@@ -423,27 +423,39 @@ function metricRing(grad, frac, label, target) {
   </div>`;
 }
 
+// Plan (session compliance) · Volume (hours progression) · Intensity (load score).
 function ringsCard(ctx, weekStartIso) {
   const s = weekGoalState(ctx, weekStartIso);
+  const a = acwr(ctx.workouts, ctx.today);
+  const intensityFrac = Math.max(0, Math.min(1.5, a.ratio || 0));
   return `<section class="card rings-card">
-    ${metricRing('lime', s.fracs.sessions, 'Sessions', `${s.sessions} of ${s.g.sessions}`)}
-    ${metricRing('indigo', s.fracs.km, 'Distance', `${Math.round(s.km)} of ${s.g.km} km`)}
-    ${metricRing('mint', s.fracs.hours, 'Hours', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
+    ${metricRing('lime', s.fracs.sessions, 'Plan', `${s.sessions} of ${s.g.sessions} sessions`)}
+    ${metricRing('indigo', s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
+    ${metricRing('mint', intensityFrac, 'Intensity', a.ratio ? `${a.ratio}× baseline` : 'calibrating')}
     <button class="rings-edit" data-action="edit-goals">Edit</button>
   </section>`;
 }
 
 // One understated sentence pointing at the goal that needs the most work.
-function insightLine(ctx, weekStartIso) {
+function insightText(ctx, weekStartIso) {
   const s = weekGoalState(ctx, weekStartIso);
   const entries = Object.entries(s.fracs).sort((a, b) => a[1] - b[1]);
   const [worst, frac] = entries[0];
-  let text;
-  if (frac >= 1) text = 'All three weekly goals hit — a perfect week.';
-  else if (worst === 'km') text = `You are ${Math.max(1, Math.ceil(s.g.km - s.km))} km away from hitting your weekly distance goal.`;
-  else if (worst === 'hours') text = `${Math.max(0.5, (s.g.hours - s.hours)).toFixed(1)} hours of training left to hit your weekly goal.`;
-  else { const n = Math.max(1, s.g.sessions - s.sessions); text = `${n} more session${n === 1 ? '' : 's'} this week to hit your goal.`; }
-  return `<p class="insight">${esc(text)}</p>`;
+  if (frac >= 1) return 'All weekly goals hit — a perfect week.';
+  if (worst === 'km') return `You are ${Math.max(1, Math.ceil(s.g.km - s.km))} km away from hitting your weekly distance goal.`;
+  if (worst === 'hours') return `You have ${Math.max(0.5, (s.g.hours - s.hours)).toFixed(1)} hours of training left to hit your weekly goal.`;
+  const n = Math.max(1, s.g.sessions - s.sessions);
+  return `${n} more session${n === 1 ? '' : 's'} this week to hit your goal.`;
+}
+
+// Executive-summary coaching panel directly under the rings.
+function coachingCard(ctx, weekStartIso) {
+  const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
+  const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
+  return `<section class="card coach-card">
+    <h4>Coaching</h4>
+    <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
+  </section>`;
 }
 
 // A single ultra-clean card for today's targeted assignment.

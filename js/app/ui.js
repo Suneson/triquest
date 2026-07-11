@@ -340,8 +340,7 @@ export function eventBanner(ctx) {
 export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
   return homeDateHeader(ctx)
-    + ringsCard(ctx, ws)
-    + coachingCard(ctx, ws)
+    + heroCard(ctx, ws)
     + `<div class="home-sec">Today's Target</div>`
     + focusCard(ctx)
     + tomorrowGlance(ctx)
@@ -397,8 +396,8 @@ function weekGoalState(ctx, weekStartIso) {
   };
 }
 
-// Single matte widget: three side-by-side metric rings (Whoop-style columns),
-// each with its percentage in the centre and label + target underneath.
+// Thick Whoop-style ring: chunky rounded stroke over a prominent dark track,
+// big centred percentage, clean label underneath.
 function metricRing(grad, frac, label, target) {
   const p = Math.max(0, Math.min(100, Math.round(frac * 100)));
   // Arc length is driven by stroke-dashoffset (100 = empty), so the CSS entry
@@ -406,32 +405,39 @@ function metricRing(grad, frac, label, target) {
   const offset = 100 - Math.max(p, 0.5);
   return `<div class="mring-col" role="img" aria-label="${esc(label)} ${p}%">
     <div class="mring">
-      <svg viewBox="0 0 84 84">
+      <svg viewBox="0 0 100 100">
         <defs><linearGradient id="mrg-${grad}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="var(--ring-${grad}-a)"/><stop offset="1" stop-color="var(--ring-${grad}-b)"/>
         </linearGradient></defs>
-        <circle class="track" cx="42" cy="42" r="36" stroke-width="6"></circle>
-        <circle class="prog" cx="42" cy="42" r="36" stroke-width="6" stroke="url(#mrg-${grad})"
-          pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}" transform="rotate(-90 42 42)"></circle>
+        <circle class="track" cx="50" cy="50" r="39" stroke-width="11"></circle>
+        <circle class="prog" cx="50" cy="50" r="39" stroke-width="11" stroke="url(#mrg-${grad})"
+          pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}" transform="rotate(-90 50 50)"></circle>
       </svg>
-      <b class="mring-pct">${p}%</b>
+      <b class="mring-pct">${p}<i>%</i></b>
     </div>
-    <div class="mring-meta">
-      <b class="mring-label">${esc(label)}</b>
-      <span class="mring-target">${esc(target)}</span>
-    </div>
+    <div class="mring-label">${esc(label)}</div>
+    <div class="mring-target">${esc(target)}</div>
   </div>`;
 }
 
-// Plan (session compliance) · Volume (hours progression) · Intensity (load score).
-function ringsCard(ctx, weekStartIso) {
+// One unified hero block: Plan / Volume / Intensity ring columns (hairline
+// dividers between them) with the Coaching summary in the same rectangle.
+function heroCard(ctx, weekStartIso) {
   const s = weekGoalState(ctx, weekStartIso);
   const a = acwr(ctx.workouts, ctx.today);
   const intensityFrac = Math.max(0, Math.min(1.5, a.ratio || 0));
-  return `<section class="card rings-card">
-    ${metricRing('lime', s.fracs.sessions, 'Plan', `${s.sessions} of ${s.g.sessions} sessions`)}
-    ${metricRing('indigo', s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
-    ${metricRing('mint', intensityFrac, 'Intensity', a.ratio ? `${a.ratio}× baseline` : 'calibrating')}
+  const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
+  const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
+  return `<section class="card hero-card">
+    <div class="rings-row">
+      ${metricRing('lime', s.fracs.sessions, 'Plan', `${s.sessions} of ${s.g.sessions}`)}
+      ${metricRing('indigo', s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
+      ${metricRing('mint', intensityFrac, 'Intensity', a.ratio ? `${a.ratio}× base` : 'calibrating')}
+    </div>
+    <div class="coach-inline">
+      <h4>Coaching</h4>
+      <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
+    </div>
     <button class="rings-edit" data-action="edit-goals">Edit</button>
   </section>`;
 }
@@ -448,15 +454,6 @@ function insightText(ctx, weekStartIso) {
   return `${n} more session${n === 1 ? '' : 's'} this week to hit your goal.`;
 }
 
-// Executive-summary coaching panel directly under the rings.
-function coachingCard(ctx, weekStartIso) {
-  const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
-  const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
-  return `<section class="card coach-card">
-    <h4>Coaching</h4>
-    <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
-  </section>`;
-}
 
 // A single ultra-clean card for today's targeted assignment.
 function focusCard(ctx) {
@@ -474,19 +471,20 @@ function focusCard(ctx) {
 
   const focus = sessions.find((w) => !w.completed) || sessions[sessions.length - 1];
   const d = DISCIPLINES[focus.type] || DISCIPLINES.other;
-  const sub = [
-    focus.metrics?.distanceKm ? fmtKm(focus.metrics.distanceKm, units) : '',
-    `${kcalEst(focus)} kcal`,
-    INTENSITIES[focus.intensity] || '',
-  ].filter(Boolean).join(' · ');
+  const km = focus.metrics?.distanceKm;
   const others = sessions.length - 1;
   return `<section class="card focus-card" data-action="open-workout" data-id="${esc(focus.id)}">
       <div class="focus-top"><span class="sport-dot type-${esc(focus.type)}"></span>
         <span class="focus-sport">${esc(d.label)}</span>
+        ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}
         <span class="focus-state">${focus.completed ? 'Done' : 'Next up'}</span></div>
       <h3 class="focus-title">${esc(focus.title)}</h3>
-      <div class="focus-big">${focus.durationMin || 0} <small>MIN</small></div>
-      <div class="focus-sub">${esc(sub)}</div>
+      <div class="bento-metrics">
+        <div class="bm"><span class="bm-ico">${svg('clock')}</span><b>${focus.durationMin || 0}</b><small>min</small></div>
+        ${km ? `<div class="bm"><span class="bm-ico">${svg('route')}</span><b>${km % 1 ? km.toFixed(1) : km}</b><small>${units === 'imperial' ? 'mi' : 'km'}</small></div>` : ''}
+        <div class="bm"><span class="bm-ico">${svg('flame')}</span><b>${kcalEst(focus)}</b><small>kcal</small></div>
+      </div>
+      <div class="focus-sub">${esc(INTENSITIES[focus.intensity] || '')}${focus.notes && /\[Main Set\]/i.test(focus.notes) ? ' · structured session — tap for the full set' : ' · tap for details'}</div>
     </section>`
     + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today — see Journal.</p>` : '');
 }

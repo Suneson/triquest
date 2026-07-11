@@ -106,7 +106,7 @@ button { font: inherit; cursor: pointer; }
   flex: 1; min-height: 0; width: 100%;
   overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
   padding: 18px 18px max(100px, calc(env(safe-area-inset-bottom, 0px) + 80px));
-  display: grid; gap: 18px; align-content: start; max-width: 760px; margin: 0 auto;
+  display: grid; gap: 22px; align-content: start; max-width: 760px; margin: 0 auto;
 }
 .day-header { display: flex; align-items: center; justify-content: space-between; }
 .day-header h2 { font-size: 1.5rem; }
@@ -421,14 +421,17 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .shop-title { font-weight: 700; font-size: .85rem; line-height: 1.25; }
 .shop-price { color: var(--accent); font-size: .82rem; margin-top: 4px; }
 @media (min-width: 560px) { .shop-grid { grid-template-columns: repeat(3, 1fr); } }
-/* ---- home: three distinct metric ring columns (Plan / Volume / Intensity) ---- */
-.rings-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 26px 12px 20px; height: auto; }
-.mring-col { display: grid; justify-items: center; gap: 9px; min-width: 0; }
-.mring { position: relative; width: min(84px, 100%); aspect-ratio: 1; }
-.mring svg { width: 100%; height: 100%; display: block; }
-.mring .track { fill: none; stroke: rgba(255, 255, 255, .06); }
+/* ---- home hero: thick ring columns + coaching in ONE unified rectangle ---- */
+.hero-card { padding: 0; height: auto; }
+.rings-row { display: grid; grid-template-columns: repeat(3, 1fr); padding: 26px 6px 22px; }
+.mring-col { display: grid; justify-items: center; gap: 10px; min-width: 0; padding: 0 6px; }
+.mring-col + .mring-col { border-left: 1px solid rgba(255, 255, 255, .06); }
+.mring { position: relative; width: 92px; max-width: 96%; aspect-ratio: 1; }
+.mring svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.mring .track { fill: none; stroke: #3A3A41; }
 .mring .prog {
   fill: none; stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, .5));
   transition: stroke-dashoffset .35s cubic-bezier(.4, 0, .2, 1);
   animation: ring-in .8s cubic-bezier(.4, 0, .2, 1);
 }
@@ -436,22 +439,30 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 @media (prefers-reduced-motion: reduce) {
   .mring .prog { animation: none; transition: none; }
 }
-.mring-pct { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-.mring-meta { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
-.mring-label { font-size: .82rem; font-weight: 700; color: #F4F4F6; text-align: center; line-height: 1.2; }
-.mring-target { font-size: .66rem; color: var(--muted); text-align: center; white-space: nowrap; }
+.mring-pct {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.mring-pct i { font-style: normal; font-size: .78rem; font-weight: 700; color: #C9C9CF; margin-left: 1px; }
+.mring-label { font-size: .92rem; font-weight: 700; color: #F6F6F8; text-align: center; line-height: 1.2; }
+.mring-target { font-size: .66rem; color: var(--muted); text-align: center; white-space: nowrap; margin-top: -5px; }
 
-/* ---- home: coaching executive-summary panel ---- */
-.coach-card { padding: 18px 20px; height: auto; }
-.coach-card h4 { font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
-.coach-card p { margin: 0; font-size: .9rem; line-height: 1.55; color: #E9E9EE; }
+/* coaching summary fused to the bottom of the hero rectangle */
+.coach-inline {
+  border-top: 1px solid rgba(255, 255, 255, .06);
+  background: rgba(255, 255, 255, .025);
+  padding: 16px 20px 18px;
+}
+.coach-inline h4 { font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; }
+.coach-inline p { margin: 0; font-size: .92rem; line-height: 1.55; color: #EDEDF2; }
 .rings-edit { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--muted); font-size: .74rem; padding: 6px 8px; }
 
 /* ---- home: date context header + section eyebrows ---- */
 .home-date { display: grid; gap: 2px; padding: 4px 6px 0; }
 .home-date small { font-size: .64rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 .home-date h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
-.home-sec { font-size: .68rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); padding: 0 6px; margin-bottom: -8px; }
+/* section titles: big, crisp white — clear separation, no clutter */
+.home-sec { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; color: #fff; padding: 0 4px; margin: 8px 0 -8px; }
 
 /* ---- home: tomorrow's glance (scaled-down preview) ---- */
 .tg-card { display: flex; align-items: center; gap: 10px; padding: 15px 18px; cursor: pointer; }

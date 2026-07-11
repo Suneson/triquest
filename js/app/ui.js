@@ -483,9 +483,9 @@ export function renderJournal(ctx, selectedIso) {
   const ws = mondayOf(anchor);
   const monthLabel = parseISO(ws).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
-  // Strict Monday→Friday rows; the row matching today's calendar date gets an
+  // Full Monday→Sunday rows; the row matching today's calendar date gets an
   // explicit high-contrast focus block.
-  const rows = Array.from({ length: 5 }, (_, i) => {
+  const rows = Array.from({ length: 7 }, (_, i) => {
     const iso = addDays(ws, i);
     const isToday = iso === today;
     const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
@@ -502,7 +502,7 @@ export function renderJournal(ctx, selectedIso) {
     <div class="jr-head"><h2>Journal</h2><span class="jr-month">${esc(monthLabel)}</span></div>
     <div class="jr-strip">
       <button class="jr-week-nav" data-action="jr-week" data-dir="-1" aria-label="Previous week">‹</button>
-      <span class="jr-range">${esc(shortLabel(ws))} – ${esc(shortLabel(addDays(ws, 4)))}</span>
+      <span class="jr-range">${esc(shortLabel(ws))} – ${esc(shortLabel(addDays(ws, 6)))}</span>
       <button class="jr-week-nav" data-action="jr-week" data-dir="1" aria-label="Next week">›</button>
     </div>
     ${rows}`;

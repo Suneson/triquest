@@ -152,29 +152,24 @@ export function openAuthModal() {
   root.innerHTML = `
     <div class="modal-backdrop" data-auth-close></div>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Sign in">
-      <header class="modal-head"><h2>☁️ Sign in to sync</h2><button class="icon-btn" data-auth-close aria-label="Close">✕</button></header>
-      <div class="modal-body">
-        <p class="muted small">Sync your training across phone and laptop. Your data stays private to you. Logged out, MOSKE keeps working locally on this device.</p>
-
-        <form data-auth-magic>
-          <label class="field"><span>Email — magic link</span>
-            <input type="email" name="email" required placeholder="you@example.com" autocomplete="email"></label>
-          <button class="btn primary" type="submit">Send magic link</button>
-        </form>
-
-        <div class="auth-divider"><span>or email &amp; password</span></div>
-
-        <form data-auth-password>
-          <label class="field"><span>Email</span><input type="email" name="email" required autocomplete="email"></label>
-          <label class="field"><span>Password</span><input type="password" name="password" required minlength="6" autocomplete="current-password"></label>
-          <div class="row">
-            <button class="btn primary" type="submit" data-pw-mode="in">Sign in</button>
-            <button class="btn ghost" type="submit" data-pw-mode="up">Create account</button>
-          </div>
-          <button type="button" class="link" data-auth-forgot>Forgot password?</button>
-        </form>
-        <p class="auth-msg" role="status" hidden></p>
+      <button class="icon-btn auth-x" data-auth-close aria-label="Close">✕</button>
+      <div class="auth-head">
+        <div class="auth-logo">MOSKE</div>
+        <h2>Sign in to sync</h2>
+        <p>Your training, on every device.</p>
       </div>
+      <form data-auth-password class="auth-form">
+        <input type="email" name="email" required placeholder="Email" autocomplete="email">
+        <input type="password" name="password" required minlength="6" placeholder="Password" autocomplete="current-password">
+        <button class="btn primary block" type="submit" data-pw-mode="in">Sign in</button>
+        <button class="btn ghost block" type="submit" data-pw-mode="up">Create account</button>
+      </form>
+      <div class="auth-links">
+        <button type="button" class="auth-link" data-auth-forgot>Forgot password?</button>
+        <span>·</span>
+        <button type="button" class="auth-link" data-auth-magic-send>Email me a magic link</button>
+      </div>
+      <p class="auth-msg" role="status" hidden></p>
     </div>`;
 
   const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
@@ -182,19 +177,20 @@ export function openAuthModal() {
     const el = root.querySelector('.auth-msg');
     el.hidden = false; el.textContent = text; el.classList.toggle('ok', ok);
   };
+  const emailValue = () => root.querySelector('[data-auth-password] [name=email]').value.trim();
 
   root.querySelectorAll('[data-auth-close]').forEach((b) => b.addEventListener('click', close));
 
-  root.querySelector('[data-auth-magic]').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = e.target.email.value.trim();
+  root.querySelector('[data-auth-magic-send]').addEventListener('click', async () => {
+    const email = emailValue();
+    if (!email) { msg('Type your email above first.'); return; }
     try { await signInWithEmail(email); msg('Check your email for the magic link ✉️', true); }
     catch (err) { msg(err.message || 'Could not send link'); }
   });
 
   root.querySelector('[data-auth-forgot]').addEventListener('click', async () => {
-    const email = root.querySelector('[data-auth-password] [name=email]').value.trim();
-    if (!email) { msg('Enter your email above first, then tap Forgot password.'); return; }
+    const email = emailValue();
+    if (!email) { msg('Type your email above first.'); return; }
     try { await resetPassword(email); msg('Check your email for a password-reset link 🔑', true); }
     catch (err) { msg(err.message || 'Could not send reset email'); }
   });

@@ -581,10 +581,13 @@ function handleRedirectParams() {
   const url = new URL(location.href);
   const strava = url.searchParams.get('strava');
   if (strava) {
-    const msg = { connected: 'Strava connected ✅', denied: 'Strava connection cancelled',
+    const sr = url.searchParams.get('sr'); // failure reason from the callback fn
+    let msg = { connected: 'Strava connected ✅', denied: 'Strava connection cancelled',
       error: 'Strava connection failed', auth_failed: 'Connect failed — sign in first' }[strava];
+    if (strava === 'error' && sr) msg += ` — ${decodeURIComponent(sr)}`;
     if (msg) setTimeout(() => toast(msg), 600);
     url.searchParams.delete('strava');
+    url.searchParams.delete('sr');
     history.replaceState({}, '', url.pathname + url.search);
     if (strava === 'connected') {
       setTimeout(() => import('./strava-client.js').then((m) => m.syncNow().then(() => store.commit()).catch(() => {})), 1200);

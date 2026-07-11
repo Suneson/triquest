@@ -2,9 +2,9 @@
    surface contrast (card vs page), never from borders or glows. */
 :root {
   --bg: #121214;        /* soft premium charcoal page */
-  --bg-2: #1C1C1E;      /* matte card surface */
-  --bg-3: #26262A;      /* raised element on a card */
-  --bg-4: #323236;      /* highest surface (inputs, chips) */
+  --bg-2: #26262B;      /* matte card surface — light grey lift off the page */
+  --bg-3: #333339;      /* raised element on a card */
+  --bg-4: #3F3F46;      /* highest surface (inputs, chips) */
   --fg: #FFFFFF;
   --muted: #A6A6AE;
   --border: rgba(255, 255, 255, .06);
@@ -277,7 +277,7 @@ button { font: inherit; cursor: pointer; }
   transform: translateX(-50%) translateZ(0); -webkit-transform: translateX(-50%) translateZ(0);
   width: min(380px, calc(100vw - 40px));
   display: grid; grid-template-columns: repeat(5, 1fr);
-  background: rgba(28, 28, 30, .94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: rgba(40, 40, 45, .95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-radius: 999px; padding: 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
 }
@@ -301,7 +301,8 @@ button { font: inherit; cursor: pointer; }
 .fab:active { transform: scale(.94); }
 
 /* ---- modal ---- */
-.modal-root { position: fixed; inset: 0; z-index: 8000; display: none; }
+/* above the floating island (9999): overlays must never be blocked by home UI */
+.modal-root { position: fixed; inset: 0; z-index: 10000; display: none; }
 .modal-root.open { display: block; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
 .modal {
@@ -350,12 +351,27 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .sync-prompt span { flex: 1; }
 .btn.block { width: 100%; }
 .signed-in { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-3); border-radius: var(--radius-sm); padding: 10px 12px; }
-.auth-divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .8rem; margin: 4px 0; }
-.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-.btn.provider { width: 100%; }
-.auth-pw { margin-top: 6px; }
-.auth-pw summary { cursor: pointer; color: var(--muted); font-size: .85rem; padding: 6px 0; }
-.auth-msg { font-size: .85rem; color: var(--danger); }
+/* ---- clean, centred sign-in sheet ---- */
+.auth-modal {
+  position: relative; max-width: 380px; text-align: center;
+  padding: 44px 26px calc(30px + var(--safe-b)); display: grid; gap: 20px;
+}
+.auth-x { position: absolute; top: 14px; right: 14px; }
+.auth-head { display: grid; gap: 4px; justify-items: center; }
+.auth-logo { font-size: .82rem; font-weight: 800; letter-spacing: .22em; color: var(--muted); }
+.auth-head h2 { font-size: 1.45rem; letter-spacing: -.01em; }
+.auth-head p { margin: 0; color: var(--muted); font-size: .86rem; }
+.auth-form { display: grid; gap: 10px; }
+.auth-form input {
+  width: 100%; background: var(--bg-3); border: none; border-radius: 13px;
+  padding: 14px 16px; color: var(--fg); font: inherit; font-size: 1rem;
+}
+.auth-form input::placeholder { color: var(--muted); }
+.auth-form input:focus { outline: 2px solid #5E5CE6; outline-offset: 0; }
+.auth-form .btn { padding: 13px 14px; border-radius: 13px; font-weight: 700; }
+.auth-links { display: flex; justify-content: center; align-items: center; gap: 8px; color: var(--muted); font-size: .8rem; }
+.auth-link { background: none; border: none; color: var(--acc-peri); font-size: .8rem; padding: 4px 2px; }
+.auth-msg { font-size: .85rem; color: var(--danger); margin: 0; }
 .auth-msg.ok { color: var(--good); }
 .strava-block { margin-top: 10px; }
 .powered-by-strava { margin-top: 8px; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: #fc4c02; font-weight: 800; }

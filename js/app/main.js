@@ -14,7 +14,7 @@ import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openPublicProfile } from './profile.js';
-import { renderProfileGame, openProfileCard } from './profile-game.js';
+import { renderProfileGame, openFitnessHub } from './profile-game.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
@@ -128,13 +128,13 @@ function onClick(e) {
 
   switch (action) {
     case 'tab':
+      closeModalRoot(); // full-screen overlays (fitness hub) must never trap navigation
       appState.tab = el.dataset.tab;
-      if (appState.tab === 'journal') appState.journalDate = todayISO(); // strip anchors to Today
+      if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
       render();
       window.scrollTo(0, 0); // consistent across all tabs (incl. async-loaded ones)
       break;
-    case 'jr-day': appState.journalDate = el.dataset.date; render(); break;
     case 'jr-week':
       appState.journalDate = addDays(appState.journalDate || todayISO(), Number(el.dataset.dir) * 7);
       render();
@@ -143,7 +143,7 @@ function onClick(e) {
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
-    case 'pg-profile': openProfileCard(buildCtx()); break;
+    case 'pg-profile': openFitnessHub(buildCtx()); break;
     case 'pg-sport': {
       const s = el.dataset.sport;
       if (s !== 'bike') {

@@ -475,39 +475,37 @@ function focusCard(ctx) {
     + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today — see Journal.</p>` : '');
 }
 
-// ---- JOURNAL (horizontal week strip + one day at a time) ---------------------
+// ---- JOURNAL (Mon–Fri chronological list, today spot-lit) ---------------------
 
 export function renderJournal(ctx, selectedIso) {
   const { workouts, units, today } = ctx;
-  const sel = selectedIso || today;
-  const ws = mondayOf(sel);
+  const anchor = selectedIso || today;
+  const ws = mondayOf(anchor);
+  const monthLabel = parseISO(ws).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 
-  const chips = Array.from({ length: 7 }, (_, i) => {
+  // Strict Monday→Friday rows; the row matching today's calendar date gets an
+  // explicit high-contrast focus block.
+  const rows = Array.from({ length: 5 }, (_, i) => {
     const iso = addDays(ws, i);
-    const isSel = iso === sel;
     const isToday = iso === today;
-    return `<button class="jr-day ${isSel ? 'is-active' : ''}" data-action="jr-day" data-date="${esc(iso)}"
-      aria-pressed="${isSel}" aria-label="${weekdayName(iso)} ${shortLabel(iso)}">
-      <small>${esc(weekdayName(iso).slice(0, 3))}</small><b>${parseInt(iso.slice(8, 10), 10)}</b>${isToday ? '<i class="jr-dot"></i>' : ''}</button>`;
+    const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
+    const cards = sessions.length
+      ? sessions.map((w) => sessionCard(w, units, { isNext: false })).join('')
+      : `<div class="rest-day">Rest day · <button class="link" data-action="open-editor-new" data-date="${esc(iso)}">+ add</button></div>`;
+    return `<div class="jr-row ${isToday ? 'is-today' : ''}">
+      <div class="jr-row-head"><b>${esc(weekdayName(iso))}</b><span>${esc(shortLabel(iso))}</span>${isToday ? '<em>Today</em>' : ''}</div>
+      ${cards}
+    </div>`;
   }).join('');
-
-  const monthLabel = parseISO(sel).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-  const sessions = workouts.filter((w) => w.date === sel).sort(sortSessions);
-  const body = sessions.length
-    ? sessions.map((w) => sessionCard(w, units, { isNext: false })).join('')
-    : `<div class="card jr-empty">
-        <p>${sel === today ? 'Rest day — nothing planned today.' : 'Nothing planned this day.'}</p>
-        <button class="btn ghost" data-action="open-editor-new" data-date="${esc(sel)}">+ Add a session</button>
-      </div>`;
 
   return `
     <div class="jr-head"><h2>Journal</h2><span class="jr-month">${esc(monthLabel)}</span></div>
     <div class="jr-strip">
       <button class="jr-week-nav" data-action="jr-week" data-dir="-1" aria-label="Previous week">‹</button>
-      <div class="jr-days">${chips}</div>
+      <span class="jr-range">${esc(shortLabel(ws))} – ${esc(shortLabel(addDays(ws, 4)))}</span>
       <button class="jr-week-nav" data-action="jr-week" data-dir="1" aria-label="Next week">›</button>
     </div>
-    ${body}`;
+    ${rows}`;
 }
 
 // ---- PROGRESS ---------------------------------------------------------------

@@ -19,8 +19,9 @@ export const SYNC_ENABLED = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey
 // Strava UI appears only when both Supabase and a Strava client id are present.
 export const STRAVA_ENABLED = Boolean(SYNC_ENABLED && CONFIG.stravaClientId);
 
-/** Base URL for Edge Functions, derived from the project URL. */
+/** Base URL for Edge Functions — canonical path form, so the OAuth redirect
+ *  domain is simply the project domain (vopzemijzoxezathmrai.supabase.co). */
 export function functionsBaseUrl() {
   if (!CONFIG.supabaseUrl) return '';
-  return CONFIG.supabaseUrl.replace('.supabase.co', '.functions.supabase.co');
+  return `${CONFIG.supabaseUrl}/functions/v1`;
 }

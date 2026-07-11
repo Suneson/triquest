@@ -15,6 +15,7 @@ import { shopShell, loadShop } from './shop.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openPublicProfile } from './profile.js';
 import { renderProfileGame, openFitnessHub } from './profile-game.js';
+import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, toast, prefersReducedMotion } from './effects.js';
@@ -144,6 +145,26 @@ function onClick(e) {
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;
+    case 'ai-onboard':
+      if (!auth.currentUser()) { auth.openAuthModal(); break; }
+      openOnboarding({ onDone: () => { appState.tab = 'home'; localStorage.setItem('moske-tab', 'home'); render(); } });
+      break;
+    case 'hub-signout':
+      if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); closeModalRoot(); }
+      break;
+    case 'hub-strava-connect':
+      import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed')));
+      break;
+    case 'hub-strava-sync':
+      toast('Syncing from Strava…');
+      import('./strava-client.js').then((m) => m.syncNow()
+        .then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`); })
+        .catch((e) => toast(e.message || 'Sync failed')));
+      break;
+    case 'hub-strava-disconnect':
+      import('./strava-client.js').then((m) => m.disconnectStrava()
+        .then(() => toast('Strava disconnected')).catch((e) => toast(e.message || 'Disconnect failed')));
+      break;
     case 'pg-sport': {
       const s = el.dataset.sport;
       if (s !== 'bike') {
@@ -643,7 +664,7 @@ async function boot() {
   document.addEventListener('input', onInput);
   document.addEventListener('submit', onSubmit);
   document.getElementById('fab').addEventListener('click', () => openEditor(null, todayISO()));
-  document.getElementById('settings-btn').addEventListener('click', openSettings);
+  document.getElementById('settings-btn')?.addEventListener('click', openSettings); // gear now lives in the profile hub
 
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
 

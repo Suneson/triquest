@@ -153,6 +153,9 @@ function calendarGrid(ctx) {
   </section>`;
 }
 
+const STRAVA_ICO = `<svg class="strava-ico" viewBox="0 0 24 24" aria-label="Imported from Strava">
+  <path fill="#FC4C02" d="M10.463 0L3.463 13.828h4.169l2.836-5.598 2.83 5.598h4.164L10.463 0zm4.924 13.828l-2.089 4.116-2.095-4.116H8.138L13.298 24l5.15-10.172h-3.061z"/></svg>`;
+
 // Activity Summary: big hours total + orange dotted cumulative trend line.
 function trendGraph(ctx) {
   const days = lastDays(ctx, 30);
@@ -165,8 +168,8 @@ function trendGraph(ctx) {
       cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${k === arr.length - 1 ? 4.5 : 3}"/>`).join('');
   const h = Math.floor(acc / 60);
   const m = Math.round(acc % 60);
-  return `<section class="card fh-block">
-    <h4>Activity Summary</h4>
+  return `<section class="card fh-block fh-tap" data-fh-activity role="button" tabindex="0">
+    <h4>Activity Summary <span class="fh-arrow">→</span></h4>
     <div class="fh-big">${h}h ${m}m</div>
     <div class="fh-range">${esc(shortLabel(days[0].iso))} – ${esc(shortLabel(ctx.today))}</div>
     <svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
@@ -246,6 +249,61 @@ function cardioCard(ctx) {
   </button>`;
 }
 
+// Account & sync controls (mirrors the top of Settings) + the settings entry.
+function accountBlock() {
+  const u = currentUser?.();
+  return `<section class="card fh-block">
+    <h4>Account &amp; Sync</h4>
+    ${u
+      ? `<div class="fh-acct">
+           <div class="fh-acct-id"><b>${esc(u.email || 'Signed in')}</b><small>☁️ Syncing across devices</small></div>
+           <button class="btn tiny ghost danger" data-action="hub-signout">Sign out</button>
+         </div>
+         <div class="fh-strava-row">
+           <button class="btn tiny ghost" data-action="hub-strava-connect">🔗 Connect Strava</button>
+           <button class="btn tiny ghost" data-action="hub-strava-sync">↻ Sync now</button>
+           <button class="btn tiny ghost danger" data-action="hub-strava-disconnect">Disconnect</button>
+         </div>
+         <div class="powered-by-strava">Powered by Strava</div>`
+      : `<button class="btn primary block" data-action="open-auth">☁️ Sign in to sync &amp; connect Strava</button>`}
+    <button class="btn ghost block fh-settings" data-action="open-settings">⚙ All settings</button>
+  </section>`;
+}
+
+/** Activity history drill-down: trend graph + recent sessions (Strava-badged). */
+export function openActivityDetail(ctx) {
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  const recent = ctx.workouts.filter((w) => w.completed)
+    .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25);
+  const rows = recent.map((w) => {
+    const km = Number(w.metrics?.distanceKm) || Number(w.actual?.distanceKm) || 0;
+    const meta = [shortLabel(w.date), `${w.durationMin || 0} min`, km ? `${km % 1 ? km.toFixed(1) : km} km` : '']
+      .filter(Boolean).join(' · ');
+    return `<div class="ah-row" data-action="open-workout" data-id="${esc(w.id)}">
+      <span class="sport-dot type-${esc(w.type)}"></span>
+      <div class="ah-body"><b>${esc(w.title || w.type)}</b><small>${esc(meta)}</small></div>
+      ${w.strava_activity_id || w.source === 'strava' ? STRAVA_ICO : ''}
+    </div>`;
+  }).join('') || '<p class="fh-foot">No completed sessions yet.</p>';
+
+  root.innerHTML = `
+  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Activity history">
+    <div class="fh-head">
+      <button class="fh-back" data-fh-hub aria-label="Back to fitness">←</button>
+      <div class="fh-title"><small>Last 30 days</small><h2>Activity</h2></div>
+    </div>
+    ${trendGraph(ctx)}
+    <section class="card fh-block">
+      <h4>History</h4>
+      <div class="ah-list">${rows}</div>
+    </section>
+  </div>`;
+  root.querySelector('[data-fh-hub]').addEventListener('click', () => openFitnessHub(ctx));
+  // the inner trend card is not a drill-down here
+  root.querySelector('[data-fh-activity]')?.removeAttribute('data-fh-activity');
+}
+
 function statRow(ctx) {
   const stat = (value, label) => `<div class="pc-stat"><b>${esc(String(value))}</b><small>${esc(label)}</small></div>`;
   return `<div class="pc-stats fh-stats">
@@ -308,10 +366,12 @@ export function openFitnessHub(ctx) {
     ${trendGraph(ctx)}
     ${strainWave(ctx)}
     ${cardioCard(ctx)}
+    ${accountBlock()}
   </div>`;
 
   root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
   root.querySelector('[data-fh-cardio]').addEventListener('click', () => openCardioDetail(ctx));
+  root.querySelector('[data-fh-activity]')?.addEventListener('click', () => openActivityDetail(ctx));
   wireAvatarUpload(root);
 }
 

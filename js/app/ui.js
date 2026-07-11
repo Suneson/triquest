@@ -344,7 +344,11 @@ export function renderHome(ctx) {
     + insightLine(ctx, ws)
     + `<div class="home-sec">Today's Target</div>`
     + focusCard(ctx)
-    + tomorrowGlance(ctx);
+    + tomorrowGlance(ctx)
+    + `<section class="card ai-card" data-action="ai-onboard" role="button" tabindex="0">
+        <div class="ai-card-body"><small>AI Coach</small><b>Build my tailored training plan</b></div>
+        <span class="fh-chev">→</span>
+      </section>`;
 }
 
 // Bold date context header: "SATURDAY / Today, 11 July".

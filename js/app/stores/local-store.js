@@ -27,7 +27,7 @@ export const nowISO = () => new Date().toISOString();
 
 export function defaultSettings() {
   return {
-    sound: false, units: 'metric', weekStart: 1, reduceMotion: false,
+    sound: true, units: 'metric', weekStart: 1, reduceMotion: false,
     goals: { sessions: 5, km: 50, hours: 8 }, ftp: 250,
     packing: {
       run: ['shoes', 'watch', 'gels', 'cap'],

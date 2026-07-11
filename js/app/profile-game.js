@@ -127,24 +127,42 @@ function wavePath(vals, W, H, maxOverride) {
   return { d, max, x, y, pts, W, H };
 }
 
-// Calendar-aligned activity matrix: 5 Monday-anchored weeks, chips coloured by
-// how many sessions were completed that day (1 / 2 / 3+, like the reference).
-function calendarGrid(ctx) {
-  const start = addDays(mondayOf(ctx.today), -28);
+// Two-month chronological calendar matrix (previous + current month side by
+// side, reference-exact). Chips colour by daily session count; today gets a
+// distinct blue stroke ring + corner dot.
+function monthMatrix(counts, today, year, month /* 0-based */) {
+  const first = new Date(Date.UTC(year, month, 1));
+  const label = first.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const startDow = (first.getUTCDay() + 6) % 7;                       // Mon = 0
+  const daysIn = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const weeks = Math.ceil((startDow + daysIn) / 7);
   const head = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((L) => `<i class="cal-head">${L}</i>`).join('');
-  const chips = Array.from({ length: 35 }, (_, i) => {
-    const iso = addDays(start, i);
-    const n = ctx.workouts.filter((w) => w.completed && w.date === iso).length;
-    const future = iso > ctx.today;
+  let cells = '';
+  for (let i = 0; i < weeks * 7; i++) {
+    const dayNum = i - startDow + 1;
+    if (dayNum < 1 || dayNum > daysIn) { cells += '<i class="cal-chip pad"></i>'; continue; }
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    const n = counts.get(iso) || 0;
+    const future = iso > today;
     const cls = future ? 'future' : n >= 3 ? 'hi' : n === 2 ? 'mid' : n === 1 ? 'lo' : '';
-    return `<i class="cal-chip ${cls} ${iso === ctx.today ? 'is-today' : ''}"
+    cells += `<i class="cal-chip ${cls} ${iso === today ? 'is-today' : ''}"
       title="${esc(iso)} · ${n} session${n === 1 ? '' : 's'}"></i>`;
-  }).join('');
-  const mA = parseISO(start).toLocaleDateString('en-GB', { month: 'short' });
-  const mB = parseISO(ctx.today).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  }
+  return `<div class="cal-month"><h5>${esc(label)}</h5><div class="cal-grid">${head}${cells}</div></div>`;
+}
+
+function calendarGrid(ctx) {
+  const counts = new Map();
+  ctx.workouts.forEach((w) => { if (w.completed) counts.set(w.date, (counts.get(w.date) || 0) + 1); });
+  const d = parseISO(ctx.today);
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const [py, pm] = m === 0 ? [y - 1, 11] : [y, m - 1];
   return `<section class="card fh-block">
-    <h4>Activity · ${esc(mA)} – ${esc(mB)}</h4>
-    <div class="cal-grid">${head}${chips}</div>
+    <div class="cal-months">
+      ${monthMatrix(counts, ctx.today, py, pm)}
+      ${monthMatrix(counts, ctx.today, y, m)}
+    </div>
     <div class="cal-legend">
       <span><i class="cal-chip lo"></i> 1 activity</span>
       <span><i class="cal-chip mid"></i> 2 activities</span>
@@ -361,12 +379,12 @@ export function openFitnessHub(ctx) {
       <button class="fh-avatar" data-pc-photo aria-label="Change profile photo">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
       <input type="file" accept="image/*" data-pc-file hidden>
     </div>
+    ${accountBlock()}
     ${statRow(ctx)}
     ${calendarGrid(ctx)}
     ${trendGraph(ctx)}
     ${strainWave(ctx)}
     ${cardioCard(ctx)}
-    ${accountBlock()}
   </div>`;
 
   root.querySelector('[data-fh-close]').addEventListener('click', closeHub);

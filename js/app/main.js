@@ -133,8 +133,9 @@ function onClick(e) {
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
+      if (appState.tab === 'progress') autoStravaSync(); // silent background pull
       render();
-      window.scrollTo(0, 0); // consistent across all tabs (incl. async-loaded ones)
+      document.getElementById('view').scrollTo(0, 0); // #view is the scroller now
       break;
     case 'jr-week':
       appState.journalDate = addDays(appState.journalDate || todayISO(), Number(el.dataset.dir) * 7);
@@ -557,6 +558,26 @@ function openAIWizard() {
   draw();
 }
 
+// ---- automated background Strava sync ----------------------------------------
+// Runs silently on boot, sign-in, and Profile-tab mount: if the athlete has
+// Strava connected, pull new activities and commit them (throttled to 5 min).
+let _lastAutoSync = 0;
+async function autoStravaSync() {
+  if (!STRAVA_ENABLED || !auth.currentUser()) return;
+  if (Date.now() - _lastAutoSync < 5 * 60 * 1000) return;
+  _lastAutoSync = Date.now();
+  try {
+    const m = await import('./strava-client.js');
+    const st = await m.stravaStatus();
+    if (!st?.connected) return;
+    const r = await m.syncNow();
+    if ((r.insert || 0) + (r.link || 0) + (r.update || 0) > 0) {
+      store.commit();
+      toast(`Strava: ${r.link || 0} linked · ${r.insert || 0} imported`, { icon: '🛰️' });
+    }
+  } catch { /* silent — never interrupt the athlete */ }
+}
+
 // ---- account / sync UI ------------------------------------------------------
 
 function accountSectionHtml() {
@@ -593,6 +614,7 @@ function renderSyncBanner() {
 
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) appState.lastLevel = null; // don't fire a level-up toast on data swap
+  if (user && !opts.remote) autoStravaSync();
   render();
   const root = document.getElementById('modal-root');
   if (root && root.querySelector('[aria-label="Settings"]')) openSettings();
@@ -674,7 +696,7 @@ async function boot() {
 
   maybeOnboard();
   handleRedirectParams();
-  if (SYNC_ENABLED) auth.initAuth(onAuthChange);
+  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => autoStravaSync());
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

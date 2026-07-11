@@ -47,16 +47,21 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { background: #121214; } /* kill white overscroll gap behind the fixed nav */
+html { background: #121214; height: 100%; }
 html, body { margin: 0; }
+/* Scroll containment: the PAGE never scrolls — only #view does. The floating
+   island lives at the document root, outside every scrollable hierarchy, so
+   list scrolling can never move or bleed into it. */
 body {
+  height: 100dvh; overflow: hidden;
+  display: flex; flex-direction: column;
   background: var(--bg);
   color: var(--fg);
   font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: 0; /* clearance for the floating island lives in .view */
   overscroll-behavior-y: contain;
 }
+#race-banner, #sync-banner, .storage-banner, .app-header { flex: none; }
 h1, h2, h3, h4 { margin: 0; font-weight: 800; letter-spacing: -.01em; }
 button { font: inherit; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
@@ -96,8 +101,13 @@ button { font: inherit; cursor: pointer; }
 }
 
 /* ---- views / layout ---- */
-/* universal bottom spacer: content always clears behind the floating island */
-.view { padding: 18px 18px calc(96px + var(--safe-b)); display: grid; gap: 16px; max-width: 760px; margin: 0 auto; }
+/* #view is the ONLY scroller; bottom spacer clears the floating island */
+.view {
+  flex: 1; min-height: 0; width: 100%;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+  padding: 18px 18px max(100px, calc(env(safe-area-inset-bottom, 0px) + 80px));
+  display: grid; gap: 18px; align-content: start; max-width: 760px; margin: 0 auto;
+}
 .day-header { display: flex; align-items: center; justify-content: space-between; }
 .day-header h2 { font-size: 1.5rem; }
 .sub { color: var(--muted); margin: 2px 0 0; font-size: .85rem; }
@@ -272,8 +282,9 @@ button { font: inherit; cursor: pointer; }
 
 /* ---- floating island tab bar (icons only) — locked to strict viewport bounds ---- */
 .tabs {
-  /* strict viewport pinning — identical geometry on every tab, no view may override */
+  /* root-level overlay, pinned to true viewport geometry — no view may override */
   position: fixed; bottom: max(16px, env(safe-area-inset-bottom, 0px)); left: 50%; top: auto; z-index: 9999;
+  pointer-events: auto;
   transform: translateX(-50%) translateZ(0); -webkit-transform: translateX(-50%) translateZ(0);
   width: min(380px, calc(100vw - 40px));
   display: grid; grid-template-columns: repeat(5, 1fr);
@@ -799,9 +810,17 @@ body.pg-mode .view { padding: 0; max-width: none; }
 /* ---- full-screen Fitness & Cardio performance hub ---- */
 .fh-screen {
   position: fixed; inset: 0; overflow-y: auto; background: var(--bg);
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 18px calc(max(16px, env(safe-area-inset-bottom, 0px)) + 88px);
-  display: grid; gap: 16px; align-content: start;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 18px calc(max(16px, env(safe-area-inset-bottom, 0px)) + 92px);
+  display: grid; gap: 20px; align-content: start;
   animation: fh-in .22s ease;
+  -webkit-overflow-scrolling: touch;
+}
+/* thick, deeply padded bento blocks with massive breathing room */
+.fh-block { padding: 22px 20px; }
+.fh-stats { gap: 12px; }
+.fh-stats .pc-stat {
+  background: var(--bg-2); border-radius: 14px; padding: 16px 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, .55), 0 4px 12px rgba(0, 0, 0, .3);
 }
 @keyframes fh-in { from { opacity: 0; transform: translateY(14px); } }
 .fh-head { display: flex; align-items: center; gap: 12px; }
@@ -829,16 +848,24 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .fh-area { opacity: .16; }
 .fh-target { stroke: rgba(255, 255, 255, .4); stroke-dasharray: 4 5; stroke-width: 1; }
 
-/* calendar-aligned activity matrix (weekday columns, pill chips) */
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px 8px; }
-.cal-head { display: block; text-align: center; font-style: normal; color: var(--muted); font-size: .62rem; font-weight: 700; letter-spacing: .04em; }
-.cal-chip { display: block; width: 100%; aspect-ratio: 2.1 / 1; border-radius: 5px; background: var(--bg-3); }
+/* two-month chronological calendar matrix (prev + current, side by side) */
+.cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.cal-month h5 { font-size: .95rem; font-weight: 800; letter-spacing: -.01em; color: #fff; margin: 0 0 12px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px 6px; }
+.cal-head { display: block; text-align: center; font-style: normal; color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .04em; }
+.cal-chip { display: block; width: 100%; aspect-ratio: 2.1 / 1; border-radius: 5px; background: var(--bg-3); position: relative; }
+.cal-chip.pad { visibility: hidden; }
 .cal-chip.lo { background: var(--ring-lime-a); box-shadow: 0 0 8px rgba(181, 217, 107, .35); }
 .cal-chip.mid { background: var(--acc-green); box-shadow: 0 0 8px rgba(99, 201, 123, .35); }
 .cal-chip.hi { background: var(--acc-teal); box-shadow: 0 0 8px rgba(79, 184, 232, .4); }
 .cal-chip.future { opacity: .35; }
-.cal-chip.is-today { box-shadow: 0 0 0 1.5px var(--acc-peri); }
-.cal-legend { display: flex; gap: 14px; align-items: center; margin-top: 12px; color: var(--muted); font-size: .68rem; flex-wrap: wrap; }
+/* today: distinct blue stroke ring + corner dot halo */
+.cal-chip.is-today { box-shadow: 0 0 0 1.5px var(--acc-teal), 0 0 10px rgba(79, 184, 232, .45); }
+.cal-chip.is-today::after {
+  content: ''; position: absolute; top: -3px; right: -3px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--acc-teal);
+}
+.cal-legend { display: flex; gap: 14px; align-items: center; margin-top: 14px; color: var(--muted); font-size: .68rem; flex-wrap: wrap; }
 .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .cal-legend .cal-chip { width: 11px; height: 11px; aspect-ratio: auto; border-radius: 50%; box-shadow: none; }
 

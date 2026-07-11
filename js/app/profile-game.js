@@ -8,6 +8,13 @@ import { svg } from '../core/icons.js';
 import { esc, mondayOf } from './ui.js';
 import { addDays } from '../core/dates.js';
 import { currentUser } from './auth.js';
+import * as store from './store.js';
+
+// Circular avatar slot: uploaded photo if set, otherwise the initial letter.
+function avatarInner(ctx, initial) {
+  const src = ctx?.settings?.avatar;
+  return src ? `<img src="${esc(src)}" alt="">` : initial;
+}
 
 const BIKE = 'icons/Pixelart/BIKE';
 
@@ -50,7 +57,7 @@ export function renderProfileGame(ctx) {
         ${sportBtn('run', 'run', 'Run', false)}
         ${sportBtn('gym', 'gym', 'Gym', false)}
       </div>
-      <button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${initial}</button>
+      <button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${avatarInner(ctx, initial)}</button>
     </div>
 
     <div class="pg-hud">
@@ -128,8 +135,10 @@ export function openProfileCard(ctx) {
     <div class="modal pc-modal" role="dialog" aria-modal="true" aria-label="Profile">
       <button class="icon-btn pc-x" data-pc-close aria-label="Close">✕</button>
       <div class="pc-head">
-        <div class="pc-avatar">${esc((name || 'A').charAt(0).toUpperCase())}</div>
+        <button class="pc-avatar" data-pc-photo aria-label="Change profile photo">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
+        <small class="pc-avatar-hint">Tap to change photo</small>
         <div class="pc-name">${esc(name)}</div>
+        <input type="file" accept="image/*" data-pc-file hidden>
       </div>
       <div class="pc-stats">
         ${stat((ctx.stats?.completedCount ?? 0).toLocaleString(), 'Total workouts')}
@@ -140,4 +149,28 @@ export function openProfileCard(ctx) {
       ${consistencyGraph(ctx)}
     </div>`;
   root.querySelectorAll('[data-pc-close]').forEach((b) => b.addEventListener('click', close));
+
+  // Profile photo upload: pick → centre-crop to 192px JPEG → persist in settings
+  // (synced to Supabase profiles.settings when signed in).
+  const fileInput = root.querySelector('[data-pc-file]');
+  root.querySelector('[data-pc-photo]').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      const S = 192;
+      const c = document.createElement('canvas');
+      c.width = S; c.height = S;
+      const g = c.getContext('2d');
+      const side = Math.min(img.width, img.height);
+      g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, S, S);
+      URL.revokeObjectURL(img.src);
+      const url = c.toDataURL('image/jpeg', 0.85);
+      store.setSetting('avatar', url);            // persists + syncs + re-renders header
+      const btn = root.querySelector('[data-pc-photo]');
+      if (btn) btn.innerHTML = `<img src="${url}" alt="">`;
+    };
+    img.src = URL.createObjectURL(f);
+  });
 }

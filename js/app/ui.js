@@ -339,7 +339,44 @@ export function eventBanner(ctx) {
 
 export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
-  return ringsCard(ctx, ws) + insightLine(ctx, ws) + focusCard(ctx);
+  return homeDateHeader(ctx)
+    + ringsCard(ctx, ws)
+    + insightLine(ctx, ws)
+    + `<div class="home-sec">Today's Target</div>`
+    + focusCard(ctx)
+    + tomorrowGlance(ctx);
+}
+
+// Bold date context header: "SATURDAY / Today, 11 July".
+function homeDateHeader(ctx) {
+  const d = parseISO(ctx.today);
+  const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
+  const label = `Today, ${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
+  return `<div class="home-date"><small>${esc(weekday)}</small><h2>${esc(label)}</h2></div>`;
+}
+
+// A scaled-down one-line preview of tomorrow — never more than today + tomorrow.
+function tomorrowGlance(ctx) {
+  const tmr = addDays(ctx.today, 1);
+  const sessions = ctx.workouts.filter((w) => w.date === tmr).sort(sortSessions);
+  let inner;
+  let attrs;
+  if (sessions.length) {
+    const w = sessions[0];
+    const d = DISCIPLINES[w.type] || DISCIPLINES.other;
+    const extra = sessions.length > 1 ? ` <span class="tg-extra">+${sessions.length - 1}</span>` : '';
+    inner = `<span class="sport-dot type-${esc(w.type)}"></span>
+      <span class="tg-title">${esc(d.label)} — ${esc(w.title)}${extra}</span>
+      <span class="tg-min">${w.durationMin || 0} MIN</span>`;
+    attrs = `data-action="open-workout" data-id="${esc(w.id)}"`;
+  } else {
+    inner = `<span class="sport-dot"></span>
+      <span class="tg-title tg-rest">Rest &amp; Recovery Day</span>
+      <span class="tg-min tg-rest">—</span>`;
+    attrs = `data-action="open-editor-new" data-date="${esc(tmr)}"`;
+  }
+  return `<div class="home-sec">Tomorrow's Glance</div>
+    <section class="card tg-card" ${attrs}>${inner}</section>`;
 }
 
 // Weekly goal progress vs the three configured targets.
@@ -444,15 +481,14 @@ export function renderJournal(ctx, selectedIso) {
   const { workouts, units, today } = ctx;
   const sel = selectedIso || today;
   const ws = mondayOf(sel);
-  const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  const chips = letters.map((L, i) => {
+  const chips = Array.from({ length: 7 }, (_, i) => {
     const iso = addDays(ws, i);
     const isSel = iso === sel;
     const isToday = iso === today;
     return `<button class="jr-day ${isSel ? 'is-active' : ''}" data-action="jr-day" data-date="${esc(iso)}"
       aria-pressed="${isSel}" aria-label="${weekdayName(iso)} ${shortLabel(iso)}">
-      <small>${L}</small><b>${parseInt(iso.slice(8, 10), 10)}</b>${isToday ? '<i class="jr-dot"></i>' : ''}</button>`;
+      <small>${esc(weekdayName(iso).slice(0, 3))}</small><b>${parseInt(iso.slice(8, 10), 10)}</b>${isToday ? '<i class="jr-dot"></i>' : ''}</button>`;
   }).join('');
 
   const monthLabel = parseISO(sel).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });

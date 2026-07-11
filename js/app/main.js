@@ -85,11 +85,15 @@ function render() {
   document.getElementById('race-banner').innerHTML = eventBanner(ctx);
   renderSyncBanner();
 
-  // Header avatar mirrors the signed-in athlete's initial.
+  // Header avatar: uploaded photo if set, otherwise the athlete's initial.
   const u = auth.currentUser?.();
   const name = (u?.user_metadata?.display_name || u?.email || 'A').trim();
   const avatarEl = document.getElementById('header-avatar');
-  if (avatarEl) avatarEl.textContent = (name[0] || 'A').toUpperCase();
+  if (avatarEl) {
+    avatarEl.innerHTML = ctx.settings?.avatar
+      ? `<img src="${esc(ctx.settings.avatar)}" alt="">`
+      : (name[0] || 'A').toUpperCase();
+  }
 
   document.querySelectorAll('.tab').forEach((t) =>
     t.classList.toggle('active', t.dataset.tab === appState.tab));

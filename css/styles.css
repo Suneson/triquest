@@ -5,8 +5,8 @@
   --bg-2: #1C1C1E;      /* matte card surface */
   --bg-3: #26262A;      /* raised element on a card */
   --bg-4: #323236;      /* highest surface (inputs, chips) */
-  --fg: #F2F2F7;
-  --muted: #98989F;
+  --fg: #FFFFFF;
+  --muted: #A6A6AE;
   --border: rgba(255, 255, 255, .06);
   --accent: #E3C56A;    /* muted gold — used sparingly */
   --accent-2: #E56A6E;
@@ -46,7 +46,7 @@ body {
   color: var(--fg);
   font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  padding-bottom: calc(96px + var(--safe-b));
+  padding-bottom: 0; /* clearance for the floating island lives in .view */
   overscroll-behavior-y: contain;
 }
 h1, h2, h3, h4 { margin: 0; font-weight: 800; letter-spacing: -.01em; }
@@ -79,21 +79,26 @@ button { font: inherit; cursor: pointer; }
 .avatar-btn {
   width: 38px; height: 38px; border-radius: 50%; border: none;
   background: var(--bg-3); color: var(--fg); font-weight: 700; font-size: .95rem;
-  display: grid; place-items: center;
+  display: grid; place-items: center; overflow: hidden; padding: 0;
 }
 .avatar-btn:active { transform: scale(.94); }
+/* uploaded profile photos fill any circular avatar slot */
+.avatar-btn img, .pc-avatar img, .pg-avatar img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;
+}
 
 /* ---- views / layout ---- */
-.view { padding: 18px; display: grid; gap: 16px; max-width: 760px; margin: 0 auto; }
+/* universal bottom spacer: content always clears behind the floating island */
+.view { padding: 18px 18px calc(96px + var(--safe-b)); display: grid; gap: 16px; max-width: 760px; margin: 0 auto; }
 .day-header { display: flex; align-items: center; justify-content: space-between; }
 .day-header h2 { font-size: 1.5rem; }
 .sub { color: var(--muted); margin: 2px 0 0; font-size: .85rem; }
 .phase-pill { background: var(--bg-3); border: 1px solid var(--border); padding: 2px 8px; border-radius: 99px; font-size: .72rem; color: var(--accent); white-space: nowrap; }
 
-/* ---- cards: matte surfaces, separation by contrast only ---- */
+/* ---- cards: matte surfaces + soft ambient elevation ---- */
 .card {
   background: var(--bg-2); border: none; border-radius: var(--radius);
-  padding: 16px; box-shadow: none; position: relative; overflow: hidden;
+  padding: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, .4); position: relative; overflow: hidden;
 }
 /* monospaced numerics for timestamps, weights, distances, durations */
 .mono, .stat b, .total b, .ring-c b, .lb-xp, .pp-stats .total b, .ex-prescribed,
@@ -254,11 +259,11 @@ button { font: inherit; cursor: pointer; }
 .principles { margin: 0; padding-left: 18px; color: var(--muted); font-size: .85rem; }
 .principles li { margin: 6px 0; }
 
-/* ---- floating island tab bar (icons only) ---- */
+/* ---- floating island tab bar (icons only) — locked to strict viewport bounds ---- */
 .tabs {
-  position: fixed; bottom: calc(12px + var(--safe-b)); left: 50%; z-index: 50;
+  position: fixed; bottom: calc(12px + var(--safe-b)); left: 50%; top: auto; z-index: 9999;
   transform: translateX(-50%) translateZ(0); -webkit-transform: translateX(-50%) translateZ(0);
-  width: min(380px, calc(100% - 40px));
+  width: min(380px, calc(100vw - 40px));
   display: grid; grid-template-columns: repeat(5, 1fr);
   background: rgba(28, 28, 30, .94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-radius: 999px; padding: 8px;
@@ -394,6 +399,19 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .mring-label { font-size: .74rem; font-weight: 600; text-align: center; line-height: 1.2; }
 .mring-target { font-size: .68rem; color: var(--muted); text-align: center; white-space: nowrap; }
 .rings-edit { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--muted); font-size: .74rem; padding: 6px 8px; }
+
+/* ---- home: date context header + section eyebrows ---- */
+.home-date { display: grid; gap: 2px; padding: 4px 6px 0; }
+.home-date small { font-size: .64rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.home-date h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; }
+.home-sec { font-size: .68rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); padding: 0 6px; margin-bottom: -8px; }
+
+/* ---- home: tomorrow's glance (scaled-down preview) ---- */
+.tg-card { display: flex; align-items: center; gap: 10px; padding: 15px 18px; cursor: pointer; }
+.tg-title { flex: 1; min-width: 0; font-size: .9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tg-extra { color: var(--muted); font-weight: 700; font-size: .78rem; }
+.tg-min { font-weight: 800; font-size: .92rem; font-variant-numeric: tabular-nums; letter-spacing: .02em; white-space: nowrap; }
+.tg-rest { color: var(--muted); font-weight: 500; }
 
 /* ---- home: contextual insight line ---- */
 .insight { color: var(--muted); font-size: .84rem; line-height: 1.45; padding: 0 6px; margin: 0; }
@@ -654,7 +672,10 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .pg-world {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   aspect-ratio: 572 / 1024;
-  width: max(100vw, calc(100dvh * (572 / 1024)));
+  /* 3% overscan + large-viewport units so collapsing mobile URL bars can never
+     expose a letterbox gap at the bottom edge */
+  width: max(103vw, calc(103dvh * (572 / 1024)));
+  width: max(103vw, calc(103lvh * (572 / 1024)));
 }
 .pg-layer { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; }
 .pg-bg { z-index: 1; }
@@ -721,7 +742,9 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .pc-avatar {
   width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
   font-size: 2.1rem; font-weight: 800; color: var(--fg); background: var(--bg-4); border: 2px solid var(--accent);
+  overflow: hidden; cursor: pointer; position: relative; padding: 0;
 }
+.pc-avatar-hint { display: block; margin-top: -6px; color: var(--muted); font-size: .68rem; }
 .pc-name { font-size: 1.3rem; font-weight: 800; letter-spacing: -.01em; }
 .pc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 16px; }
 .pc-stat { display: grid; gap: 6px; }

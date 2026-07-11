@@ -101,13 +101,15 @@ button { font: inherit; cursor: pointer; }
 }
 
 /* ---- views / layout ---- */
-/* #view is the ONLY scroller; bottom spacer clears the floating island */
+/* #view is the ONLY scroller; bottom spacer clears the floating island.
+   Flex column with flex:none children — sections can NEVER be squashed. */
 .view {
   flex: 1; min-height: 0; width: 100%;
   overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
   padding: 18px 18px max(100px, calc(env(safe-area-inset-bottom, 0px) + 80px));
-  display: grid; gap: 22px; align-content: start; max-width: 760px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 22px; max-width: 760px; margin: 0 auto;
 }
+.view > * { flex: none; }
 .day-header { display: flex; align-items: center; justify-content: space-between; }
 .day-header h2 { font-size: 1.5rem; }
 .sub { color: var(--muted); margin: 2px 0 0; font-size: .85rem; }
@@ -117,6 +119,7 @@ button { font: inherit; cursor: pointer; }
 .card {
   background: var(--bg-2); border: none; border-radius: var(--radius);
   padding: 16px; position: relative; overflow: hidden;
+  height: auto; max-height: none; flex-shrink: 0;
   box-shadow: 0 12px 36px rgba(0, 0, 0, .55), 0 4px 12px rgba(0, 0, 0, .3);
 }
 /* primary numbers read crisp white over the matte surfaces */
@@ -421,13 +424,19 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 .shop-title { font-weight: 700; font-size: .85rem; line-height: 1.25; }
 .shop-price { color: var(--accent); font-size: .82rem; margin-top: 4px; }
 @media (min-width: 560px) { .shop-grid { grid-template-columns: repeat(3, 1fr); } }
-/* ---- home hero: thick ring columns + coaching in ONE unified rectangle ---- */
-.hero-card { padding: 0; height: auto; }
-.rings-row { display: grid; grid-template-columns: repeat(3, 1fr); padding: 26px 6px 22px; }
-.mring-col { display: grid; justify-items: center; gap: 10px; min-width: 0; padding: 0 6px; }
+/* ---- home hero: thick ring columns + coaching in ONE unified rectangle ----
+   Flex column, height:auto, every child flex:none — nothing can squash to 0. */
+.hero-card { padding: 0; height: auto; display: flex; flex-direction: column; }
+.hero-card > * { flex: none; }
+.hero-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
+.hero-head h4 { font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.rings-row { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; padding: 16px 6px 22px; height: auto; }
+.mring-col { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; padding: 0 6px; height: auto; }
+.mring-col > * { flex: none; }
 .mring-col + .mring-col { border-left: 1px solid rgba(255, 255, 255, .06); }
-.mring { position: relative; width: 92px; max-width: 96%; aspect-ratio: 1; }
-.mring svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* explicit width AND height — never relies on aspect-ratio resolution */
+.mring { position: relative; width: 88px; height: 88px; }
+.mring svg { width: 88px; height: 88px; display: block; overflow: visible; }
 .mring .track { fill: none; stroke: #3A3A41; }
 .mring .prog {
   fill: none; stroke-linecap: round;
@@ -444,18 +453,18 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
   font-size: 1.3rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -.02em;
 }
 .mring-pct i { font-style: normal; font-size: .78rem; font-weight: 700; color: #C9C9CF; margin-left: 1px; }
-.mring-label { font-size: .92rem; font-weight: 700; color: #F6F6F8; text-align: center; line-height: 1.2; }
-.mring-target { font-size: .66rem; color: var(--muted); text-align: center; white-space: nowrap; margin-top: -5px; }
+.mring-label { font-size: .92rem; font-weight: 700; color: #F6F6F8; text-align: center; line-height: 1.2; min-height: 1.2em; }
+.mring-target { font-size: .66rem; color: var(--muted); text-align: center; white-space: nowrap; margin-top: -5px; min-height: 1em; }
 
 /* coaching summary fused to the bottom of the hero rectangle */
 .coach-inline {
   border-top: 1px solid rgba(255, 255, 255, .06);
   background: rgba(255, 255, 255, .025);
-  padding: 16px 20px 18px;
+  padding: 16px 20px 18px; height: auto; min-height: min-content;
 }
 .coach-inline h4 { font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; }
 .coach-inline p { margin: 0; font-size: .92rem; line-height: 1.55; color: #EDEDF2; }
-.rings-edit { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--muted); font-size: .74rem; padding: 6px 8px; }
+.rings-edit { position: static; background: none; border: none; color: var(--acc-peri); font-size: .76rem; font-weight: 600; padding: 4px 2px; }
 
 /* ---- home: date context header + section eyebrows ---- */
 .home-date { display: grid; gap: 2px; padding: 4px 6px 0; }
@@ -476,11 +485,12 @@ input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border-radius: 
 
 /* ---- home: today's focus card — expands naturally, never clips ---- */
 .focus-card {
-  height: auto; max-height: none; min-height: min-content;
-  padding: 22px 20px 20px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+  height: auto !important; max-height: none; min-height: min-content;
+  padding: 22px 20px 24px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: stretch; gap: 11px;
 }
 .focus-card > * { flex: none; }
+.focus-card .bento-metrics { flex: none; margin-top: 2px; height: auto; }
 .focus-top { display: flex; align-items: center; gap: 8px; }
 .focus-sport { font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); flex: 1; }
 .focus-state { font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--good); }

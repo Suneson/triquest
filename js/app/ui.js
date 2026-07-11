@@ -429,6 +429,7 @@ function heroCard(ctx, weekStartIso) {
   const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
   const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
   return `<section class="card hero-card">
+    <div class="hero-head"><h4>This Week</h4><button class="rings-edit" data-action="edit-goals">Edit</button></div>
     <div class="rings-row">
       ${metricRing('lime', s.fracs.sessions, 'Plan', `${s.sessions} of ${s.g.sessions}`)}
       ${metricRing('indigo', s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
@@ -438,7 +439,6 @@ function heroCard(ctx, weekStartIso) {
       <h4>Coaching</h4>
       <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
     </div>
-    <button class="rings-edit" data-action="edit-goals">Edit</button>
   </section>`;
 }
 

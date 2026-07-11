@@ -809,14 +809,18 @@ body.pg-mode .view { padding: 0; max-width: none; }
 
 /* ---- full-screen Fitness & Cardio performance hub ---- */
 .fh-screen {
-  position: fixed; inset: 0; overflow-y: auto; background: var(--bg);
+  position: fixed; inset: 0; height: 100%; overflow-y: auto; background: var(--bg);
   padding: calc(16px + env(safe-area-inset-top, 0px)) 18px calc(max(16px, env(safe-area-inset-bottom, 0px)) + 92px);
-  display: grid; gap: 20px; align-content: start;
+  display: block; /* block flow: children can NEVER be flex/grid-compressed */
   animation: fh-in .22s ease;
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
 }
-/* thick, deeply padded bento blocks with massive breathing room */
-.fh-block { padding: 22px 20px; }
+.fh-screen > * { margin: 0 0 20px; }
+/* thick, deeply padded bento blocks — content-sized, compression-proof */
+.fh-block, .fh-screen .card {
+  height: auto; max-height: none; min-height: min-content; flex-shrink: 0;
+  padding: 22px 20px;
+}
 .fh-stats { gap: 12px; }
 .fh-stats .pc-stat {
   background: var(--bg-2); border-radius: 14px; padding: 16px 8px;
@@ -849,11 +853,12 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .fh-target { stroke: rgba(255, 255, 255, .4); stroke-dasharray: 4 5; stroke-width: 1; }
 
 /* two-month chronological calendar matrix (prev + current, side by side) */
-.cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 150px; height: auto; }
+.cal-month { height: auto; }
 .cal-month h5 { font-size: .95rem; font-weight: 800; letter-spacing: -.01em; color: #fff; margin: 0 0 12px; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(11px, auto); gap: 8px 6px; min-height: 140px; height: auto; align-content: start; }
 .cal-head { display: block; text-align: center; font-style: normal; color: var(--muted); font-size: .6rem; font-weight: 700; letter-spacing: .04em; }
-.cal-chip { display: block; width: 100%; aspect-ratio: 2.1 / 1; border-radius: 5px; background: var(--bg-3); position: relative; }
+.cal-chip { display: block; width: 100%; aspect-ratio: 2.1 / 1; min-height: 11px; border-radius: 5px; background: var(--bg-3); position: relative; }
 .cal-chip.pad { visibility: hidden; }
 .cal-chip.lo { background: var(--ring-lime-a); box-shadow: 0 0 8px rgba(181, 217, 107, .35); }
 .cal-chip.mid { background: var(--acc-green); box-shadow: 0 0 8px rgba(99, 201, 123, .35); }

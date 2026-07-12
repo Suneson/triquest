@@ -1,7 +1,8 @@
 // onboarding.js — the premium AI coaching questionnaire. One question per
 // screen, thin gradient progress line, sliding transitions, and a Strava
-// history deep-dive before the plan is generated. Matches the charcoal/matte
-// aesthetic and never scrolls the page (each step is one fixed viewport).
+// history deep-dive before the plan is generated. The step pipeline is
+// DYNAMIC: it branches per training ecosystem (Endurance / HYROX / Hybrid /
+// Gym) so every archetype gets a tailored interview.
 
 import * as store from './store.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
@@ -9,14 +10,22 @@ import { toast } from './effects.js';
 import { esc } from './ui.js';
 import { addDays } from '../core/dates.js';
 
-// Every endurance discipline gets first-class onboarding: pure runners,
-// cyclists and swimmers configure their own goal ladders alongside triathletes.
+// ---- static choice matrices --------------------------------------------------
+
+const ECOS = [
+  { id: 'endurance', name: 'Endurance / Triathlon', sub: 'Swim, bike & run progression' },
+  { id: 'hyrox', name: 'HYROX', sub: 'Functional hybrid power + aerobic pacing' },
+  { id: 'hybrid', name: 'Hybrid Athlete', sub: 'Weight-room strength + cardio disciplines' },
+  { id: 'gym', name: 'Only Gym / Strength', sub: 'Weight training, splits & conditioning' },
+];
+
 const ATHLETES = [
   { id: 'tri', name: 'Triathlete', sub: 'Swim · bike · run', sports: ['Swimming', 'Cycling', 'Running', 'Gym'] },
   { id: 'run', name: 'Runner', sub: '5k to ultra-marathon', sports: ['Running', 'Gym'] },
   { id: 'bike', name: 'Cyclist', sub: 'Road, gravel & endurance', sports: ['Cycling', 'Gym'] },
   { id: 'swim', name: 'Swimmer', sub: 'Pool & open water', sports: ['Swimming', 'Gym'] },
 ];
+
 const GOALS_BY = {
   tri: [
     { id: 'sprint', name: 'Sprint Triathlon', sub: '750m swim · 20k bike · 5k run' },
@@ -43,12 +52,23 @@ const GOALS_BY = {
     { id: 'fitness', name: 'General Fitness', sub: 'Technique & aerobic base' },
   ],
 };
+
+const GYM_GOALS = [
+  { id: 'strength', name: 'Maximum Strength', sub: 'Heavy compound lifts, low reps' },
+  { id: 'hypertrophy', name: 'Hypertrophy / Muscle Building', sub: 'Volume-driven splits' },
+  { id: 'conditioning', name: 'Functional Conditioning', sub: 'Engine work, circuits, carries' },
+  { id: 'support', name: 'Endurance & Injury Prevention', sub: 'Strength that supports cardio sport' },
+];
+
+const HYBRID_SPORTS = ['Gym / Strength', 'Running', 'Cycling', 'Swimming'];
+const HYBRID_MAP = { 'Gym / Strength': 'Gym', Running: 'Running', Cycling: 'Cycling', Swimming: 'Swimming' };
+
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const GEN_PHASES = [
   'AI Coach compiling multi-sport macrocycle…',
   'Balancing periodization curves…',
-  'Calculating swim, bike and run intensity distribution…',
-  'Scaling watt targets to your FTP…',
+  'Calculating intensity distribution…',
+  'Scaling strength & watt targets to your baselines…',
   'Validating progressive recovery phases…',
 ];
 
@@ -75,52 +95,92 @@ export function openOnboarding({ onDone } = {}) {
   root.classList.add('open');
 
   const s = {
-    athlete: null, goal: null, raceDate: '', raceName: '', raceMode: 'finish',
+    eco: null, athlete: null, goal: null, hybridSports: [], gymGoal: null,
+    raceDate: '', raceName: '', raceMode: 'finish',
     ftp: store.getSettings().ftp || 250, runPace: '', swimPace: '', rhr: '', maxhr: '',
+    sled: '', wallball: '',
     longDays: [5, 6], restDays: [], hours: 8,
   };
   const hist = analyzeHistory(store.getWorkouts());
-  let step = 0;              // 0..4 questions, 5 analysis, then generating
-  const QUESTIONS = 5;
-  const sportsOf = () => (ATHLETES.find((a) => a.id === s.athlete)?.sports) || ATHLETES[0].sports;
+  let idx = 0;
+
+  // Dynamic pipeline: recomputed every draw so branch choices reshape the flow.
+  const stepKeys = () => {
+    const k = ['eco'];
+    if (s.eco === 'endurance') k.push('athlete', 'goal');
+    if (s.eco === 'hybrid') k.push('hybrid');
+    if (s.eco === 'gym' || (s.eco === 'hybrid' && s.hybridSports.includes('Gym / Strength'))) k.push('gymgoal');
+    if (s.eco === 'hyrox') k.push('hyrox');
+    if (s.eco !== 'gym') k.push('race');
+    k.push('baselines', 'week', 'analysis');
+    return k;
+  };
+
+  const sportsOf = () => {
+    if (s.eco === 'gym') return ['Gym'];
+    if (s.eco === 'hyrox') return ['Running', 'Gym'];
+    if (s.eco === 'hybrid') {
+      const picked = s.hybridSports.map((x) => HYBRID_MAP[x]).filter(Boolean);
+      return picked.length ? picked : ['Gym', 'Running'];
+    }
+    return (ATHLETES.find((a) => a.id === s.athlete)?.sports) || ATHLETES[0].sports;
+  };
 
   const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+
+  const choiceGrid = (items, attr, current) => `<div class="ob-grid">${items.map((it) => `
+    <button type="button" class="ob-choice ${current === it.id ? 'on' : ''}" data-${attr}="${it.id}">
+      <b>${it.name}</b><small>${it.sub}</small>
+    </button>`).join('')}</div>`;
 
   const dayChips = (attr, selected) => DAY_LABELS.map((L, i) =>
     `<button type="button" class="ob-chip ${selected.includes(i) ? 'on' : ''}" data-${attr}="${i}">${L}</button>`).join('');
 
-  const stepHtml = () => {
-    if (step === 0) {
-      return `<h2>What kind of athlete are you?</h2>
-        <div class="ob-grid">${ATHLETES.map((a) => `
-          <button type="button" class="ob-choice ${s.athlete === a.id ? 'on' : ''}" data-athlete="${a.id}">
-            <b>${a.name}</b><small>${a.sub}</small>
-          </button>`).join('')}</div>`;
+  const stepHtml = (key) => {
+    if (key === 'eco') {
+      return `<h2>Select your primary training ecosystem:</h2>${choiceGrid(ECOS, 'eco', s.eco)}`;
     }
-    if (step === 1) {
-      return `<h2>What is your primary distance goal?</h2>
-        <div class="ob-grid">${(GOALS_BY[s.athlete] || GOALS_BY.tri).map((g) => `
-          <button type="button" class="ob-choice ${s.goal === g.id ? 'on' : ''}" data-goal="${g.id}">
-            <b>${g.name}</b><small>${g.sub}</small>
-          </button>`).join('')}</div>`;
+    if (key === 'athlete') {
+      return `<h2>What kind of endurance athlete are you?</h2>${choiceGrid(ATHLETES, 'athlete', s.athlete)}`;
     }
-    if (step === 2) {
+    if (key === 'goal') {
+      return `<h2>What is your primary distance goal?</h2>${choiceGrid(GOALS_BY[s.athlete] || GOALS_BY.tri, 'goal', s.goal)}`;
+    }
+    if (key === 'hybrid') {
+      return `<h2>Build your hybrid mix.</h2>
+        <div class="ob-sub">Pick every discipline your week should include</div>
+        <div class="ob-chip-row">${HYBRID_SPORTS.map((sp) =>
+          `<button type="button" class="ob-chip wide ${s.hybridSports.includes(sp) ? 'on' : ''}" data-hyb="${esc(sp)}">${esc(sp)}</button>`).join('')}</div>`;
+    }
+    if (key === 'gymgoal') {
+      return `<h2>What is your primary weight room goal?</h2>${choiceGrid(GYM_GOALS, 'gymgoal', s.gymGoal)}`;
+    }
+    if (key === 'hyrox') {
+      return `<h2>Your HYROX pacing &amp; functional baselines.</h2>
+        <div class="ob-fields">
+          <label class="ob-field"><span>Current run pace (1k repeats)</span><input type="text" data-ob="runPace" placeholder="4:45 min/km" value="${esc(s.runPace)}"></label>
+          <label class="ob-field"><span>Sled push / pull comfort</span><input type="text" data-ob="sled" placeholder="e.g. 125 kg push, steady" value="${esc(s.sled)}"></label>
+          <label class="ob-field"><span>Wall ball threshold (unbroken reps)</span><input type="text" data-ob="wallball" placeholder="e.g. 40 reps @ 6 kg" value="${esc(s.wallball)}"></label>
+        </div>`;
+    }
+    if (key === 'race') {
       return `<h2>When is your primary A-Race?</h2>
         <div class="ob-fields">
           <label class="ob-field"><span>Race date</span><input type="date" data-ob="raceDate" value="${esc(s.raceDate)}"></label>
-          <label class="ob-field"><span>Race name</span><input type="text" data-ob="raceName" placeholder="Ironman 70.3 Marbella" value="${esc(s.raceName)}"></label>
+          <label class="ob-field"><span>Race name</span><input type="text" data-ob="raceName" placeholder="${s.eco === 'hyrox' ? 'HYROX Stockholm' : 'Ironman 70.3 Marbella'}" value="${esc(s.raceName)}"></label>
         </div>
         <div class="ob-chip-row">
           <button type="button" class="ob-chip wide ${s.raceMode === 'finish' ? 'on' : ''}" data-mode="finish">Just finish comfortably</button>
           <button type="button" class="ob-chip wide ${s.raceMode === 'pr' ? 'on' : ''}" data-mode="pr">Execute a PR / time goal</button>
         </div>`;
     }
-    if (step === 3) {
+    if (key === 'baselines') {
       const sp = sportsOf();
+      const askRun = sp.includes('Running') && s.eco !== 'hyrox'; // hyrox already asked
       return `<h2>Set your performance baselines.</h2>
         <div class="ob-fields">
           ${sp.includes('Cycling') ? `<label class="ob-field"><span>Cycling FTP (W)</span><input type="number" inputmode="numeric" min="50" max="600" data-ob="ftp" value="${esc(String(s.ftp))}"></label>` : ''}
-          ${sp.includes('Running') ? `<label class="ob-field"><span>Run threshold pace</span><input type="text" data-ob="runPace" placeholder="4:30 min/km" value="${esc(s.runPace)}"></label>` : ''}
+          ${askRun ? `<label class="ob-field"><span>Run threshold pace</span><input type="text" data-ob="runPace" placeholder="4:30 min/km" value="${esc(s.runPace)}"></label>` : ''}
           ${sp.includes('Swimming') ? `<label class="ob-field"><span>Swim 100m pace</span><input type="text" data-ob="swimPace" placeholder="1:45 / 100m" value="${esc(s.swimPace)}"></label>` : ''}
           <div class="ob-half">
             <label class="ob-field"><span>Resting HR <em>optional</em></span><input type="number" inputmode="numeric" data-ob="rhr" placeholder="—" value="${esc(s.rhr)}"></label>
@@ -128,7 +188,7 @@ export function openOnboarding({ onDone } = {}) {
           </div>
         </div>`;
     }
-    if (step === 4) {
+    if (key === 'week') {
       return `<h2>What does your training week look like?</h2>
         <div class="ob-sub">Preferred long-session days</div>
         <div class="ob-chip-row">${dayChips('long', s.longDays)}</div>
@@ -138,7 +198,7 @@ export function openOnboarding({ onDone } = {}) {
         <div class="ob-hours"><b>${s.hours}<small> h / week</small></b>
           <input type="range" min="4" max="20" step="1" value="${s.hours}" data-ob-hours></div>`;
     }
-    // step 4 — Strava deep-dive
+    // 'analysis' — Strava deep-dive
     const gap = hist.weeklyHours > 0 && s.hours > hist.weeklyHours * 1.15;
     const row = (k, v) => `<div class="ob-hist-row"><span>${k}</span><b>${v}</b></div>`;
     return `<h2>Analyzing your athletic profile with Strava</h2>
@@ -159,20 +219,24 @@ export function openOnboarding({ onDone } = {}) {
   };
 
   const draw = (dir = 1) => {
-    const pct = Math.round(((step + 1) / (QUESTIONS + 1)) * 100);
+    const keys = stepKeys();
+    idx = Math.min(idx, keys.length - 1);
+    const key = keys[idx];
+    const last = idx === keys.length - 1;
+    const pct = Math.round(((idx + 1) / keys.length) * 100);
     root.innerHTML = `
     <div class="ob-screen" role="dialog" aria-modal="true" aria-label="AI coach setup">
       <div class="ob-progress"><i style="width:${pct}%"></i></div>
       <div class="ob-head">
         <button class="fh-back" data-ob-back aria-label="Back">←</button>
-        <small>AI Coach · ${step < QUESTIONS ? `Step ${step + 1} of ${QUESTIONS}` : 'Strava analysis'}</small>
+        <small>AI Coach · ${last ? 'Strava analysis' : `Step ${idx + 1} of ${keys.length - 1}`}</small>
       </div>
-      <div class="ob-card ${dir >= 0 ? 'ob-in-right' : 'ob-in-left'}">${stepHtml()}</div>
+      <div class="ob-card ${dir >= 0 ? 'ob-in-right' : 'ob-in-left'}">${stepHtml(key)}</div>
       <footer class="ob-foot">
-        <button class="btn primary block" data-ob-next>${step === QUESTIONS ? 'Generate Tailored Plan' : 'Continue'}</button>
+        <button class="btn primary block" data-ob-next>${last ? 'Generate Tailored Plan' : 'Continue'}</button>
       </footer>
     </div>`;
-    wire();
+    wire(key);
   };
 
   const generating = () => {
@@ -180,7 +244,7 @@ export function openOnboarding({ onDone } = {}) {
     <div class="ob-screen ob-gen" role="dialog" aria-modal="true" aria-label="Generating plan">
       <div class="ob-gen-orb"></div>
       <h2 id="ob-phase">${GEN_PHASES[0]}</h2>
-      <p class="ob-sub" style="text-align:center">This takes a few seconds — your macrocycle is being tailored.</p>
+      <p class="ob-sub" style="text-align:center">This takes a few seconds — your plan is being tailored.</p>
     </div>`;
     let i = 0;
     const cycle = setInterval(() => {
@@ -194,19 +258,27 @@ export function openOnboarding({ onDone } = {}) {
 
   const generate = async () => {
     const stopCycle = generating();
-    const athlete = ATHLETES.find((a) => a.id === s.athlete) || ATHLETES[0];
-    const goal = (GOALS_BY[s.athlete] || GOALS_BY.tri).find((g) => g.id === s.goal);
+    const eco = ECOS.find((e) => e.id === s.eco) || ECOS[0];
+    const athlete = ATHLETES.find((a) => a.id === s.athlete);
+    const goal = s.eco === 'endurance' ? (GOALS_BY[s.athlete] || GOALS_BY.tri).find((g) => g.id === s.goal) : null;
+    const gymGoal = GYM_GOALS.find((g) => g.id === s.gymGoal);
     const gap = hist.weeklyHours > 0 && s.hours > hist.weeklyHours * 1.15;
     try {
-      const events = (s.raceDate && (s.raceName || goal))
-        ? [{ title: s.raceName || `${goal?.name || 'A-Race'}`, date: s.raceDate }] : [];
+      const events = (s.raceDate && s.eco !== 'gym')
+        ? [{ title: s.raceName || goal?.name || eco.name, date: s.raceDate }] : [];
       if (events.length) store.setSetting('events', events);
       store.setSetting('ftp', s.ftp);
 
       const r = await generateAIWorkoutPlan({
-        sports: athlete.sports,
-        athlete_type: athlete.name,
-        goal_distance: goal?.name || athlete.name,
+        sports: sportsOf(),
+        ecosystem: eco.name,
+        athlete_type: athlete?.name || eco.name,
+        goal_distance: s.eco === 'endurance' ? (goal?.name || 'Triathlon')
+          : s.eco === 'hyrox' ? 'HYROX race'
+          : s.eco === 'gym' ? (gymGoal?.name || 'Strength') : 'Hybrid athlete',
+        gym_goal: gymGoal?.name || null,
+        hyrox_baselines: s.eco === 'hyrox'
+          ? { run_pace: s.runPace, sled_push_pull: s.sled, wall_ball_threshold: s.wallball } : null,
         a_race: { name: s.raceName, date: s.raceDate, execution: s.raceMode === 'pr' ? 'competitive time goal' : 'finish comfortably' },
         baselines: { run_threshold_pace: s.runPace, swim_100m_pace: s.swimPace, resting_hr: s.rhr, max_hr: s.maxhr },
         ftp: s.ftp,
@@ -229,7 +301,7 @@ export function openOnboarding({ onDone } = {}) {
       if (onDone) onDone();
     } catch (err) {
       stopCycle();
-      step = QUESTIONS;
+      idx = stepKeys().length - 1;
       draw(-1);
       const msgEl = document.createElement('p');
       msgEl.className = 'ob-note warn';
@@ -238,30 +310,40 @@ export function openOnboarding({ onDone } = {}) {
     }
   };
 
-  function wire() {
+  function wire(key) {
     root.querySelector('[data-ob-back]').addEventListener('click', () => {
-      if (step === 0) { close(); return; }
-      step -= 1; draw(-1);
+      if (idx === 0) { close(); return; }
+      idx -= 1; draw(-1);
     });
     root.querySelector('[data-ob-next]').addEventListener('click', () => {
-      if (step === 0 && !s.athlete) { toast('Pick your discipline first'); return; }
-      if (step === 1 && !s.goal) { toast('Pick your distance goal first'); return; }
-      if (step === QUESTIONS) { generate(); return; }
-      step += 1; draw(1);
+      if (key === 'eco' && !s.eco) { toast('Pick your training ecosystem first'); return; }
+      if (key === 'athlete' && !s.athlete) { toast('Pick your discipline first'); return; }
+      if (key === 'goal' && !s.goal) { toast('Pick your distance goal first'); return; }
+      if (key === 'hybrid' && !s.hybridSports.length) { toast('Pick at least one discipline'); return; }
+      if (key === 'gymgoal' && !s.gymGoal) { toast('Pick your weight room goal first'); return; }
+      if (idx === stepKeys().length - 1) { generate(); return; }
+      idx += 1; draw(1);
     });
-    root.querySelectorAll('[data-athlete]').forEach((b) => b.addEventListener('click', () => {
-      if (s.athlete !== b.dataset.athlete) s.goal = null; // goal ladders differ per discipline
-      s.athlete = b.dataset.athlete;
-      root.querySelectorAll('[data-athlete]').forEach((x) => x.classList.toggle('on', x === b));
+
+    const single = (attr, field, alsoReset) => root.querySelectorAll(`[data-${attr}]`).forEach((b) =>
+      b.addEventListener('click', () => {
+        if (alsoReset && s[field] !== b.dataset[attr]) alsoReset();
+        s[field] = b.dataset[attr];
+        root.querySelectorAll(`[data-${attr}]`).forEach((x) => x.classList.toggle('on', x === b));
+      }));
+    single('eco', 'eco', () => { s.athlete = null; s.goal = null; s.hybridSports = []; s.gymGoal = null; });
+    single('athlete', 'athlete', () => { s.goal = null; });
+    single('goal', 'goal');
+    single('gymgoal', 'gymGoal');
+    single('mode', 'raceMode');
+
+    root.querySelectorAll('[data-hyb]').forEach((b) => b.addEventListener('click', () => {
+      const v = b.dataset.hyb;
+      s.hybridSports = s.hybridSports.includes(v)
+        ? s.hybridSports.filter((x) => x !== v) : [...s.hybridSports, v];
+      b.classList.toggle('on');
     }));
-    root.querySelectorAll('[data-goal]').forEach((b) => b.addEventListener('click', () => {
-      s.goal = b.dataset.goal;
-      root.querySelectorAll('[data-goal]').forEach((x) => x.classList.toggle('on', x === b));
-    }));
-    root.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
-      s.raceMode = b.dataset.mode;
-      root.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('on', x === b));
-    }));
+
     root.querySelectorAll('[data-ob]').forEach((el) => el.addEventListener('input', () => {
       const k = el.dataset.ob;
       s[k] = k === 'ftp' ? Math.max(0, parseInt(el.value) || 0) : el.value;

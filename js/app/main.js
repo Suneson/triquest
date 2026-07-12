@@ -10,11 +10,11 @@ import {
   renderHome, renderJournal, eventBanner, renderWorkoutDetail, esc,
   sportLevelCarousel,
 } from './ui.js';
-import { leaderboardShell, loadLeaderboard } from './leaderboard.js';
+import { leaderboardShell, loadLeaderboard, athleteByUid } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openPublicProfile } from './profile.js';
-import { renderProfileGame, openFitnessHub } from './profile-game.js';
+import { renderProfileGame, openFitnessHub, openPublicFitness } from './profile-game.js';
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
@@ -143,6 +143,16 @@ function onClick(e) {
       break;
     case 'lb-toggle': appState.lbView = el.dataset.view; render(); break;
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
+    case 'view-athlete-profile': {
+      const a = athleteByUid(el.dataset.uid);
+      openPublicFitness({
+        uid: el.dataset.uid,
+        name: a?.display_name || el.dataset.name,
+        avatar: a?.avatar || null,
+        xp: a?.xp ?? el.dataset.xp,
+      });
+      break;
+    }
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;

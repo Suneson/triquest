@@ -43,6 +43,7 @@ export async function loadLeaderboard(view, today) {
     if (error) throw error;
     const me = currentUser()?.id;
     const rows = (data || []).map((r, i) => ({ ...r, rank: i + 1, level: levelFromTotalXp(Number(r.xp)).level }));
+    _athletes = new Map(rows.map((r) => [r.user_id, r]));
     body.innerHTML = rows.length
       ? list(rows, me)
       : '<p class="muted">No ranked athletes yet — complete a verified workout to appear here.</p>';
@@ -52,6 +53,11 @@ export async function loadLeaderboard(view, today) {
 }
 
 const xp = (n) => Number(n).toLocaleString();
+
+// Last-loaded athletes by id — lets the profile view reuse avatar/xp/rank
+// without stuffing large base64 photos into data attributes.
+let _athletes = new Map();
+export const athleteByUid = (uid) => _athletes.get(uid) || null;
 
 // Dynamic per-athlete discipline indicators: only the sports they actually log.
 const SPORT_ORDER = ['run', 'bike', 'swim'];
@@ -63,12 +69,15 @@ function sportDots(sports) {
     `<i class="lbs lbs-${t}" title="${SPORT_TITLE[t]}"></i>`).join('')}</span>`;
 }
 
-// One unified premium list — no podium, no card boxes. Metallic top-3 ranks.
+// One unified premium list — no podium, no card boxes. Metallic top-3 ranks,
+// real profile photos (initial fallback), rows open the athlete's dashboard.
 function list(rows, me) {
   return `<ul class="lb-list">${rows.map((r) => `
-    <li class="lb-row ${r.user_id === me ? 'me' : ''}" data-action="open-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
+    <li class="lb-row ${r.user_id === me ? 'me' : ''}" data-action="view-athlete-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
       <span class="lb-rank r${Math.min(r.rank, 4)}">${r.rank}</span>
-      <span class="lb-avatar">${esc((r.display_name || 'A').trim().charAt(0).toUpperCase())}</span>
+      <span class="lb-avatar">${r.avatar
+        ? `<img src="${esc(r.avatar)}" alt="" loading="lazy">`
+        : esc((r.display_name || 'A').trim().charAt(0).toUpperCase())}</span>
       <span class="lb-id">
         <b class="lb-name">${esc(r.display_name)}</b>
         <small class="lb-meta">Lv ${r.level} · ${xp(r.xp)} XP</small>

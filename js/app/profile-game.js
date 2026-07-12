@@ -4,7 +4,8 @@
 // stubbed (work-in-progress). The avatar opens the full-screen Fitness & Cardio
 // performance hub (activity calendar, trend, strain, cardio drill-down).
 
-import { sportProgress } from '../core/scoring.js';
+import { sportProgress, levelFromTotalXp } from '../core/scoring.js';
+import { computeStreaks } from '../core/streaks.js';
 import { sessionLoad, acwr, weekHours } from '../core/load.js';
 import { svg } from '../core/icons.js';
 import { esc, mondayOf } from './ui.js';
@@ -391,6 +392,63 @@ export function openFitnessHub(ctx) {
   root.querySelector('[data-fh-cardio]').addEventListener('click', () => openCardioDetail(ctx));
   root.querySelector('[data-fh-activity]')?.addEventListener('click', () => openActivityDetail(ctx));
   wireAvatarUpload(root);
+}
+
+/** Public athlete dashboard: the same full-bleed fitness view, rendered from a
+ *  leaderboard athlete's aggregated public data (per-day counts + minutes).
+ *  The back arrow returns to the leaderboard underneath. */
+export async function openPublicFitness({ uid, name, avatar, xp }) {
+  const root = document.getElementById('modal-root');
+  root.classList.add('open');
+  const avatarHtml = avatar
+    ? `<img src="${esc(avatar)}" alt="">`
+    : esc((name || 'A').trim().charAt(0).toUpperCase());
+  const shell = (body) => `
+  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Athlete profile">
+    <div class="fh-head">
+      <button class="fh-back" data-fh-close aria-label="Back to leaderboard">←</button>
+      <div class="fh-title"><small>Athlete</small><h2>${esc(name || 'Athlete')}</h2></div>
+      <span class="fh-avatar" aria-hidden="true">${avatarHtml}</span>
+    </div>
+    ${body}
+  </div>`;
+  const wireBack = () => root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+  root.innerHTML = shell('<p class="fh-foot">Loading athlete data…</p>');
+  wireBack();
+
+  try {
+    const { fetchPublicUserProfile } = await import('./profile.js');
+    const p = await fetchPublicUserProfile(uid);
+    const today = new Date().toISOString().slice(0, 10);
+    // Expand per-day aggregates into pseudo-workouts the chart helpers understand.
+    const workouts = (p.days || []).flatMap((d) => {
+      const n = Math.max(1, Number(d.n) || 1);
+      const per = Math.round((Number(d.min) || 0) / n);
+      return Array.from({ length: n }, () => ({
+        date: d.date, completed: true, durationMin: per, intensity: 'steady', type: 'other', metrics: {},
+      }));
+    });
+    const ctx = { today, workouts };
+    const streaks = computeStreaks(workouts, today);
+    const level = levelFromTotalXp(Number(xp) || 0).level;
+    const stat = (v, l) => `<div class="pc-stat"><b>${esc(String(v))}</b><small>${esc(l)}</small></div>`;
+    root.innerHTML = shell(`
+      <div class="pc-stats fh-stats">
+        ${stat(Number(p.completed || 0).toLocaleString(), 'Workouts')}
+        ${stat(`${streaks.current} d`, 'Streak')}
+        ${stat(((Number(p.total_min) || 0) / 60).toFixed(1), 'Hours')}
+        ${stat(level, 'Level')}
+      </div>
+      ${calendarGrid(ctx)}
+      ${trendGraph(ctx)}
+      ${strainWave(ctx)}`);
+    wireBack();
+    // this view is read-only: the trend card is not a drill-down here
+    root.querySelector('[data-fh-activity]')?.removeAttribute('data-fh-activity');
+  } catch (e) {
+    root.innerHTML = shell('<p class="fh-foot">Couldn’t load this athlete — check your connection.</p>');
+    wireBack();
+  }
 }
 
 /** Layer B — Cardio Load drill-down: acute-load line inside the safe-zone band,

@@ -44,7 +44,7 @@ export async function loadLeaderboard(view, today) {
     const me = currentUser()?.id;
     const rows = (data || []).map((r, i) => ({ ...r, rank: i + 1, level: levelFromTotalXp(Number(r.xp)).level }));
     body.innerHTML = rows.length
-      ? podium(rows, me) + list(rows, me)
+      ? list(rows, me)
       : '<p class="muted">No ranked athletes yet — complete a verified workout to appear here.</p>';
   } catch (e) {
     body.innerHTML = '<p class="muted">Couldn’t load the leaderboard. Check your connection.</p>';
@@ -53,25 +53,26 @@ export async function loadLeaderboard(view, today) {
 
 const xp = (n) => Number(n).toLocaleString();
 
-function podium(rows, me) {
-  const order = [rows[1], rows[0], rows[2]].filter(Boolean); // 2nd · 1st · 3rd
-  return `<div class="podium">${order.map((r) => `
-    <div class="pod pod-${r.rank} ${r.user_id === me ? 'me' : ''}" data-action="open-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
-      <div class="medal m${r.rank}"><span>${r.rank}</span></div>
-      <div class="pod-name">${esc(r.display_name)}</div>
-      <div class="pod-xp">${xp(r.xp)} XP</div>
-      <div class="pod-bar"><span>Lv ${r.level}</span></div>
-    </div>`).join('')}</div>`;
+// Dynamic per-athlete discipline indicators: only the sports they actually log.
+const SPORT_ORDER = ['run', 'bike', 'swim'];
+const SPORT_TITLE = { run: 'Running', bike: 'Cycling', swim: 'Swimming' };
+function sportDots(sports) {
+  const active = SPORT_ORDER.filter((t) => (sports || []).includes(t));
+  if (!active.length) return '';
+  return `<span class="lb-sports">${active.map((t) =>
+    `<i class="lbs lbs-${t}" title="${SPORT_TITLE[t]}"></i>`).join('')}</span>`;
 }
 
+// One unified premium list — no podium, no card boxes. Metallic top-3 ranks.
 function list(rows, me) {
-  const rest = rows.slice(3);
-  if (!rest.length) return '';
-  return `<ul class="lb-list">${rest.map((r) => `
-    <li class="${r.user_id === me ? 'me' : ''}" data-action="open-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
-      <span class="lb-rank">${r.rank}</span>
-      <span class="lb-name">${esc(r.display_name)}</span>
-      <span class="lb-lvl">Lv ${r.level}</span>
-      <b class="lb-xp">${xp(r.xp)}</b>
+  return `<ul class="lb-list">${rows.map((r) => `
+    <li class="lb-row ${r.user_id === me ? 'me' : ''}" data-action="open-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
+      <span class="lb-rank r${Math.min(r.rank, 4)}">${r.rank}</span>
+      <span class="lb-avatar">${esc((r.display_name || 'A').trim().charAt(0).toUpperCase())}</span>
+      <span class="lb-id">
+        <b class="lb-name">${esc(r.display_name)}</b>
+        <small class="lb-meta">Lv ${r.level} · ${xp(r.xp)} XP</small>
+      </span>
+      ${sportDots(r.sports)}
     </li>`).join('')}</ul>`;
 }

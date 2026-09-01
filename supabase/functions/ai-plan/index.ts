@@ -1,7 +1,9 @@
-// ai-plan — generates a personalized plan via Groq (Llama-4-Scout) and
-// batch-inserts it into the authenticated user's calendar (user_id from JWT).
+// ai-plan — generates a personalized plan via Groq and batch-inserts it into
+// the authenticated user's calendar (user_id from JWT).
 // Deploy with JWT:  supabase functions deploy ai-plan
 // Secret required:  GROQ_API_KEY
+// Secret optional:  GROQ_MODEL — pin a model id; otherwise FALLBACK_MODELS is
+//                   tried in order, then a live model is discovered from Groq.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS = {
@@ -13,6 +15,65 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 
 const TYPES = ["run", "bike", "swim", "gym", "brick", "mobility", "other"];
 const INTEN = ["easy", "steady", "moderate", "threshold", "quality", "vo2", "race"];
+
+// Groq decommissioned meta-llama/llama-4-scout-17b-16e-instruct (deprecation
+// announced 2026-06-17), which turned every plan request into a 502. Groq's
+// recommended replacements head this list; it is tried in order, and GROQ_MODEL
+// overrides the head of it without a redeploy.
+const FALLBACK_MODELS = ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "llama-3.3-70b-versatile"];
+
+// Preference order used when recovering from a decommission, best first.
+const PREFERRED = [/gpt-oss-120b/i, /gpt-oss/i, /llama.*(70b|versatile)/i, /qwen/i, /llama/i];
+// Endpoints that exist on Groq but cannot answer a chat completion.
+const NOT_CHAT = /whisper|tts|embed|guard|playai|compound/i;
+
+const chat = (key: string, model: string, messages: unknown[]) =>
+  fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ model, messages, response_format: { type: "json_object" }, temperature: 0.7 }),
+  });
+
+/** Last-resort recovery: ask Groq which chat models this key can actually run,
+ *  so one more decommission does not need a code change to unbreak the coach. */
+async function discoverModel(key: string, tried: Set<string>): Promise<string | null> {
+  const res = await fetch("https://api.groq.com/openai/v1/models", { headers: { Authorization: `Bearer ${key}` } });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  const ids: string[] = (body?.data || [])
+    .filter((m: any) => m?.active !== false)
+    .map((m: any) => String(m?.id || ""))
+    .filter((id: string) => id && !NOT_CHAT.test(id) && !tried.has(id));
+  for (const pattern of PREFERRED) {
+    const hit = ids.find((id) => pattern.test(id));
+    if (hit) return hit;
+  }
+  return ids[0] || null;
+}
+
+/** Ask Groq for a completion, walking past any model id that no longer exists. */
+async function groqComplete(key: string, models: string[], messages: unknown[]) {
+  let lastError = "Groq request failed";
+  const tried = new Set<string>();
+
+  for (const model of models) {
+    tried.add(model);
+    const res = await chat(key, model, messages);
+    if (res.ok) return await res.json();
+    lastError = `Groq ${res.status} on ${model}: ${(await res.text()).slice(0, 300)}`;
+    // Only a rejected model id is worth retrying elsewhere — a bad key, a rate
+    // limit or an outage fails identically on every model.
+    if (res.status !== 400 && res.status !== 404) throw new Error(lastError);
+  }
+
+  const discovered = await discoverModel(key, tried);
+  if (discovered) {
+    const res = await chat(key, discovered, messages);
+    if (res.ok) return await res.json();
+    lastError = `Groq ${res.status} on ${discovered}: ${(await res.text()).slice(0, 300)}`;
+  }
+  throw new Error(lastError);
+}
 
 const SYSTEM = `You are an elite endurance & strength coach in the style of Whoop and Bevel. NEVER output generic descriptions (no plain "easy run" or "gym session"). Every workout's "notes" MUST be specific and split into bracketed structured segments: "[Warmup] ... [Main Set] ... [Cooldown] ...".
 RUNNING: program specific variations — Fartlek, track intervals (e.g. 6x400m, 5x1km), tempo blocks, VO2 max (e.g. 5x3min @ 3k pace) with paces/reps in the [Main Set].
@@ -45,19 +106,19 @@ HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sess
 Questionnaire: ${JSON.stringify(body.wizard || {})}
 Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`;
 
-  const gRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      messages: [{ role: "system", content: SYSTEM }, { role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-    }),
-  });
-  if (!gRes.ok) return json({ error: `Groq ${gRes.status}`, detail: (await gRes.text()).slice(0, 500) }, 502);
+  const override = Deno.env.get("GROQ_MODEL");
+  const models = override ? [override, ...FALLBACK_MODELS.filter((m) => m !== override)] : FALLBACK_MODELS;
 
-  const g = await gRes.json();
+  let g: any;
+  try {
+    g = await groqComplete(key, models, [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: prompt },
+    ]);
+  } catch (e) {
+    return json({ error: "AI coach unavailable", detail: String((e as Error)?.message || e) }, 502);
+  }
+
   let parsed: any;
   try { parsed = JSON.parse(g.choices?.[0]?.message?.content || "{}"); } catch { return json({ error: "AI returned invalid JSON" }, 502); }
   const plan = Array.isArray(parsed) ? parsed : (parsed.workouts || parsed.plan || parsed.sessions || []);

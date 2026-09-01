@@ -89,3 +89,27 @@ test('normalizeWorkout is idempotent', () => {
   assert.equal(w2.source, 'plan');
   assert.equal(w2.updated_at, w.updated_at);
 });
+
+test('deleteMany drops every id in one pass and persists', () => {
+  const storage = fakeStorage();
+  const s = new LocalStore({ storage });
+  s.hydrate();
+  const before = s.list().length;
+  const ids = s.list().slice(0, 5).map((w) => w.id);
+
+  s.deleteMany(ids);
+
+  assert.equal(s.list().length, before - 5);
+  assert.ok(ids.every((id) => !s.get(id)), 'none of the ids survive');
+  const persisted = JSON.parse(storage.getItem('triquest.v1'));
+  assert.equal(persisted.workouts.length, before - 5, 'the wipe reached storage');
+});
+
+test('deleteMany ignores unknown ids and an empty list', () => {
+  const s = new LocalStore({ storage: fakeStorage() });
+  s.hydrate();
+  const before = s.list().length;
+  s.deleteMany([]);
+  s.deleteMany(['no-such-workout']);
+  assert.equal(s.list().length, before);
+});

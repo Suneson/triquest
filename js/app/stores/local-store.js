@@ -10,6 +10,7 @@
 //   get(id)              -> workout | undefined
 //   upsert(workout)      -> workout      (stamps updated_at, persists)
 //   delete(id)           -> void
+//   deleteMany(ids)      -> void          (bulk delete: one pass, one remote call)
 //   setMeta({settings?, unlockedBadges?}) -> void
 //   replaceAll(snapshot) -> void          (reseed / import)
 //   flush()              -> void          (persist the whole snapshot)
@@ -130,6 +131,12 @@ export class LocalStore {
 
   delete(id) {
     this.data.workouts = this.data.workouts.filter((w) => w.id !== id);
+    this._save();
+  }
+
+  deleteMany(ids) {
+    const drop = new Set(ids);
+    this.data.workouts = this.data.workouts.filter((w) => !drop.has(w.id));
     this._save();
   }
 

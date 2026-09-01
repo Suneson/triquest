@@ -134,6 +134,15 @@ export class SupabaseStore {
     this._queue(() => this.client.from('workouts').delete().eq('id', id).eq('user_id', this.userId));
   }
 
+  deleteMany(ids) {
+    this.cache.deleteMany(ids);
+    // Chunked so a plan-sized wipe stays inside the URL length limit.
+    for (let i = 0; i < ids.length; i += 100) {
+      const batch = ids.slice(i, i + 100);
+      this._queue(() => this.client.from('workouts').delete().in('id', batch).eq('user_id', this.userId));
+    }
+  }
+
   setMeta(patch = {}) {
     this.cache.setMeta(patch);
     if (patch.settings) this._queue(() => this._pushProfile());

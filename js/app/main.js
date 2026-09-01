@@ -12,7 +12,6 @@ import {
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard, athleteByUid } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
-import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { openPublicProfile } from './profile.js';
 import { renderProfileGame, openFitnessHub, openPublicFitness } from './profile-game.js';
 import { openOnboarding } from './onboarding.js';
@@ -120,6 +119,25 @@ function render() {
   document.getElementById('storage-banner').hidden = store.isPersistent();
 }
 
+// ---- plan clearing ----------------------------------------------------------
+// "Prescribed" = work the coach put on the calendar that the athlete has not
+// done yet, whatever produced it (the seeded plan, the AI coach, or a manual
+// entry). Completed and Strava-verified sessions are history and never cleared,
+// so XP, levels, streaks and badges survive any reset.
+
+function prescribedSessions(from = null) {
+  return store.getWorkouts().filter((w) =>
+    !w.completed && !w.strava_activity_id && (!from || w.date >= from));
+}
+
+function clearPrescribed(from, message) {
+  const n = store.deleteWorkouts(prescribedSessions(from).map((w) => w.id));
+  toast(`${message} · ${n} session${n === 1 ? '' : 's'} removed`);
+  // Both buttons live in Settings — redraw it so its session counts aren't stale.
+  if (document.getElementById('modal-root').querySelector('[data-set-do="ai-plan"]')) openSettings();
+  return n;
+}
+
 // ---- event handlers ---------------------------------------------------------
 
 function onClick(e) {
@@ -156,10 +174,7 @@ function onClick(e) {
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;
-    case 'ai-onboard':
-      if (!auth.currentUser()) { auth.openAuthModal(); break; }
-      openOnboarding({ onDone: () => { appState.tab = 'home'; localStorage.setItem('moske-tab', 'home'); render(); } });
-      break;
+    case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
       if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); closeModalRoot(); }
       break;
@@ -186,12 +201,19 @@ function onClick(e) {
     }
     case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
-    case 'ai-wizard': openAIWizard(); break;
     case 'clear-future': {
-      if (!confirm('Clear all future AI/custom workouts from today onward?')) break;
       const t = todayISO();
-      store.getWorkouts().filter((w) => w.source === 'custom' && w.date >= t).forEach((w) => store.deleteWorkout(w.id));
-      toast('Future workouts cleared');
+      const n = prescribedSessions(t).length;
+      if (!n) { toast('Nothing to clear — no upcoming planned sessions.'); break; }
+      if (!confirm(`Clear ${n} upcoming planned session${n === 1 ? '' : 's'} from today onward?\n\nCompleted and Strava-verified sessions are kept.`)) break;
+      clearPrescribed(t, 'Future workouts cleared');
+      break;
+    }
+    case 'reset-plan': {
+      const n = prescribedSessions().length;
+      if (!n) { toast('Your plan is already empty — generate a new one below.'); break; }
+      if (!confirm(`Reset your training plan?\n\nThis removes all ${n} planned session${n === 1 ? '' : 's'}, past and upcoming. Your completed and Strava-verified history, XP, levels and badges are kept.`)) break;
+      clearPrescribed(null, 'Training plan reset — build a new one with ✨ AI training plan');
       break;
     }
     case 'shop-open': window.open(el.dataset.url, '_blank', 'noopener,noreferrer'); break;
@@ -309,6 +331,8 @@ function onSubmit(e) {
 
 function openSettings() {
   const s = store.getSettings();
+  const planned = prescribedSessions().length;
+  const upcoming = prescribedSessions(todayISO()).length;
   const root = document.getElementById('modal-root');
   root.classList.add('open');
   root.innerHTML = `
@@ -337,12 +361,15 @@ function openSettings() {
         ${deferredInstall ? '<hr><button class="btn primary" data-set-do="install">📲 Install app</button>' : ''}
 
         <hr>
-        <h3>Training</h3>
+        <h3>Training plan</h3>
         <label class="field"><span>Bike FTP (Watts)</span><input type="number" min="0" step="5" data-set="ftp" value="${s.ftp || 250}"></label>
+        <p class="muted small">${planned} planned session${planned === 1 ? '' : 's'} on your calendar (${upcoming} from today onward).</p>
         <div class="row">
-          <button class="btn ghost" data-set-do="ai-plan">✨ AI workout plan</button>
+          <button class="btn ghost" data-set-do="ai-plan">✨ AI training plan</button>
           <button class="btn ghost danger" data-action="clear-future">Clear future workouts</button>
         </div>
+        <button class="btn ghost danger block" data-action="reset-plan">↺ Reset training plan</button>
+        <p class="muted small">Clearing wipes upcoming sessions only; resetting wipes the whole plan, past and upcoming. Completed and Strava-verified sessions are always kept, so your XP, levels and badges are safe.</p>
 
         <hr>
         <h3>Packing presets</h3>
@@ -377,7 +404,7 @@ function openSettings() {
     else if (act === 'import') root.querySelector('#import-file').click();
     else if (act === 'reseed') { if (confirm('Reset everything and reload the original plan? Your logged progress will be lost.')) { doExport(); store.reseed(); appState.lastLevel = null; close(); toast('Backup exported, plan reseeded'); } }
     else if (act === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; close(); }
-    else if (act === 'ai-plan') { close(); openAIWizard(); }
+    else if (act === 'ai-plan') { close(); startAIPlan(); }
     else if (act === 'signin') { close(); auth.openAuthModal(); }
     else if (act === 'signout') { if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); close(); } }
     else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed'))); }
@@ -503,69 +530,13 @@ function closeModalRoot() {
   root.innerHTML = ''; root.classList.remove('open');
 }
 
-function openAIWizard() {
+// The single entry point to the AI coach — the multi-step onboarding wizard,
+// used by both the home card and Settings so they can never drift apart.
+function startAIPlan() {
   if (!auth.currentUser()) { auth.openAuthModal(); return; }
-  const SPORTS = ['Gym', 'Cycling', 'Running', 'Swimming', 'Pilates', 'Hiking', 'Custom'];
-  const EV = ['Ironman', '5k', '10k', '21k', '42k', 'Other'];
-  const state = { sports: [], days: 4, maxDoubles: 0, ftp: store.getSettings().ftp || 250, events: [{ type: '', custom: '', date: '' }] };
-  let page = 0;
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
-  const draw = () => {
-    let bodyHtml = '';
-    if (page === 0) {
-      bodyHtml = `<h3>Which sports?</h3>${SPORTS.map((s) => `<label class="toggle"><span>${s}</span><input type="checkbox" data-sport="${s}" ${state.sports.includes(s) ? 'checked' : ''}></label>`).join('')}
-        ${state.sports.includes('Cycling') ? `<label class="field"><span>Enter Bike FTP (Watts)</span><input class="wz-input" type="number" min="0" step="5" data-ftp value="${state.ftp}"></label>` : ''}`;
-    } else if (page === 1) {
-      bodyHtml = `<h3>How many days a week?</h3>
-        <label class="field"><span><b id="dn">${state.days}</b> days / week</span><input type="range" min="1" max="7" value="${state.days}" data-days></label>
-        <label class="field"><span>Max double-training days per week: <b id="ddn">${state.maxDoubles}</b></span><input type="range" min="0" max="5" value="${state.maxDoubles}" data-doubles></label>`;
-    } else {
-      bodyHtml = `<h3>Upcoming events</h3>${state.events.map((e, i) => `
-        <div class="wz-event">
-          <div class="cap-row">${EV.map((p) => `<button type="button" class="cap ${e.type === p ? 'on' : ''}" data-ev="${i}" data-pick="type" data-val="${esc(p)}">${esc(p)}</button>`).join('')}</div>
-          ${e.type === 'Other' ? `<input class="wz-input" type="text" data-evtext="${i}" placeholder="Event name" value="${esc(e.custom)}">` : ''}
-          <input class="wz-date" type="date" data-evdate="${i}" value="${esc(e.date)}">
-        </div>`).join('')}<button class="btn tiny ghost" data-add-ev>+ Add another event</button>`;
-    }
-    root.innerHTML = `<div class="modal-backdrop" data-wz-close></div>
-      <div class="modal" role="dialog" aria-modal="true" aria-label="Custom plan">
-        <header class="modal-head"><h2>Custom plan · ${page + 1}/3</h2><button class="icon-btn" data-wz-close aria-label="Close">✕</button></header>
-        <div class="modal-body">${bodyHtml}<p class="auth-msg" role="status" hidden></p></div>
-        <footer class="modal-foot">${page > 0 ? '<button class="btn ghost" data-wz-back>Back</button>' : ''}<span class="spacer"></span><button class="btn primary" data-wz-next>${page < 2 ? 'Next' : 'Generate'}</button></footer>
-      </div>`;
-    root.querySelectorAll('[data-wz-close]').forEach((b) => b.addEventListener('click', close));
-    root.querySelectorAll('[data-sport]').forEach((c) => c.addEventListener('change', () => {
-      if (c.checked) state.sports.push(c.dataset.sport); else state.sports = state.sports.filter((x) => x !== c.dataset.sport);
-      draw();
-    }));
-    root.querySelector('[data-ftp]')?.addEventListener('input', (ev) => { state.ftp = Math.max(0, +ev.target.value || 0); });
-    const rng = root.querySelector('[data-days]');
-    if (rng) rng.addEventListener('input', () => { state.days = +rng.value; root.querySelector('#dn').textContent = rng.value; });
-    const dbl = root.querySelector('[data-doubles]');
-    if (dbl) dbl.addEventListener('input', () => { state.maxDoubles = +dbl.value; root.querySelector('#ddn').textContent = dbl.value; });
-    root.querySelectorAll('[data-pick]').forEach((b) => b.addEventListener('click', () => { state.events[+b.dataset.ev].type = b.dataset.val; draw(); }));
-    root.querySelectorAll('[data-evtext]').forEach((i) => i.addEventListener('input', () => { state.events[+i.dataset.evtext].custom = i.value; }));
-    root.querySelectorAll('[data-evdate]').forEach((i) => i.addEventListener('change', () => { state.events[+i.dataset.evdate].date = i.value; }));
-    root.querySelector('[data-add-ev]')?.addEventListener('click', () => { state.events.push({ type: '', custom: '', date: '' }); draw(); });
-    root.querySelector('[data-wz-back]')?.addEventListener('click', () => { page -= 1; draw(); });
-    root.querySelector('[data-wz-next]').addEventListener('click', async (e) => {
-      if (page < 2) { page += 1; draw(); return; }
-      const btn = e.target; const msg = root.querySelector('.auth-msg');
-      btn.disabled = true; btn.textContent = 'Generating…';
-      try {
-        const events = state.events.map((ev) => ({ title: ev.type === 'Other' ? ev.custom : ev.type, date: ev.date })).filter((ev) => ev.title && ev.date);
-        store.setSetting('events', events);
-        if (state.sports.includes('Cycling')) store.setSetting('ftp', state.ftp);
-        const r = await generateAIWorkoutPlan({ sports: state.sports, daysPerWeek: state.days, max_double_days: state.maxDoubles, ftp: state.ftp, events }, stravaSummary(store.getWorkouts()));
-        close();
-        toast(`Added ${r.inserted} AI sessions to your calendar`, { icon: svg('spark') });
-        setTimeout(() => store.commit(), 1500);
-      } catch (err) { msg.hidden = false; msg.textContent = err.message; btn.disabled = false; btn.textContent = 'Generate'; }
-    });
-  };
-  draw();
+  openOnboarding({
+    onDone: () => { appState.tab = 'home'; localStorage.setItem('moske-tab', 'home'); render(); },
+  });
 }
 
 // ---- automated background Strava sync ----------------------------------------

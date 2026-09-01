@@ -293,11 +293,15 @@ export function openOnboarding({ onDone } = {}) {
           : null,
       }, stravaSummary(store.getWorkouts()));
 
+      // The sessions are written server-side, so pull them in before revealing
+      // the calendar — otherwise they only land whenever realtime gets around
+      // to it, and the athlete sees an empty week.
+      await store.refresh().catch(() => store.commit());
+
       stopCycle();
       store.setSetting('goals', { ...(store.getSettings().goals || {}), hours: s.hours, sessions: 7 - s.restDays.length });
       close();
       toast(`AI Coach added ${r.inserted} tailored sessions to your calendar ✨`);
-      setTimeout(() => store.commit(), 1200);
       if (onDone) onDone();
     } catch (err) {
       stopCycle();

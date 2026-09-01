@@ -98,6 +98,24 @@ export function deleteWorkout(id) {
   emit();
 }
 
+/** Delete many workouts in one pass (one remote round-trip, one re-render). */
+export function deleteWorkouts(ids) {
+  const unique = [...new Set(ids)];
+  if (!unique.length) return 0;
+  activeStore.deleteMany(unique);
+  emit();
+  return unique.length;
+}
+
+/** Re-read the source of truth (remote rows written outside the client, e.g. by
+ *  the ai-plan Edge Function) and re-render. No-ops for the local-only store. */
+export async function refresh() {
+  if (activeStore.pull) await activeStore.pull();
+  state.current = activeStore.snapshot();
+  emit();
+  return state.current;
+}
+
 export function duplicateWorkout(id) {
   const w = workoutById(id);
   if (!w) return null;

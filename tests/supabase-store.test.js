@@ -51,3 +51,81 @@ test('rowToWorkout tolerates a sparse Strava-inserted row', () => {
   assert.equal(w.intensity, 'easy');
   assert.deepEqual(w.segments, []);
 });
+
+// ---- remote wipe semantics --------------------------------------------------
+// pull() keeps any row that exists only on the server, so a delete or an import
+// that never removes the server's copy silently undoes itself on the next sync.
+
+/** Minimal postgrest-shaped fake: records deletes, serves select('id'). */
+function fakeClient(remoteIds = []) {
+  const calls = { deleted: [], upserted: [] };
+  let rows = remoteIds.map((id) => ({ id }));
+  const client = {
+    from() {
+      const q = {
+        select: () => ({ eq: async () => ({ data: rows, error: null }) }),
+        delete: () => ({
+          in: (_col, ids) => ({
+            eq: async () => {
+              calls.deleted.push(...ids);
+              rows = rows.filter((r) => !ids.includes(r.id));
+              return { error: null };
+            },
+          }),
+        }),
+        upsert: async (payload) => {
+          calls.upserted.push(...(Array.isArray(payload) ? payload : [payload]));
+          return { error: null };
+        },
+      };
+      return q;
+    },
+  };
+  return { client, calls, remaining: () => rows.map((r) => r.id) };
+}
+
+const settled = () => new Promise((r) => setTimeout(r, 0));
+
+test('deleteMany removes the rows from the server, chunked', async () => {
+  const { SupabaseStore } = await import('../js/app/stores/supabase-store.js');
+  const { client, calls } = fakeClient();
+  const s = new SupabaseStore(client, 'u');
+  s.cache = { deleteMany() {}, delete() {} };
+
+  const ids = Array.from({ length: 250 }, (_, i) => `w-${i}`);
+  s.deleteMany(ids);
+  await settled();
+
+  assert.deepEqual(calls.deleted, ids, 'every id reaches the server');
+});
+
+test('replaceAll deletes server rows the new snapshot drops', async () => {
+  const { SupabaseStore } = await import('../js/app/stores/supabase-store.js');
+  const { client, calls, remaining } = fakeClient(['old-1', 'old-2', 'kept']);
+  const s = new SupabaseStore(client, 'u');
+  s.cache = { replaceAll() {}, snapshot: () => ({ settings: {} }) };
+
+  s.replaceAll({ workouts: [{ id: 'kept' }, { id: 'new-1' }], settings: {} });
+  await settled(); await settled(); await settled();
+
+  assert.deepEqual(calls.deleted.sort(), ['old-1', 'old-2'], 'dropped rows are deleted');
+  assert.ok(!calls.deleted.includes('kept'), 'rows the import keeps are not deleted');
+  assert.deepEqual(remaining().sort(), ['kept'], 'server no longer holds the replaced plan');
+  assert.ok(calls.upserted.some((r) => r.id === 'new-1'), 'imported rows are pushed');
+});
+
+test('a failed delete reports through onWriteError instead of failing silently', async () => {
+  const { SupabaseStore } = await import('../js/app/stores/supabase-store.js');
+  const boom = {
+    from: () => ({ delete: () => ({ in: () => ({ eq: async () => ({ error: { message: 'offline' } }) }) }) }),
+  };
+  let reported = null;
+  const s = new SupabaseStore(boom, 'u', { onWriteError: (e) => { reported = e; } });
+  s.cache = { deleteMany() {} };
+
+  s.deleteMany(['w-1']);
+  await settled(); await settled();
+
+  assert.ok(reported, 'the athlete is told the wipe did not reach the server');
+  assert.match(reported.message, /offline/);
+});

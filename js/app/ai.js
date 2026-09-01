@@ -26,6 +26,11 @@ export async function generateAIWorkoutPlan(wizardData, stravaHistory) {
     body: JSON.stringify({ wizard: wizardData, strava: stravaHistory }),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error || 'AI plan generation failed.');
+  if (!res.ok) {
+    // Keep the server's detail — a dead model id or a missing key is otherwise
+    // indistinguishable from "the wizard is broken".
+    const detail = json.detail ? ` (${String(json.detail).slice(0, 200)})` : '';
+    throw new Error(`${json.error || 'AI plan generation failed.'}${detail}`);
+  }
   return json; // { inserted: N }
 }

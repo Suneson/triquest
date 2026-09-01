@@ -13,7 +13,7 @@
 - **Store abstraction** (`js/app/store.js` facade): `LocalStore` (offline blob, localStorage key `triquest.v1`) ↔ `SupabaseStore` (signed-in: LocalStore write-through cache + Postgres truth, **last-write-wins by `updated_at`**, realtime). Swap on sign-in/out via `useStore()`.
 - **Auth** (`js/app/auth.js`): Supabase v2, **flowType `implicit`** (magic links survive in-app browsers). Methods: magic link (`signInWithOtp`), email+password (`signInWithPassword`/`signUp`), forgot-password (`resetPasswordForEmail` → `PASSWORD_RECOVERY` → set-password modal → `updateUser`). **Google/Apple removed.** Email confirmation is OFF on the project. URL `type=recovery` is captured before client init.
 - **Anti-cheat**: workout `completed` is **read-only in the UI** — only set by verified Strava activity (webhook/sync). No manual tick/swipe.
-- **AI**: Groq `meta-llama/llama-4-scout-17b-16e-instruct`, `response_format:{type:'json_object'}` → `{workouts:[…]}`. (Migrated off Gemini — its key had free-tier limit 0.)
+- **AI**: Groq, `response_format:{type:'json_object'}` → `{workouts:[…]}`. (Migrated off Gemini — its key had free-tier limit 0.) Model: `openai/gpt-oss-120b`, then `qwen/qwen3.6-27b`, then `llama-3.3-70b-versatile`; if all are rejected the function asks Groq's `/v1/models` for a live one. `GROQ_MODEL` pins a specific id. **`meta-llama/llama-4-scout-17b-16e-instruct` was decommissioned (deprecated 2026-06-17) and every plan request 502'd until this changed** — if the coach breaks again, check the model first.
 - **Shop**: Shopify Storefront API `https://moskeshop.com/api/2026-04/graphql.json`, public token `f42b47288ec62ce928ff8dccf9e36ffb`, collection handle `ss-26`.
 
 ## Supabase schema (migrations in `supabase/migrations/`)
@@ -101,7 +101,10 @@ const P = {
 export function svg(name, cls=''){ return `<svg viewBox="0 0 24 24" class="ic ${cls}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name]||P.other}</svg>`; }
 ```
 
-## EXACT — `supabase/functions/ai-plan/index.ts` (Groq, deployed v14)
+## EXACT — `supabase/functions/ai-plan/index.ts` (Groq)
+> Snapshot only — the file in the repo is the source of truth. The model call
+> below is the pre-2026-09 version and names a decommissioned model; the live
+> function selects a model as described under **AI** above.
 ```ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const CORS = { "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods":"POST, OPTIONS" };

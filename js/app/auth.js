@@ -70,6 +70,12 @@ async function activateUser(user, { silent = false } = {}) {
   cleanAuthUrl(); // remove the token from the URL right away (don't wait on hydrate)
   _store = new SupabaseStore(_client, user.id, {
     onRemoteChange: () => { if (_onChange) _onChange(_user, { remote: true }); },
+    // A delete that never reached the server comes back on the next sync, so
+    // say so rather than letting the athlete believe the wipe stuck.
+    onWriteError: (e) => toast(
+      `Couldn’t save that change to your account — it may reappear when you reload. ${e?.message || 'Check your connection and try again.'}`,
+      { icon: '⚠️' },
+    ),
   });
   await store.useStore(_store); // hydrate: pull + LWW merge + push local-only
   if (!silent) {

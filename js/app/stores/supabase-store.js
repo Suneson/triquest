@@ -64,13 +64,14 @@ export function rowToWorkout(r) {
 }
 
 export class SupabaseStore {
-  constructor(client, userId, { onRemoteChange } = {}) {
+  constructor(client, userId, { onRemoteChange, onWriteError } = {}) {
     this.client = client;
     this.userId = userId;
     this.kind = 'supabase';
     this.cache = new LocalStore();
     this.persistent = this.cache.persistent;
     this.onRemoteChange = onRemoteChange;
+    this.onWriteError = onWriteError;
     this.online = true;
     this.uploadedLocal = 0;
     this._channel = null;
@@ -131,15 +132,20 @@ export class SupabaseStore {
 
   delete(id) {
     this.cache.delete(id);
-    this._queue(() => this.client.from('workouts').delete().eq('id', id).eq('user_id', this.userId));
+    this._queue(() => this._deleteRows([id]), { critical: true });
   }
 
   deleteMany(ids) {
     this.cache.deleteMany(ids);
-    // Chunked so a plan-sized wipe stays inside the URL length limit.
+    this._queue(() => this._deleteRows(ids), { critical: true });
+  }
+
+  /** Chunked so a plan-sized wipe stays inside the request URL length limit. */
+  async _deleteRows(ids) {
     for (let i = 0; i < ids.length; i += 100) {
-      const batch = ids.slice(i, i + 100);
-      this._queue(() => this.client.from('workouts').delete().in('id', batch).eq('user_id', this.userId));
+      const { error } = await this.client
+        .from('workouts').delete().in('id', ids.slice(i, i + 100)).eq('user_id', this.userId);
+      if (error) throw error;
     }
   }
 
@@ -150,11 +156,29 @@ export class SupabaseStore {
 
   replaceAll(snapshot) {
     this.cache.replaceAll(snapshot);
-    this._queue(() => this._pushRows(snapshot.workouts));
+    this._queue(() => this._replaceRemoteRows(snapshot.workouts), { critical: true });
     this._queue(() => this._pushProfile());
   }
 
   flush() { this.cache.flush(); }
+
+  /** Import / reseed semantics: the snapshot becomes the whole truth. Rows it
+   *  drops must be deleted remotely too — pull() keeps any remote-only row, so
+   *  without this an import silently resurrects everything it replaced. */
+  async _replaceRemoteRows(workouts) {
+    const keep = new Set(workouts.map((w) => w.id));
+    const { data, error } = await this.client
+      .from('workouts').select('id').eq('user_id', this.userId);
+    if (error) throw error;
+
+    const stale = (data || []).map((r) => r.id).filter((id) => !keep.has(id));
+    for (let i = 0; i < stale.length; i += 100) {
+      const { error: delErr } = await this.client
+        .from('workouts').delete().in('id', stale.slice(i, i + 100)).eq('user_id', this.userId);
+      if (delErr) throw delErr;
+    }
+    if (workouts.length) await this._pushRows(workouts);
+  }
 
   async _pushRows(workouts) {
     const rows = workouts.map((w) => workoutToRow(w, this.userId));
@@ -173,8 +197,13 @@ export class SupabaseStore {
 
   // Fire-and-forget writes. If offline they fail quietly; the local cache keeps
   // the change and a later pull reconciles it (local updated_at wins via LWW).
-  _queue(fn) {
-    Promise.resolve().then(fn).catch((e) => console.warn('Supabase write deferred (offline?):', e?.message || e));
+  // Deletions are the exception — pull() restores any row still on the server,
+  // so a failed delete silently undoes itself and the athlete must be told.
+  _queue(fn, { critical = false } = {}) {
+    Promise.resolve().then(fn).catch((e) => {
+      console.warn('Supabase write deferred (offline?):', e?.message || e);
+      if (critical && this.onWriteError) this.onWriteError(e);
+    });
   }
 
   _subscribeRealtime() {

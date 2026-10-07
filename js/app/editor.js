@@ -5,7 +5,10 @@
 import { upsertWorkout, deleteWorkout, duplicateWorkout, workoutById, newId } from './store.js';
 import { DISCIPLINES, INTENSITIES, esc } from './ui.js';
 import { formatDuration } from '../core/scoring.js';
-import { toast } from './effects.js';
+import { todayISO } from '../core/dates.js';
+import { toast, playAccept } from './effects.js';
+import { svg } from '../core/icons.js';
+import { MOMENT_LINES } from '../core/coach-lines.js';
 
 const SEG_KINDS = { warmup: 'Warm-up', work: 'Work', rest: 'Rest / float', cooldown: 'Cool-down' };
 const SEG_INTENSITIES = { easy: 'Easy', moderate: 'Moderate', threshold: 'Threshold', vo2: 'VO₂', steady: 'Steady' };
@@ -15,7 +18,7 @@ let isNew = false;
 
 function blankWorkout(date) {
   return {
-    id: newId(), date: date || new Date().toISOString().slice(0, 10),
+    id: newId(), date: date || todayISO(),
     type: 'run', title: '', intensity: 'easy', durationMin: 45,
     completed: false, completedAt: null, metrics: { distanceKm: '' },
     segments: [], exercises: [], packing: [], notes: '', seeded: false,
@@ -53,7 +56,7 @@ function renderModal() {
       <select data-seg-field="kind" data-i="${i}">${options(SEG_KINDS, s.kind)}</select>
       <input class="num" type="number" min="0" step="0.5" value="${esc(s.value)}" placeholder="min" data-seg-field="value" data-i="${i}">
       <select data-seg-field="intensity" data-i="${i}">${options(SEG_INTENSITIES, s.intensity)}</select>
-      <button type="button" class="icon-btn" data-del-seg="${i}" aria-label="Remove segment">✕</button>
+      <button type="button" class="icon-btn" data-del-seg="${i}" aria-label="Remove segment">${svg('close')}</button>
     </div>`).join('');
 
   const exRows = d.exercises.map((e, i) => `
@@ -62,13 +65,13 @@ function renderModal() {
       <input class="num" type="text" value="${esc(e.sets)}" placeholder="sets" data-ex-field="sets" data-i="${i}">
       <input class="num" type="text" value="${esc(e.reps)}" placeholder="reps" data-ex-field="reps" data-i="${i}">
       <input class="grow" type="url" value="${esc(e.imageUrl || '')}" placeholder="custom image URL (optional)" data-ex-field="imageUrl" data-i="${i}">
-      <button type="button" class="icon-btn" data-del-ex="${i}" aria-label="Remove exercise">✕</button>
+      <button type="button" class="icon-btn" data-del-ex="${i}" aria-label="Remove exercise">${svg('close')}</button>
     </div>`).join('');
 
   const packRows = d.packing.map((p, i) => `
     <div class="row pack-row" data-pack="${i}">
       <input class="grow" type="text" value="${esc(p.item)}" placeholder="Item" data-pack-field="item" data-i="${i}">
-      <button type="button" class="icon-btn" data-del-pack="${i}" aria-label="Remove item">✕</button>
+      <button type="button" class="icon-btn" data-del-pack="${i}" aria-label="Remove item">${svg('close')}</button>
     </div>`).join('');
 
   root.classList.add('open');
@@ -76,15 +79,15 @@ function renderModal() {
     <div class="modal-backdrop" data-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="${isNew ? 'New session' : 'Edit session'}">
       <header class="modal-head">
-        <h2>${isNew ? '➕ New session' : '✏️ Edit session'}</h2>
-        <button class="icon-btn" data-close aria-label="Close">✕</button>
+        <h2>${svg(isNew ? 'plus' : 'edit')} ${isNew ? 'New session' : 'Edit session'}</h2>
+        <button class="icon-btn" data-close aria-label="Close">${svg('close')}</button>
       </header>
       <div class="modal-body">
         <label class="field"><span>Title</span>
           <input type="text" id="f-title" value="${esc(d.title)}" placeholder="e.g. Long ride Z2" data-field="title"></label>
 
         <div class="field-grid">
-          <label class="field"><span>Type</span><select data-field="type">${options(Object.fromEntries(Object.entries(DISCIPLINES).map(([k, v]) => [k, `${v.icon} ${v.label}`])), d.type)}</select></label>
+          <label class="field"><span>Type</span><select data-field="type">${options(Object.fromEntries(Object.entries(DISCIPLINES).map(([k, v]) => [k, v.label])), d.type)}</select></label>
           <label class="field"><span>Intensity</span><select data-field="intensity">${options(INTENSITIES, d.intensity)}</select></label>
           <label class="field"><span>Date</span><input type="date" value="${esc(d.date)}" data-field="date"></label>
           <label class="field"><span>Distance (km, optional)</span><input type="number" min="0" step="0.1" value="${esc(d.metrics.distanceKm)}" data-field="distance"></label>
@@ -98,21 +101,21 @@ function renderModal() {
 
         <fieldset class="sub-list"><legend>Interval structure</legend>
           ${segRows || '<p class="muted small">No segments. Add work/rest blocks to draw the interval chart.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-seg>+ Add segment</button>
+          <button type="button" class="btn tiny ghost" data-add-seg>${svg('plus')} Add segment</button>
         </fieldset>
 
         <fieldset class="sub-list"><legend>Gym exercises</legend>
           ${exRows || '<p class="muted small">No exercises.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-ex>+ Add exercise</button>
+          <button type="button" class="btn tiny ghost" data-add-ex>${svg('plus')} Add exercise</button>
         </fieldset>
 
         <fieldset class="sub-list"><legend>Packing list</legend>
           ${packRows || '<p class="muted small">No items.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-pack>+ Add item</button>
+          <button type="button" class="btn tiny ghost" data-add-pack>${svg('plus')} Add item</button>
         </fieldset>
       </div>
       <footer class="modal-foot">
-        ${!isNew ? '<button class="btn ghost danger" data-do="delete">🗑 Delete</button><button class="btn ghost" data-do="duplicate">⧉ Duplicate</button>' : ''}
+        ${!isNew ? `<button class="btn ghost danger" data-do="delete">${svg('trash')} Delete</button><button class="btn ghost" data-do="duplicate">${svg('copy')} Duplicate</button>` : ''}
         <span class="spacer"></span>
         <button class="btn ghost" data-close>Cancel</button>
         <button class="btn primary" data-do="save">Save</button>
@@ -179,7 +182,7 @@ function action(kind) {
   if (kind === 'delete') {
     if (confirm('Delete this session? This cannot be undone.')) {
       deleteWorkout(draft.id);
-      toast('Session deleted');
+      toast('Session deleted', { icon: svg('trash') });
       closeModal();
     }
     return;
@@ -187,7 +190,7 @@ function action(kind) {
   if (kind === 'duplicate') {
     saveDraft();
     const copy = duplicateWorkout(draft.id);
-    toast('Session duplicated');
+    toast('Session duplicated', { icon: svg('copy') });
     closeModal();
     if (copy) openEditor(copy.id);
     return;
@@ -195,7 +198,13 @@ function action(kind) {
   if (kind === 'save') {
     if (!draft.title.trim()) draft.title = `${DISCIPLINES[draft.type]?.label || 'Session'}`;
     saveDraft();
-    toast(isNew ? 'Session added 💪' : 'Session saved');
+    if (isNew) {
+      // a new session on the calendar is a quest the athlete just took on
+      toast(`<b>Quest accepted</b><br>${MOMENT_LINES.accepted}`, { icon: svg('scroll') });
+      playAccept();
+    } else {
+      toast('Session saved', { icon: svg('check') });
+    }
     closeModal();
   }
 }

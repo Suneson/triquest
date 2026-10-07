@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#11182b">
+  <meta name="theme-color" content="#0B1222">
   <meta name="description" content="MOSKE — a gamified, offline-first triathlon training tracker.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,19 +12,21 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="preload" href="fonts/silkscreen-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
   <div id="storage-banner" class="storage-banner" hidden role="alert">
-    ⚠️ Storage is blocked (private mode?). Your data is kept in memory only and will be lost when you close this tab.
+    Storage is blocked (private mode?). Your data is kept in memory only and will be lost when you close this tab.
   </div>
 
   <header class="app-header">
     <div class="brand">
       <strong>MOSKE</strong>
       <div class="header-actions">
+        <button id="acct-chip" class="lvl-chip" data-action="pg-profile" aria-label="Account level" hidden></button>
         <button id="header-avatar" class="avatar-btn" data-action="pg-profile" aria-label="Open profile">A</button>
       </div>
     </div>
@@ -36,24 +38,19 @@
   <main id="view" class="view" role="main" aria-live="polite"></main>
 
   <nav class="tabs" aria-label="Views">
-    <button class="tab active" data-action="tab" data-tab="home" aria-label="Home">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg></span></button>
-    <button class="tab" data-action="tab" data-tab="journal" aria-label="Journal">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 3v18"/><path d="M12 8h5M12 12h5"/></svg></span></button>
-    <button class="tab" data-action="tab" data-tab="leaderboards" aria-label="Leaderboards">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3"/><path d="M9 20h6M12 14v6"/></svg></span></button>
-    <button class="tab" data-action="tab" data-tab="shop" aria-label="Shop">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span></button>
-    <button class="tab" data-action="tab" data-tab="progress" aria-label="Profile">
-      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span></button>
+    <button class="tab active" data-action="tab" data-tab="home"><span class="tab-ico" data-icon="home"></span><span class="tab-lbl">Home</span></button>
+    <button class="tab" data-action="tab" data-tab="journal"><span class="tab-ico" data-icon="journal"></span><span class="tab-lbl">Journal</span></button>
+    <button class="tab" data-action="tab" data-tab="leaderboards"><span class="tab-ico" data-icon="trophy"></span><span class="tab-lbl">Ranks</span></button>
+    <button class="tab" data-action="tab" data-tab="shop"><span class="tab-ico" data-icon="shop"></span><span class="tab-lbl">Shop</span></button>
+    <button class="tab" data-action="tab" data-tab="progress"><span class="tab-ico" data-icon="user"></span><span class="tab-lbl">Profile</span></button>
   </nav>
 
-  <button id="fab" class="fab" aria-label="Add a session">+</button>
+  <button id="fab" class="fab" aria-label="Add a session"><span data-icon="plus"></span></button>
 
   <div id="modal-root" class="modal-root"></div>
   <div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
 
-  <noscript><p style="padding:2rem;text-align:center">TriQuest needs JavaScript enabled.</p></noscript>
+  <noscript><p style="padding:2rem;text-align:center">MOSKE needs JavaScript enabled.</p></noscript>
   <script type="module" src="js/app/main.js"></script>
 </body>
 </html>

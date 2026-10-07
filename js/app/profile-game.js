@@ -1,15 +1,17 @@
-// profile-game.js — the Profile tab as a full-screen, level-reactive "video game"
-// environment for Cycling. Three stacked layers (background / platform / animated
-// character) swap instantly with the athlete's bike level. The other sports are
-// stubbed (work-in-progress). The avatar opens the full-screen Fitness & Cardio
-// performance hub (activity calendar, trend, strain, cardio drill-down).
+// profile-game.js — the Profile tab as a full-screen, level-reactive game scene
+// for each sport. Cycling stacks three layers (background / platform / animated
+// character); Run, Gym and Swim frame a single still on its own edge colours and
+// add code-driven motion (clouds, leaves, light, water) from the scene manifest
+// in core/scenes.js. The avatar opens the full-screen Fitness hub (activity
+// calendar, trend, strain, cardio drill-down).
 
 import { sportProgress, levelFromTotalXp } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
 import { sessionLoad, acwr, weekHours } from '../core/load.js';
 import { svg } from '../core/icons.js';
-import { esc, mondayOf } from './ui.js';
-import { addDays, parseISO, shortLabel } from '../core/dates.js';
+import { esc, mondayOf, meter, stillCorners } from './ui.js';
+import { sceneFor, backdropCss } from '../core/scenes.js';
+import { addDays, parseISO, shortLabel, todayISO } from '../core/dates.js';
 import { currentUser } from './auth.js';
 import * as store from './store.js';
 
@@ -19,61 +21,121 @@ function avatarInner(ctx, initial) {
   return src ? `<img src="${esc(src)}" alt="">` : initial;
 }
 
-const BIKE = 'icons/Pixelart/BIKE';
-
-// Platform filenames carry an inverted middle index: Level 1 → _0009_, Level 10 → _0000_.
-function platformFile(level) {
-  return `BIKE1BLUE_${String(10 - level).padStart(4, '0')}_Layer-${level}.png`;
-}
-
 function athleteName() {
   const u = currentUser?.();
   return (u?.user_metadata?.display_name || u?.email?.split('@')[0] || 'Athlete').trim();
 }
 
+// ---- scene overlays (code-driven motion on top of the art) --------------------
+// Everything is positioned in % of the stage, so it scales with the art. All
+// motion is CSS with steps() timing; CSS removes it under reduced motion.
+
+const pct = (v) => `${Math.round(v * 100) / 100}%`;
+const boxStyle = (b) => `--x:${pct(b.x)};--y:${pct(b.y)};--w:${pct(b.w)};--h:${pct(b.h)}`;
+// tiny deterministic jitter so overlays don't march in lockstep
+const jitter = (i, n) => ((i * 7919 + n * 104729) % 1000) / 1000;
+
+function cloudsFx(box) {
+  return [0, 1, 2].map((i) => {
+    const dur = 48 + i * 17;
+    return `<span class="fx-cloud" style="--y:${pct(box.y + (box.h - 4) * jitter(i, 3))};--dur:${dur}s;--steps:${dur * 3};--delay:-${Math.round(dur * jitter(i, 5))}s"><i></i><i></i><i></i></span>`;
+  }).join('');
+}
+
+function leavesFx(leaves) {
+  let out = '';
+  leaves.from.forEach((tree, ti) => {
+    for (let i = 0; i < 4; i++) {
+      const dur = 6 + Math.round(jitter(i, ti + 11) * 4);
+      out += `<span class="fx-leaf" style="--leaf:${leaves.color};--x:${pct(tree.x + tree.w * jitter(i, ti))};--y:${pct(tree.y + tree.h * jitter(i, ti + 7))};--dur:${dur}s;--steps:${dur * 2};--delay:-${(dur * jitter(i, ti + 3)).toFixed(1)}s"></span>`;
+    }
+  });
+  return out;
+}
+
+function glowFx(boxes, dust) {
+  let out = boxes.map((b, i) => `<span class="fx-glow" style="${boxStyle(b)};--delay:-${(i * 0.8).toFixed(1)}s"></span>`).join('');
+  (dust || []).forEach((b, bi) => {
+    for (let i = 0; i < 2; i++) {
+      const dur = 4 + Math.round(jitter(i, bi) * 3);
+      out += `<span class="fx-dust" style="--x:${pct(b.x + b.w * (0.25 + 0.5 * jitter(i, bi + 5)))};--y:${pct(b.y + b.h * 0.2)};--dur:${dur}s;--steps:${dur * 3};--delay:-${(dur * jitter(i, bi + 9)).toFixed(1)}s"></span>`;
+    }
+  });
+  return out;
+}
+
+function sceneFx(fx = {}) {
+  let out = '';
+  if (fx.clouds) out += cloudsFx(fx.clouds);
+  if (fx.leaves) out += leavesFx(fx.leaves);
+  if (fx.clock) out += `<span class="fx-clock" style="${boxStyle(fx.clock)}"></span>`;
+  if (fx.glow) out += glowFx(fx.glow, fx.dust);
+  if (fx.shimmer) out += `<span class="fx-shimmer" style="--poly:polygon(${fx.shimmer.map(([x, y]) => `${x}% ${y}%`).join(', ')})"></span>`;
+  if (fx.ripples) out += [0, 1].map((i) => `<span class="fx-ripple" style="--x:${pct(fx.ripples.x)};--y:${pct(fx.ripples.y)};--delay:-${i * 1.2}s"></span>`).join('');
+  return out;
+}
+
+function stillStage(scene) {
+  const e = scene.entry;
+  const corners = stillCorners(e);
+  return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--arn:${(e.w / e.h).toFixed(4)};--bands:${backdropCss(e.backdrop)}">
+    <div class="pg-bob">
+      <img class="pg-still-img" src="${esc(e.src)}" alt="${esc(scene.label)} level ${scene.artLevel} scene">
+      <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx)}</div>
+      ${corners}
+    </div>
+  </div></div>`;
+}
+
+function layeredWorld(scene) {
+  const e = scene.entry;
+  return `<div class="pg-world">
+      <img class="pg-layer pg-bg" src="${esc(e.bg)}" alt="" aria-hidden="true">
+      <img class="pg-layer pg-platform" src="${esc(e.platform)}" alt="" aria-hidden="true">
+      <img class="pg-char" src="${esc(e.char)}" alt="${esc(scene.label)} level ${scene.artLevel} character">
+    </div>`;
+}
+
 // ---- main full-screen view --------------------------------------------------
 
-export function renderProfileGame(ctx) {
-  const p = sportProgress(ctx.workouts, 'bike');
-  const real = p.level;
-  const level = Math.max(1, Math.min(10, real));   // 10 art frames available
-  const maxed = real >= 10;
-  const pct = maxed ? 100 : Math.round(p.progress * 100);
-  const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
+// The screen above / below the stage takes the first / last edge band.
+function edgeColor(bd, which) {
+  const cols = (bd.bands || '').match(/.{6}/g);
+  if (!cols) return which === 0 ? bd.top : bd.bottom;
+  return `#${which === 0 ? cols[0] : cols[cols.length - 1]}`;
+}
 
-  const sportBtn = (sport, ico, label, active) =>
-    `<button class="pg-sport ${active ? 'active' : ''}" data-action="pg-sport" data-sport="${sport}"${active ? ' aria-current="true"' : ''}>
-       ${svg(ico, 'tint')}<span>${label}</span></button>`;
+const SWITCH = [['bike', 'Cycling'], ['swim', 'Swim'], ['run', 'Run'], ['gym', 'Gym']];
+
+export function renderProfileGame(ctx, sport = 'bike') {
+  const p = sportProgress(ctx.workouts, sport);
+  const scene = sceneFor(sport, p.level) || sceneFor('bike', p.level);
+  const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
+  const still = scene.kind === 'still';
+  const bd = still ? `--bd-top:${edgeColor(scene.entry.backdrop, 0)};--bd-bot:${edgeColor(scene.entry.backdrop, -1)}` : '';
+
+  const sportBtn = ([s, label]) => {
+    const on = s === scene.sport;
+    return `<button class="pg-sport ${on ? 'active' : ''}" data-action="pg-sport" data-sport="${s}"${on ? ' aria-current="true"' : ''}>
+       ${svg(s)}<span>${label}</span></button>`;
+  };
 
   return `
-  <section class="pg-screen">
-    <div class="pg-world">
-      <img class="pg-layer pg-bg" src="${BIKE}/BACKGROUND/background.png" alt="" aria-hidden="true">
-      <img class="pg-layer pg-platform" src="${BIKE}/PLATFORMS/${platformFile(level)}" alt="" aria-hidden="true">
-      <img class="pg-char" src="${BIKE}/CHARACTERS/bikelvl${level}_char.webp" alt="Cycling level ${level} character">
-    </div>
+  <section class="pg-screen ${still ? 'pg-still' : ''}" style="${bd}">
+    ${still ? stillStage(scene) : layeredWorld(scene)}
 
     <div class="pg-topbar">
-      <div class="pg-sports">
-        ${sportBtn('bike', 'bike', 'Cycling', true)}
-        ${sportBtn('swim', 'swim', 'Swim', false)}
-        ${sportBtn('run', 'run', 'Run', false)}
-        ${sportBtn('gym', 'gym', 'Gym', false)}
-      </div>
+      <div class="pg-sports" role="group" aria-label="Sport">${SWITCH.map(sportBtn).join('')}</div>
       <button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${avatarInner(ctx, initial)}</button>
     </div>
 
     <div class="pg-hud">
       <div class="pg-hud-top">
-        <span class="pg-sport-name">${svg('bike', 'tint')} Cycling</span>
-        <span class="pg-level-badge">${maxed ? 'MAX · ' : ''}Level ${real}</span>
+        <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
+        <button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">LVL ${p.level}</button>
       </div>
-      <div class="pg-xpbar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
-        <div class="pg-xpfill" style="width:${pct}%"></div>
-      </div>
-      <div class="pg-xptext">${maxed
-        ? 'Max level reached — legend status'
-        : `${p.into.toLocaleString()} / ${p.span.toLocaleString()} XP · ${p.toNext.toLocaleString()} to Level ${level + 1}`}</div>
+      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}` })}
+      <div class="pg-xptext">${p.into.toLocaleString()} / ${p.span.toLocaleString()} XP · ${p.toNext.toLocaleString()} to LVL ${p.level + 1}</div>
     </div>
   </section>`;
 }
@@ -86,11 +148,10 @@ function accountAge(ctx) {
   if (!dates.length) return 'New';
   const start = new Date(dates[0]);
   const days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
-  if (days < 1) return 'Today';
-  if (days < 31) return `${days} day${days === 1 ? '' : 's'}`;
-  if (days < 365) { const m = Math.round(days / 30); return `${m} month${m === 1 ? '' : 's'}`; }
-  const y = (days / 365).toFixed(1);
-  return `${y} years`;
+  if (days < 1) return 'New';
+  if (days < 31) return `${days} d`;
+  if (days < 365) return `${Math.round(days / 30)} mo`;
+  return `${(days / 365).toFixed(1)} y`;
 }
 
 // ---- full-screen Fitness & Cardio performance hub ---------------------------
@@ -188,7 +249,7 @@ function trendGraph(ctx) {
   const h = Math.floor(acc / 60);
   const m = Math.round(acc % 60);
   return `<section class="card fh-block fh-tap" data-fh-activity role="button" tabindex="0">
-    <h4>Activity Summary <span class="fh-arrow">→</span></h4>
+    <h4>Activity summary <span class="fh-arrow">${svg('chevron')}</span></h4>
     <div class="fh-big">${h}h ${m}m</div>
     <div class="fh-range">${esc(shortLabel(days[0].iso))} – ${esc(shortLabel(ctx.today))}</div>
     <svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
@@ -264,7 +325,7 @@ function cardioCard(ctx) {
       <path class="fh-line" d="${d}" stroke="var(--acc-peri)"/>
       <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="4" fill="${STATUS_COLOR[cs.status]}" stroke="var(--bg-2)" stroke-width="1.5"/>
     </svg>
-    <span class="fh-chev">→</span>
+    <span class="fh-chev">${svg('chevron')}</span>
   </button>`;
 }
 
@@ -275,17 +336,17 @@ function accountBlock() {
     <h4>Account &amp; Sync</h4>
     ${u
       ? `<div class="fh-acct">
-           <div class="fh-acct-id"><b>${esc(u.email || 'Signed in')}</b><small>☁️ Syncing across devices</small></div>
+           <div class="fh-acct-id"><b>${esc(u.email || 'Signed in')}</b><small>${svg('cloud')} Syncing across devices</small></div>
            <button class="btn tiny ghost danger" data-action="hub-signout">Sign out</button>
          </div>
          <div class="fh-strava-row">
-           <button class="btn tiny ghost" data-action="hub-strava-connect">🔗 Connect Strava</button>
-           <button class="btn tiny ghost" data-action="hub-strava-sync">↻ Sync now</button>
+           <button class="btn tiny ghost" data-action="hub-strava-connect">${svg('link')} Connect Strava</button>
+           <button class="btn tiny ghost" data-action="hub-strava-sync">${svg('sync')} Sync now</button>
            <button class="btn tiny ghost danger" data-action="hub-strava-disconnect">Disconnect</button>
          </div>
          <div class="powered-by-strava">Powered by Strava</div>`
-      : `<button class="btn primary block" data-action="open-auth">☁️ Sign in to sync &amp; connect Strava</button>`}
-    <button class="btn ghost block fh-settings" data-action="open-settings">⚙ All settings</button>
+      : `<button class="btn primary block" data-action="open-auth">${svg('cloud')} Sign in to sync</button>`}
+    <button class="btn ghost block fh-settings" data-action="open-settings">${svg('gear')} All settings</button>
   </section>`;
 }
 
@@ -299,7 +360,7 @@ export function openActivityDetail(ctx) {
     const km = Number(w.metrics?.distanceKm) || Number(w.actual?.distanceKm) || 0;
     const meta = [shortLabel(w.date), `${w.durationMin || 0} min`, km ? `${km % 1 ? km.toFixed(1) : km} km` : '']
       .filter(Boolean).join(' · ');
-    return `<div class="ah-row" data-action="open-workout" data-id="${esc(w.id)}">
+    return `<div class="ah-row" data-action="open-workout" data-id="${esc(w.id)}" role="button" tabindex="0">
       <span class="sport-dot type-${esc(w.type)}"></span>
       <div class="ah-body"><b>${esc(w.title || w.type)}</b><small>${esc(meta)}</small></div>
       ${w.strava_activity_id || w.source === 'strava' ? STRAVA_ICO : ''}
@@ -309,7 +370,7 @@ export function openActivityDetail(ctx) {
   root.innerHTML = `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Activity history">
     <div class="fh-head">
-      <button class="fh-back" data-fh-hub aria-label="Back to fitness">←</button>
+      <button class="fh-back" data-fh-hub aria-label="Back to fitness">${svg('back')}</button>
       <div class="fh-title"><small>Last 30 days</small><h2>Activity</h2></div>
     </div>
     ${trendGraph(ctx)}
@@ -324,12 +385,13 @@ export function openActivityDetail(ctx) {
 }
 
 function statRow(ctx) {
-  const stat = (value, label) => `<div class="pc-stat"><b>${esc(String(value))}</b><small>${esc(label)}</small></div>`;
+  const stat = (value, label, cls = '') => `<div class="pc-stat ${cls}"><b>${esc(String(value))}</b><small>${esc(label)}</small></div>`;
+  const acct = ctx.acct;
   return `<div class="pc-stats fh-stats">
+    ${stat(acct ? `LVL ${acct.level}` : `LVL ${ctx.stats?.level ?? 1}`, acct ? `${acct.questXp.toLocaleString()} quest XP` : 'Level', 'acct')}
     ${stat((ctx.stats?.completedCount ?? 0).toLocaleString(), 'Workouts')}
     ${stat(`${ctx.streaks?.current ?? 0} d`, 'Streak')}
     ${stat(accountAge(ctx), 'Account age')}
-    ${stat(ctx.stats?.level ?? 1, 'Level')}
   </div>`;
 }
 
@@ -375,7 +437,7 @@ export function openFitnessHub(ctx) {
   root.innerHTML = `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Fitness dashboard">
     <div class="fh-head">
-      <button class="fh-back" data-fh-close aria-label="Back">←</button>
+      <button class="fh-back" data-fh-close aria-label="Back">${svg('back')}</button>
       <div class="fh-title"><small>Last 30 days</small><h2>Fitness</h2></div>
       <button class="fh-avatar" data-pc-photo aria-label="Change profile photo">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
       <input type="file" accept="image/*" data-pc-file hidden>
@@ -406,7 +468,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
   const shell = (body) => `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Athlete profile">
     <div class="fh-head">
-      <button class="fh-back" data-fh-close aria-label="Back to leaderboard">←</button>
+      <button class="fh-back" data-fh-close aria-label="Back to leaderboard">${svg('back')}</button>
       <div class="fh-title"><small>Athlete</small><h2>${esc(name || 'Athlete')}</h2></div>
       <span class="fh-avatar" aria-hidden="true">${avatarHtml}</span>
     </div>
@@ -419,7 +481,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
   try {
     const { fetchPublicUserProfile } = await import('./profile.js');
     const p = await fetchPublicUserProfile(uid);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     // Expand per-day aggregates into pseudo-workouts the chart helpers understand.
     const workouts = (p.days || []).flatMap((d) => {
       const n = Math.max(1, Number(d.n) || 1);
@@ -496,7 +558,7 @@ export function openCardioDetail(ctx) {
   root.innerHTML = `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Cardio load">
     <div class="fh-head">
-      <button class="fh-back" data-fh-hub aria-label="Back to fitness">←</button>
+      <button class="fh-back" data-fh-hub aria-label="Back to fitness">${svg('back')}</button>
       <div class="fh-title"><small>Last 30 days</small><h2>Cardio Load</h2></div>
     </div>
     <section class="card fh-block">

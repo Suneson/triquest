@@ -7,8 +7,9 @@
 import * as store from './store.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { toast } from './effects.js';
+import { svg } from '../core/icons.js';
 import { esc } from './ui.js';
-import { addDays } from '../core/dates.js';
+import { addDays, todayISO } from '../core/dates.js';
 
 // ---- static choice matrices --------------------------------------------------
 
@@ -74,7 +75,7 @@ const GEN_PHASES = [
 
 // Average weekly volume from the last 4 weeks of completed (Strava-verified) work.
 function analyzeHistory(workouts) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const start = addDays(today, -27);
   const done = workouts.filter((w) => w.completed && w.date >= start && w.date <= today);
   const minOf = (t) => done.filter((w) => !t || w.type === t).reduce((a, w) => a + (w.durationMin || 0), 0);
@@ -228,7 +229,7 @@ export function openOnboarding({ onDone } = {}) {
     <div class="ob-screen" role="dialog" aria-modal="true" aria-label="AI coach setup">
       <div class="ob-progress"><i style="width:${pct}%"></i></div>
       <div class="ob-head">
-        <button class="fh-back" data-ob-back aria-label="Back">←</button>
+        <button class="fh-back" data-ob-back aria-label="Back">${svg('back')}</button>
         <small>AI Coach · ${last ? 'Strava analysis' : `Step ${idx + 1} of ${keys.length - 1}`}</small>
       </div>
       <div class="ob-card ${dir >= 0 ? 'ob-in-right' : 'ob-in-left'}">${stepHtml(key)}</div>
@@ -301,7 +302,7 @@ export function openOnboarding({ onDone } = {}) {
       stopCycle();
       store.setSetting('goals', { ...(store.getSettings().goals || {}), hours: s.hours, sessions: 7 - s.restDays.length });
       close();
-      toast(`AI Coach added ${r.inserted} tailored sessions to your calendar ✨`);
+      toast(`AI Coach added ${r.inserted} tailored sessions to your calendar`, { icon: svg('spark') });
       if (onDone) onDone();
     } catch (err) {
       stopCycle();

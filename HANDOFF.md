@@ -1,13 +1,19 @@
 # MOSKE — AI Handoff (master context)
 
+> **Redesign in progress** on branch `redesign/pixel-gamify` (pixel-art skin,
+> Run/Gym/Swim scenes, daily quests, trainer). Read `DESIGN.md` and
+> `docs/redesign/PLAN.md` first. Screens are captured with
+> `node tools/shots.mjs <out-dir>` (Playwright, 390×844) against
+> `node tools/serve.mjs`. `main` is the live site and is not touched by it.
+
 > Gamified triathlon PWA. **Display name = MOSKE; all backend/repo names stay `triquest`** (user wants visible-only rebrand). Full source is in the repo — clone it; this file is the map + architecture + pending work, not a full code dump.
 
 ## Identity & infra
 - **Repo**: https://github.com/Suneson/triquest (owner casing `Suneson`, user `suneson`). Local: `X:\z_PERSONAL\Claude workspace\triquest`.
 - **Live**: https://suneson.github.io/triquest/ — GitHub Pages, branch `main` `/root`, no build step. Pure static HTML/CSS/vanilla ES modules.
-- **Supabase**: project ref `kmanszmqgmyninoplwbt` (region eu-west-3, free tier). A Supabase **connector/MCP is configured** → use `apply_migration`, `deploy_edge_function`, `execute_sql`, etc. No Supabase CLI / Deno locally.
-- **Tests**: `npm test` (node --test) → 78 passing. CI in `.github/workflows/ci.yml`. Logic in `js/core/` is DOM-free + unit-tested.
-- **Service worker**: `sw.js`, **network-first for same-origin** (offline → cache). **Bump `const CACHE='triquest-vN'` on every asset change** (currently `v19`); add new JS files to its ASSETS list.
+- **Supabase**: project ref `vopzemijzoxezathmrai` (region eu-north-1, free tier; auto-pauses after ~7 idle days, restore from the dashboard or the connector). The ref in `js/app/config.js` is the source of truth. A Supabase **connector/MCP is configured** → use `apply_migration`, `deploy_edge_function`, `execute_sql`, etc. No Supabase CLI / Deno locally.
+- **Tests**: `npm test` (node --test) → 83 passing. CI in `.github/workflows/ci.yml`. Logic in `js/core/` is DOM-free + unit-tested.
+- **Service worker**: `sw.js`, **network-first for same-origin** (offline → cache). **Bump `const CACHE='triquest-vN'` on every asset change** (currently `v39`); add new JS files to its ASSETS list.
 
 ## Architecture
 - **Store abstraction** (`js/app/store.js` facade): `LocalStore` (offline blob, localStorage key `triquest.v1`) ↔ `SupabaseStore` (signed-in: LocalStore write-through cache + Postgres truth, **last-write-wins by `updated_at`**, realtime). Swap on sign-in/out via `useStore()`.
@@ -34,8 +40,8 @@
 ## Frontend config — `js/app/config.js`
 ```js
 export const CONFIG = {
-  supabaseUrl: 'https://kmanszmqgmyninoplwbt.supabase.co',
-  supabaseAnonKey: 'sb_publishable_43Vs_xVwx_uY9vRZZNTG9w_SQt-YWKe',
+  supabaseUrl: 'https://vopzemijzoxezathmrai.supabase.co',
+  supabaseAnonKey: 'sb_publishable_Swiz6YuHXjnjnE4fMqgIaw_S_f1Xvf3',
   stravaClientId: '258518',
 };
 export const SYNC_ENABLED = Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);

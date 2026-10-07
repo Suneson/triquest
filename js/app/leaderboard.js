@@ -6,6 +6,7 @@ import { SYNC_ENABLED } from './config.js';
 import { levelFromTotalXp } from '../core/scoring.js';
 import { esc, dialogue } from './ui.js';
 import { svg } from '../core/icons.js';
+import { isDemo, demoLeaderboard } from './demo.js';
 
 const SEASON_EPOCH = new Date('2026-01-01T00:00:00'); // monthly seasons
 const SEASON_MONTHS = 1;
@@ -35,12 +36,18 @@ export function leaderboardShell(view, today) {
 export async function loadLeaderboard(view, today) {
   const body = document.getElementById('lb-body');
   if (!body) return;
-  if (!SYNC_ENABLED) { body.innerHTML = dialogue({ text: 'Leaderboards need cloud sync configured.', cls: 'empty-dlg' }); return; }
+  if (!SYNC_ENABLED && !isDemo()) { body.innerHTML = dialogue({ text: 'Leaderboards need cloud sync configured.', cls: 'empty-dlg' }); return; }
   try {
-    const c = await client();
-    const since = view === 'season' ? seasonInfo(today).start.toISOString() : null;
-    const { data, error } = await c.rpc('leaderboard', { p_since: since });
-    if (error) throw error;
+    let data;
+    if (isDemo()) {
+      data = demoLeaderboard(view);
+    } else {
+      const c = await client();
+      const since = view === 'season' ? seasonInfo(today).start.toISOString() : null;
+      const res = await c.rpc('leaderboard', { p_since: since });
+      if (res.error) throw res.error;
+      data = res.data;
+    }
     const me = currentUser()?.id;
     const rows = (data || []).map((r, i) => ({ ...r, rank: i + 1, level: levelFromTotalXp(Number(r.xp)).level }));
     _athletes = new Map(rows.map((r) => [r.user_id, r]));

@@ -108,11 +108,61 @@ Rules:
 - Workout titles, notes, quest text, coach lines and form fields stay in the
   body font.
 
+**Which font for which number** (rule since pass 2):
+
+| Kind of text | Font | Examples |
+|---|---|---|
+| Labels, headings, buttons, chips | pixel (`--font-display`) | `THIS WEEK`, `EDIT`, `LVL 4` |
+| Game numbers: XP, levels, ranks, streaks, countdowns, prices | pixel | `540 / 919 XP`, `#3`, `25 days left` |
+| Training data: minutes, hours, km, kcal, pace, watts, FTP, logged sets | system (`--font-data`, 700, tabular) | `35 min`, `6.6 km`, `385 kcal` |
+| Sentences: coach lines, quest text, notes, workout titles | system (`--font-body`) | |
+
+`--font-data` is the body stack at weight 700 with `tabular-nums`. Units sit
+next to the number in `.data-unit` (12px, muted). Use `.data-num` on any new
+training number; the existing selectors (`.bm b`, `.tg-min`, `.chip.data`,
+`.ex-prescribed`, `.pwr-bar span` and friends) already map to it. Training
+numbers are things you read and compare, and the pixel digits are slower to
+read at a glance; game numbers stay pixel because they're part of the game.
+
 ### 2.3 Spacing
 
 4px base: `--sp-1` 4px, `--sp-2` 8px, `--sp-3` 12px, `--sp-4` 16px, `--sp-5`
-24px, `--sp-6` 32px, `--sp-7` 48px. Side gutter on phones is 16px (today it is
-18px; 16 is a whole multiple of the pixel grid).
+24px, `--sp-6` 32px, `--sp-7` 48px. Side gutter on phones is 16px.
+
+Rhythm tokens (pass 2 spacing audit):
+
+| Token | Value | Use |
+|---|---|---|
+| `--sp-section` | 32px | between sections of a screen (the `.view` gap) |
+| `--sp-group` | 16px | between cards in one group, rows in a list |
+| `--sp-panel` | 20px | inside a panel, card, dialogue box |
+| `--sp-day` | 40px | between days in the Journal |
+
+Two bordered boxes are never closer than 16px, counting the drop edge.
+`node tools/gap-audit.mjs <width>` measures that on every tab. Things that
+don't need a frame, like the signed-in row and the Journal's today marker,
+don't get one: today is a 2px gold rule above the day plus the `TODAY` tag.
+
+### 2.3b Shell
+
+The app is a fixed grid that fills the screen (`.app`, `position: fixed;
+inset: 0`), with rows for the banners, header, the scrolling view and the
+tab bar. No `100vh`/`100dvh`: iOS standalone mode measures those differently
+from the visible area, which left a gap under the tab bar. The tab bar's
+background runs through the home-indicator area, and the page background
+below the app is the bar colour, so overscroll never shows a seam.
+
+| Token | Value | Use |
+|---|---|---|
+| `--tabs-row` | 58px | tab bar content height |
+| `--tabs-pb` | `max(6px, safe-area-bottom − 12px)` | tab bar bottom padding |
+| `--tabs-h` | row + padding | anything floating above the bar: FAB, toasts, Profile HUD and stage |
+| `--fab-size` | 56px | FAB |
+| `--gap-float` | 16px | gap between the bar and a floating element |
+| `--pg-top-h`, `--pg-hud-h` | 84px, 124px | Profile switcher and HUD heights the stage sits between |
+
+Nothing uses a magic bottom offset any more. `?safe=34` fakes the iPhone
+home-indicator inset in a desktop browser.
 
 ### 2.4 Border and corners
 
@@ -152,7 +202,7 @@ are short so the app still feels fast.
 | meter fill | `160ms steps(2)` per segment, staggered 40ms | XP and goal meters fill left to right |
 | `--t-pop` | `720ms steps(9)` | "+40 XP" pop rise and fade |
 | `--t-type` | `28ms` per character | dialogue typewriter reveal |
-| `--loop-bob` | `1.2s steps(2) infinite` | idle bob of the profile stage (1 art pixel) |
+| `--loop-bob` | `1.2s steps(2) infinite` | idle bob of the cycling character only (the stills no longer bob) |
 | `--loop-ambient` | 2.4–40s, `steps(n)` | scene overlays (clouds, glow, shimmer) |
 
 Reduced motion (`settings.reduceMotion` or `prefers-reduced-motion: reduce`):
@@ -201,6 +251,8 @@ right; a **segmented XP bar** (20 segments, gold on `--bg-4`, inside a 2px
 display font at 16px. The Profile HUD for every sport uses this card.
 
 ### Buttons
+Every button has a 44px touch target. `.btn.tiny` (36px) and `.icon-btn.tiny`
+(32px) keep their size and get the rest from an invisible `::after`.
 | Variant | Fill | Border | Text |
 |---|---|---|---|
 | primary | `--accent` | `--accent` | `--on-accent` |
@@ -227,7 +279,7 @@ for the emoji scrub: `gear`, `cloud`, `sound`, `motion`, `download`, `upload`,
 `back`, `scroll` (quests), `coach`, `bolt`.
 
 ### Tab bar
-A docked panel (no floating pill, no blur) with five equal cells: Home,
+Pinned to the bottom of the shell (see 2.3b), never floating. A docked panel (no floating pill, no blur) with five equal cells: Home,
 Journal, Ranks, Shop, Profile. Each cell is a 24px pixel icon over a small body
 label. The active cell is a gold fill with `--on-accent` icon and label, and
 carries `aria-current="page"`.
@@ -255,16 +307,19 @@ with the pixel `close` icon.
 ### Profile scenes
 - **Cycling** keeps its layered world (background, platform, animated
   character).
-- **Run, Gym, Swim** frame a single still on a stage between the sport switcher
-  and the HUD. The screen around it is painted with the image's own edge
+- **Run, Gym, Swim** fill a full-width stage between the sport switcher and
+  the HUD: edge to edge, no side margin, up to 116% of the screen width tall.
+  The art keeps its aspect ratio and is centred, so on narrow phones its sides
+  crop rather than shrink. Overlays sit in the same box as the art, so they
+  stay registered at every width. The screen around it is painted with the image's own edge
   colours: flat for Gym and Swim, and 24 sampled bands for Run, whose sky and
   ground are gradients. The still's outer 4% fades out in four steps so it
   dissolves into that backdrop. Iso-angled stepped covers hide each still's
   baked-in corner label and generator mark.
 - **Motion** is CSS only, positioned in % from the manifest: drifting clouds,
   falling leaves and a flickering lap clock (Run), pulsing ceiling light and
-  dust in the light (Gym), water shimmer and ripple rings (Swim), and a 1-pixel
-  idle bob on every still. About a dozen elements per scene, transform and
+  dust in the light (Gym), water shimmer and ripple rings (Swim),. (The 1-pixel idle bob was removed in pass 2: it made
+  the stills look unsteady rather than alive.) About a dozen elements per scene, transform and
   opacity only, paused while the page is hidden, removed under reduced motion.
 - The "region nudge" experiment (shifting a clipped copy of the athlete) was
   dropped: it broke the track lines and dragged the gym equipment along. The

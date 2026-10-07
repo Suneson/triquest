@@ -8,6 +8,8 @@ import { svg } from '../core/icons.js';
 import { todayISO } from '../core/dates.js';
 
 export async function fetchPublicUserProfile(targetUserId) {
+  const { isDemo, demoPublicProfile } = await import('./demo.js');
+  if (isDemo()) return demoPublicProfile(targetUserId);
   const c = await client();
   const { data, error } = await c.rpc('public_profile', { p_user: targetUserId });
   if (error) throw error;
@@ -51,7 +53,7 @@ export function openPublicProfile({ uid, name, rank, xp }) {
       <div class="total"><small>Workouts</small><b>${s.completed}</b></div>
       <div class="total"><small>Distance</small><b>${fmtKm(km) || '0 km'}</b></div>
       <div class="total"><small>Streak</small><b>${streaks.current} d</b></div>
-      <div class="total"><small>⏱️ Hours</small><b>${((Number(p.total_min) || 0) / 60).toFixed(1)}</b></div>
+      <div class="total"><small>Hours</small><b>${((Number(p.total_min) || 0) / 60).toFixed(1)}</b></div>
     </div>`;
     const badges = `<h4 class="pp-h4">Achievements</h4><div class="badge-wall">${MILESTONES.map((m) => {
       const on = m.got(s);

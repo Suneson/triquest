@@ -269,8 +269,8 @@ function metaChips(w, units) {
   return [
     `<span class="chip type-${w.type}">${svg(w.type)} ${d.label}</span>`,
     w.hr_zone ? zoneBadge(w.hr_zone) : '',
-    `<span class="chip mono">${formatDuration(w.durationMin)}</span>`,
-    w.metrics?.distanceKm ? `<span class="chip mono">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
+    `<span class="chip data">${formatDuration(w.durationMin)}</span>`,
+    w.metrics?.distanceKm ? `<span class="chip data">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
     `<span class="chip intensity-${w.intensity}">${INTENSITIES[w.intensity] || w.intensity}</span>`,
     pace ? `<span class="chip pace">${esc(pace)}</span>` : '',
   ].filter(Boolean).join('') + tags.join('');
@@ -330,12 +330,19 @@ export function meter(frac, { segments = 10, cls = '', label = '' } = {}) {
   return `<div class="meter fill ${f > 1 ? 'over' : ''} ${cls}" role="img" aria-label="${esc(label || `${Math.round(f * 100)}%`)}">${cells}</div>`;
 }
 
+/** The coach's face at 32px (his portrait, or the whistle icon until art exists). */
+export function coachMini() {
+  return COACH.portrait
+    ? `<img class="coach-mini" src="${esc(COACH.portrait)}" alt="" width="32" height="32">`
+    : `<span class="coach-mini">${svg('coach')}</span>`;
+}
+
 /** Dialogue box: the coach (or another speaker) saying one thing.
  *  `type: true` marks the line for a typewriter reveal (see effects.typeLines). */
-export function dialogue({ who = COACH.name, icon = 'coach', text = '', body = '', cls = '', portrait = COACH.portrait, type = false } = {}) {
+export function dialogue({ who = COACH.name, icon = 'coach', text = '', body = '', cls = '', portrait = who === COACH.name ? COACH.portrait : null, type = false } = {}) {
   const frames = portrait === COACH.portrait
     ? `${COACH.blink ? ` data-blink="${esc(COACH.blink)}"` : ''}${COACH.talk ? ` data-talk="${esc(COACH.talk)}"` : ''}` : '';
-  const pic = portrait ? `<img class="dlg-portrait" src="${esc(portrait)}" alt=""${frames}>` : '';
+  const pic = portrait ? `<img class="dlg-portrait" src="${esc(portrait)}" alt="" width="64" height="64"${frames}>` : '';
   return `<section class="dlg ${portrait ? 'has-portrait' : ''} ${cls}">${pic}
     <div><div class="dlg-who">${portrait ? '' : svg(icon)}${esc(who)}</div>
     ${text ? `<p class="coach-line"${type ? ' data-type' : ''}>${esc(text)}</p>` : ''}${body}</div></section>`;
@@ -382,7 +389,7 @@ export function questsPanel(ctx) {
     <div class="q-head"><h3>${svg('scroll')} Daily quests</h3>
       <span class="q-reset" data-quest-reset title="Resets at midnight">RESETS ${formatCountdown(msUntilReset())}</span></div>
     ${rows}
-    <p class="coach-line"><span class="dlg-who" style="display:inline-flex;margin:0 6px 0 0">${svg('coach')}${esc(COACH.name)}</span>${esc(line)}</p>
+    <div class="q-coach">${coachMini()}<p class="coach-line"><span class="dlg-who">${esc(COACH.name)}</span>${esc(line)}</p></div>
   </section>`;
 }
 
@@ -406,7 +413,7 @@ function tomorrowGlance(ctx) {
     const extra = sessions.length > 1 ? ` <span class="tg-extra">+${sessions.length - 1}</span>` : '';
     inner = `<span class="sport-dot type-${esc(w.type)}"></span>
       <span class="tg-title">${esc(d.label)} — ${esc(w.title)}${extra}</span>
-      <span class="tg-min">${w.durationMin || 0} MIN</span>`;
+      <span class="tg-min">${w.durationMin || 0}<small class="data-unit"> min</small></span>`;
     attrs = `data-action="open-workout" data-id="${esc(w.id)}"`;
   } else {
     inner = `<span class="sport-dot"></span>

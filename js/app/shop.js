@@ -1,5 +1,6 @@
 // shop.js — Shopify Storefront API client for the ss-26 collection.
 import { esc, dialogue } from './ui.js';
+import { isDemo, demoShop } from './demo.js';
 
 const ENDPOINT = 'https://moskeshop.com/api/2026-04/graphql.json';
 const TOKEN = 'f42b47288ec62ce928ff8dccf9e36ffb';
@@ -23,6 +24,7 @@ export function shopShell() {
 export async function loadShop() {
   const grid = document.getElementById('shop-grid');
   if (!grid) return;
+  if (isDemo()) { grid.innerHTML = demoShop().map(card).join(''); return; }
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',

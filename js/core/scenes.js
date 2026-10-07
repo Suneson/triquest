@@ -180,7 +180,10 @@ export function cornerPolygon({ side, from, to }, step = 2) {
 // `blink` / `talk` frames as well, he blinks and "speaks" while a line types.
 export const COACH = {
   name: 'Coach',
-  portrait: null, // 'icons/trainer/portrait.png'
+  // from icons/trainer/source/coach-greenscreen.webp: green keyed out, box-averaged
+  // to the art's own pixel grid, palette reduced (see ART-BRIEF.md)
+  portrait: 'icons/trainer/portrait.png', // 96×96 head and shoulders
+  full: 'icons/trainer/full.png',          // 109×189 full figure, arms crossed
   blink: null,    // 'icons/trainer/blink.png'
   talk: null,     // 'icons/trainer/talk.png'
   cheer: null,    // 'icons/trainer/cheer.png'

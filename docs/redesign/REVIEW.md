@@ -48,3 +48,27 @@ browser checks at 320, 390 and 430 px wide.
   charts would be a separate piece of work.
 - The `.ics` export still writes discipline emoji into calendar titles (a
   downloaded file, not the UI).
+
+## Pass 2, Phase A (web-design-guidelines skill, fetched live)
+
+The skill ran over every file changed in Phase A, plus browser checks in
+playwright-cli (Chromium with the iPhone 15 profile; WebKit isn't installed in
+the sandbox) at 320, 390 and 430 px. Screens are in `after/phase-a/`, a clip of
+tab and stage switching in `clips/phase-a-shell.webm`.
+
+| Area | Finding | Fix |
+|---|---|---|
+| Touch | `.btn.tiny` (36px) and `.icon-btn.tiny` (32px) under 44px | Invisible `::after` grows the hit area to 44px, look unchanged (measured: a tap 3px above the Edit button lands on it) |
+| Images | Profile still had no `width`/`height` | Sized from the manifest, `fetchpriority="high"` (it's the screen's main image) |
+| Overscroll | Sheet bodies chained scroll into the page | `overscroll-behavior: contain` on `.modal-body` |
+| Layout | Tab bar left a gap on iPhone PWA | Fixed grid shell, bar through the safe area; with `?safe=34` the bar ends at the viewport's bottom pixel |
+
+Checked and fine: no `transition: all`; every `outline: none` has a
+replacement (inputs turn their border gold; tabs use `:focus-visible`); icon
+buttons have `aria-label`; toasts are `aria-live="polite"`; `color-scheme:
+dark` and `theme-color` set; zoom not blocked; reduced motion kills every
+animation.
+
+Left as is: images inside fixed-ratio boxes (level cards, lightbox, level-up)
+have no `width`/`height`, but the box already reserves the space, so there's
+no layout shift.

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { SCENES, SCENE_SPORTS, sceneFor, sceneFiles, cornerPolygon, backdropCss } from '../js/core/scenes.js';
+import { SCENES, SCENE_SPORTS, sceneFor, sceneFiles, cornerPolygon, backdropCss, COACH } from '../js/core/scenes.js';
 
 test('sceneFor clamps to the highest real art and keeps the true level', () => {
   assert.equal(sceneFor('gym', 1).artLevel, 1);
@@ -93,4 +93,11 @@ test('backdropCss turns packed bands into hard-stop stripes', () => {
     'linear-gradient(#ff0000 0% 50%, #00ff00 50% 100%)');
   assert.equal(backdropCss({ top: '#000000', bottom: '#111111' }), 'linear-gradient(#000000 0 50%, #111111 50% 100%)');
   assert.match(backdropCss({ bands: 'bad', top: '#000', bottom: '#111' }), /50%/);
+});
+
+test('every coach frame that is set exists on disk', () => {
+  for (const [k, f] of Object.entries(COACH)) {
+    if (k === 'name' || !f) continue;
+    assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), `${k}: ${f}`);
+  }
 });

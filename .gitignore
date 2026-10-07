@@ -14,3 +14,6 @@ triquest-backup-*.json
 
 # Pixel-art source files — ship only the exported PNGs, not the heavy PSDs
 *.psd
+
+# playwright-cli session logs
+.playwright-cli/

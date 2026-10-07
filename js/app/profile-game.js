@@ -78,9 +78,9 @@ function sceneFx(fx = {}) {
 function stillStage(scene) {
   const e = scene.entry;
   const corners = stillCorners(e);
-  return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--arn:${(e.w / e.h).toFixed(4)};--bands:${backdropCss(e.backdrop)}">
-    <div class="pg-bob">
-      <img class="pg-still-img" src="${esc(e.src)}" alt="${esc(scene.label)} level ${scene.artLevel} scene">
+  return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--bands:${backdropCss(e.backdrop)}">
+    <div class="pg-art">
+      <img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">
       <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx)}</div>
       ${corners}
     </div>
@@ -250,7 +250,7 @@ function trendGraph(ctx) {
   const m = Math.round(acc % 60);
   return `<section class="card fh-block fh-tap" data-fh-activity role="button" tabindex="0">
     <h4>Activity summary <span class="fh-arrow">${svg('chevron')}</span></h4>
-    <div class="fh-big">${h}h ${m}m</div>
+    <div class="fh-big data-num">${h}<small class="data-unit">h</small> ${m}<small class="data-unit">m</small></div>
     <div class="fh-range">${esc(shortLabel(days[0].iso))} – ${esc(shortLabel(ctx.today))}</div>
     <svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
       <path class="fh-area" d="${area}" fill="var(--acc-orange)"/>

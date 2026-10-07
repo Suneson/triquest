@@ -33,3 +33,10 @@ test('parse/format round-trips and dodges DST', () => {
   assert.equal(toISO(parseISO('2026-03-29')), '2026-03-29'); // EU DST switch day
   assert.equal(toISO(parseISO('2026-10-25')), '2026-10-25');
 });
+
+test('todayISO uses the local calendar date, not UTC', async () => {
+  const { todayISO } = await import('../js/core/dates.js');
+  // 23:30 local on 7 Oct must still be the 7th, whatever the UTC date is.
+  assert.equal(todayISO(new Date(2026, 9, 7, 23, 30)), '2026-10-07');
+  assert.equal(todayISO(new Date(2026, 9, 8, 0, 5)), '2026-10-08');
+});

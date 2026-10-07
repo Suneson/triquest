@@ -4,7 +4,7 @@
 import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { levelFromTotalXp } from '../core/scoring.js';
-import { esc } from './ui.js';
+import { esc, dialogue } from './ui.js';
 import { svg } from '../core/icons.js';
 
 const SEASON_EPOCH = new Date('2026-01-01T00:00:00'); // monthly seasons
@@ -22,9 +22,9 @@ export function seasonInfo(todayIso) {
 export function leaderboardShell(view, today) {
   const s = seasonInfo(today);
   const countdown = view === 'season'
-    ? `<div class="lb-countdown">${svg('clock')} <b>${s.daysRemaining}</b> days remaining · Season ${s.number} <span class="muted">(resets monthly)</span></div>` : '';
-  return `<div class="lb-banner">${svg('trophy', 'tint')} Season Reset: Monthly &nbsp;|&nbsp; ${svg('medal', 'tint')} 1st Place wins a 20% discount coupon on your next Moske order!</div>
-    <div class="day-header"><h2>Leaderboards</h2></div>
+    ? `<div class="lb-countdown">${svg('clock')} <b>${s.daysRemaining}</b> days left in season ${s.number}</div>` : '';
+  return `<div class="day-header"><h2>Leaderboards</h2></div>
+    <div class="lb-banner">${svg('trophy')}<div><b>Monthly season</b>First place wins a 20% discount on your next MOSKE order.</div></div>
     <div class="lb-toggle">
       <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">Season</button>
       <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">All-time</button>
@@ -35,7 +35,7 @@ export function leaderboardShell(view, today) {
 export async function loadLeaderboard(view, today) {
   const body = document.getElementById('lb-body');
   if (!body) return;
-  if (!SYNC_ENABLED) { body.innerHTML = '<p class="muted">Leaderboards need cloud sync configured.</p>'; return; }
+  if (!SYNC_ENABLED) { body.innerHTML = dialogue({ text: 'Leaderboards need cloud sync configured.', cls: 'empty-dlg' }); return; }
   try {
     const c = await client();
     const since = view === 'season' ? seasonInfo(today).start.toISOString() : null;
@@ -46,9 +46,9 @@ export async function loadLeaderboard(view, today) {
     _athletes = new Map(rows.map((r) => [r.user_id, r]));
     body.innerHTML = rows.length
       ? list(rows, me)
-      : '<p class="muted">No ranked athletes yet — complete a verified workout to appear here.</p>';
+      : dialogue({ text: 'No ranked athletes yet. Complete a verified workout to appear here.', cls: 'empty-dlg' });
   } catch (e) {
-    body.innerHTML = '<p class="muted">Couldn’t load the leaderboard. Check your connection.</p>';
+    body.innerHTML = dialogue({ text: 'Couldn’t load the leaderboard. Check your connection and try again.', cls: 'empty-dlg' });
   }
 }
 
@@ -73,14 +73,14 @@ function sportDots(sports) {
 // real profile photos (initial fallback), rows open the athlete's dashboard.
 function list(rows, me) {
   return `<ul class="lb-list">${rows.map((r) => `
-    <li class="lb-row ${r.user_id === me ? 'me' : ''}" data-action="view-athlete-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
+    <li class="lb-row ${r.user_id === me ? 'me' : ''}" role="button" tabindex="0" data-action="view-athlete-profile" data-uid="${esc(r.user_id)}" data-name="${esc(r.display_name)}" data-rank="${r.rank}" data-xp="${r.xp}">
       <span class="lb-rank r${Math.min(r.rank, 4)}">${r.rank}</span>
       <span class="lb-avatar">${r.avatar
         ? `<img src="${esc(r.avatar)}" alt="" loading="lazy">`
         : esc((r.display_name || 'A').trim().charAt(0).toUpperCase())}</span>
       <span class="lb-id">
         <b class="lb-name">${esc(r.display_name)}</b>
-        <small class="lb-meta">Lv ${r.level} · ${xp(r.xp)} XP</small>
+        <small class="lb-meta">LVL ${r.level} · ${xp(r.xp)} XP</small>
       </span>
       ${sportDots(r.sports)}
     </li>`).join('')}</ul>`;

@@ -3,8 +3,55 @@
 Branch: `redesign/pixel-gamify` (from `main` at `22decda`). `main` is never
 pushed to or merged by this work.
 
-Status: **Phase 0, awaiting approval.** Read with `DESIGN.md` (repo root) and
-the specimen (`docs/redesign/specimen.png`).
+Status: **all four phases built.** Read with `DESIGN.md` (repo root). Before
+and after screens: `docs/redesign/before/` and `docs/redesign/after/`.
+
+## Decisions (from your Phase 0 answers)
+
+| Question | Decision | Done |
+|---|---|---|
+| Palette | Navy canvas, gold for buttons and highlights; indigo retired | Yes |
+| `templvl` art | Run 6–10 are real levels (renamed `RUNLVL6–10.png`). Gym `templvl10` not mentioned, so Gym still caps at 9 | Yes |
+| Quest verification | Strava-linked sessions only | Yes |
+| Home rings | Replaced by segmented pixel meters | Yes |
+| Day boundary | Whole app on the local date (`todayISO()` in `core/dates.js`) | Yes |
+| Tab labels | Added: Home, Journal, Ranks, Shop, Profile | Yes |
+| Tour de France boards | Kept for now | — |
+| Bike | Keeps its animated layered scene; Run/Gym/Swim get code-driven motion | Yes |
+| Publish | Merge to `main` once finished | At the end of this pass |
+
+## What was built
+
+- **Phase 1:** tokens, Silkscreen font (self-hosted, OFL), one framed-component
+  system in `css/styles.css`, the pixel icon set (`core/icons.js`, 16×16
+  bitmaps, same `svg()` API), Home (date header, weekly meters, quests,
+  today's target, tomorrow, AI coach), docked tab bar with labels, gold FAB,
+  dialogue toasts.
+- **Phase 2:** Journal (opens on today), Leaderboards, Shop, workout sheet,
+  editor, goals, settings, auth, AI onboarding, welcome, Fitness hub, cardio,
+  activity, level carousel. Emoji scrubbed from the UI (`.ics` export text
+  still uses discipline emoji, as before). Audit bugs fixed: clipped Settings
+  buttons, FAB over the Journal "TODAY" tag, stacked "coming soon" toasts (the
+  sports are real now), wrapping stat tile, the bike `BIKELVL` 404s.
+- **Phase 3:** `core/scenes.js` manifest (tested), Run/Gym/Swim scenes with
+  backdrop matching, corner covers, motion overlays; region nudge tried and
+  dropped (seams); `ART-BRIEF.md`.
+- **Phase 4:** `core/quests.js` (tested), account level (header chip + Fitness
+  hub), Home quests panel with reset countdown, feedback moments (quest
+  accepted, XP pop, quest complete, sport level-up sheet with a scene wipe,
+  account level-up), pixel confetti, the coach in dialogue boxes
+  (`core/coach-lines.js`, tested).
+
+**Leaderboard note:** the `leaderboard` RPC is unchanged, so leaderboard XP
+does **not** include quest XP. Adding it needs a Supabase migration, which is
+out of scope without your go-ahead.
+
+**Quest launch date:** quests count from `QUESTS_SINCE = 2026-10-05` (the
+Monday of launch week), so nobody gets a pile of retroactive quest XP.
+
+---
+
+# Phase 0 plan (as approved)
 
 Screenshots: `docs/redesign/before/*.png`, 390×844 at 2x, captured by
 `node tools/shots.mjs docs/redesign/before` against `tools/serve.mjs`. The

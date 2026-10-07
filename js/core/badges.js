@@ -1,5 +1,5 @@
 // badges.js — achievement definitions and pure evaluation.
-// Each badge has a `test(ctx)` predicate. `ctx` is derived once from the
+// Each badge has a `test(ctx)` predicate and an `icon` name from icons.js. `ctx` is derived once from the
 // workout list + stats + streaks so the predicates stay tiny and testable.
 
 import { startOfWeek } from './dates.js';
@@ -7,23 +7,23 @@ import { computeStats } from './scoring.js';
 import { computeStreaks } from './streaks.js';
 
 export const BADGES = [
-  { id: 'first-workout', name: 'First Steps', icon: '🎯', desc: 'Complete your very first session', test: (c) => c.stats.completedCount >= 1 },
-  { id: 'streak-3', name: 'On a Roll', icon: '🔥', desc: 'Reach a 3-day streak', test: (c) => c.maxStreak >= 3 },
-  { id: 'streak-7', name: 'Week Warrior', icon: '🔥', desc: 'Reach a 7-day streak', test: (c) => c.maxStreak >= 7 },
-  { id: 'streak-14', name: 'Fortnight Beast', icon: '🌋', desc: 'Reach a 14-day streak', test: (c) => c.maxStreak >= 14 },
-  { id: 'level-5', name: 'Rising Star', icon: '⭐', desc: 'Reach level 5', test: (c) => c.stats.level >= 5 },
-  { id: 'level-10', name: 'Double Digits', icon: '🌟', desc: 'Reach level 10', test: (c) => c.stats.level >= 10 },
-  { id: 'workouts-50', name: 'Half Century', icon: '✅', desc: 'Complete 50 sessions', test: (c) => c.stats.completedCount >= 50 },
-  { id: 'hours-12', name: 'Time Served', icon: '⏱️', desc: 'Train 12+ hours in total', test: (c) => c.stats.totalHours >= 12 },
-  { id: 'bike-100', name: 'Century Rider', icon: '🚴', desc: 'Ride 100 km in total', test: (c) => (c.stats.kmByType.bike || 0) >= 100 },
-  { id: 'bike-500', name: 'Long Hauler', icon: '🚵', desc: 'Ride 500 km in total', test: (c) => (c.stats.kmByType.bike || 0) >= 500 },
-  { id: 'run-100', name: 'Road Runner', icon: '🏃', desc: 'Run 100 km in total', test: (c) => (c.stats.kmByType.run || 0) >= 100 },
-  { id: 'swim-25', name: 'Fish', icon: '🐟', desc: 'Swim 25 km in total', test: (c) => (c.stats.kmByType.swim || 0) >= 25 },
-  { id: 'brick', name: 'Bricklayer', icon: '🧱', desc: 'Complete a brick session', test: (c) => c.completed.some((w) => w.type === 'brick') },
-  { id: 'triple', name: 'Triple Threat', icon: '🏅', desc: 'Run, bike and swim on the same day', test: (c) => c.tripleDay },
-  { id: 'all-rounder', name: 'All-Rounder', icon: '🛠️', desc: 'Complete a run, bike, swim and gym session', test: (c) => ['run', 'bike', 'swim', 'gym'].every((t) => c.typesDone.has(t)) },
-  { id: 'long-run-30', name: 'Marathon Ready', icon: '🦵', desc: 'Complete a single run of 30 km or more', test: (c) => c.completed.some((w) => w.type === 'run' && (w.metrics?.distanceKm || 0) >= 30) },
-  { id: 'bike-week-200', name: 'Big Bike Week', icon: '📅', desc: 'Ride 200 km of bike in a single week', test: (c) => c.maxBikeWeekKm >= 200 },
+  { id: 'first-workout', name: 'First Steps', icon: 'target', desc: 'Complete your very first session', test: (c) => c.stats.completedCount >= 1 },
+  { id: 'streak-3', name: 'On a Roll', icon: 'flame', desc: 'Reach a 3-day streak', test: (c) => c.maxStreak >= 3 },
+  { id: 'streak-7', name: 'Week Warrior', icon: 'flame', desc: 'Reach a 7-day streak', test: (c) => c.maxStreak >= 7 },
+  { id: 'streak-14', name: 'Fortnight Beast', icon: 'flame', desc: 'Reach a 14-day streak', test: (c) => c.maxStreak >= 14 },
+  { id: 'level-5', name: 'Rising Star', icon: 'star', desc: 'Reach level 5', test: (c) => c.stats.level >= 5 },
+  { id: 'level-10', name: 'Double Digits', icon: 'spark', desc: 'Reach level 10', test: (c) => c.stats.level >= 10 },
+  { id: 'workouts-50', name: 'Half Century', icon: 'check', desc: 'Complete 50 sessions', test: (c) => c.stats.completedCount >= 50 },
+  { id: 'hours-12', name: 'Time Served', icon: 'clock', desc: 'Train 12+ hours in total', test: (c) => c.stats.totalHours >= 12 },
+  { id: 'bike-100', name: 'Century Rider', icon: 'bike', desc: 'Ride 100 km in total', test: (c) => (c.stats.kmByType.bike || 0) >= 100 },
+  { id: 'bike-500', name: 'Long Hauler', icon: 'route', desc: 'Ride 500 km in total', test: (c) => (c.stats.kmByType.bike || 0) >= 500 },
+  { id: 'run-100', name: 'Road Runner', icon: 'run', desc: 'Run 100 km in total', test: (c) => (c.stats.kmByType.run || 0) >= 100 },
+  { id: 'swim-25', name: 'Fish', icon: 'swim', desc: 'Swim 25 km in total', test: (c) => (c.stats.kmByType.swim || 0) >= 25 },
+  { id: 'brick', name: 'Bricklayer', icon: 'brick', desc: 'Complete a brick session', test: (c) => c.completed.some((w) => w.type === 'brick') },
+  { id: 'triple', name: 'Triple Threat', icon: 'medal', desc: 'Run, bike and swim on the same day', test: (c) => c.tripleDay },
+  { id: 'all-rounder', name: 'All-Rounder', icon: 'trophy', desc: 'Complete a run, bike, swim and gym session', test: (c) => ['run', 'bike', 'swim', 'gym'].every((t) => c.typesDone.has(t)) },
+  { id: 'long-run-30', name: 'Marathon Ready', icon: 'flag', desc: 'Complete a single run of 30 km or more', test: (c) => c.completed.some((w) => w.type === 'run' && (w.metrics?.distanceKm || 0) >= 30) },
+  { id: 'bike-week-200', name: 'Big Bike Week', icon: 'calendar', desc: 'Ride 200 km of bike in a single week', test: (c) => c.maxBikeWeekKm >= 200 },
 ];
 
 /** Build the derived context the badge predicates read from. */

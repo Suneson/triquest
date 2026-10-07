@@ -8,6 +8,7 @@ import { LocalStore } from './stores/local-store.js';
 import * as store from './store.js';
 import { SYNC_ENABLED } from './config.js';
 import { toast } from './effects.js';
+import { svg } from '../core/icons.js';
 
 let _client = null;
 let _user = null;
@@ -74,15 +75,15 @@ async function activateUser(user, { silent = false } = {}) {
     // say so rather than letting the athlete believe the wipe stuck.
     onWriteError: (e) => toast(
       `Couldn’t save that change to your account — it may reappear when you reload. ${e?.message || 'Check your connection and try again.'}`,
-      { icon: '⚠️' },
+      { icon: svg('warn') },
     ),
   });
   await store.useStore(_store); // hydrate: pull + LWW merge + push local-only
   if (!silent) {
     const uploaded = _store.uploadedLocal;
     toast(uploaded
-      ? `Signed in ☁️ · synced ${uploaded} local session${uploaded === 1 ? '' : 's'} to your account`
-      : 'Signed in ☁️ · your data is now syncing', { icon: '✅' });
+      ? `Signed in · synced ${uploaded} local session${uploaded === 1 ? '' : 's'} to your account`
+      : 'Signed in · your data is now syncing', { icon: svg('cloud') });
   }
 }
 
@@ -110,7 +111,7 @@ function openSetPassword() {
   root.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Set a new password">
-      <header class="modal-head"><h2>🔑 Set a new password</h2></header>
+      <header class="modal-head"><h2>${svg('lock')} Set a new password</h2></header>
       <div class="modal-body">
         <form data-set-pw>
           <label class="field"><span>New password</span>
@@ -134,7 +135,7 @@ function openSetPassword() {
       root.innerHTML = ''; root.classList.remove('open');
       const { data: { user } } = await c.auth.getUser();
       if (user && !_user) { await activateUser(user, { silent: true }); if (_onChange) _onChange(_user); }
-      toast('Password updated — you’re signed in ✅', { icon: '🔑' });
+      toast('Password updated. You’re signed in.', { icon: svg('lock') });
     } catch (err) { msgEl.hidden = false; msgEl.textContent = err.message || 'Could not update password'; }
   });
 }
@@ -158,7 +159,7 @@ export function openAuthModal() {
   root.innerHTML = `
     <div class="modal-backdrop" data-auth-close></div>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Sign in">
-      <button class="icon-btn auth-x" data-auth-close aria-label="Close">✕</button>
+      <button class="icon-btn auth-x" data-auth-close aria-label="Close">${svg('close')}</button>
       <div class="auth-head">
         <div class="auth-logo">MOSKE</div>
         <h2>Sign in to sync</h2>
@@ -190,14 +191,14 @@ export function openAuthModal() {
   root.querySelector('[data-auth-magic-send]').addEventListener('click', async () => {
     const email = emailValue();
     if (!email) { msg('Type your email above first.'); return; }
-    try { await signInWithEmail(email); msg('Check your email for the magic link ✉️', true); }
+    try { await signInWithEmail(email); msg('Check your email for the magic link.', true); }
     catch (err) { msg(err.message || 'Could not send link'); }
   });
 
   root.querySelector('[data-auth-forgot]').addEventListener('click', async () => {
     const email = emailValue();
     if (!email) { msg('Type your email above first.'); return; }
-    try { await resetPassword(email); msg('Check your email for a password-reset link 🔑', true); }
+    try { await resetPassword(email); msg('Check your email for a password-reset link.', true); }
     catch (err) { msg(err.message || 'Could not send reset email'); }
   });
 

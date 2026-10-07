@@ -9,6 +9,9 @@ import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/da
 import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 import { svg } from '../core/icons.js';
+import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
+import { sessionLine, dayLine } from '../core/coach-lines.js';
+import { formatCountdown, msUntilReset } from '../core/quests.js';
 
 export { DISCIPLINES, INTENSITIES };
 
@@ -77,7 +80,7 @@ function packingList(w) {
   const items = (w.packing || []).map((p, i) => `
     <li class="${p.checked ? 'checked' : ''}">
       <label><input type="checkbox" data-action="toggle-pack" data-id="${esc(w.id)}" data-pi="${i}" ${p.checked ? 'checked' : ''}><span>${esc(p.item)}</span></label>
-      <button class="icon-btn tiny" data-action="remove-pack" data-id="${esc(w.id)}" data-pi="${i}" aria-label="Remove ${esc(p.item)}">✕</button>
+      <button class="icon-btn tiny" data-action="remove-pack" data-id="${esc(w.id)}" data-pi="${i}" aria-label="Remove ${esc(p.item)}">${svg('close')}</button>
     </li>`).join('');
   return `
     <div class="packing">
@@ -161,38 +164,25 @@ function structuredBlocks(w) {
   }).join('')}</div></div>`;
 }
 
-// ---- 3D isometric sport-level card -----------------------------------------
+// ---- level art (from the scene manifest) ------------------------------------
 
-const ART_BASE = 'icons/Pixelart';
-// Map each discipline to its REAL asset filenames (they are not uniform) and the
-// highest level that has finished (non-placeholder) art, so we never 404 or show
-// a temp graphic. Swim + everything else degrade gracefully (no card).
-const SPORT_ART = {
-  bike: { dir: 'BIKE', max: 10, file: (n) => `BIKELVL${n}.png` },
-  gym: { dir: 'GYM', max: 9, file: (n) => `GYM_LVL${n}.png` },
-  run: { dir: 'RUN', max: 5, file: (n) => (n <= 1 ? 'RUNGENERAL_LVL1.png' : `RUNLVL${n}.png`) },
-};
-
+/** Thumbnail / still for a sport at a level (bike uses its character sprite). */
 export function sportArtSrc(type, level) {
-  const cfg = SPORT_ART[type];
-  if (!cfg) return null;
-  const n = Math.max(1, Math.min(cfg.max, parseInt(level) || 1));
-  return `${ART_BASE}/${cfg.dir}/${cfg.file(n)}`;
+  const s = sceneFor(type, level);
+  if (!s) return null;
+  return s.kind === 'still' ? s.entry.src : s.entry.char;
 }
 
-// Full 1→10 frame list per sport using the REAL (non-uniform) filenames; levels
-// past the finished art fall back to the placeholder `templvl*.png` frames so the
-// carousel always shows ten locked future scenes.
-const SPORT_FRAMES = {
-  bike: Array.from({ length: 10 }, (_, i) => `BIKELVL${i + 1}.png`),
-  gym: [...Array.from({ length: 9 }, (_, i) => `GYM_LVL${i + 1}.png`), 'templvl10.png'],
-  run: ['RUNGENERAL_LVL1.png', 'RUNLVL2.png', 'RUNLVL3.png', 'RUNLVL4.png', 'RUNLVL5.png',
-    'templvl6.png', 'templvl7.png', 'templvl8.png', 'templvl9.png', 'templvl10.png'],
-};
 function sportFrames(type) {
-  const cfg = SPORT_ART[type]; const list = SPORT_FRAMES[type];
-  if (!cfg || !list) return [];
-  return list.map((f, i) => ({ level: i + 1, src: `${ART_BASE}/${cfg.dir}/${f}` }));
+  const s = SCENES[type];
+  if (!s) return [];
+  return s.levels.map((e, i) => ({ level: i + 1, src: s.kind === 'still' ? e.src : e.char, entry: s.kind === 'still' ? e : null }));
+}
+
+/** Covers for a still's baked-in corner label and generator mark. */
+export function stillCorners(entry) {
+  return (entry?.corners || []).map((c) =>
+    `<span class="pg-corner" style="background:${entry.backdrop.bottom};clip-path:${cornerPolygon(c)}"></span>`).join('');
 }
 
 // Horizontally-swipeable level carousel (modal body). Current level centred +
@@ -209,11 +199,11 @@ export function sportLevelCarousel(type, level) {
       ? `data-action="open-lightbox" data-src="${esc(f.src)}" data-sport="${esc(type)}" role="button" tabindex="0" aria-label="Zoom level ${f.level}"`
       : '';
     return `<div class="lvl-frame --${esc(type)} is-${state}" data-level="${f.level}">
-      <div class="lvl-frame-art" ${zoom}><img src="${esc(f.src)}" alt="${esc(type)} level ${f.level}" loading="lazy" onerror="this.style.visibility='hidden'">${lock}</div>
+      <div class="lvl-frame-art" ${zoom}><img src="${esc(f.src)}" alt="${esc(type)} level ${f.level}" loading="lazy">${stillCorners(f.entry)}${lock}</div>
       <span class="lvl-frame-tag">LVL ${f.level}</span>
     </div>`;
   }).join('');
-  return `<div class="lvl-carousel-head"><b>${svg(type, 'tint')} ${esc(d.label)}</b><span class="lvl-tag">Current: LVL ${level}</span></div>
+  return `<div class="lvl-carousel-head"><b>${svg(type, `tint-${type}`)} ${esc(d.label)}</b><span class="lvl-chip">LVL ${level}</span></div>
     <div class="lvl-carousel" data-current="${level}">${items}</div>
     <p class="muted small">Complete more ${esc(d.label.toLowerCase())} sessions to unlock the next scene.</p>`;
 }
@@ -228,7 +218,7 @@ function sportLeveling(ctx) {
     return `<button class="lvl-row" data-action="open-sport-levels" data-sport="${t}">
       <span class="lvl-thumb --${t}"><img src="${esc(sportArtSrc(t, p.level))}" alt="" loading="lazy" onerror="this.style.opacity=0"></span>
       <span class="lvl-row-body">
-        <span class="lvl-row-head"><b>${svg(t, 'tint')} ${esc(d.label)}</b><span class="lvl-tag">LVL ${p.level}</span></span>
+        <span class="lvl-row-head"><b>${svg(t, `tint-${t}`)} ${esc(d.label)}</b><span class="lvl-chip">LVL ${p.level}</span></span>
         <span class="lvl-track"><span class="lvl-fill --${t}" style="width:${pct}%"></span></span>
         <small class="lvl-foot">${p.toNext} XP to LVL ${p.level + 1}</small>
       </span>
@@ -277,7 +267,7 @@ function metaChips(w, units) {
   if (w.deload) tags.push(`<span class="tag deload">${/taper/i.test(w.title) ? 'taper' : 'deload'}</span>`);
   if (w.strava_activity_id) tags.push('<span class="tag strava">Strava</span>');
   return [
-    `<span class="chip type-${w.type}">${svg(w.type, 'tint')} ${d.label}</span>`,
+    `<span class="chip type-${w.type}">${svg(w.type)} ${d.label}</span>`,
     w.hr_zone ? zoneBadge(w.hr_zone) : '',
     `<span class="chip mono">${formatDuration(w.durationMin)}</span>`,
     w.metrics?.distanceKm ? `<span class="chip mono">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
@@ -290,7 +280,7 @@ function metaChips(w, units) {
 
 export function sessionCard(w, units, { isNext = false } = {}) {
   const km = w.metrics?.distanceKm;
-  return `<article class="card bento type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-action="open-workout" data-id="${esc(w.id)}">
+  return `<article class="card bento type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-action="open-workout" data-id="${esc(w.id)}" role="button" tabindex="0">
     <div class="bento-top">
       <span class="status-dot ${w.completed ? 'on' : ''}" title="${w.completed ? 'Completed' : 'Planned'}"></span>
       <h3>${esc(w.title)}</h3>
@@ -314,6 +304,7 @@ export function renderWorkoutDetail(w, units, ctx) {
     ? `<div class="block"><h4>Exercises</h4>${w.exercises.map((e, i) => exerciseRow(w, e, i)).join('')}</div>` : '';
   const actuals = w.strava_activity_id ? actualsBlock(w, units) : actualEntry(w);
   return `
+    ${dialogue({ text: sessionLine(w), cls: 'coach-say', type: true })}
     <div class="meta">${metaChips(w, units)}</div>
     ${fuellingChip(w)}
     ${detail}
@@ -323,9 +314,31 @@ export function renderWorkoutDetail(w, units, ctx) {
     ${packingChecklist(w, ctx?.settings)}
     <div class="card-foot">
       <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">${svg('edit')} Edit</button>
-      <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">Duplicate</button>
+      <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">${svg('copy')} Duplicate</button>
       <button class="btn tiny ghost danger" data-action="delete" data-id="${esc(w.id)}">${svg('trash')} Delete</button>
     </div>`;
+}
+
+// ---- shared pixel components -------------------------------------------------
+
+/** Segmented meter: `segments` cells, filled in proportion to frac (0..1+). */
+export function meter(frac, { segments = 10, cls = '', label = '' } = {}) {
+  const f = Math.max(0, Number(frac) || 0);
+  const on = Math.min(segments, Math.round(Math.min(1, f) * segments));
+  const cells = Array.from({ length: segments }, (_, i) =>
+    `<i class="${i < on ? 'on' : ''}" style="animation-delay:${i * 40}ms"></i>`).join('');
+  return `<div class="meter fill ${f > 1 ? 'over' : ''} ${cls}" role="img" aria-label="${esc(label || `${Math.round(f * 100)}%`)}">${cells}</div>`;
+}
+
+/** Dialogue box: the coach (or another speaker) saying one thing.
+ *  `type: true` marks the line for a typewriter reveal (see effects.typeLines). */
+export function dialogue({ who = COACH.name, icon = 'coach', text = '', body = '', cls = '', portrait = COACH.portrait, type = false } = {}) {
+  const frames = portrait === COACH.portrait
+    ? `${COACH.blink ? ` data-blink="${esc(COACH.blink)}"` : ''}${COACH.talk ? ` data-talk="${esc(COACH.talk)}"` : ''}` : '';
+  const pic = portrait ? `<img class="dlg-portrait" src="${esc(portrait)}" alt=""${frames}>` : '';
+  return `<section class="dlg ${portrait ? 'has-portrait' : ''} ${cls}">${pic}
+    <div><div class="dlg-who">${portrait ? '' : svg(icon)}${esc(who)}</div>
+    ${text ? `<p class="coach-line"${type ? ' data-type' : ''}>${esc(text)}</p>` : ''}${body}</div></section>`;
 }
 
 // ---- HOME (today's snapshot: rings → insight → focus) ------------------------
@@ -341,21 +354,44 @@ export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
   return homeDateHeader(ctx)
     + heroCard(ctx, ws)
-    + `<div class="home-sec">Today's Target</div>`
+    + questsPanel(ctx)
+    + `<h3 class="sec-title">${svg('target')} Today's target</h3>`
     + focusCard(ctx)
     + tomorrowGlance(ctx)
-    + `<section class="card ai-card" data-action="ai-onboard" role="button" tabindex="0">
-        <div class="ai-card-body"><small>AI Coach</small><b>Build my tailored training plan</b></div>
-        <span class="fh-chev">→</span>
-      </section>`;
+    + dialogue({
+      who: 'AI coach', icon: 'spark', cls: 'ai-card',
+      text: 'Want a plan built around your races and your week?',
+      body: '<button class="btn primary" data-action="ai-onboard">Build my plan</button>',
+    });
+}
+
+/** Daily quests: three per day, reset at local midnight. */
+export function questsPanel(ctx) {
+  const qs = ctx.quests || [];
+  const done = qs.filter((q) => q.done).length;
+  const verifiedToday = ctx.workouts.filter((w) => w.date === ctx.today && w.completed && (w.strava_activity_id || w.source === 'strava')).length;
+  const planned = ctx.workouts.filter((w) => w.date === ctx.today && w.source !== 'strava').length;
+  const line = dayLine({ planned, verified: verifiedToday, questsDone: done, questsTotal: qs.length, streak: ctx.streaks?.current || 0 });
+  const rows = qs.length
+    ? `<ul class="q-list">${qs.map((q) => `<li class="q-row ${q.done ? 'done' : ''} ${ctx.freshQuests?.has(q.id) ? 'just-done' : ''}" data-quest="${esc(q.id)}">
+        <span class="q-box" aria-hidden="true">${q.done ? svg('check') : ''}</span>
+        <span class="q-text">${esc(q.text)}<span class="sr">${q.done ? ' (done)' : ''}</span></span>
+        <span class="q-xp">+${q.xp}</span></li>`).join('')}</ul>`
+    : '<p class="q-empty">No quests today. Plan a session to unlock some.</p>';
+  return `<section class="dlg quests-panel" aria-label="Daily quests">
+    <div class="q-head"><h3>${svg('scroll')} Daily quests</h3>
+      <span class="q-reset" data-quest-reset title="Resets at midnight">RESETS ${formatCountdown(msUntilReset())}</span></div>
+    ${rows}
+    <p class="coach-line"><span class="dlg-who" style="display:inline-flex;margin:0 6px 0 0">${svg('coach')}${esc(COACH.name)}</span>${esc(line)}</p>
+  </section>`;
 }
 
 // Bold date context header: "SATURDAY / Today, 11 July".
 function homeDateHeader(ctx) {
   const d = parseISO(ctx.today);
   const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
-  const label = `Today, ${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
-  return `<div class="home-date"><small>${esc(weekday)}</small><h2>${esc(label)}</h2></div>`;
+  const label = `${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
+  return `<div class="home-date"><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2></div>`;
 }
 
 // A scaled-down one-line preview of tomorrow — never more than today + tomorrow.
@@ -378,8 +414,8 @@ function tomorrowGlance(ctx) {
       <span class="tg-min tg-rest">—</span>`;
     attrs = `data-action="open-editor-new" data-date="${esc(tmr)}"`;
   }
-  return `<div class="home-sec">Tomorrow's Glance</div>
-    <section class="card tg-card" ${attrs}>${inner}</section>`;
+  return `<h3 class="sec-title">${svg('calendar')} Tomorrow</h3>
+    <section class="card tg-card" ${attrs} role="button" tabindex="0">${inner}</section>`;
 }
 
 // Weekly goal progress vs the three configured targets.
@@ -396,32 +432,16 @@ function weekGoalState(ctx, weekStartIso) {
   };
 }
 
-// Thick Whoop-style ring: chunky rounded stroke over a prominent dark track,
-// big centred percentage, clean label underneath.
-function metricRing(grad, frac, label, target) {
-  const p = Math.max(0, Math.min(100, Math.round(frac * 100)));
-  // Arc length is driven by stroke-dashoffset (100 = empty), so the CSS entry
-  // animation can glide it into place on every load / data update.
-  const offset = 100 - Math.max(p, 0.5);
-  return `<div class="mring-col" role="img" aria-label="${esc(label)} ${p}%">
-    <div class="mring">
-      <svg viewBox="0 0 100 100">
-        <defs><linearGradient id="mrg-${grad}" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="var(--ring-${grad}-a)"/><stop offset="1" stop-color="var(--ring-${grad}-b)"/>
-        </linearGradient></defs>
-        <circle class="track" cx="50" cy="50" r="39" stroke-width="11"></circle>
-        <circle class="prog" cx="50" cy="50" r="39" stroke-width="11" stroke="url(#mrg-${grad})"
-          pathLength="100" stroke-dasharray="100" stroke-dashoffset="${offset}" transform="rotate(-90 50 50)"></circle>
-      </svg>
-      <b class="mring-pct">${p}<i>%</i></b>
-    </div>
-    <div class="mring-label">${esc(label)}</div>
-    <div class="mring-target">${esc(target)}</div>
+// One goal as a labelled segmented meter: "PLAN 3/5" over ten cells.
+function goalMeter(frac, label, target, cls = '') {
+  const p = Math.max(0, Math.round(frac * 100));
+  return `<div class="goal-row">
+    <div class="goal-top"><b>${esc(label)}</b><span>${esc(target)}</span></div>
+    ${meter(frac, { cls, label: `${label} ${p}%` })}
   </div>`;
 }
 
-// One unified hero block: Plan / Volume / Intensity ring columns (hairline
-// dividers between them) with the Coaching summary in the same rectangle.
+// "This week": Plan / Volume / Intensity meters with the coaching line under them.
 function heroCard(ctx, weekStartIso) {
   const s = weekGoalState(ctx, weekStartIso);
   const a = acwr(ctx.workouts, ctx.today);
@@ -429,12 +449,10 @@ function heroCard(ctx, weekStartIso) {
   const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
   const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
   return `<section class="card hero-card">
-    <div class="hero-head"><h4>This Week</h4><button class="rings-edit" data-action="edit-goals">Edit</button></div>
-    <div class="rings-row">
-      ${metricRing('lime', s.fracs.sessions, 'Plan', `${s.sessions} of ${s.g.sessions}`)}
-      ${metricRing('indigo', s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} of ${s.g.hours} h`)}
-      ${metricRing('mint', intensityFrac, 'Intensity', a.ratio ? `${a.ratio}× base` : 'calibrating')}
-    </div>
+    <div class="hero-head"><h4>This week</h4><button class="btn tiny ghost rings-edit" data-action="edit-goals">${svg('edit')} Edit</button></div>
+    ${goalMeter(s.fracs.sessions, 'Plan', `${s.sessions} / ${s.g.sessions}`)}
+    ${goalMeter(s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} / ${s.g.hours} H`, 'info')}
+    ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${a.ratio}× base` : 'calibrating', 'good')}
     <div class="coach-inline">
       <h4>Coaching</h4>
       <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
@@ -462,9 +480,9 @@ function focusCard(ctx) {
 
   if (!sessions.length) {
     const next = nextSession(workouts, today);
-    return `<section class="card focus-card" data-action="open-editor-new" data-date="${esc(today)}">
-      <div class="focus-top"><span class="sport-dot"></span><span class="focus-sport">Today</span></div>
-      <div class="focus-big">REST</div>
+    return `<section class="card focus-card" data-action="open-editor-new" data-date="${esc(today)}" role="button" tabindex="0">
+      <div class="focus-top"><span class="focus-sport">${svg('moon')} Today</span></div>
+      <div class="focus-big">Rest</div>
       <div class="focus-sub">${next ? `Next up: ${esc(next.title)} · ${shortLabel(next.date)}` : 'Nothing scheduled — tap to add a session.'}</div>
     </section>`;
   }
@@ -473,9 +491,9 @@ function focusCard(ctx) {
   const d = DISCIPLINES[focus.type] || DISCIPLINES.other;
   const km = focus.metrics?.distanceKm;
   const others = sessions.length - 1;
-  return `<section class="card focus-card" data-action="open-workout" data-id="${esc(focus.id)}">
-      <div class="focus-top"><span class="sport-dot type-${esc(focus.type)}"></span>
-        <span class="focus-sport">${esc(d.label)}</span>
+  return `<section class="card focus-card" data-action="open-workout" data-id="${esc(focus.id)}" role="button" tabindex="0">
+      <div class="focus-top">
+        <span class="focus-sport">${svg(focus.type, `tint-${focus.type}`)} ${esc(d.label)}</span>
         ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}
         <span class="focus-state">${focus.completed ? 'Done' : 'Next up'}</span></div>
       <h3 class="focus-title">${esc(focus.title)}</h3>
@@ -486,7 +504,7 @@ function focusCard(ctx) {
       </div>
       <div class="focus-sub">${esc(INTENSITIES[focus.intensity] || '')}${focus.notes && /\[Main Set\]/i.test(focus.notes) ? ' · structured session — tap for the full set' : ' · tap for details'}</div>
     </section>`
-    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today — see Journal.</p>` : '');
+    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today. See Journal.</p>` : '');
 }
 
 // ---- JOURNAL (Mon–Fri chronological list, today spot-lit) ---------------------
@@ -505,9 +523,9 @@ export function renderJournal(ctx, selectedIso) {
     const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
     const cards = sessions.length
       ? sessions.map((w) => sessionCard(w, units, { isNext: false })).join('')
-      : `<div class="rest-day">Rest day · <button class="link" data-action="open-editor-new" data-date="${esc(iso)}">+ add</button></div>`;
+      : `<div class="rest-day">${svg('moon')} Rest day · <button class="link" data-action="open-editor-new" data-date="${esc(iso)}">Add a session</button></div>`;
     return `<div class="jr-row ${isToday ? 'is-today' : ''}">
-      <div class="jr-row-head"><b>${esc(weekdayName(iso))}</b><span>${esc(shortLabel(iso))}</span>${isToday ? '<em>Today</em>' : ''}</div>
+      <div class="jr-row-head"><b>${esc(weekdayName(iso))}</b><span>${esc(shortLabel(iso))}</span>${isToday ? '<span class="tag today">Today</span>' : ''}</div>
       ${cards}
     </div>`;
   }).join('');
@@ -515,9 +533,9 @@ export function renderJournal(ctx, selectedIso) {
   return `
     <div class="jr-head"><h2>Journal</h2><span class="jr-month">${esc(monthLabel)}</span></div>
     <div class="jr-strip">
-      <button class="jr-week-nav" data-action="jr-week" data-dir="-1" aria-label="Previous week">‹</button>
+      <button class="jr-week-nav prev" data-action="jr-week" data-dir="-1" aria-label="Previous week">${svg('chevron')}</button>
       <span class="jr-range">${esc(shortLabel(ws))} – ${esc(shortLabel(addDays(ws, 6)))}</span>
-      <button class="jr-week-nav" data-action="jr-week" data-dir="1" aria-label="Next week">›</button>
+      <button class="jr-week-nav" data-action="jr-week" data-dir="1" aria-label="Next week">${svg('chevron')}</button>
     </div>
     ${rows}`;
 }
@@ -616,7 +634,7 @@ function disciplineBreakdown(stats) {
   const rows = entries.map((e) => {
     const d = DISCIPLINES[e.t];
     const pct = Math.round((e.min / total) * 100);
-    return `<div class="disc-row"><span class="disc-label">${d.icon} ${d.label}</span>
+    return `<div class="disc-row"><span class="disc-label">${svg(e.t)} ${d.label}</span>
       <div class="disc-bar"><div class="disc-fill type-${e.t}" style="width:${pct}%"></div></div>
       <span class="disc-val">${(e.min / 60).toFixed(1)} h</span></div>`;
   }).join('');
@@ -646,7 +664,7 @@ export function badgeWall(unlocked) {
   const tiles = BADGES.map((b) => {
     const on = set.has(b.id);
     return `<div class="badge ${on ? 'unlocked' : 'locked'}" title="${esc(b.desc)}">
-      <div class="badge-ico">${on ? b.icon : '🔒'}</div>
+      <div class="badge-ico">${svg(on ? b.icon : 'lock')}</div>
       <div class="badge-name">${esc(b.name)}</div>
       <div class="badge-desc">${esc(b.desc)}</div></div>`;
   }).join('');
@@ -668,12 +686,12 @@ function referenceCards() {
 export function totalsStrip(stats, streaks, units) {
   const totalKm = Object.values(stats.kmByType).reduce((a, b) => a + b, 0);
   const cells = [
-    ['⭐ Level', stats.level],
-    ['✨ Total XP', stats.totalXp.toLocaleString()],
-    ['✅ Sessions', stats.completedCount],
-    ['⏱️ Hours', stats.totalHours.toFixed(1)],
-    ['📏 Distance', fmtKm(totalKm, units) || '0 km'],
-    ['🔥 Best streak', `${streaks.longest} d`],
+    ['Level', stats.level],
+    ['Total XP', stats.totalXp.toLocaleString()],
+    ['Sessions', stats.completedCount],
+    ['Hours', stats.totalHours.toFixed(1)],
+    ['Distance', fmtKm(totalKm, units) || '0 km'],
+    ['Best streak', `${streaks.longest} d`],
   ].map(([k, v]) => `<div class="total"><small>${k}</small><b>${v}</b></div>`).join('');
   return `<section class="card totals"><div class="total-grid">${cells}</div></section>`;
 }
@@ -699,5 +717,5 @@ export function raceBanner(today) {
     .sort((a, b) => a.date.localeCompare(b.date))[0];
   if (!upcoming) return '';
   const days = diffDays(upcoming.date, today);
-  return `<div class="race-banner">${upcoming.emoji} <b>${esc(upcoming.title)}</b> in <b>${days}</b> day${days === 1 ? '' : 's'} <span class="muted">· ${shortLabel(upcoming.date)}</span></div>`;
+  return `<div class="race-banner">${svg('flag')} <b>${esc(upcoming.title)}</b> in <b>${days}</b> day${days === 1 ? '' : 's'} <span class="muted">· ${shortLabel(upcoming.date)}</span></div>`;
 }

@@ -1,8 +1,9 @@
 # MOSKE design system: pixel skin
 
-Status: **proposal (Phase 0)**, awaiting approval. Nothing here is implemented
-in the app yet. The visual specimen is `docs/redesign/specimen.html` (screenshot
-`docs/redesign/specimen.png`).
+Status: **implemented** on `redesign/pixel-gamify` (all four phases). The tokens
+live in `css/styles.css`; the original proposal specimen is
+`docs/redesign/specimen.html`, and the before/after screens are in
+`docs/redesign/before/` and `docs/redesign/after/`.
 
 This is a reskin, not a rebuild. The five tabs, the information architecture
 and every feature stay. What changes is the surface: pixel display type, hard
@@ -96,7 +97,10 @@ and 32px. Use no other sizes.
 Rules:
 - Numbers in the display font always use **weight 400**. Silkscreen Bold draws
   the 4 as a block that reads as a symbol.
-- Weight 700 is for short caps words only (headings, button labels).
+- Weight 700 is for short caps words only: screen titles, section headings,
+  button labels, the wordmark.
+- Tab-bar labels and the Profile sport switcher use the **body** font (11px,
+  600): the pixel font at 11px would be off-grid and blurry.
 - Display text is always uppercase (`text-transform: uppercase`), with
   `letter-spacing: 0`.
 - Keep display strings short: about 24 characters per line at 16px on a 390px
@@ -113,13 +117,15 @@ Rules:
 ### 2.4 Border and corners
 
 - `--px: 2px`, one art pixel. Every border is exactly `--px`.
-- **Stepped corners, two sizes.**
-  - Small (chips, buttons, inputs, tab cells): a one-step 2px notch. Drawn with
-    four zero-blur `box-shadow` offsets instead of `border`, which leaves the
-    corner pixel empty. No pseudo-elements, works with CSS variables.
-  - Large (panels, cards, modals, dialogue boxes): a two-step 4px notch, drawn
-    with `clip-path: polygon(...)` on the panel plus an inner layer, so the
-    border colour can still be a variable.
+- **Stepped corners**: every framed element (panels, cards, sheets, buttons,
+  chips, inputs, toasts) has a one-pixel notch at each corner. It's drawn with
+  four zero-blur `box-shadow` layers (offset 4px, spread −2px) instead of
+  `border`, which leaves the corner pixel empty, plus a fifth layer for the hard
+  drop edge. Three variables drive it: `--b` (border colour), `--e` (edge
+  colour) and `--eo` (edge offset; `4px` hides the edge). One shared selector
+  in `css/styles.css` applies it, so components only set those variables.
+  (The two-step 4px corner from the proposal was dropped: it needed clip-path
+  layers on every panel, and the one-step notch already reads as pixel art.)
 - `border-radius` is retired everywhere except the circular avatar and the
   status dot.
 
@@ -143,7 +149,7 @@ are short so the app still feels fast.
 | `--t-press` | `80ms steps(2)` | button press / release |
 | `--t-ui` | `160ms steps(4)` | tab switch, toggles, chip state |
 | `--t-enter` | `240ms steps(6)` | modal slide-up, toast enter |
-| `--t-fill` | `600ms steps(12)` | XP bar fill (one segment per step) |
+| meter fill | `160ms steps(2)` per segment, staggered 40ms | XP and goal meters fill left to right |
 | `--t-pop` | `720ms steps(9)` | "+40 XP" pop rise and fade |
 | `--t-type` | `28ms` per character | dialogue typewriter reveal |
 | `--loop-bob` | `1.2s steps(2) infinite` | idle bob of the profile stage (1 art pixel) |
@@ -168,6 +174,16 @@ The base surface for cards, modals and sections. `--bg-2` fill, 2px
 `--line-soft` border, large stepped corners, `--edge-3`. When the whole panel
 is tappable (session card, focus card) the border becomes `--line`, and the
 pressed state moves it down 2px and drops the edge to `--edge-1`.
+
+### Coach (the trainer)
+Training messages are spoken by one character, "Coach", through dialogue boxes:
+the workout sheet, the daily quest panel, the level-up sheet, empty and offline
+states, the first-run welcome. His frames are `COACH` in `js/core/scenes.js`
+(`portrait`, `blink`, `talk`, `cheer`), all `null` until art lands; until then
+he shows as a whistle icon and his name. Lines come from `js/core/coach-lines.js`
+(rule-based, no network). In sheets the line types out at 28ms per character
+(the full text is in the accessibility tree at once); with `talk` art his mouth
+flaps while typing, and with `blink` art he blinks every 3.6s.
 
 ### Dialogue box (`.dlg`)
 A panel with a `--line` border, an optional 64×64 speaker portrait slot on the
@@ -211,9 +227,10 @@ for the emoji scrub: `gear`, `cloud`, `sound`, `motion`, `download`, `upload`,
 `back`, `scroll` (quests), `coach`, `bolt`.
 
 ### Tab bar
-A docked panel (no floating pill, no blur) with five equal cells. The active
-cell is a gold fill with `--on-accent` icon. Icons at 24px. Labels are an open
-question (see PLAN.md).
+A docked panel (no floating pill, no blur) with five equal cells: Home,
+Journal, Ranks, Shop, Profile. Each cell is a 24px pixel icon over a small body
+label. The active cell is a gold fill with `--on-accent` icon and label, and
+carries `aria-current="page"`.
 
 ### FAB
 56×56, gold primary button, square with small stepped corners, a 32px display
@@ -221,8 +238,9 @@ question (see PLAN.md).
 
 ### Toast
 A dialogue box pinned above the tab bar. Enters with `--t-enter`, stays
-3.8s, and stacks at most two (newer ones replace the oldest). Icon from
-`svg()`, never an emoji.
+3.8s, and stacks at most two (newer ones replace the oldest). Several quests
+finishing in one sync become one toast. Icon from `svg()`, never an emoji. The
+FAB lifts while a toast is up.
 
 ### Inputs
 `--bg-4` fill, 2px `--line` border, small stepped corners, body font 16px.
@@ -233,6 +251,24 @@ Focus: border turns `--accent`. Checkbox: a 20×20 `--shade` square with a
 Slides up from the bottom (`--t-enter`). Panel with large stepped top corners,
 title in the display font at 24px, close button as a secondary icon button
 with the pixel `close` icon.
+
+### Profile scenes
+- **Cycling** keeps its layered world (background, platform, animated
+  character).
+- **Run, Gym, Swim** frame a single still on a stage between the sport switcher
+  and the HUD. The screen around it is painted with the image's own edge
+  colours: flat for Gym and Swim, and 24 sampled bands for Run, whose sky and
+  ground are gradients. The still's outer 4% fades out in four steps so it
+  dissolves into that backdrop. Iso-angled stepped covers hide each still's
+  baked-in corner label and generator mark.
+- **Motion** is CSS only, positioned in % from the manifest: drifting clouds,
+  falling leaves and a flickering lap clock (Run), pulsing ceiling light and
+  dust in the light (Gym), water shimmer and ripple rings (Swim), and a 1-pixel
+  idle bob on every still. About a dozen elements per scene, transform and
+  opacity only, paused while the page is hidden, removed under reduced motion.
+- The "region nudge" experiment (shifting a clipped copy of the athlete) was
+  dropped: it broke the track lines and dragged the gym equipment along. The
+  evidence is in `docs/redesign/experiments/`.
 
 ---
 

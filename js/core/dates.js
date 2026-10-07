@@ -16,6 +16,13 @@ export function toISO(date) {
   return `${y}-${m}-${d}`;
 }
 
+/** Today's date in the athlete's local timezone. The app's day boundary is
+ *  local midnight (not UTC), so quests, streaks and "today" agree with the
+ *  clock on the athlete's phone. */
+export function todayISO(now = new Date()) {
+  return toISO(now);
+}
+
 /** Add n days to an ISO date, returning a new ISO date. */
 export function addDays(iso, n) {
   const dt = parseISO(iso);

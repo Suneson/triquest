@@ -3,8 +3,9 @@ import { client } from './auth.js';
 import { computeStreaks } from '../core/streaks.js';
 import { levelFromTotalXp, formatDuration } from '../core/scoring.js';
 import { esc, fmtKm } from './ui.js';
+import { svg } from '../core/icons.js';
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+import { todayISO } from '../core/dates.js';
 
 export async function fetchPublicUserProfile(targetUserId) {
   const c = await client();
@@ -14,12 +15,12 @@ export async function fetchPublicUserProfile(targetUserId) {
 }
 
 const MILESTONES = [
-  { name: 'First Steps', icon: '🎯', got: (s) => s.completed >= 1 },
-  { name: 'First 10K', icon: '🏃', got: (s) => s.km >= 10 },
-  { name: 'Centurion', icon: '💯', got: (s) => s.km >= 100 },
-  { name: 'Half Century', icon: '✅', got: (s) => s.completed >= 50 },
-  { name: 'Consistency King', icon: '🔥', got: (s) => s.longest >= 7 },
-  { name: 'Fortnight Beast', icon: '🌋', got: (s) => s.longest >= 14 },
+  { name: 'First Steps', icon: 'target', got: (s) => s.completed >= 1 },
+  { name: 'First 10K', icon: 'run', got: (s) => s.km >= 10 },
+  { name: 'Centurion', icon: 'route', got: (s) => s.km >= 100 },
+  { name: 'Half Century', icon: 'check', got: (s) => s.completed >= 50 },
+  { name: 'Consistency King', icon: 'flame', got: (s) => s.longest >= 7 },
+  { name: 'Fortnight Beast', icon: 'flame', got: (s) => s.longest >= 14 },
 ];
 
 export function openPublicProfile({ uid, name, rank, xp }) {
@@ -30,7 +31,7 @@ export function openPublicProfile({ uid, name, rank, xp }) {
   root.innerHTML = `
     <div class="modal-backdrop" data-pp-close></div>
     <div class="modal pp-modal" role="dialog" aria-modal="true" aria-label="Profile">
-      <header class="modal-head"><h2>Profile</h2><button class="icon-btn" data-pp-close aria-label="Close">✕</button></header>
+      <header class="modal-head"><h2>${svg('user')} Profile</h2><button class="icon-btn" data-pp-close aria-label="Close">${svg('close')}</button></header>
       <div class="modal-body">
         <div class="pp-header">
           <div class="pp-avatar">${esc((name || 'A').trim().charAt(0).toUpperCase())}</div>
@@ -47,14 +48,14 @@ export function openPublicProfile({ uid, name, rank, xp }) {
     const streaks = computeStreaks((p.dates || []).map((d) => ({ date: d, completed: true })), todayISO());
     const s = { completed: Number(p.completed) || 0, km, longest: streaks.longest };
     const stats = `<div class="pp-stats">
-      <div class="total"><small>✅ Workouts</small><b>${s.completed}</b></div>
-      <div class="total"><small>📏 Distance</small><b>${fmtKm(km) || '0 km'}</b></div>
-      <div class="total"><small>🔥 Streak</small><b>${streaks.current} d</b></div>
+      <div class="total"><small>Workouts</small><b>${s.completed}</b></div>
+      <div class="total"><small>Distance</small><b>${fmtKm(km) || '0 km'}</b></div>
+      <div class="total"><small>Streak</small><b>${streaks.current} d</b></div>
       <div class="total"><small>⏱️ Hours</small><b>${((Number(p.total_min) || 0) / 60).toFixed(1)}</b></div>
     </div>`;
     const badges = `<h4 class="pp-h4">Achievements</h4><div class="badge-wall">${MILESTONES.map((m) => {
       const on = m.got(s);
-      return `<div class="badge ${on ? 'unlocked' : 'locked'}"><div class="badge-ico">${on ? m.icon : '🔒'}</div><div class="badge-name">${esc(m.name)}</div></div>`;
+      return `<div class="badge ${on ? 'unlocked' : 'locked'}"><div class="badge-ico">${svg(on ? m.icon : 'lock')}</div><div class="badge-name">${esc(m.name)}</div></div>`;
     }).join('')}</div>`;
     const body = document.getElementById('pp-body');
     if (body) body.innerHTML = stats + badges;

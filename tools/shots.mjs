@@ -36,6 +36,10 @@ async function freshPage({ onboarded = true, tab = 'home', progressed = false } 
   const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, serviceWorkers: 'block' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${tab}: ${e.message}`));
+  page.on('console', (m) => {
+    // the sandbox can't reach Supabase/Shopify/CDN; those network failures are expected
+    if (m.type() === 'error' && !/Failed to load resource|ERR_|net::|supabase|fetch/i.test(m.text())) errors.push(`${tab}: console: ${m.text()}`);
+  });
   await page.addInitScript(({ onboarded, tab }) => {
     if (sessionStorage.getItem('__shots_init')) return;
     sessionStorage.setItem('__shots_init', '1');
@@ -53,6 +57,7 @@ async function freshPage({ onboarded = true, tab = 'home', progressed = false } 
       for (const w of s.workouts) {
         if (w.date < today && ['bike', 'run', 'gym', 'swim', 'brick'].includes(w.type)) {
           w.completed = true; w.completedAt = `${w.date}T18:00:00Z`;
+          w.strava_activity_id = 9000000 + Math.floor(Math.random() * 1e6); // as if Strava-verified
         }
       }
       localStorage.setItem(key, JSON.stringify(s));
@@ -65,6 +70,9 @@ async function freshPage({ onboarded = true, tab = 'home', progressed = false } 
 
 async function shot(page, name) {
   await page.waitForTimeout(450);
+  // a template that leaked through un-interpolated shows up as a literal "${"
+  const leak = await page.evaluate(() => document.body.innerText.includes('${') || document.body.innerHTML.includes('${svg'));
+  if (leak) errors.push(`${name}: un-interpolated template text on screen`);
   await page.screenshot({ path: join(OUT, `${name}.png`) });
   console.log('✓', name);
 }
@@ -93,8 +101,9 @@ for (const [tab, name] of [['home', '01-home'], ['journal', '02-journal'], ['lea
   await shot(page, '06-profile-cycling-progressed');
   for (const s of ['swim', 'run', 'gym']) {
     await page.click(`.pg-sport[data-sport="${s}"]`);
-    await shot(page, `06-profile-${s}-stub`);
+    await shot(page, `06-profile-${s}`);
   }
+  await page.click('.pg-sport[data-sport="bike"]');
   await page.evaluate(() => document.querySelector('[data-action="tab"][data-tab="home"]').click());
   await shot(page, '07-home-progressed');
   await page.evaluate(() => {
@@ -125,6 +134,7 @@ for (const [tab, name] of [['home', '01-home'], ['journal', '02-journal'], ['lea
       b.dataset.action = 'open-workout'; b.dataset.id = id;
       document.body.appendChild(b); b.click(); b.remove();
     }, id);
+    await page.waitForTimeout(2600); // let the coach finish typing his line
     await shot(page, name);
     await page.evaluate(() => document.querySelector('.modal-body')?.scrollTo(0, 9999));
     await shot(page, `${name}-scrolled`);
@@ -168,7 +178,8 @@ for (const [tab, name] of [['home', '01-home'], ['journal', '02-journal'], ['lea
 
   await page.evaluate(async () => {
     const { toast } = await import('./js/app/effects.js');
-    toast('<b>Badge unlocked!</b><br>First Ride — Complete a bike session', { icon: '🏅', duration: 8000 });
+    const { svg } = await import('./js/core/icons.js');
+    toast('<b>Quest complete +40 XP</b><br>Finish today’s planned session', { icon: svg('scroll'), duration: 8000 });
   });
   await shot(page, '21-toast');
   await ctx.close();

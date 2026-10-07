@@ -1,5 +1,5 @@
 // shop.js — Shopify Storefront API client for the ss-26 collection.
-import { esc } from './ui.js';
+import { esc, dialogue } from './ui.js';
 
 const ENDPOINT = 'https://moskeshop.com/api/2026-04/graphql.json';
 const TOKEN = 'f42b47288ec62ce928ff8dccf9e36ffb';
@@ -31,9 +31,9 @@ export async function loadShop() {
     });
     const json = await res.json();
     const items = (json?.data?.collectionByHandle?.products?.edges || []).map((e) => e.node);
-    grid.innerHTML = items.length ? items.map(card).join('') : '<p class="muted">No products found.</p>';
+    grid.innerHTML = items.length ? items.map(card).join('') : dialogue({ who: 'Shop', icon: 'shop', text: 'No products in this drop yet.', cls: 'empty-dlg' });
   } catch (e) {
-    grid.innerHTML = '<p class="muted">Couldn’t load the shop. Check your connection.</p>';
+    grid.innerHTML = dialogue({ who: 'Shop', icon: 'shop', text: 'Couldn’t load the shop. Check your connection and try again.', cls: 'empty-dlg' });
   }
 }
 

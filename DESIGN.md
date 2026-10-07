@@ -197,9 +197,13 @@ are short so the app still feels fast.
 | Token | Value | Use |
 |---|---|---|
 | `--t-press` | `80ms steps(2)` | button press / release |
-| `--t-ui` | `160ms steps(4)` | tab switch, toggles, chip state |
+| `--t-ui` | `160ms steps(4)` | toggles, chip state (the active tab cell swaps in one frame, no transition) |
+| tab wipe | `240ms steps(4, jump-start)` | View Transition on tab change: the new view wipes in over the old one from the side the tab bar moved toward |
 | `--t-enter` | `240ms steps(6)` | modal slide-up, toast enter |
-| meter fill | `160ms steps(2)` per segment, staggered 40ms | XP and goal meters fill left to right |
+| meter fill | `120ms steps(2)` per segment, staggered 50ms | only segments that are new since the meter was last on screen light up, one at a time; first sight fills from empty |
+| number roll | 6 steps × 60ms | XP, levels and goal numbers count from their last shown value to the new one (tabular digits, gold while rolling) |
+| loading wave | `1.2s steps(2)` per tile, staggered 150ms | skeleton tiles blink in a wave down the list |
+| busy dots | `1s steps(4)` | `...` revealed 0–3 dots after a busy button's label |
 | `--t-pop` | `720ms steps(9)` | "+40 XP" pop rise and fade |
 | `--t-type` | `28ms` per character | dialogue typewriter reveal |
 | `--loop-bob` | `1.2s steps(2) infinite` | idle bob of the cycling character only (the stills no longer bob) |
@@ -211,6 +215,23 @@ to its value, and modals and toasts appear without moving. Implemented once:
 `main.js` puts a `body.rm` class on when either is set, and a single CSS block
 under `body.rm` zeroes animations. JS effects already check
 `prefersReducedMotion()`.
+
+The feel layer lives in `js/app/motion.js`: `withTabTransition()` (feature
+detected; never starts under reduced motion), `rollNum()` + `animateIn()` (run
+at the end of every `render()`; values are remembered per key for the session,
+so nothing animates on a re-render that changed nothing), and `busy(btn, work)`.
+
+**States every tappable has:** pressed (moves down 2–4px and drops its edge;
+text links dim), focus (`:focus-visible` 2px outline, white on gold surfaces),
+disabled (`--bg-4` fill, muted label, no press, `not-allowed` cursor) and busy
+(`aria-busy="true"`, disabled, muted label plus stepped dots). Use `busy()` for
+anything that waits on the network.
+
+**Loading:** never a spinner or a "Loading…" line. Render the real component
+with `.is-sk` and `.sk-line` / `.sk-tile` blocks where text and images go, so
+the layout doesn't move when data lands (Ranks rows land on the exact same
+pixels). A visually hidden "Loading…" span carries the state for screen
+readers and the container has `aria-busy="true"` until it's filled.
 
 Scene loops also pause when the page is hidden (`visibilitychange`) and are
 only in the DOM while the Profile tab is showing.

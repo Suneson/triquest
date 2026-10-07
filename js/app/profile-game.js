@@ -9,6 +9,7 @@ import { sportProgress, levelFromTotalXp } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
 import { sessionLoad, acwr, weekHours } from '../core/load.js';
 import { svg } from '../core/icons.js';
+import { rollNum } from './motion.js';
 import { esc, mondayOf, meter, stillCorners } from './ui.js';
 import { sceneFor, backdropCss } from '../core/scenes.js';
 import { addDays, parseISO, shortLabel, todayISO } from '../core/dates.js';
@@ -132,10 +133,10 @@ export function renderProfileGame(ctx, sport = 'bike') {
     <div class="pg-hud">
       <div class="pg-hud-top">
         <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
-        <button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">LVL ${p.level}</button>
+        <button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">LVL ${rollNum(p.level, `lvl-${scene.sport}`)}</button>
       </div>
-      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}` })}
-      <div class="pg-xptext">${p.into.toLocaleString()} / ${p.span.toLocaleString()} XP · ${p.toNext.toLocaleString()} to LVL ${p.level + 1}</div>
+      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}`, key: `hud-${scene.sport}` })}
+      <div class="pg-xptext">${rollNum(p.into, `into-${scene.sport}`)} / ${p.span.toLocaleString()} XP · ${rollNum(p.toNext, `next-${scene.sport}`)} to LVL ${p.level + 1}</div>
     </div>
   </section>`;
 }
@@ -475,7 +476,12 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     ${body}
   </div>`;
   const wireBack = () => root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
-  root.innerHTML = shell('<p class="fh-foot">Loading athlete data…</p>');
+  // loading tiles in the shape of the stats, calendar and charts below
+  const skStat = (i) => `<div class="pc-stat is-sk" style="--sk-i:${i}"><b><i class="sk-line" style="width:3ch"></i></b><small><i class="sk-line" style="width:60%"></i></small></div>`;
+  root.innerHTML = shell(`<span class="sr">Loading athlete data…</span>
+    <div class="pc-stats fh-stats" aria-hidden="true">${[0, 1, 2, 3].map(skStat).join('')}</div>
+    <div class="fh-sk-block sk-tile" aria-hidden="true" style="--sk-i:4"></div>
+    <div class="fh-sk-block short sk-tile" aria-hidden="true" style="--sk-i:5"></div>`);
   wireBack();
 
   try {

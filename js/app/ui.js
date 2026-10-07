@@ -9,6 +9,7 @@ import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/da
 import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 import { svg } from '../core/icons.js';
+import { rollNum } from './motion.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
 import { sessionLine, dayLine } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
@@ -322,12 +323,14 @@ export function renderWorkoutDetail(w, units, ctx) {
 // ---- shared pixel components -------------------------------------------------
 
 /** Segmented meter: `segments` cells, filled in proportion to frac (0..1+). */
-export function meter(frac, { segments = 10, cls = '', label = '' } = {}) {
+/** `key` names the meter across renders so motion.js can light only the
+ *  segments that are new since it was last on screen. */
+export function meter(frac, { segments = 10, cls = '', label = '', key = '' } = {}) {
   const f = Math.max(0, Number(frac) || 0);
   const on = Math.min(segments, Math.round(Math.min(1, f) * segments));
-  const cells = Array.from({ length: segments }, (_, i) =>
-    `<i class="${i < on ? 'on' : ''}" style="animation-delay:${i * 40}ms"></i>`).join('');
-  return `<div class="meter fill ${f > 1 ? 'over' : ''} ${cls}" role="img" aria-label="${esc(label || `${Math.round(f * 100)}%`)}">${cells}</div>`;
+  const cells = Array.from({ length: segments }, (_, i) => `<i${i < on ? ' class="on"' : ''}></i>`).join('');
+  const k = key ? ` data-meter-key="${esc(key)}"` : '';
+  return `<div class="meter ${f > 1 ? 'over' : ''} ${cls}"${k} role="img" aria-label="${esc(label || `${Math.round(f * 100)}%`)}">${cells}</div>`;
 }
 
 /** The coach's face at 32px (his portrait, or the whistle icon until art exists). */
@@ -440,11 +443,11 @@ function weekGoalState(ctx, weekStartIso) {
 }
 
 // One goal as a labelled segmented meter: "PLAN 3/5" over ten cells.
-function goalMeter(frac, label, target, cls = '') {
+function goalMeter(frac, label, targetHtml, cls = '') {
   const p = Math.max(0, Math.round(frac * 100));
   return `<div class="goal-row">
-    <div class="goal-top"><b>${esc(label)}</b><span>${esc(target)}</span></div>
-    ${meter(frac, { cls, label: `${label} ${p}%` })}
+    <div class="goal-top"><b>${esc(label)}</b><span>${targetHtml}</span></div>
+    ${meter(frac, { cls, label: `${label} ${p}%`, key: `goal-${label.toLowerCase()}` })}
   </div>`;
 }
 
@@ -457,9 +460,9 @@ function heroCard(ctx, weekStartIso) {
   const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
   return `<section class="card hero-card">
     <div class="hero-head"><h4>This week</h4><button class="btn tiny ghost rings-edit" data-action="edit-goals">${svg('edit')} Edit</button></div>
-    ${goalMeter(s.fracs.sessions, 'Plan', `${s.sessions} / ${s.g.sessions}`)}
-    ${goalMeter(s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} / ${s.g.hours} H`, 'info')}
-    ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${a.ratio}× base` : 'calibrating', 'good')}
+    ${goalMeter(s.fracs.sessions, 'Plan', `${rollNum(s.sessions, 'goal-sessions')} / ${esc(s.g.sessions)}`)}
+    ${goalMeter(s.fracs.hours, 'Volume', `${rollNum(s.hours, 'goal-hours', { dp: 1 })} / ${esc(s.g.hours)} H`, 'info')}
+    ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${rollNum(a.ratio, 'goal-ratio', { dp: 2 })}× base` : 'calibrating', 'good')}
     <div class="coach-inline">
       <h4>Coaching</h4>
       <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>

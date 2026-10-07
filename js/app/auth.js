@@ -9,6 +9,7 @@ import * as store from './store.js';
 import { SYNC_ENABLED } from './config.js';
 import { toast } from './effects.js';
 import { svg } from '../core/icons.js';
+import { busy } from './motion.js';
 
 let _client = null;
 let _user = null;
@@ -128,7 +129,7 @@ function openSetPassword() {
     e.preventDefault();
     const password = e.target.password.value;
     if (password !== e.target.confirm.value) { msgEl.hidden = false; msgEl.textContent = 'Passwords don’t match.'; return; }
-    try {
+    await busy(e.submitter, async () => { try {
       const c = await client();
       const { error } = await c.auth.updateUser({ password });
       if (error) throw error;
@@ -137,6 +138,7 @@ function openSetPassword() {
       if (user && !_user) { await activateUser(user, { silent: true }); if (_onChange) _onChange(_user); }
       toast('Password updated. You’re signed in.', { icon: svg('lock') });
     } catch (err) { msgEl.hidden = false; msgEl.textContent = err.message || 'Could not update password'; }
+    });
   });
 }
 
@@ -208,7 +210,7 @@ export function openAuthModal() {
     e.preventDefault();
     const email = e.target.email.value.trim();
     const password = e.target.password.value;
-    try {
+    await busy(e.submitter, async () => { try {
       if (pwMode === 'up') {
         const c = await client();
         const { data, error } = await c.auth.signUp({ email, password });
@@ -220,5 +222,6 @@ export function openAuthModal() {
         close();
       }
     } catch (err) { msg(err.message || 'Sign-in failed'); }
+    });
   });
 }

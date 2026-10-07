@@ -68,7 +68,9 @@ export function openPublicProfile({ uid, name, rank, xp }) {
 }
 
 function skeleton() {
-  return `<div class="pp-stats">${'<div class="total sk"></div>'.repeat(4)}</div>
+  const total = (i) => `<div class="total is-sk" style="--sk-i:${i}"><small><i class="sk-line" style="width:70%"></i></small><b><i class="sk-line" style="width:3ch"></i></b></div>`;
+  return `<span class="sr">Loading profile…</span>
+    <div class="pp-stats" aria-hidden="true">${[0, 1, 2, 3].map(total).join('')}</div>
     <h4 class="pp-h4">Achievements</h4>
-    <div class="badge-wall">${'<div class="badge sk"></div>'.repeat(6)}</div>`;
+    <div class="badge-wall" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map((i) => `<div class="badge sk-tile" style="--sk-i:${i + 4}"></div>`).join('')}</div>`;
 }

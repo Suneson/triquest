@@ -18,13 +18,24 @@ const QUERY = `query {
 
 export function shopShell() {
   return `<div class="day-header"><h2>Shop</h2></div>
-    <div id="shop-grid" class="shop-grid"><p class="muted">Loading products…</p></div>`;
+    <div id="shop-grid" class="shop-grid" aria-busy="true"><span class="sr">Loading products…</span>${skeletonCards()}</div>`;
+}
+
+// Loading tiles shaped like product cards: square image, title, price.
+function skeletonCards(n = 4) {
+  return Array.from({ length: n }, (_, i) => `<div class="shop-card is-sk" aria-hidden="true" style="--sk-i:${i}">
+    <div class="shop-noimg sk-tile"></div>
+    <div class="shop-info">
+      <div class="shop-title"><i class="sk-line" style="width:${[80, 64, 72, 58][i % 4]}%"></i><br><i class="sk-line" style="width:${[46, 52, 38, 44][i % 4]}%"></i></div>
+      <div class="shop-price"><i class="sk-line" style="width:40%"></i></div>
+    </div>
+  </div>`).join('');
 }
 
 export async function loadShop() {
   const grid = document.getElementById('shop-grid');
   if (!grid) return;
-  if (isDemo()) { grid.innerHTML = demoShop().map(card).join(''); return; }
+  if (isDemo()) { grid.innerHTML = demoShop().map(card).join(''); grid.removeAttribute('aria-busy'); return; }
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -37,6 +48,7 @@ export async function loadShop() {
   } catch (e) {
     grid.innerHTML = dialogue({ who: 'Shop', icon: 'shop', text: 'Couldn’t load the shop. Check your connection and try again.', cls: 'empty-dlg' });
   }
+  grid.removeAttribute('aria-busy');
 }
 
 function price(p) {

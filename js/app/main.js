@@ -24,6 +24,7 @@ import { confetti, playLevelUp, playBadge, playQuest, playComplete, toast, xpPop
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
+import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 
 
 // ?safe=34 fakes a bottom safe-area inset (home indicator) so the tab bar can be
@@ -171,7 +172,7 @@ function render() {
   const chip = document.getElementById('acct-chip');
   if (chip) {
     chip.hidden = false;
-    chip.textContent = `LVL ${ctx.acct.level}`;
+    chip.innerHTML = `LVL ${rollNum(ctx.acct.level, 'acct-lvl')}`;
     chip.setAttribute('aria-label', `Account level ${ctx.acct.level}, ${ctx.acct.toNext} XP to the next level`);
   }
 
@@ -201,6 +202,7 @@ function render() {
   }
 
   document.getElementById('storage-banner').hidden = store.isPersistent();
+  animateIn(document);
 }
 
 // ---- Profile scene lifecycle --------------------------------------------------
@@ -277,17 +279,21 @@ function onClick(e) {
   const { action, id } = el.dataset;
 
   switch (action) {
-    case 'tab':
+    case 'tab': {
       closeModalRoot(); // full-screen overlays (fitness hub) must never trap navigation
+      const from = appState.tab;
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
       if (appState.tab === 'progress') autoStravaSync(); // silent background pull
-      render();
-      document.getElementById('view').scrollTo(0, 0); // #view is the scroller now
-      // Journal opens on today's row rather than Monday
-      if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
+      withTabTransition(from, appState.tab, () => {
+        render();
+        document.getElementById('view').scrollTo(0, 0); // #view is the scroller now
+        // Journal opens on today's row rather than Monday
+        if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
+      });
       break;
+    }
     case 'jr-week':
       appState.journalDate = addDays(appState.journalDate || todayISO(), Number(el.dataset.dir) * 7);
       render();
@@ -315,8 +321,7 @@ function onClick(e) {
       import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed')));
       break;
     case 'hub-strava-sync':
-      toast('Syncing from Strava…');
-      import('./strava-client.js').then((m) => m.syncNow()
+      busy(el, () => import('./strava-client.js').then((m) => m.syncNow())
         .then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); })
         .catch((e) => toast(e.message || 'Sync failed')));
       break;
@@ -539,7 +544,7 @@ function openSettings() {
     else if (act === 'signout') { if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); close(); } }
     else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed'))); }
     else if (act === 'strava-disconnect') { import('./strava-client.js').then((m) => m.disconnectStrava().then(() => { toast('Strava disconnected'); openSettings(); })); }
-    else if (act === 'strava-sync') { toast('Syncing from Strava…', { icon: svg('sync') }); import('./strava-client.js').then((m) => m.syncNow().then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); }).catch((e) => toast(e.message || 'Sync failed'))); }
+    else if (act === 'strava-sync') { busy(b, () => import('./strava-client.js').then((m) => m.syncNow()).then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); }).catch((e) => toast(e.message || 'Sync failed'))); }
   }));
   root.querySelector('#import-file')?.addEventListener('change', (e) => {
     const file = e.target.files[0];

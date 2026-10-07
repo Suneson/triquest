@@ -30,13 +30,26 @@ export function leaderboardShell(view, today) {
       <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">Season</button>
       <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">All-time</button>
     </div>${countdown}
-    <div id="lb-body"><p class="muted lb-loading">Loading…</p></div>`;
+    <div id="lb-body" aria-busy="true">${skeletonRows()}</div>`;
+}
+
+// Loading tiles shaped like the real rows (same classes, same heights), so the
+// list doesn't jump when the data lands.
+function skeletonRows(n = 6) {
+  const row = (i) => `<li class="lb-row is-sk" aria-hidden="true" style="--sk-i:${i}">
+      <span class="lb-rank"><i class="sk-line" style="width:1ch"></i></span>
+      <span class="lb-avatar sk-tile"></span>
+      <span class="lb-id"><b class="lb-name"><i class="sk-line" style="width:${[62, 48, 70, 55, 66, 44][i % 6]}%"></i></b>
+        <small class="lb-meta"><i class="sk-line" style="width:40%"></i></small></span>
+    </li>`;
+  return `<span class="sr">Loading the leaderboard…</span><ul class="lb-list">${Array.from({ length: n }, (_, i) => row(i)).join('')}</ul>`;
 }
 
 export async function loadLeaderboard(view, today) {
   const body = document.getElementById('lb-body');
   if (!body) return;
-  if (!SYNC_ENABLED && !isDemo()) { body.innerHTML = dialogue({ text: 'Leaderboards need cloud sync configured.', cls: 'empty-dlg' }); return; }
+  const done = () => body.removeAttribute('aria-busy');
+  if (!SYNC_ENABLED && !isDemo()) { body.innerHTML = dialogue({ who: 'Ranks', icon: 'trophy', text: 'Leaderboards need cloud sync configured.', cls: 'empty-dlg' }); return; }
   try {
     let data;
     if (isDemo()) {
@@ -53,10 +66,11 @@ export async function loadLeaderboard(view, today) {
     _athletes = new Map(rows.map((r) => [r.user_id, r]));
     body.innerHTML = rows.length
       ? list(rows, me)
-      : dialogue({ text: 'No ranked athletes yet. Complete a verified workout to appear here.', cls: 'empty-dlg' });
+      : dialogue({ who: 'Ranks', icon: 'trophy', text: 'No ranked athletes yet. Complete a verified workout to appear here.', cls: 'empty-dlg' });
   } catch (e) {
-    body.innerHTML = dialogue({ text: 'Couldn’t load the leaderboard. Check your connection and try again.', cls: 'empty-dlg' });
+    body.innerHTML = dialogue({ who: 'Ranks', icon: 'trophy', text: 'Couldn’t load the leaderboard. Check your connection and try again.', cls: 'empty-dlg' });
   }
+  done();
 }
 
 const xp = (n) => Number(n).toLocaleString();

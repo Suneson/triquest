@@ -72,3 +72,23 @@ animation.
 Left as is: images inside fixed-ratio boxes (level cards, lightbox, level-up)
 have no `width`/`height`, but the box already reserves the space, so there's
 no layout shift.
+
+## Pass 2, Phase B (feel)
+
+Dials from design-taste-frontend: variance 3, motion 6, density 3. Taken from
+it: full state cycles (loading shaped like the result, tactile press, busy),
+transform/opacity/clip-path only, every motion gated on reduced motion.
+Ignored: its rounded/blurred defaults and its eased "fluid" curves (we step).
+
+| Check | Result |
+|---|---|
+| Tab wipe runs | `startViewTransition` fires once per tab change in Chromium; skipped when unsupported or under reduced motion |
+| Tab bar mid-wipe | Was ghosting two gold cells: the tab's own 160ms colour transition, caught halfway. Tabs now swap in one frame |
+| Wipe overprint | New view snapshot was transparent and printed over the old one. `.view` has its own background now |
+| Number roll | Verifying a session rolled Plan `0 → 1` with `.rolling` on, then settled |
+| Meter fill | First sight lights segments one by one; a re-render with no change lights none |
+| Skeleton jump | Ranks skeleton rows sit at y = 428 / 530 / 632, same as the real rows. Shop skeleton has two title lines to match most product titles |
+| Busy | `aria-busy` + disabled during the request, both cleared after; dots step 0→3 without moving the label |
+
+Clips: `clips/phase-b-tab-wipe.webm`, `clips/phase-b-roll-and-fill.webm`,
+`clips/phase-b-busy-and-loading.webm`. Screens: `after/phase-b/`.

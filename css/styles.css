@@ -313,7 +313,7 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
   display: grid; justify-items: center; align-content: center; gap: 2px; height: 52px;
   font: 600 11px/1.1 var(--font-body); letter-spacing: .02em;
   -webkit-appearance: none; appearance: none;
-  transition: color var(--t-ui), background var(--t-ui);
+  transition: transform var(--t-press); /* the active cell swaps in one frame, like a sprite */
 }
 .tab .tab-ico { display: flex; }
 .tab .tab-ico .ic { width: 24px; height: 24px; }
@@ -422,7 +422,8 @@ input[type=checkbox]:checked::after {
 .meter.good i.on { background: var(--good); }
 .meter.info i.on { background: var(--info); }
 .meter.over i.on { background: var(--c-threshold); }
-.meter.fill i.on { animation: seg-in 160ms steps(2, end) both; }
+/* segments lit since the meter was last on screen light up one at a time (motion.js) */
+.meter i.seg-new { animation: seg-in 120ms steps(2, end) both; }
 @keyframes seg-in { from { background: var(--bg-4); } }
 
 /* ---- HOME ---------------------------------------------------------------------------------------------------- */
@@ -979,6 +980,62 @@ body.rm .pg-fx { display: none; }
 .principles { margin: 0; padding-left: 18px; color: var(--muted); font-size: var(--fs-small); }
 .sk { background: var(--bg-3); min-height: 60px; animation: sk 1.2s steps(2, end) infinite; }
 @keyframes sk { 50% { background: var(--bg-4); } }
+
+/* ---- feel (pass 2, Phase B) ------------------------------------------------------------------------ */
+
+/* B1 tab change: the new view wipes in over the old one in 4 hard steps, in
+   the direction the tab bar moved. Only #view takes part; the header and tab
+   bar swap instantly. Off under reduced motion (motion.js never starts one). */
+/* the view needs its own background, or the new snapshot is transparent and
+   overprints the old one mid-wipe */
+.view { view-transition-name: view; background: var(--bg); }
+/* the page around the view isn't captured at all, so the header and tab bar
+   stay live and swap at once (a snapshot pair would ghost the tab bar) */
+:root { view-transition-name: none; }
+::view-transition-group(view) { animation: none; }
+::view-transition-old(view) { animation: none; }
+::view-transition-new(view) { animation: vt-wipe 240ms steps(4, jump-start) both; }
+html[data-vt-dir="back"]::view-transition-new(view) { animation-name: vt-wipe-back; }
+/* forward (to a tab on the right): the new view enters from the right edge */
+@keyframes vt-wipe { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+@keyframes vt-wipe-back { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* B2 a rolling number keeps its width so the line doesn't jitter */
+.roll { font-variant-numeric: tabular-nums; }
+.roll.rolling { color: var(--accent); }
+.lvl-chip .roll.rolling { color: inherit; }
+
+/* B3 loading tiles: the real component's classes with blocks where text goes,
+   lit in a stepped wave down the list (--sk-i staggers it) */
+.sk-line { display: inline-block; height: .8em; max-width: 100%; vertical-align: middle; background: var(--bg-4); }
+.sk-tile { background: var(--bg-3); }
+.sk-line, .sk-tile { animation: sk-wave 1.2s steps(2, end) infinite; animation-delay: calc(var(--sk-i, 0) * 150ms); }
+.is-sk .sk-line, .is-sk .sk-tile { animation-delay: calc(var(--sk-i, 0) * 150ms); }
+@keyframes sk-wave { 50% { background: var(--line-soft); } }
+.is-sk { pointer-events: none; }
+.lb-row.is-sk .lb-avatar { background: var(--bg-3); }
+.fh-sk-block { height: 180px; margin: 0 2px 24px; }
+.fh-sk-block.short { height: 120px; }
+.badge.sk-tile { min-height: 76px; }
+
+/* B4 every tappable: pressed, focus, disabled, busy */
+.tab:active, .lb-tab:active, .lvl-chip:active, .pg-avatar:active, .fh-avatar:active { transform: translateY(2px); }
+.link:active, .auth-link:active { opacity: .7; }
+button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+button:disabled:active { transform: none; }
+.icon-btn:disabled, .lb-tab:disabled, .ob-chip:disabled, .cap:disabled { --b: var(--bg-4); --eo: 4px; color: var(--muted); background: var(--bg-4); }
+.lb-tab:focus-visible, .lvl-chip:focus-visible, .btn.primary:focus-visible, .ob-chip.on:focus-visible { outline-color: var(--fg); }
+[aria-busy="true"] { cursor: progress; }
+.btn[aria-busy="true"], .btn[aria-busy="true"]:disabled { color: var(--muted); }
+.btn.primary[aria-busy="true"] { background: var(--accent-lo); color: var(--on-accent); --b: var(--accent-lo); }
+/* three stepped dots after the label while the request runs */
+.btn[aria-busy="true"]::before {
+  content: '...'; order: 2; display: inline-block; width: 3ch; overflow: hidden; white-space: nowrap; text-align: left;
+  clip-path: inset(0 100% 0 0); animation: busy-dots 1s steps(4, jump-none) infinite;
+}
+/* reveal 0, 1, 2, 3 dots; the box keeps its width so the label doesn't shift */
+@keyframes busy-dots { to { clip-path: inset(0 0 0 0); } }
+body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 
 /* ---- utilities ---- */
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

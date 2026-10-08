@@ -2,7 +2,8 @@
 // least one completed session. There is a one-day grace: an unfinished *today*
 // does not break a streak that was alive yesterday.
 
-import { addDays, diffDays, toISO } from './dates.js';
+import { addDays, toISO } from './dates.js';
+import { plannedDaySet, isRestDay } from './rest.js';
 
 /** Set of ISO dates that have >= 1 completed workout. */
 export function completedDateSet(workouts) {
@@ -14,37 +15,39 @@ export function completedDateSet(workouts) {
 }
 
 /**
+ * Planned rest days (see rest.js) bridge a streak: they don't add to it and
+ * they don't break it, so following the plan's rest never costs the streak.
  * @param {Array} workouts
  * @param {string} today ISO date used as "now" (injectable for tests)
  * @returns {{current:number, longest:number, isTodayDone:boolean, activeDates:Set<string>}}
  */
 export function computeStreaks(workouts, today = toISO(new Date())) {
   const active = completedDateSet(workouts);
+  const planned = plannedDaySet(workouts);
   const isTodayDone = active.has(today);
+  const rest = (d) => !active.has(d) && isRestDay(d, planned);
 
-  // --- current streak (with one-day grace) ---
+  // --- current streak: walk back from today (or yesterday, the one-day grace) ---
   let current = 0;
-  // Anchor: today if done, otherwise yesterday (grace), otherwise no streak.
-  let anchor = null;
-  if (isTodayDone) anchor = today;
-  else if (active.has(addDays(today, -1))) anchor = addDays(today, -1);
-
-  if (anchor) {
-    let cur = anchor;
-    while (active.has(cur)) {
-      current++;
-      cur = addDays(cur, -1);
-    }
+  let cur = isTodayDone ? today : addDays(today, -1);
+  while (active.has(cur) || rest(cur)) {
+    if (active.has(cur)) current++;
+    cur = addDays(cur, -1);
   }
 
-  // --- longest streak ever ---
+  // --- longest streak ever: active days in a row, rest days bridging ---
   const sorted = [...active].sort();
   let longest = 0;
   let run = 0;
   let prev = null;
   for (const d of sorted) {
-    if (prev !== null && diffDays(d, prev) === 1) run++;
-    else run = 1;
+    let joined = prev !== null;
+    if (joined) {
+      for (let g = addDays(prev, 1); g < d; g = addDays(g, 1)) {
+        if (!rest(g)) { joined = false; break; }
+      }
+    }
+    run = joined ? run + 1 : 1;
     if (run > longest) longest = run;
     prev = d;
   }

@@ -453,3 +453,32 @@ with findings fixed or listed, HANDOFF.md updated, and a short summary.
 Phase 0 changed no app files (only `DESIGN.md`, `docs/redesign/*`,
 `tools/shots.mjs`, `HANDOFF.md`), so there's no SW bump and no guidelines
 review this phase.
+
+
+---
+
+## Pass 2 (fixes, feel, game layer): status
+
+| Item | Status | Where |
+|---|---|---|
+| A1 full-bleed stage, A2 no bob | done | `profile-game.js`, `styles.css` |
+| A3 training data in the system font | done | `--font-data`, DESIGN.md §2.2 |
+| A4 tab bar pinned (fixed grid shell, `--tabs-h`, `?safe=N`) | done | `index.html`, `styles.css` §shell |
+| A5 spacing tokens + gap audit | done | `tools/gap-audit.mjs` |
+| A6 quest XP in Supabase | done, live | `0006_quest_xp.sql` (applied in seven parts), `quest-claims.js`, `quest-sync.js` |
+| A7 guidelines, 44px targets, `?demo=1`, iPhone 15 run | done (Chromium; WebKit not installable) | REVIEW.md |
+| B1 tab wipe (View Transitions) | done | `motion.js` |
+| B2 rolling numbers, stepped meters | done | `motion.js`, `meter()` |
+| B3 skeleton tiles | done | Ranks, Shop, public profiles |
+| B4 pressed/focus/disabled/busy | done | `busy()` |
+| C1 living scenes | done | `timeOfDay()`, `.pg-tod` |
+| C2 week path + season sheet | done | `core/path.js`, `game.js` |
+| C3 podium, movement, rival | done | `core/ranks.js`, `leaderboard.js` |
+| C4 trophy cabinet | done | `profile-game.js` |
+| C5 pixel charts | done | `profile-game.js` (stepped `wavePath`, `blockBars`) |
+| C6 share card | done | `share.js` |
+| C7 rest days | client done; server **waits for 0007** | `core/rest.js`, `0007_rest_quest.sql` |
+| C8 scene strip on Today's target | done | `ui.js` `sceneStrip()` |
+| D1 art brief | done | ART-BRIEF.md |
+| D2 concept prompts | done | CONCEPTS.md |
+| D3 docs | done | DESIGN.md, REVIEW.md, HANDOFF.md, this file |

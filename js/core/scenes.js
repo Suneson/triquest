@@ -12,6 +12,11 @@
 // (the HUD still shows the true level). An entry's `src` is only ever used as
 // an <img src>, so an animated .webp or .gif can replace a .png here with no
 // code change.
+//
+// A still may also carry `plate` (the scene with no athlete) and `char` (a
+// transparent animated WebP of only the athlete, same canvas). With both set,
+// Profile draws the plate and plays the athlete over it; `src` stays the full
+// still for everything else (share card, Home strip, level carousel).
 
 const ART = 'icons/Pixelart';
 
@@ -134,7 +139,7 @@ export function sceneFiles() {
   for (const s of Object.values(SCENES)) {
     for (const e of s.levels) {
       if (s.kind === 'layered') out.push(e.bg, e.platform, e.char);
-      else out.push(e.src);
+      else out.push(e.src, ...(e.plate && e.char ? [e.plate, e.char] : []));
     }
   }
   return [...new Set(out)];
@@ -178,9 +183,22 @@ export function cornerPolygon({ side, from, to }, step = 2) {
 // until real art lands (see docs/redesign/ART-BRIEF.md); with no portrait the
 // dialogue box shows his name and a whistle icon instead of a picture. With
 // `blink` / `talk` frames as well, he blinks and "speaks" while a line types.
+/** The athlete's local time of day, for scene lighting: dawn 5–7, day 8–16,
+ *  dusk 17–19, night 20–4. */
+export function timeOfDay(hour) {
+  const h = ((Number(hour) % 24) + 24) % 24;
+  if (h >= 5 && h < 8) return 'dawn';
+  if (h >= 8 && h < 17) return 'day';
+  if (h >= 17 && h < 20) return 'dusk';
+  return 'night';
+}
+
 export const COACH = {
   name: 'Coach',
-  portrait: null, // 'icons/trainer/portrait.png'
+  // from icons/trainer/source/coach-greenscreen.webp: green keyed out, box-averaged
+  // to the art's own pixel grid, palette reduced (see ART-BRIEF.md)
+  portrait: 'icons/trainer/portrait.png', // 96×96 head and shoulders
+  full: 'icons/trainer/full.png',          // 109×189 full figure, arms crossed
   blink: null,    // 'icons/trainer/blink.png'
   talk: null,     // 'icons/trainer/talk.png'
   cheer: null,    // 'icons/trainer/cheer.png'

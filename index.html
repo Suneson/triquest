@@ -18,32 +18,37 @@
 <body>
   <canvas id="confetti-canvas" aria-hidden="true"></canvas>
 
-  <div id="storage-banner" class="storage-banner" hidden role="alert">
-    Storage is blocked (private mode?). Your data is kept in memory only and will be lost when you close this tab.
-  </div>
-
-  <header class="app-header">
-    <div class="brand">
-      <strong>MOSKE</strong>
-      <div class="header-actions">
-        <button id="acct-chip" class="lvl-chip" data-action="pg-profile" aria-label="Account level" hidden></button>
-        <button id="header-avatar" class="avatar-btn" data-action="pg-profile" aria-label="Open profile">A</button>
-      </div>
+  <!-- The app shell: a fixed, full-screen grid of header / banners / view / tab
+       bar. Nothing here depends on 100vh or 100dvh, so the bar can't float up. -->
+  <div class="app">
+    <div id="storage-banner" class="storage-banner" hidden role="alert">
+      Storage is blocked (private mode?). Your data is kept in memory only and will be lost when you close this tab.
     </div>
-  </header>
 
-  <div id="race-banner"></div>
-  <div id="sync-banner"></div>
+    <header class="app-header">
+      <div class="brand">
+        <strong>MOSKE</strong>
+        <div class="header-actions">
+          <button id="acct-chip" class="lvl-chip" data-action="pg-profile" aria-label="Account level" hidden></button>
+          <button id="header-avatar" class="avatar-btn" data-action="pg-profile" aria-label="Open profile">A</button>
+        </div>
+      </div>
+    </header>
 
-  <main id="view" class="view" role="main" aria-live="polite"></main>
+    <div id="race-banner"></div>
+    <div id="sync-banner"></div>
 
-  <nav class="tabs" aria-label="Views">
-    <button class="tab active" data-action="tab" data-tab="home"><span class="tab-ico" data-icon="home"></span><span class="tab-lbl">Home</span></button>
-    <button class="tab" data-action="tab" data-tab="journal"><span class="tab-ico" data-icon="journal"></span><span class="tab-lbl">Journal</span></button>
-    <button class="tab" data-action="tab" data-tab="leaderboards"><span class="tab-ico" data-icon="trophy"></span><span class="tab-lbl">Ranks</span></button>
-    <button class="tab" data-action="tab" data-tab="shop"><span class="tab-ico" data-icon="shop"></span><span class="tab-lbl">Shop</span></button>
-    <button class="tab" data-action="tab" data-tab="progress"><span class="tab-ico" data-icon="user"></span><span class="tab-lbl">Profile</span></button>
-  </nav>
+    <main id="view" class="view"></main>
+
+    <nav class="tabs" aria-label="Views">
+      <button class="tab active" data-action="tab" data-tab="home"><span class="tab-ico" data-icon="home"></span><span class="tab-lbl">Home</span></button>
+      <button class="tab" data-action="tab" data-tab="journal"><span class="tab-ico" data-icon="journal"></span><span class="tab-lbl">Journal</span></button>
+      <button class="tab" data-action="tab" data-tab="leaderboards"><span class="tab-ico" data-icon="trophy"></span><span class="tab-lbl">Ranks</span></button>
+      <button class="tab" data-action="tab" data-tab="shop"><span class="tab-ico" data-icon="shop"></span><span class="tab-lbl">Shop</span></button>
+      <button class="tab" data-action="tab" data-tab="progress"><span class="tab-ico" data-icon="user"></span><span class="tab-lbl">Profile</span></button>
+    </nav>
+
+  </div>
 
   <button id="fab" class="fab" aria-label="Add a session"><span data-icon="plus"></span></button>
 

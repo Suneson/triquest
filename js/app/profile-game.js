@@ -7,10 +7,12 @@
 
 import { sportProgress, levelFromTotalXp } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
+import { BADGES, evaluateBadges } from '../core/badges.js';
 import { sessionLoad, acwr, weekHours } from '../core/load.js';
 import { svg } from '../core/icons.js';
+import { rollNum } from './motion.js';
 import { esc, mondayOf, meter, stillCorners } from './ui.js';
-import { sceneFor, backdropCss } from '../core/scenes.js';
+import { sceneFor, backdropCss, timeOfDay } from '../core/scenes.js';
 import { addDays, parseISO, shortLabel, todayISO } from '../core/dates.js';
 import { currentUser } from './auth.js';
 import * as store from './store.js';
@@ -64,8 +66,18 @@ function glowFx(boxes, dust) {
   return out;
 }
 
-function sceneFx(fx = {}) {
+// night sky: a dozen 1-art-pixel stars that twinkle in steps, only where the
+// scene has open sky (the run track's cloud band, the top of the bike world)
+function starsFx(box) {
+  return Array.from({ length: 12 }, (_, i) => {
+    const big = i % 4 === 0;
+    return `<span class="fx-star${big ? ' big' : ''}" style="--x:${pct(box.x + box.w * jitter(i, 21))};--y:${pct(box.y + box.h * jitter(i, 33))};--delay:-${(4 * jitter(i, 41)).toFixed(1)}s"></span>`;
+  }).join('');
+}
+
+function sceneFx(fx = {}, tod = 'day') {
   let out = '';
+  if (tod === 'night' && fx.clouds) out += starsFx(fx.clouds);
   if (fx.clouds) out += cloudsFx(fx.clouds);
   if (fx.leaves) out += leavesFx(fx.leaves);
   if (fx.clock) out += `<span class="fx-clock" style="${boxStyle(fx.clock)}"></span>`;
@@ -75,24 +87,30 @@ function sceneFx(fx = {}) {
   return out;
 }
 
-function stillStage(scene) {
+function stillStage(scene, tod) {
   const e = scene.entry;
   const corners = stillCorners(e);
-  return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--arn:${(e.w / e.h).toFixed(4)};--bands:${backdropCss(e.backdrop)}">
-    <div class="pg-bob">
-      <img class="pg-still-img" src="${esc(e.src)}" alt="${esc(scene.label)} level ${scene.artLevel} scene">
-      <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx)}</div>
+  return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--bands:${backdropCss(e.backdrop)}">
+    <div class="pg-art">
+      ${e.plate && e.char
+        ? `<img class="pg-still-img" src="${esc(e.plate)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">
+      <img class="pg-still-img pg-still-char" src="${esc(e.char)}" width="${e.w}" height="${e.h}" alt="" aria-hidden="true">`
+        : `<img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">`}
+      <div class="pg-tod" aria-hidden="true"></div>
+      <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx, tod)}</div>
       ${corners}
     </div>
   </div></div>`;
 }
 
-function layeredWorld(scene) {
+function layeredWorld(scene, tod) {
   const e = scene.entry;
   return `<div class="pg-world">
       <img class="pg-layer pg-bg" src="${esc(e.bg)}" alt="" aria-hidden="true">
       <img class="pg-layer pg-platform" src="${esc(e.platform)}" alt="" aria-hidden="true">
       <img class="pg-char" src="${esc(e.char)}" alt="${esc(scene.label)} level ${scene.artLevel} character">
+      <div class="pg-tod" aria-hidden="true"></div>
+      ${tod === 'night' ? `<div class="pg-fx" aria-hidden="true">${starsFx({ x: 4, y: 3, w: 92, h: 22 })}</div>` : ''}
     </div>`;
 }
 
@@ -112,6 +130,9 @@ export function renderProfileGame(ctx, sport = 'bike') {
   const scene = sceneFor(sport, p.level) || sceneFor('bike', p.level);
   const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
   const still = scene.kind === 'still';
+  // lighting follows the athlete's local clock: dawn, day, dusk, night
+  const tod = timeOfDay(new Date().getHours());
+  const indoor = scene.sport === 'gym' || scene.sport === 'swim';
   const bd = still ? `--bd-top:${edgeColor(scene.entry.backdrop, 0)};--bd-bot:${edgeColor(scene.entry.backdrop, -1)}` : '';
 
   const sportBtn = ([s, label]) => {
@@ -121,8 +142,8 @@ export function renderProfileGame(ctx, sport = 'bike') {
   };
 
   return `
-  <section class="pg-screen ${still ? 'pg-still' : ''}" style="${bd}">
-    ${still ? stillStage(scene) : layeredWorld(scene)}
+  <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}" style="${bd}">
+    ${still ? stillStage(scene, tod) : layeredWorld(scene, tod)}
 
     <div class="pg-topbar">
       <div class="pg-sports" role="group" aria-label="Sport">${SWITCH.map(sportBtn).join('')}</div>
@@ -132,10 +153,10 @@ export function renderProfileGame(ctx, sport = 'bike') {
     <div class="pg-hud">
       <div class="pg-hud-top">
         <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
-        <button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">LVL ${p.level}</button>
+        <button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">LVL ${rollNum(p.level, `lvl-${scene.sport}`)}</button>
       </div>
-      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}` })}
-      <div class="pg-xptext">${p.into.toLocaleString()} / ${p.span.toLocaleString()} XP · ${p.toNext.toLocaleString()} to LVL ${p.level + 1}</div>
+      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}`, key: `hud-${scene.sport}` })}
+      <div class="pg-xptext">${rollNum(p.into, `into-${scene.sport}`)} / ${p.span.toLocaleString()} XP · ${rollNum(p.toNext, `next-${scene.sport}`)} to LVL ${p.level + 1}</div>
     </div>
   </section>`;
 }
@@ -171,22 +192,53 @@ function lastDays(ctx, n) {
   return out;
 }
 
-// Smooth SVG wave path through values (quadratic midpoint smoothing).
-// Returns the stroke path plus point/scale geometry for fills, dots and bands.
+// Pixel telemetry charts: every line is a stepped path on a 2px grid (hold the
+// value, then jump), dots are squares, and each plot carries dashed gridlines
+// with + ticks at the corners. Returns the stroke path plus the point/scale
+// geometry for fills, markers and bands.
 const PAD = 4;
+const snap = (v) => Math.round(v / 2) * 2;
 function wavePath(vals, W, H, maxOverride) {
   const max = Math.max(1, maxOverride ?? Math.max(...vals));
-  const y = (v) => H - PAD - (v / max) * (H - PAD * 2);
-  const x = (i) => PAD + (i / Math.max(1, vals.length - 1)) * (W - PAD * 2);
+  const y = (v) => snap(H - PAD - (v / max) * (H - PAD * 2));
+  const x = (i) => snap(PAD + (i / Math.max(1, vals.length - 1)) * (W - PAD * 2));
   const pts = vals.map((v, i) => [x(i), y(v)]);
-  let d = `M ${x(0)} ${y(vals[0]).toFixed(1)}`;
-  for (let i = 1; i < vals.length; i++) {
-    const mx = ((x(i - 1) + x(i)) / 2).toFixed(1);
-    const my = ((y(vals[i - 1]) + y(vals[i])) / 2).toFixed(1);
-    d += ` Q ${x(i - 1).toFixed(1)} ${y(vals[i - 1]).toFixed(1)} ${mx} ${my}`;
-  }
-  d += ` L ${x(vals.length - 1).toFixed(1)} ${y(vals[vals.length - 1]).toFixed(1)}`;
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) d += ` H ${pts[i][0]} V ${pts[i][1]}`;
   return { d, max, x, y, pts, W, H };
+}
+
+/** A stepped band between two series (e.g. a safe-load zone). */
+function stepBand(x, topY, botY, n) {
+  let d = `M ${x(0)} ${topY(0)}`;
+  for (let i = 1; i < n; i++) d += ` H ${x(i)} V ${topY(i)}`;
+  d += ` V ${botY(n - 1)}`;
+  for (let i = n - 2; i >= 0; i--) d += ` V ${botY(i + 1)} H ${x(i)} V ${botY(i)}`;
+  return `${d} Z`;
+}
+
+/** Dashed gridlines at quarter heights and + ticks at the plot corners. */
+function telemetryGrid(W, H) {
+  const lines = [0.25, 0.5, 0.75].map((f) => {
+    const gy = snap(PAD + f * (H - PAD * 2));
+    return `<line class="fh-grid" x1="${PAD}" y1="${gy}" x2="${W - PAD}" y2="${gy}"/>`;
+  }).join('');
+  const ticks = [[PAD, PAD], [W - PAD, PAD], [PAD, H - PAD], [W - PAD, H - PAD]]
+    .map(([cx, cy]) => `<path class="fh-cross" d="M ${cx - 4} ${cy} H ${cx + 4} M ${cx} ${cy - 4} V ${cy + 4}"/>`).join('');
+  return lines + ticks;
+}
+
+/** A square marker (pixel dot). */
+const square = (cx, cy, s, attrs = '') => `<rect x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" ${attrs}/>`;
+
+/** Block bars on the 2px grid, one per value. `cls(i, v)` picks each bar's class. */
+function blockBars(vals, W, H, max, cls) {
+  const slot = (W - PAD * 2) / vals.length;
+  const yOf = (v) => snap(H - PAD - (v / Math.max(1, max)) * (H - PAD * 2));
+  return vals.map((v, i) => {
+    const top = Math.min(H - PAD - 2, yOf(v));
+    return `<rect class="fh-bar ${cls(i, v)}" x="${snap(PAD + i * slot)}" y="${top}" width="${Math.max(2, snap(slot) - 2)}" height="${H - PAD - top}"/>`;
+  }).join('');
 }
 
 // Two-month chronological calendar matrix (previous + current month side by
@@ -242,17 +294,17 @@ function trendGraph(ctx) {
   let acc = 0;
   const cum = days.map((d) => (acc += d.min));
   const { d, pts, W, H } = wavePath(cum, 320, 96);
-  const area = `${d} L ${W - PAD} ${H - PAD} L ${PAD} ${H - PAD} Z`;
+  const area = `${d} V ${H - PAD} H ${PAD} Z`;
   const dots = pts.filter((_, i) => i % 5 === 0 || i === pts.length - 1)
-    .map(([px, py], k, arr) => `<circle class="fh-dot ${k === arr.length - 1 ? 'end' : ''}"
-      cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${k === arr.length - 1 ? 4.5 : 3}"/>`).join('');
+    .map(([px, py], k, arr) => square(px, py, k === arr.length - 1 ? 8 : 4, `class="fh-dot ${k === arr.length - 1 ? 'end' : ''}"`)).join('');
   const h = Math.floor(acc / 60);
   const m = Math.round(acc % 60);
   return `<section class="card fh-block fh-tap" data-fh-activity role="button" tabindex="0">
     <h4>Activity summary <span class="fh-arrow">${svg('chevron')}</span></h4>
-    <div class="fh-big">${h}h ${m}m</div>
+    <div class="fh-big data-num">${h}<small class="data-unit">h</small> ${m}<small class="data-unit">m</small></div>
     <div class="fh-range">${esc(shortLabel(days[0].iso))} – ${esc(shortLabel(ctx.today))}</div>
     <svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      ${telemetryGrid(W, H)}
       <path class="fh-area" d="${area}" fill="var(--acc-orange)"/>
       <path class="fh-line" d="${d}" stroke="var(--acc-orange)"/>
       ${dots}
@@ -270,10 +322,15 @@ function strainWave(ctx) {
     : pct < -10 ? ['Below target', 'var(--acc-peri)']
     : pct > 10 ? ['Above target', 'var(--acc-orange)']
     : ['On target', 'var(--acc-green)'];
-  const { d, y, W, H } = wavePath(loads, 210, 96);
+  const W = 210;
+  const H = 96;
   const avg = loads.reduce((a, b) => a + b, 0) / Math.max(1, loads.length);
-  const bandTop = y(avg * 1.25).toFixed(1);
-  const bandBot = y(avg * 0.75).toFixed(1);
+  const max = Math.max(1, ...loads, avg * 1.3);
+  const y = (v) => snap(H - PAD - (v / max) * (H - PAD * 2));
+  const bandTop = y(avg * 1.25);
+  const bandBot = y(avg * 0.75);
+  // one block per day: inside the ±25% band green, above orange, below violet
+  const bars = blockBars(loads, W, H, max, (i, v) => (!v ? 'zero' : v > avg * 1.25 ? 'over' : v < avg * 0.75 ? 'under' : 'in'));
   return `<section class="card fh-block">
     <h4>Strain Performance</h4>
     <div class="fh-strain">
@@ -282,12 +339,44 @@ function strainWave(ctx) {
         <div class="fh-strain-lbl" style="color:${color}">${label}</div>
       </div>
       <svg class="fh-svg fh-strain-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-        <rect x="${PAD}" y="${bandTop}" width="${W - PAD * 2}" height="${Math.max(2, bandBot - bandTop).toFixed(1)}"
-          rx="3" fill="var(--acc-green)" opacity=".16"/>
-        <path class="fh-line" d="${d}" stroke="var(--acc-orange)"/>
+        ${telemetryGrid(W, H)}
+        <rect class="fh-band" x="${PAD}" y="${bandTop}" width="${W - PAD * 2}" height="${Math.max(2, bandBot - bandTop)}"/>
+        ${bars}
       </svg>
     </div>
   </section>`;
+}
+
+// Trophy cabinet: every badge on pixel shelves, four to a shelf. Earned ones are
+// lit gold on a plinth; locked ones are dark silhouettes. Tapping one shows how
+// to earn it in the line under the shelves.
+function trophyCabinet(ctx) {
+  const earned = new Set(evaluateBadges(ctx.workouts, ctx.today));
+  const shelves = [];
+  for (let i = 0; i < BADGES.length; i += 4) shelves.push(BADGES.slice(i, i + 4));
+  const cup = (b) => {
+    const on = earned.has(b.id);
+    return `<button class="tc-cup ${on ? 'is-on' : 'is-off'}" data-tc="${esc(b.id)}" aria-pressed="false"
+        aria-label="${esc(`${b.name}: ${on ? 'earned' : 'locked'}`)}">
+        <span class="tc-ico">${svg(b.icon)}</span><span class="tc-plinth" aria-hidden="true"></span></button>`;
+  };
+  return `<section class="card fh-block tc">
+    <h4>Trophy cabinet <span class="tc-count"><span class="data-num">${earned.size}</span> / ${BADGES.length}</span></h4>
+    ${shelves.map((row) => `<div class="tc-shelf">${row.map(cup).join('')}</div>`).join('')}
+    <p class="tc-info" aria-live="polite">Tap a trophy to see how to earn it.</p>
+  </section>`;
+}
+
+function wireTrophies(root, ctx) {
+  const info = root.querySelector('.tc-info');
+  if (!info) return;
+  const earned = new Set(evaluateBadges(ctx.workouts, ctx.today));
+  root.querySelectorAll('[data-tc]').forEach((btn) => btn.addEventListener('click', () => {
+    const b = BADGES.find((x) => x.id === btn.dataset.tc);
+    if (!b) return;
+    root.querySelectorAll('[data-tc]').forEach((o) => o.setAttribute('aria-pressed', String(o === btn)));
+    info.innerHTML = `<b>${esc(b.name)}</b> ${earned.has(b.id) ? `<span class="tag good">Earned</span>` : `<span class="tag">Locked</span>`}<br>${esc(b.desc)}.`;
+  }));
 }
 
 // Acute:chronic ratio → a named cardio status (WHOOP-style vocabulary).
@@ -311,9 +400,10 @@ function cardioCard(ctx) {
   const cs = cardioState(ctx);
   const thisMonday = mondayOf(ctx.today);
   const hrs = Array.from({ length: 12 }, (_, i) => weekHours(ctx.workouts, addDays(thisMonday, -7 * (11 - i))));
-  const { d, pts, W, H } = wavePath(hrs, 190, 72);
-  const area = `${d} L ${W - PAD} ${H - PAD} L ${PAD} ${H - PAD} Z`;
-  const [ex, ey] = pts[pts.length - 1];
+  const W = 190;
+  const H = 72;
+  // twelve weeks of hours as blocks; this week takes the status colour
+  const bars = blockBars(hrs, W, H, Math.max(1, ...hrs), (i, v) => (i === hrs.length - 1 ? 'now' : v ? 'wk' : 'zero'));
   return `<button class="card fh-block fh-cardio" data-fh-cardio>
     <div class="fh-cardio-body">
       <small>Cardio Load</small>
@@ -321,9 +411,7 @@ function cardioCard(ctx) {
       <span class="fh-status" style="color:${STATUS_COLOR[cs.status]}">${esc(cs.status)}</span>
     </div>
     <svg class="fh-cardio-mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-      <path d="${area}" fill="var(--acc-purple)" opacity=".28"/>
-      <path class="fh-line" d="${d}" stroke="var(--acc-peri)"/>
-      <circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="4" fill="${STATUS_COLOR[cs.status]}" stroke="var(--bg-2)" stroke-width="1.5"/>
+      <g style="--now:${STATUS_COLOR[cs.status]}">${bars}</g>
     </svg>
     <span class="fh-chev">${svg('chevron')}</span>
   </button>`;
@@ -448,9 +536,11 @@ export function openFitnessHub(ctx) {
     ${trendGraph(ctx)}
     ${strainWave(ctx)}
     ${cardioCard(ctx)}
+    ${trophyCabinet(ctx)}
   </div>`;
 
   root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+  wireTrophies(root, ctx);
   root.querySelector('[data-fh-cardio]').addEventListener('click', () => openCardioDetail(ctx));
   root.querySelector('[data-fh-activity]')?.addEventListener('click', () => openActivityDetail(ctx));
   wireAvatarUpload(root);
@@ -475,7 +565,12 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     ${body}
   </div>`;
   const wireBack = () => root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
-  root.innerHTML = shell('<p class="fh-foot">Loading athlete data…</p>');
+  // loading tiles in the shape of the stats, calendar and charts below
+  const skStat = (i) => `<div class="pc-stat is-sk" style="--sk-i:${i}"><b><i class="sk-line" style="width:3ch"></i></b><small><i class="sk-line" style="width:60%"></i></small></div>`;
+  root.innerHTML = shell(`<span class="sr">Loading athlete data…</span>
+    <div class="pc-stats fh-stats" aria-hidden="true">${[0, 1, 2, 3].map(skStat).join('')}</div>
+    <div class="fh-sk-block sk-tile" aria-hidden="true" style="--sk-i:4"></div>
+    <div class="fh-sk-block short sk-tile" aria-hidden="true" style="--sk-i:5"></div>`);
   wireBack();
 
   try {
@@ -533,13 +628,10 @@ export function openCardioDetail(ctx) {
   const { d, x, y, pts } = wavePath(series.map((s) => s.acute), W, H, maxVal);
 
   // Purple "sweet spot" band: 0.8–1.3 × that day's chronic weekly load.
-  const top = series.map((s, i) => `${x(i).toFixed(1)} ${y(s.chronicWeekly * 1.3).toFixed(1)}`);
-  const bot = series.map((s, i) => `${x(i).toFixed(1)} ${y(s.chronicWeekly * 0.8).toFixed(1)}`).reverse();
-  const band = `M ${top.join(' L ')} L ${bot.join(' L ')} Z`;
+  const band = stepBand(x, (i) => y(series[i].chronicWeekly * 1.3), (i) => y(series[i].chronicWeekly * 0.8), series.length);
 
   const dots = pts.map(([px, py], i) => (i % 2 === 0 || i === pts.length - 1)
-    ? `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${i === pts.length - 1 ? 4 : 2.6}"
-        fill="${STATUS_COLOR[series[i].status]}" stroke="var(--bg-2)" stroke-width="1.2"/>` : '').join('');
+    ? square(px, py, i === pts.length - 1 ? 8 : 4, `fill="${STATUS_COLOR[series[i].status]}"`) : '').join('');
 
   // Breakdown table: days spent in each status across the window.
   const counts = {};
@@ -567,6 +659,7 @@ export function openCardioDetail(ctx) {
         <span class="fh-status" style="color:${STATUS_COLOR[cs.status]}">${esc(cs.status)}</span>
       </div>
       <svg class="fh-svg" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+        ${telemetryGrid(W, H)}
         <path d="${band}" fill="var(--acc-purple)" opacity=".3"/>
         <path class="fh-line" d="${d}" stroke="var(--acc-peri)"/>
         ${dots}

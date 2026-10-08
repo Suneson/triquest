@@ -8,6 +8,8 @@ import { svg } from '../core/icons.js';
 import { todayISO } from '../core/dates.js';
 
 export async function fetchPublicUserProfile(targetUserId) {
+  const { isDemo, demoPublicProfile } = await import('./demo.js');
+  if (isDemo()) return demoPublicProfile(targetUserId);
   const c = await client();
   const { data, error } = await c.rpc('public_profile', { p_user: targetUserId });
   if (error) throw error;
@@ -51,7 +53,7 @@ export function openPublicProfile({ uid, name, rank, xp }) {
       <div class="total"><small>Workouts</small><b>${s.completed}</b></div>
       <div class="total"><small>Distance</small><b>${fmtKm(km) || '0 km'}</b></div>
       <div class="total"><small>Streak</small><b>${streaks.current} d</b></div>
-      <div class="total"><small>⏱️ Hours</small><b>${((Number(p.total_min) || 0) / 60).toFixed(1)}</b></div>
+      <div class="total"><small>Hours</small><b>${((Number(p.total_min) || 0) / 60).toFixed(1)}</b></div>
     </div>`;
     const badges = `<h4 class="pp-h4">Achievements</h4><div class="badge-wall">${MILESTONES.map((m) => {
       const on = m.got(s);
@@ -66,7 +68,9 @@ export function openPublicProfile({ uid, name, rank, xp }) {
 }
 
 function skeleton() {
-  return `<div class="pp-stats">${'<div class="total sk"></div>'.repeat(4)}</div>
+  const total = (i) => `<div class="total is-sk" style="--sk-i:${i}"><small><i class="sk-line" style="width:70%"></i></small><b><i class="sk-line" style="width:3ch"></i></b></div>`;
+  return `<span class="sr">Loading profile…</span>
+    <div class="pp-stats" aria-hidden="true">${[0, 1, 2, 3].map(total).join('')}</div>
     <h4 class="pp-h4">Achievements</h4>
-    <div class="badge-wall">${'<div class="badge sk"></div>'.repeat(6)}</div>`;
+    <div class="badge-wall" aria-hidden="true">${[0, 1, 2, 3, 4, 5].map((i) => `<div class="badge sk-tile" style="--sk-i:${i + 4}"></div>`).join('')}</div>`;
 }

@@ -9,6 +9,8 @@ import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/da
 import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 import { svg } from '../core/icons.js';
+import { rollNum } from './motion.js';
+import { weekPathCard } from './game.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
 import { sessionLine, dayLine } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
@@ -269,8 +271,8 @@ function metaChips(w, units) {
   return [
     `<span class="chip type-${w.type}">${svg(w.type)} ${d.label}</span>`,
     w.hr_zone ? zoneBadge(w.hr_zone) : '',
-    `<span class="chip mono">${formatDuration(w.durationMin)}</span>`,
-    w.metrics?.distanceKm ? `<span class="chip mono">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
+    `<span class="chip data">${formatDuration(w.durationMin)}</span>`,
+    w.metrics?.distanceKm ? `<span class="chip data">${fmtKm(w.metrics.distanceKm, units)}</span>` : '',
     `<span class="chip intensity-${w.intensity}">${INTENSITIES[w.intensity] || w.intensity}</span>`,
     pace ? `<span class="chip pace">${esc(pace)}</span>` : '',
   ].filter(Boolean).join('') + tags.join('');
@@ -312,6 +314,8 @@ export function renderWorkoutDetail(w, units, ctx) {
     ${exercises}
     ${actuals}
     ${packingChecklist(w, ctx?.settings)}
+    ${w.completed && (w.strava_activity_id || w.source === 'strava')
+      ? `<button class="btn primary block" data-action="share-card" data-id="${esc(w.id)}">${svg('upload')} Share card</button>` : ''}
     <div class="card-foot">
       <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">${svg('edit')} Edit</button>
       <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">${svg('copy')} Duplicate</button>
@@ -321,21 +325,30 @@ export function renderWorkoutDetail(w, units, ctx) {
 
 // ---- shared pixel components -------------------------------------------------
 
-/** Segmented meter: `segments` cells, filled in proportion to frac (0..1+). */
-export function meter(frac, { segments = 10, cls = '', label = '' } = {}) {
+/** Segmented meter: `segments` cells, filled in proportion to frac (0..1+).
+ *  `key` names the meter across renders so motion.js can light only the
+ *  segments that are new since it was last on screen. */
+export function meter(frac, { segments = 10, cls = '', label = '', key = '' } = {}) {
   const f = Math.max(0, Number(frac) || 0);
   const on = Math.min(segments, Math.round(Math.min(1, f) * segments));
-  const cells = Array.from({ length: segments }, (_, i) =>
-    `<i class="${i < on ? 'on' : ''}" style="animation-delay:${i * 40}ms"></i>`).join('');
-  return `<div class="meter fill ${f > 1 ? 'over' : ''} ${cls}" role="img" aria-label="${esc(label || `${Math.round(f * 100)}%`)}">${cells}</div>`;
+  const cells = Array.from({ length: segments }, (_, i) => `<i${i < on ? ' class="on"' : ''}></i>`).join('');
+  const k = key ? ` data-meter-key="${esc(key)}"` : '';
+  return `<div class="meter ${f > 1 ? 'over' : ''} ${cls}"${k} role="img" aria-label="${esc(label || `${Math.round(f * 100)}%`)}">${cells}</div>`;
+}
+
+/** The coach's face at 32px (his portrait, or the whistle icon until art exists). */
+export function coachMini() {
+  return COACH.portrait
+    ? `<img class="coach-mini" src="${esc(COACH.portrait)}" alt="" width="32" height="32">`
+    : `<span class="coach-mini">${svg('coach')}</span>`;
 }
 
 /** Dialogue box: the coach (or another speaker) saying one thing.
  *  `type: true` marks the line for a typewriter reveal (see effects.typeLines). */
-export function dialogue({ who = COACH.name, icon = 'coach', text = '', body = '', cls = '', portrait = COACH.portrait, type = false } = {}) {
+export function dialogue({ who = COACH.name, icon = 'coach', text = '', body = '', cls = '', portrait = who === COACH.name ? COACH.portrait : null, type = false } = {}) {
   const frames = portrait === COACH.portrait
     ? `${COACH.blink ? ` data-blink="${esc(COACH.blink)}"` : ''}${COACH.talk ? ` data-talk="${esc(COACH.talk)}"` : ''}` : '';
-  const pic = portrait ? `<img class="dlg-portrait" src="${esc(portrait)}" alt=""${frames}>` : '';
+  const pic = portrait ? `<img class="dlg-portrait" src="${esc(portrait)}" alt="" width="64" height="64"${frames}>` : '';
   return `<section class="dlg ${portrait ? 'has-portrait' : ''} ${cls}">${pic}
     <div><div class="dlg-who">${portrait ? '' : svg(icon)}${esc(who)}</div>
     ${text ? `<p class="coach-line"${type ? ' data-type' : ''}>${esc(text)}</p>` : ''}${body}</div></section>`;
@@ -347,12 +360,14 @@ export function eventBanner(ctx) {
   const evs = (ctx.settings?.events || []).filter((e) => e.date && e.date >= ctx.today)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!evs.length) return '';
-  return `<div class="race-banner">${svg('flag')} Next event: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
+  // one text span, so the flex row doesn't split the sentence into columns
+  return `<div class="race-banner">${svg('flag')}<span>Next event: <b>${esc(evs[0].title)}</b> · ${shortLabel(evs[0].date)}</span></div>`;
 }
 
 export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
   return homeDateHeader(ctx)
+    + weekPathCard(ctx)
     + heroCard(ctx, ws)
     + questsPanel(ctx)
     + `<h3 class="sec-title">${svg('target')} Today's target</h3>`
@@ -382,7 +397,7 @@ export function questsPanel(ctx) {
     <div class="q-head"><h3>${svg('scroll')} Daily quests</h3>
       <span class="q-reset" data-quest-reset title="Resets at midnight">RESETS ${formatCountdown(msUntilReset())}</span></div>
     ${rows}
-    <p class="coach-line"><span class="dlg-who" style="display:inline-flex;margin:0 6px 0 0">${svg('coach')}${esc(COACH.name)}</span>${esc(line)}</p>
+    <div class="q-coach">${coachMini()}<p class="coach-line"><span class="dlg-who">${esc(COACH.name)}</span>${esc(line)}</p></div>
   </section>`;
 }
 
@@ -406,7 +421,7 @@ function tomorrowGlance(ctx) {
     const extra = sessions.length > 1 ? ` <span class="tg-extra">+${sessions.length - 1}</span>` : '';
     inner = `<span class="sport-dot type-${esc(w.type)}"></span>
       <span class="tg-title">${esc(d.label)} — ${esc(w.title)}${extra}</span>
-      <span class="tg-min">${w.durationMin || 0} MIN</span>`;
+      <span class="tg-min">${w.durationMin || 0}<small class="data-unit"> min</small></span>`;
     attrs = `data-action="open-workout" data-id="${esc(w.id)}"`;
   } else {
     inner = `<span class="sport-dot"></span>
@@ -433,11 +448,11 @@ function weekGoalState(ctx, weekStartIso) {
 }
 
 // One goal as a labelled segmented meter: "PLAN 3/5" over ten cells.
-function goalMeter(frac, label, target, cls = '') {
+function goalMeter(frac, label, targetHtml, cls = '') {
   const p = Math.max(0, Math.round(frac * 100));
   return `<div class="goal-row">
-    <div class="goal-top"><b>${esc(label)}</b><span>${esc(target)}</span></div>
-    ${meter(frac, { cls, label: `${label} ${p}%` })}
+    <div class="goal-top"><b>${esc(label)}</b><span>${targetHtml}</span></div>
+    ${meter(frac, { cls, label: `${label} ${p}%`, key: `goal-${label.toLowerCase()}` })}
   </div>`;
 }
 
@@ -450,9 +465,9 @@ function heroCard(ctx, weekStartIso) {
   const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
   return `<section class="card hero-card">
     <div class="hero-head"><h4>This week</h4><button class="btn tiny ghost rings-edit" data-action="edit-goals">${svg('edit')} Edit</button></div>
-    ${goalMeter(s.fracs.sessions, 'Plan', `${s.sessions} / ${s.g.sessions}`)}
-    ${goalMeter(s.fracs.hours, 'Volume', `${s.hours.toFixed(1)} / ${s.g.hours} H`, 'info')}
-    ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${a.ratio}× base` : 'calibrating', 'good')}
+    ${goalMeter(s.fracs.sessions, 'Plan', `${rollNum(s.sessions, 'goal-sessions')} / ${esc(s.g.sessions)}`)}
+    ${goalMeter(s.fracs.hours, 'Volume', `${rollNum(s.hours, 'goal-hours', { dp: 1 })} / ${esc(s.g.hours)} H`, 'info')}
+    ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${rollNum(a.ratio, 'goal-ratio', { dp: 2 })}× base` : 'calibrating', 'good')}
     <div class="coach-inline">
       <h4>Coaching</h4>
       <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
@@ -474,6 +489,19 @@ function insightText(ctx, weekStartIso) {
 
 
 // A single ultra-clean card for today's targeted assignment.
+// A letterbox crop of the sport's scene at the athlete's current level, as the
+// header of Today's target. Same art as Profile, so levelling up shows here too.
+function sceneStrip(type, workouts) {
+  const sport = type === 'brick' ? 'bike' : type;
+  const s = sceneFor(sport, sportProgress(workouts, sport).level);
+  if (!s) return '';
+  const e = s.entry;
+  const art = s.kind === 'still'
+    ? `<img class="fs-still" src="${esc(e.src)}" alt="" width="${e.w}" height="${e.h}" style="--ar:${e.w} / ${e.h}" loading="lazy">`
+    : `<span class="fs-world"><img src="${esc(e.bg)}" alt="" loading="lazy"><img src="${esc(e.platform)}" alt="" class="fs-plat" loading="lazy"><img src="${esc(e.char)}" alt="" class="fs-char" loading="lazy"></span>`;
+  return `<div class="focus-strip is-${s.kind} sp-${s.sport}" aria-hidden="true">${art}<span class="fs-lvl">LVL ${s.level}</span></div>`;
+}
+
 function focusCard(ctx) {
   const { today, workouts, units } = ctx;
   const sessions = workouts.filter((w) => w.date === today).sort(sortSessions);
@@ -489,9 +517,11 @@ function focusCard(ctx) {
 
   const focus = sessions.find((w) => !w.completed) || sessions[sessions.length - 1];
   const d = DISCIPLINES[focus.type] || DISCIPLINES.other;
+  const strip = sceneStrip(focus.type, workouts);
   const km = focus.metrics?.distanceKm;
   const others = sessions.length - 1;
-  return `<section class="card focus-card" data-action="open-workout" data-id="${esc(focus.id)}" role="button" tabindex="0">
+  return `<section class="card focus-card${strip ? ' has-strip' : ''}" data-action="open-workout" data-id="${esc(focus.id)}" role="button" tabindex="0">
+      ${strip}
       <div class="focus-top">
         <span class="focus-sport">${svg(focus.type, `tint-${focus.type}`)} ${esc(d.label)}</span>
         ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}

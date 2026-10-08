@@ -3,7 +3,7 @@
 // field edits mutate the draft in place. Save writes through to the store.
 
 import { upsertWorkout, deleteWorkout, duplicateWorkout, workoutById, newId } from './store.js';
-import { DISCIPLINES, INTENSITIES, esc } from './ui.js';
+import { DISCIPLINES, INTENSITIES, esc, coachMini } from './ui.js';
 import { formatDuration } from '../core/scoring.js';
 import { todayISO } from '../core/dates.js';
 import { toast, playAccept } from './effects.js';
@@ -200,7 +200,7 @@ function action(kind) {
     saveDraft();
     if (isNew) {
       // a new session on the calendar is a quest the athlete just took on
-      toast(`<b>Quest accepted</b><br>${MOMENT_LINES.accepted}`, { icon: svg('scroll') });
+      toast(`<b>Quest accepted</b><br>${MOMENT_LINES.accepted}`, { icon: coachMini() });
       playAccept();
     } else {
       toast('Session saved', { icon: svg('check') });

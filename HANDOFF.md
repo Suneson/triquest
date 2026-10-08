@@ -165,11 +165,25 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 `tab`, `open-workout`, `open-profile`, `lb-toggle`, `edit-goals`, `ai-onboard`, `clear-future` / `reset-plan` (prescribed = not completed and not Strava-linked), `pg-sport` (switch the Profile scene), `open-sport-levels` (HUD level chip → level carousel), `shop-open`, `open-auth`, `dismiss-sync`, `open-editor-new`, `jr-week`, `edit|duplicate|delete`, `toggle-exercise`, `toggle-preset-pack`, `toggle-tomorrow-pack`, `log-metric`, settings `data-set` / `data-pack-preset`. **Tab switch always `scrollTo(0,0)`** (Journal then jumps to today's row). Focusable cards (`role="button" tabindex="0"`) activate on Enter/Space.
 
 ## Quests, account level, feedback (main.js)
-- `buildCtx()` adds `ctx.quests = questsFor(today, …)` and `ctx.acct = accountProgress(…)` (training XP + quest XP). Nothing new is stored: quests derive from workouts (+ `workout.packed` for the bag quest). Quests start `QUESTS_SINCE = 2026-10-05`. Leaderboard XP excludes quest XP (RPC unchanged).
+- `buildCtx()` adds `ctx.quests = questsFor(today, …)` and `ctx.acct = accountProgress(…)` (training XP + quest XP). Nothing new is stored: quests derive from workouts (+ `workout.packed` for the bag quest). Quests start `QUESTS_SINCE = 2026-10-05`. Quest XP reaches Ranks through `quest_completions` (migration `0006_quest_xp.sql`, **applied 2026-10-07** in seven parts, 0006a–g; the connector holds DROP/REVOKE-looking statements for a confirmation that times out, so keep migrations free of `drop … if exists` when the object can't exist yet): `js/app/quest-sync.js` claims done quests via the `claim_quest(p_day, p_quest_id)` RPC, throttled to once a minute, retried when back online, with a per-user ledger in localStorage (`moske-quest-claims:<uid>`); the planner is pure in `js/core/quest-claims.js`. The server re-checks every claim against Strava-verified workouts, takes XP from its own list (`quest_xp()`), caps 3/day and refuses days before 2026-10-05 or in the future. Only quests in `CLAIMABLE` (quest-claims.js) are sent; the recovery quest `rest-day` waits for `0007_rest_quest.sql` (written, **not applied**), then add it to `CLAIMABLE`.
 - `feedbackMoments(ctx)` diffs each render against the last: newly Strava-verified sessions → `xpPop`; newly done quests → one toast; a sport level rising → `openLevelUp(sport, level)` (scene wipe). `appState.seen = null` on sign-in/import/reseed so data swaps don't fire moments. New sessions from the editor → "Quest accepted".
 
 ## CSS tokens (`:root`) — full table in DESIGN.md §2
 `--bg:#0B1222; --bg-2:#121C33; --bg-3:#1A2744; --bg-4:#24345A; --line:#5372B5; --line-soft:#2A3B63; --shade:#050912; --fg:#F2F5FC; --muted:#9AA8C7; --brand:#0C4CAE; --accent:#F2C14E; --on-accent:#1A1205; --good:#5BD08A; --danger:#F06A6A; --info:#6EA8FF`, discipline `--c-*` unchanged. No blur, no radius (except avatars), no glow. Framed elements share one selector in styles.css and set `--b` / `--e` / `--eo`.
+
+## Pass 2 game layer (where things live)
+- `core/rest.js`: planned rest days (no non-optional planned session, in a gap of ≤ 2 such days). Streaks bridge them; the `rest-day` quest (from `REST_SINCE` 2026-10-08) pays 20 XP once the day is over.
+- Quest pool: filtered by `since` **before** shuffling, so adding a quest never re-rolls earlier days. New quests: append to `QUEST_POOL` with a future `since`.
+- `core/path.js` (week path, season path, next event) → `app/game.js` (Home card + sheet). `core/ranks.js` (podium, movement, rival) → `leaderboard.js`.
+- `app/motion.js`: tab wipe, `rollNum()` + `animateIn()`, `busy()`. `app/share.js`: canvas share card.
+- Scenes: `timeOfDay()` tints Profile; stills may carry `plate` + `char` (animated athlete). Fitness hub: trophy cabinet + stepped telemetry charts.
+- `?demo=1` makes you `d-07` in Ranks (rival row + movement badge show).
+
+## Pass 2 shell + debug switches
+- `.app` is a fixed inset-0 grid; the tab bar is its last row. Floating things use `--tabs-h` (DESIGN.md §2.3b). Never use `100vh`/`100dvh`.
+- `?safe=34` fakes the iPhone home-indicator inset. `?demo=1` fills Ranks, Shop and public profiles from `js/app/demo.js` with no network.
+- `tools/gap-audit.mjs <width>` checks the 16px minimum between framed boxes. `tools/phase-a.cli.js` is the screenshot run for `playwright-cli` (WebKit isn't installed in the cloud sandbox, so it uses Chromium with the iPhone 15 device profile).
+- Coach art: `icons/trainer/portrait.png` (96×96) and `full.png` (109×189), keyed and downscaled from `icons/trainer/source/`. `COACH` in `js/core/scenes.js`.
 
 ## ⚠️ Gotchas
 - **Bump SW `CACHE` + add new JS to ASSETS** every asset change, else stale.
@@ -191,6 +205,6 @@ Accounts+sync, Strava OAuth/webhook/polling/matching + actual-vs-planned, UX pas
 4b. ✅ Every tab and sheet restyled in the pixel system.
 5. ✅ **DONE** — AI power chart uses structured `power:[{min,watts}]`; ai-plan deployed v15 (see Done section).
 6. Optional: store per-workout packing-checked state UI is `extra.packed`; pack-for-tomorrow toggles across tomorrow sessions — verify multi-session edge cases.
-7. Art: Run 1–10 real (6–10 renamed from `templvl*`), Gym 1–9 (`GYM/templvl10.png` unapproved), Swim 1 only (`SWIM_LVL1.png`), trainer art not yet supplied. See `docs/redesign/ART-BRIEF.md`; new art is one manifest line in `js/core/scenes.js`.
+7. Art: Run 1–10 real (6–10 renamed from `templvl*`), Gym 1–9 (`GYM/templvl10.png` unapproved), Swim 1 only (`SWIM_LVL1.png`), trainer art in `icons/trainer/` (portrait + full figure, no blink/talk/cheer frames yet). See `docs/redesign/ART-BRIEF.md`; new art is one manifest line in `js/core/scenes.js`.
 8. Dead code: `ui.renderProgress()` and the panels only it calls (load, volume, body metrics, badge wall, reference cards) aren't wired to any tab. Left in place; restyled so they work if re-wired.
 ```

@@ -11,7 +11,7 @@ import { PLAN_START } from '../core/plan.js';
 import { addDays, diffDays, todayISO } from '../core/dates.js';
 import {
   renderHome, renderJournal, eventBanner, renderWorkoutDetail, esc,
-  sportLevelCarousel, stillCorners, dialogue,
+  sportLevelCarousel, stillCorners, dialogue, coachMini,
 } from './ui.js';
 import { leaderboardShell, loadLeaderboard, athleteByUid } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
@@ -23,7 +23,17 @@ import { openEditor } from './editor.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
+import { syncQuestClaims } from './quest-sync.js';
+import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
+import { openSeasonPath } from './game.js';
 
+
+// ?safe=34 fakes a bottom safe-area inset (home indicator) so the tab bar can be
+// checked in a desktop browser or headless screenshots.
+{
+  const fake = Number(new URLSearchParams(location.search).get('safe'));
+  if (Number.isFinite(fake) && fake > 0) document.documentElement.style.setProperty('--safe-b', `${Math.min(80, fake)}px`);
+}
 
 const appState = {
   tab: 'home',
@@ -83,6 +93,7 @@ function syncProgress(ctx) {
   }
   appState.lastLevel = ctx.acct.level;
   feedbackMoments(ctx);
+  syncQuestClaims(); // throttled; sends completed quests so they count in Ranks
 }
 
 // ---- feedback moments ----------------------------------------------------------
@@ -128,7 +139,7 @@ function feedbackMoments(ctx) {
       const xp = done.reduce((a, q) => a + q.xp, 0);
       const head = done.length === 1 ? `Quest complete +${xp} XP` : `${done.length} quests complete +${xp} XP`;
       setTimeout(() => {
-        toast(`<b>${head}</b><br>${done.map((q) => esc(q.text)).join('<br>')}`, { icon: svg('scroll'), duration: 5200 });
+        toast(`<b>${head}</b><br>${done.map((q) => esc(q.text)).join('<br>')}`, { icon: coachMini(), duration: 5200 });
         playQuest();
       }, 700);
     }
@@ -162,7 +173,7 @@ function render() {
   const chip = document.getElementById('acct-chip');
   if (chip) {
     chip.hidden = false;
-    chip.textContent = `LVL ${ctx.acct.level}`;
+    chip.innerHTML = `LVL ${rollNum(ctx.acct.level, 'acct-lvl')}`;
     chip.setAttribute('aria-label', `Account level ${ctx.acct.level}, ${ctx.acct.toNext} XP to the next level`);
   }
 
@@ -192,6 +203,7 @@ function render() {
   }
 
   document.getElementById('storage-banner').hidden = store.isPersistent();
+  animateIn(document);
 }
 
 // ---- Profile scene lifecycle --------------------------------------------------
@@ -268,17 +280,21 @@ function onClick(e) {
   const { action, id } = el.dataset;
 
   switch (action) {
-    case 'tab':
+    case 'tab': {
       closeModalRoot(); // full-screen overlays (fitness hub) must never trap navigation
+      const from = appState.tab;
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
       if (appState.tab === 'progress') autoStravaSync(); // silent background pull
-      render();
-      document.getElementById('view').scrollTo(0, 0); // #view is the scroller now
-      // Journal opens on today's row rather than Monday
-      if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
+      withTabTransition(from, appState.tab, () => {
+        render();
+        document.getElementById('view').scrollTo(0, 0); // #view is the scroller now
+        // Journal opens on today's row rather than Monday
+        if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
+      });
       break;
+    }
     case 'jr-week':
       appState.journalDate = addDays(appState.journalDate || todayISO(), Number(el.dataset.dir) * 7);
       render();
@@ -306,8 +322,7 @@ function onClick(e) {
       import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed')));
       break;
     case 'hub-strava-sync':
-      toast('Syncing from Strava…');
-      import('./strava-client.js').then((m) => m.syncNow()
+      busy(el, () => import('./strava-client.js').then((m) => m.syncNow())
         .then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); })
         .catch((e) => toast(e.message || 'Sync failed')));
       break;
@@ -322,6 +337,8 @@ function onClick(e) {
       break;
     case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
+    case 'open-season': openSeasonPath(buildCtx()); break;
+    case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
     case 'clear-future': {
       const t = todayISO();
       const n = prescribedSessions(t).length;
@@ -530,7 +547,7 @@ function openSettings() {
     else if (act === 'signout') { if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); close(); } }
     else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed'))); }
     else if (act === 'strava-disconnect') { import('./strava-client.js').then((m) => m.disconnectStrava().then(() => { toast('Strava disconnected'); openSettings(); })); }
-    else if (act === 'strava-sync') { toast('Syncing from Strava…', { icon: svg('sync') }); import('./strava-client.js').then((m) => m.syncNow().then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); }).catch((e) => toast(e.message || 'Sync failed'))); }
+    else if (act === 'strava-sync') { busy(b, () => import('./strava-client.js').then((m) => m.syncNow()).then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); }).catch((e) => toast(e.message || 'Sync failed'))); }
   }));
   root.querySelector('#import-file')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -717,7 +734,7 @@ function renderSyncBanner() {
 
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
-  if (user && !opts.remote) autoStravaSync();
+  if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
   render();
   const root = document.getElementById('modal-root');
   if (root && root.querySelector('[aria-label="Settings"]')) openSettings();
@@ -750,7 +767,7 @@ function maybeOnboard() {
   const root = document.getElementById('modal-root');
   root.classList.add('open');
   const cards = [
-    { icon: 'coach', t: 'Meet your coach', b: 'Sessions complete when Strava verifies them. That is what earns XP, clears daily quests and keeps your streak alive.' },
+    { icon: 'coach', img: COACH.full, t: 'Meet your coach', b: 'Sessions complete when Strava verifies them. That is what earns XP, clears daily quests and keeps your streak alive.' },
     { icon: 'plus', t: 'Make it yours', b: 'Tap the + button to add a session on any day, with intervals, exercises and a packing list.' },
     { icon: 'install', t: 'Add to Home Screen', b: 'Install MOSKE for a full-screen app that works offline at the gym. Sign in to sync across devices.' },
   ];
@@ -760,7 +777,7 @@ function maybeOnboard() {
     root.innerHTML = `<div class="modal-backdrop"></div>
       <div class="modal onboard" role="dialog" aria-modal="true" aria-label="Welcome to MOSKE">
         <div class="modal-body onboard-body">
-          <div class="onboard-icon">${svg(c.icon)}</div>
+          <div class="onboard-icon">${c.img ? `<img class="onboard-coach" src="${esc(c.img)}" alt="Your coach" width="109" height="189">` : svg(c.icon)}</div>
           <h2>${c.t}</h2><p class="muted">${c.b}</p>
           <div class="onboard-dots">${cards.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
         </div>

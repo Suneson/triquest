@@ -48,3 +48,74 @@ browser checks at 320, 390 and 430 px wide.
   charts would be a separate piece of work.
 - The `.ics` export still writes discipline emoji into calendar titles (a
   downloaded file, not the UI).
+
+## Pass 2, Phase A (web-design-guidelines skill, fetched live)
+
+The skill ran over every file changed in Phase A, plus browser checks in
+playwright-cli (Chromium with the iPhone 15 profile; WebKit isn't installed in
+the sandbox) at 320, 390 and 430 px. Screens are in `after/phase-a/`, a clip of
+tab and stage switching in `clips/phase-a-shell.webm`.
+
+| Area | Finding | Fix |
+|---|---|---|
+| Touch | `.btn.tiny` (36px) and `.icon-btn.tiny` (32px) under 44px | Invisible `::after` grows the hit area to 44px, look unchanged (measured: a tap 3px above the Edit button lands on it) |
+| Images | Profile still had no `width`/`height` | Sized from the manifest, `fetchpriority="high"` (it's the screen's main image) |
+| Overscroll | Sheet bodies chained scroll into the page | `overscroll-behavior: contain` on `.modal-body` |
+| Layout | Tab bar left a gap on iPhone PWA | Fixed grid shell, bar through the safe area; with `?safe=34` the bar ends at the viewport's bottom pixel |
+
+Checked and fine: no `transition: all`; every `outline: none` has a
+replacement (inputs turn their border gold; tabs use `:focus-visible`); icon
+buttons have `aria-label`; toasts are `aria-live="polite"`; `color-scheme:
+dark` and `theme-color` set; zoom not blocked; reduced motion kills every
+animation.
+
+Left as is: images inside fixed-ratio boxes (level cards, lightbox, level-up)
+have no `width`/`height`, but the box already reserves the space, so there's
+no layout shift.
+
+## Pass 2, Phase B (feel)
+
+Dials from design-taste-frontend: variance 3, motion 6, density 3. Taken from
+it: full state cycles (loading shaped like the result, tactile press, busy),
+transform/opacity/clip-path only, every motion gated on reduced motion.
+Ignored: its rounded/blurred defaults and its eased "fluid" curves (we step).
+
+| Check | Result |
+|---|---|
+| Tab wipe runs | `startViewTransition` fires once per tab change in Chromium; skipped when unsupported or under reduced motion |
+| Tab bar mid-wipe | Was ghosting two gold cells: the tab's own 160ms colour transition, caught halfway. Tabs now swap in one frame |
+| Wipe overprint | New view snapshot was transparent and printed over the old one. `.view` has its own background now |
+| Number roll | Verifying a session rolled Plan `0 → 1` with `.rolling` on, then settled |
+| Meter fill | First sight lights segments one by one; a re-render with no change lights none |
+| Skeleton jump | Ranks skeleton rows sit at y = 428 / 530 / 632, same as the real rows. Shop skeleton has two title lines to match most product titles |
+| Busy | `aria-busy` + disabled during the request, both cleared after; dots step 0→3 without moving the label |
+
+Clips: `clips/phase-b-tab-wipe.webm`, `clips/phase-b-roll-and-fill.webm`,
+`clips/phase-b-busy-and-loading.webm`. Screens: `after/phase-b/`.
+
+## Pass 2, Phase C (game layer)
+
+Checked in playwright-cli (Chromium, iPhone 15 profile) at 320, 390 and 430 px;
+screens in `after/phase-c/`, clips in `clips/phase-c-*.webm`.
+
+| Area | Finding | Fix |
+|---|---|---|
+| Week path | At 320px the card was 37px too wide: its grid track sized to the event label | `grid-template-columns: minmax(0, 1fr)`; tiles `calc(100% - 4px)` |
+| Race banner (older) | Flex split "Next event: Half Ironman — Sun 1 Nov" into three columns at 320px | One text span inside the flex row |
+| Scenes at dawn/dusk | A coloured line along the stage's top and bottom: the stage bands and the art's faded edge were both tinted | Tint only via the art layer (it spans the stage) and the screen backdrop |
+| Scene strip | Bike rider missing: `inset: auto` after `left/top` reset them. Gym crop above the lifter | Order fixed; per-sport `--fy` focus |
+| Scene strip | Container and image shared the class `fs-still`, so the strip collapsed to 0px | Container uses `is-still` / `is-layered` |
+| Ranks skeleton | After the podium landed, the old row skeleton no longer matched | Skeleton draws podium (with trophy), rival (two-line gap text) and rows; lands on the same pixels (477 / 718 / 882) |
+| Fitness calendar | Square tiles at `1fr` grew to 40px and stacked the months | 16px tiles on a 4px gap; months side by side at 390, stacked at 320 |
+| Share card | Feed post drew the scene at 1× (2× didn't fit); the generator sparkle showed; the date overlapped the numbers | Whole-number 2× with a crop around the athlete; corner covers drawn on canvas; date moved into the label line |
+| Share sheet | Download links styled as buttons were underlined and wrapped | `a.btn { text-decoration: none; white-space: nowrap; }` |
+
+Guidelines pass (web-design-guidelines) over `game.js`, `share.js`,
+`leaderboard.js`, `profile-game.js`, `ui.js`, `motion.js`: no `transition: all`,
+no unlabeled icon buttons, every `role="button"` is focusable, all new loops
+stop under reduced motion. Images without `width`/`height` all sit in fixed-size
+boxes (avatars, the layered world, the strip), so there's no layout shift.
+Gap audit: all framed boxes ≥ 16px apart at 320, 390 and 430.
+
+Not verifiable here: Web Share with files (desktop Chromium can't share files,
+so the sheet shows Save; on iPhone it shows Share), and WebKit rendering.

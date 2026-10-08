@@ -101,3 +101,13 @@ test('every coach frame that is set exists on disk', () => {
     assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), `${k}: ${f}`);
   }
 });
+
+test('a still with an animated athlete has both plate and char, on the same canvas', () => {
+  for (const [sport, s] of Object.entries(SCENES)) {
+    if (s.kind !== 'still') continue;
+    s.levels.forEach((e, i) => {
+      assert.equal(!!e.plate, !!e.char, `${sport} level ${i + 1}: plate and char go together`);
+      if (e.plate) assert.ok(sceneFiles().includes(e.plate) && sceneFiles().includes(e.char));
+    });
+  }
+});

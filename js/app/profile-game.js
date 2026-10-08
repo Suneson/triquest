@@ -92,7 +92,10 @@ function stillStage(scene, tod) {
   const corners = stillCorners(e);
   return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--bands:${backdropCss(e.backdrop)}">
     <div class="pg-art">
-      <img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">
+      ${e.plate && e.char
+        ? `<img class="pg-still-img" src="${esc(e.plate)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">
+      <img class="pg-still-img pg-still-char" src="${esc(e.char)}" width="${e.w}" height="${e.h}" alt="" aria-hidden="true">`
+        : `<img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">`}
       <div class="pg-tod" aria-hidden="true"></div>
       <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx, tod)}</div>
       ${corners}

@@ -1,9 +1,12 @@
 # MOSKE design system: pixel skin
 
-Status: **implemented** on `redesign/pixel-gamify` (all four phases). The tokens
-live in `css/styles.css`; the original proposal specimen is
-`docs/redesign/specimen.html`, and the before/after screens are in
-`docs/redesign/before/` and `docs/redesign/after/`.
+Status: **implemented**. Pass 1 (the pixel skin) is live; pass 2 (fixes, feel,
+game layer) is on `redesign/pixel-gamify`. The tokens live in
+`css/styles.css`; the original proposal specimen is
+`docs/redesign/specimen.html`, the before/after screens are in
+`docs/redesign/before/` and `docs/redesign/after/` (`phase-a/`, `phase-b/`,
+`phase-c/` for pass 2), and motion clips are in `docs/redesign/clips/`.
+Image prompts for future concepts are in `docs/redesign/CONCEPTS.md`.
 
 This is a reskin, not a rebuild. The five tabs, the information architecture
 and every feature stay. What changes is the surface: pixel display type, hard
@@ -29,6 +32,21 @@ buttons, pixel icons, and one accent (gold) on a dark navy canvas.
    off older iPhones.)
 6. **Motion is stepped.** Every animation uses `steps()` timing so it reads as
    sprite frames, and all of it turns off under reduced motion.
+
+### Atmosphere
+
+A dark, quiet game console: the navy night is the room, the gold is the only
+light switch, the scenes are the windows. Dials (the taste-skill scale):
+
+| Dial | Value | Reads as |
+|---|---|---|
+| Variance | 3 | predictable and symmetric: one column, the same card rhythm on every tab |
+| Motion | 6 | lively but stepped: wipes, rolls and loops, all sprite-timed |
+| Density | 3 | airy: one idea per panel, 16–32px between things |
+
+Where the design skills' defaults disagree with this file (rounded corners,
+soft shadows, blur, spring easing, always-on micro-motion, asymmetric heroes,
+their fonts and palettes), this file wins.
 
 ---
 
@@ -345,10 +363,91 @@ with the pixel `close` icon.
 - The "region nudge" experiment (shifting a clipped copy of the athlete) was
   dropped: it broke the track lines and dragged the gym equipment along. The
   evidence is in `docs/redesign/experiments/`.
+- **Time of day** (pass 2): the scene follows the athlete's local clock. Dawn
+  5–7, day 8–16, dusk 17–19, night 20–4 (`timeOfDay()` in `core/scenes.js`).
+  One flat `multiply` layer tints the art and one the screen backdrop; overlays
+  sit above it so lamps and stars stay bright. Night adds a dozen twinkling
+  stars where the scene has open sky (Run's cloud band, the top of the bike
+  world), dims clouds and leaves, and turns lamps and the lap clock up. Indoor
+  scenes (Gym, Swim) darken less: their lights are on.
+- **Animated athletes** (pass 2): a still may carry `plate` (no athlete) and
+  `char` (transparent animated WebP of the athlete, same canvas). Profile then
+  draws both; everything else keeps the full `src`. See the art brief.
 
 ---
 
-## 4. Do and don't
+### Week path (Home)
+Seven 36px tiles, Monday to Sunday, on a dashed 2px trail. A tile's border
+says its state: green verified (with a pennant), line-blue planned, dimmed
+missed, borderless rest (moon) or empty. Today's tile is gold-bordered with a
+stepping gold marker above it. The next event is a gold gate: on its day when
+it's this week, else an eighth column with the days left. The whole card opens
+the season path sheet: a vertical dashed trail of weeks with a 10-cell meter
+each, a gold gate on the event week. Data comes from `core/path.js`.
+
+### Ranks: podium, rival, movement
+The top three stand on blocks (gold 72px, silver 52px, bronze 40px) in 2-1-3
+order. Under it, a gold-bordered "Your rival" panel: the athlete directly above
+you, the XP gap in the pixel font, and a 16-cell meter of how close you are (at
+#1 it's "Your chaser"). Movement since your last visit is a pixel arrow and a
+number (green up, red down, `=` same, blue `New`), on your row and on the rival
+panel. Data comes from `core/ranks.js`; the last rank is kept per view in
+`localStorage`.
+
+### Trophy cabinet (Fitness hub)
+Every badge on wooden shelves, four per shelf (4px plank, hard shadow). Earned:
+gold glyph on a gold plinth. Locked: a `--shade` silhouette with a 1px
+`--line-soft` outline. Tapping one fills the line under the shelves with its
+name, state and how to earn it (`aria-live`).
+
+### Telemetry charts (Fitness hub)
+Lines are stepped (hold, then jump) on a 2px grid; markers are 4px squares (8px
+for the latest); bars are blocks with a 2px gap; bands are dashed outlines with
+a 14% fill. Every plot has dashed quarter gridlines and `+` ticks at its
+corners. The calendar is 16px square tiles on a 4px gap. All in our palette;
+the plot labels stay in the pixel font, the totals in the data font.
+
+### Scene strip (Today's target)
+An 88px letterbox crop of the sport's scene at your current level, across the
+top of the focus card, centred on the athlete (`--fy` per sport), with a gold
+level chip bottom-right and a 2px `--shade` rule under it.
+
+### Share card
+Canvas, 1080×1350 (post) and 1080×1920 (story), smoothing off. Top: the MOSKE
+wordmark and a gold level chip. Middle: the scene at a whole-number scale (2×),
+cropped around the athlete, with the corner covers drawn. Bottom: a framed
+panel with the sport, date, title (system font), minutes and km (data font) and
+`+XP` (pixel font). Shared as files through the Web Share API; downloads where
+that isn't available. Only verified sessions get the button.
+
+### Loading, empty and error
+Loading is never a spinner or a lone "Loading…": draw the real component with
+`.is-sk` and `.sk-line` / `.sk-tile` blocks, sized so the real content lands on
+the same pixels. Empty and error states are a dialogue box from whoever owns the
+screen (the Coach for training, Ranks for the leaderboard, Shop for the shop)
+saying what happened and what to do next.
+
+---
+
+## 4. Layout and responsive rules
+
+- **One column, three widths.** Everything is checked at 320, 390 and 430px.
+  No horizontal scroll at 320: grid tracks that hold text are
+  `minmax(0, 1fr)`, never `auto` or bare `1fr`.
+- **Spacing is tokens.** 32px between sections, 16px within a group, 20px
+  inside panels, 40px between Journal days. No two framed boxes closer than
+  16px (`node tools/gap-audit.mjs <width>`).
+- **The shell is a fixed grid** (§2.3b). Nothing floats on a magic number;
+  floating things use `--tabs-h`.
+- **Touch targets are 44px.** Small buttons get the rest from an invisible
+  `::after`.
+- **Bars and grids squeeze, they don't wrap.** The week path keeps seven tiles
+  at 320px (36px max, shrinking); the calendar's two months sit side by side
+  when they fit and stack when they don't.
+
+---
+
+## 5. Do and don't
 
 **Do**
 - Use `--px` multiples for every border, offset and icon size.
@@ -371,3 +470,8 @@ with the pixel `close` icon.
   off-switch.
 - Don't take image A's characters, artwork, purple palette or copy. Only its
   interface language.
+- Don't ship a spinner or a text-only "Loading…" state; draw the skeleton.
+- Don't let the Coach speak for non-training screens (Ranks, Shop).
+- Don't use pure black. The darkest colour is `--shade` (`#050912`).
+- Don't write AI-brochure copy ("elevate", "seamless", "unleash"). Short,
+  plain, second person.

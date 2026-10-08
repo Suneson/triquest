@@ -12,6 +12,11 @@
 // (the HUD still shows the true level). An entry's `src` is only ever used as
 // an <img src>, so an animated .webp or .gif can replace a .png here with no
 // code change.
+//
+// A still may also carry `plate` (the scene with no athlete) and `char` (a
+// transparent animated WebP of only the athlete, same canvas). With both set,
+// Profile draws the plate and plays the athlete over it; `src` stays the full
+// still for everything else (share card, Home strip, level carousel).
 
 const ART = 'icons/Pixelart';
 
@@ -134,7 +139,7 @@ export function sceneFiles() {
   for (const s of Object.values(SCENES)) {
     for (const e of s.levels) {
       if (s.kind === 'layered') out.push(e.bg, e.platform, e.char);
-      else out.push(e.src);
+      else out.push(e.src, ...(e.plate && e.char ? [e.plate, e.char] : []));
     }
   }
   return [...new Set(out)];

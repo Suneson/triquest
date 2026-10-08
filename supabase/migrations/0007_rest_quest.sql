@@ -4,8 +4,8 @@
 -- rest day is a day with no planned (non-optional) session inside a gap of at
 -- most two such days. The quest completes when nothing was logged that day.
 -- Written without DROP/REVOKE so the connector applies it without a
--- destructive-statement confirmation. After it's live, add 'rest-day' to
--- CLAIMABLE in js/core/quest-claims.js.
+-- destructive-statement confirmation. Applied 2026-10-08 (0007a quest_xp,
+-- 0007b claim_quest); 'rest-day' is in CLAIMABLE in js/core/quest-claims.js.
 --
 -- Note: the server can't do the client's two-day-run check exactly in one
 -- query; it checks a planned day within two days on each side, which allows a
@@ -42,12 +42,12 @@ begin
   if v_xp is null then
     raise exception 'unknown quest %', p_quest_id using errcode = '22023';
   end if;
-  -- the athlete's local date can run up to a day ahead of UTC
   -- a rest day only counts once it's over in the athlete's time zone, which can
   -- run up to a day behind UTC; the app only claims it the next local day
   if p_quest_id = 'rest-day' and p_day > (now() at time zone 'utc')::date then
     raise exception 'rest day % is not over yet', p_day using errcode = '22023';
   end if;
+  -- the athlete's local date can run up to a day ahead of UTC
   if p_day > (now() at time zone 'utc')::date + 1 then
     raise exception 'quest day % is in the future', p_day using errcode = '22023';
   end if;
@@ -85,7 +85,6 @@ begin
                       and exists (select 1 from public.workouts y
                                   where y.user_id = uid and y.date = p_day - 1 and y.completed
                                     and (y.strava_activity_id is not null or y.source = 'strava'))
-    -- app quest: tomorrow's sessions have their bag ticked
     -- planned rest: nothing logged that day, no planned (non-optional) session
     -- that day, and a planned session within two days on both sides
     when 'rest-day'  then p_day >= date '2026-10-08'
@@ -103,6 +102,7 @@ begin
                                   where r.user_id = uid and r.date between p_day + 1 and p_day + 2
                                     and r.source is distinct from 'strava'
                                     and not coalesce((r.extra ->> 'optional')::boolean, false))
+    -- app quest: tomorrow's sessions have their bag ticked
     when 'pack-bag'  then exists (select 1 from public.workouts t
                                   where t.user_id = uid and t.date = p_day + 1
                                     and jsonb_typeof(t.extra -> 'packed') = 'array'

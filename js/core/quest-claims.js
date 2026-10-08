@@ -10,8 +10,8 @@ export const claimKey = (day, questId) => `${day}|${questId}`;
 
 /** Quests the server's claim_quest() knows. A quest the server doesn't know
  *  yet would be refused (and never retried), so new client quests wait here
- *  until their migration is live. 'rest-day' needs 0007_rest_quest.sql. */
-export const CLAIMABLE = new Set(['plan-done', 'min-45', 'two-disc', 'streak', 'km-10', 'brick', 'pack-bag']);
+ *  until their migration is live. 'rest-day' went live with 0007_rest_quest.sql. */
+export const CLAIMABLE = new Set(['plan-done', 'min-45', 'two-disc', 'streak', 'km-10', 'brick', 'pack-bag', 'rest-day']);
 
 /** Quests that are only final once the day is over (rest: "nothing logged"). */
 const END_OF_DAY = new Set(['rest-day']);

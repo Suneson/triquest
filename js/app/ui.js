@@ -10,6 +10,7 @@ import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 import { svg } from '../core/icons.js';
 import { rollNum } from './motion.js';
+import { weekPathCard } from './game.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
 import { sessionLine, dayLine } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
@@ -313,6 +314,8 @@ export function renderWorkoutDetail(w, units, ctx) {
     ${exercises}
     ${actuals}
     ${packingChecklist(w, ctx?.settings)}
+    ${w.completed && (w.strava_activity_id || w.source === 'strava')
+      ? `<button class="btn primary block" data-action="share-card" data-id="${esc(w.id)}">${svg('upload')} Share card</button>` : ''}
     <div class="card-foot">
       <button class="btn tiny ghost" data-action="edit" data-id="${esc(w.id)}">${svg('edit')} Edit</button>
       <button class="btn tiny ghost" data-action="duplicate" data-id="${esc(w.id)}">${svg('copy')} Duplicate</button>
@@ -322,8 +325,8 @@ export function renderWorkoutDetail(w, units, ctx) {
 
 // ---- shared pixel components -------------------------------------------------
 
-/** Segmented meter: `segments` cells, filled in proportion to frac (0..1+). */
-/** `key` names the meter across renders so motion.js can light only the
+/** Segmented meter: `segments` cells, filled in proportion to frac (0..1+).
+ *  `key` names the meter across renders so motion.js can light only the
  *  segments that are new since it was last on screen. */
 export function meter(frac, { segments = 10, cls = '', label = '', key = '' } = {}) {
   const f = Math.max(0, Number(frac) || 0);
@@ -357,12 +360,14 @@ export function eventBanner(ctx) {
   const evs = (ctx.settings?.events || []).filter((e) => e.date && e.date >= ctx.today)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!evs.length) return '';
-  return `<div class="race-banner">${svg('flag')} Next event: <b>${esc(evs[0].title)}</b> — ${shortLabel(evs[0].date)}</div>`;
+  // one text span, so the flex row doesn't split the sentence into columns
+  return `<div class="race-banner">${svg('flag')}<span>Next event: <b>${esc(evs[0].title)}</b> · ${shortLabel(evs[0].date)}</span></div>`;
 }
 
 export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
   return homeDateHeader(ctx)
+    + weekPathCard(ctx)
     + heroCard(ctx, ws)
     + questsPanel(ctx)
     + `<h3 class="sec-title">${svg('target')} Today's target</h3>`
@@ -484,6 +489,19 @@ function insightText(ctx, weekStartIso) {
 
 
 // A single ultra-clean card for today's targeted assignment.
+// A letterbox crop of the sport's scene at the athlete's current level, as the
+// header of Today's target. Same art as Profile, so levelling up shows here too.
+function sceneStrip(type, workouts) {
+  const sport = type === 'brick' ? 'bike' : type;
+  const s = sceneFor(sport, sportProgress(workouts, sport).level);
+  if (!s) return '';
+  const e = s.entry;
+  const art = s.kind === 'still'
+    ? `<img class="fs-still" src="${esc(e.src)}" alt="" width="${e.w}" height="${e.h}" style="--ar:${e.w} / ${e.h}" loading="lazy">`
+    : `<span class="fs-world"><img src="${esc(e.bg)}" alt="" loading="lazy"><img src="${esc(e.platform)}" alt="" class="fs-plat" loading="lazy"><img src="${esc(e.char)}" alt="" class="fs-char" loading="lazy"></span>`;
+  return `<div class="focus-strip is-${s.kind} sp-${s.sport}" aria-hidden="true">${art}<span class="fs-lvl">LVL ${s.level}</span></div>`;
+}
+
 function focusCard(ctx) {
   const { today, workouts, units } = ctx;
   const sessions = workouts.filter((w) => w.date === today).sort(sortSessions);
@@ -499,9 +517,11 @@ function focusCard(ctx) {
 
   const focus = sessions.find((w) => !w.completed) || sessions[sessions.length - 1];
   const d = DISCIPLINES[focus.type] || DISCIPLINES.other;
+  const strip = sceneStrip(focus.type, workouts);
   const km = focus.metrics?.distanceKm;
   const others = sessions.length - 1;
-  return `<section class="card focus-card" data-action="open-workout" data-id="${esc(focus.id)}" role="button" tabindex="0">
+  return `<section class="card focus-card${strip ? ' has-strip' : ''}" data-action="open-workout" data-id="${esc(focus.id)}" role="button" tabindex="0">
+      ${strip}
       <div class="focus-top">
         <span class="focus-sport">${svg(focus.type, `tint-${focus.type}`)} ${esc(d.label)}</span>
         ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}

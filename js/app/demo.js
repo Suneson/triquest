@@ -7,6 +7,9 @@ export const isDemo = () => {
   try { return new URLSearchParams(location.search).get('demo') === '1'; } catch { return false; }
 };
 
+/** In demo mode "you" are this athlete, so the rival row and rank badge show. */
+export const DEMO_ME = 'd-07';
+
 const ATHLETES = [
   ['d-01', 'Marta Eklund', 18420, ['run', 'bike', 'swim']],
   ['d-02', 'Joaquín Herrera', 16975, ['bike', 'run']],

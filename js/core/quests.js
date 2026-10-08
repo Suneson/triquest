@@ -10,11 +10,14 @@
 // before it, so adding quests later never re-rolls or re-scores past days.
 
 import { addDays, diffDays } from './dates.js';
+import { isPlanned, isRestDay } from './rest.js';
 import { levelFromTotalXp, xpForWorkout } from './scoring.js';
 
 /** First day quests exist. Days before it earn no quest XP. */
 export const QUESTS_SINCE = '2026-10-05';
 export const QUESTS_PER_DAY = 3;
+/** The recovery quest and the rest-aware "train 45+" start here. */
+export const REST_SINCE = '2026-10-08';
 
 export const isVerified = (w) => !!(w && w.completed && (w.strava_activity_id || w.source === 'strava'));
 
@@ -32,7 +35,8 @@ export const QUEST_POOL = [
   {
     id: 'min-45', kind: 'training', xp: 30, since: QUESTS_SINCE,
     text: 'Train 45+ minutes today',
-    eligible: () => true,
+    // from REST_SINCE it no longer asks you to train on a planned rest day
+    eligible: (d) => !(d.date >= REST_SINCE && d.isRestDay),
     done: (d) => d.verified.reduce((a, w) => a + minutesOf(w), 0) >= 45,
   },
   {
@@ -67,6 +71,13 @@ export const QUEST_POOL = [
       const packed = new Set(w.packed || []);
       return preset.every((item) => packed.has(item));
     }),
+  },
+  {
+    id: 'rest-day', kind: 'training', xp: 20, since: REST_SINCE,
+    text: 'Rest day: take it, it counts',
+    eligible: (d) => d.isRestDay,
+    // done while nothing has been logged; claimed only once the day is over
+    done: (d) => d.isRestDay && !d.all.some((w) => w.completed),
   },
 ];
 
@@ -120,8 +131,10 @@ export function dayContext(date, byDate, settings) {
   const today = on(date);
   const tomorrow = on(addDays(date, 1));
   const presets = settings?.packing || {};
+  const planned = { has: (iso) => on(iso).some(isPlanned) };
   return {
     date,
+    isRestDay: isRestDay(date, planned),
     all: today,
     planned: today.filter((w) => w.source !== 'strava'),
     verified: today.filter(isVerified),
@@ -139,12 +152,15 @@ export function dayContext(date, byDate, settings) {
  */
 export function questsFor(date, workouts, settings, byDate = indexByDate(workouts)) {
   const d = dayContext(date, byDate, settings);
-  const order = shuffled(QUEST_POOL, seededRandom(hashString(`moske-quests:${date}`)));
+  // Shuffle only the quests that exist on this date, so adding a quest to the
+  // pool never re-rolls the days before its `since`.
+  const pool = QUEST_POOL.filter((q) => date >= q.since);
+  const order = shuffled(pool, seededRandom(hashString(`moske-quests:${date}`)));
   const out = [];
   let apps = 0;
   for (const q of order) {
     if (out.length >= QUESTS_PER_DAY) break;
-    if (date < q.since || !q.eligible(d)) continue;
+    if (!q.eligible(d)) continue;
     if (q.kind === 'app') { if (apps >= 1) continue; apps++; }
     out.push({ id: q.id, kind: q.kind, text: q.text, xp: q.xp, done: !!q.done(d) });
   }

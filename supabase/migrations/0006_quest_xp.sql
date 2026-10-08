@@ -4,6 +4,11 @@
 -- it calls claim_quest(day, quest_id). The server re-checks the claim against
 -- the athlete's own Strava-verified workouts and takes the XP from its own list,
 -- never from the client. Rows can only be written through that function.
+--
+-- Applied 2026-10-07 through the Supabase connector as seven parts
+-- (0006a…0006g in the migration history): the connector holds anything it
+-- reads as destructive (DROP, here) for a confirmation that timed out, so the
+-- `drop policy if exists` was skipped (the policy didn't exist yet).
 
 -- ---- table ---------------------------------------------------------------------
 

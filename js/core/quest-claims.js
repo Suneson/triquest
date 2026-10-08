@@ -8,6 +8,14 @@ import { addDays, diffDays } from './dates.js';
 
 export const claimKey = (day, questId) => `${day}|${questId}`;
 
+/** Quests the server's claim_quest() knows. A quest the server doesn't know
+ *  yet would be refused (and never retried), so new client quests wait here
+ *  until their migration is live. 'rest-day' needs 0007_rest_quest.sql. */
+export const CLAIMABLE = new Set(['plan-done', 'min-45', 'two-disc', 'streak', 'km-10', 'brick', 'pack-bag']);
+
+/** Quests that are only final once the day is over (rest: "nothing logged"). */
+const END_OF_DAY = new Set(['rest-day']);
+
 /** Empty ledger. `done` = the server has it; `rejected` = the server refused it
  *  (not complete, cap reached) and it shouldn't be retried for that day. */
 export const emptyLedger = () => ({ done: [], rejected: [], backfilled: false });
@@ -28,7 +36,7 @@ export function readLedger(raw) {
  * so a sync that lands a day late still claims).
  * @returns {Array<{day: string, quest_id: string, xp: number}>}
  */
-export function pendingClaims(today, workouts, settings, ledger, { recentDays = 3 } = {}) {
+export function pendingClaims(today, workouts, settings, ledger, { recentDays = 3, claimable = CLAIMABLE } = {}) {
   const l = readLedger(ledger);
   const skip = new Set([...l.done, ...l.rejected]);
   const byDate = indexByDate(workouts);
@@ -37,7 +45,9 @@ export function pendingClaims(today, workouts, settings, ledger, { recentDays = 
   const out = [];
   while (diffDays(day, today) <= 0) {
     for (const q of questsFor(day, workouts, settings, byDate)) {
-      if (q.done && !skip.has(claimKey(day, q.id))) out.push({ day, quest_id: q.id, xp: q.xp });
+      if (!q.done || skip.has(claimKey(day, q.id)) || !claimable.has(q.id)) continue;
+      if (END_OF_DAY.has(q.id) && day >= today) continue;
+      out.push({ day, quest_id: q.id, xp: q.xp });
     }
     day = addDays(day, 1);
   }

@@ -130,7 +130,7 @@ img { image-rendering: pixelated; }
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
 .exercise, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
-.signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art {
+.signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
   box-shadow:
@@ -212,7 +212,7 @@ img { image-rendering: pixelated; }
 }
 .card h3 { font-size: 17px; line-height: 1.25; }
 .block { margin-top: 4px; }
-.block h4, .fh-block h4, .hero-head h4, .coach-inline h4 {
+.block h4, .fh-block h4, .hero-head h4, .coach-inline h4, .wk-head h4 {
   font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d3); text-transform: uppercase;
   color: var(--muted); margin: 0 0 10px; letter-spacing: 0;
 }
@@ -589,6 +589,8 @@ input[type=checkbox]:checked::after {
 .lb-countdown b { font-family: var(--font-display); font-weight: 400; color: var(--fg); font-size: var(--fs-d2); line-height: 1; }
 .lb-loading { text-align: center; padding: 20px; }
 .lb-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-group); }
+#lb-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-group); }
+#lb-body > .lb-podium { margin-bottom: 8px; } /* blocks carry an 8px edge; keep 16px clear */
 .lb-list li.lb-row { display: flex; align-items: center; gap: 12px; background: var(--bg-2); padding: 14px 16px; margin: 2px 2px 6px; }
 .lb-list li.me { --b: var(--accent); }
 .lb-rank { width: 32px; flex: none; text-align: center; font-family: var(--font-display); font-size: var(--fs-d2); line-height: 1; color: var(--muted); }
@@ -601,6 +603,42 @@ input[type=checkbox]:checked::after {
 .lb-sports { display: flex; gap: 6px; flex: none; align-items: center; }
 .lbs { width: 8px; height: 8px; display: block; }
 .lbs-run { background: var(--c-run); } .lbs-bike { background: var(--c-bike); } .lbs-swim { background: var(--c-swim); }
+
+/* podium (C3): three blocks, the winner's tallest; tap opens the athlete */
+.lb-podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; align-items: end; gap: 8px; }
+.pod { position: relative; display: grid; justify-items: center; gap: 4px; background: none; border: 0; padding: 0; color: var(--fg); min-width: 0; }
+.pod .lb-avatar { width: 44px; height: 44px; box-shadow: 0 0 0 2px var(--line); }
+.pod-r1 .lb-avatar { width: 52px; height: 52px; box-shadow: 0 0 0 2px var(--accent); }
+.pod.me .lb-avatar { box-shadow: 0 0 0 2px var(--accent); }
+.pod-name { font-weight: 700; font-size: var(--fs-small); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pod-xp { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--muted); white-space: nowrap; }
+.pod-crown { color: var(--accent); line-height: 0; }
+.pod-crown .ic { width: 24px; height: 24px; }
+.pod-block {
+  --eo: 4px; --b: var(--line); width: calc(100% - 4px); margin: 4px 2px 2px; display: grid; place-items: start center; padding-top: 6px;
+  font-family: var(--font-display); font-size: var(--fs-d2); line-height: 1; background: var(--bg-3); color: var(--fg);
+}
+.pod-r1 .pod-block { height: 72px; --b: var(--accent); --e: var(--accent-lo); --eo: 8px; background: var(--accent); color: var(--on-accent); }
+.pod-r2 .pod-block { height: 52px; --b: #D3DAE6; color: #D3DAE6; }
+.pod-r3 .pod-block { height: 40px; --b: #D9925A; color: #D9925A; }
+.pod:active { transform: translateY(2px); }
+
+/* rival row: pinned under the podium */
+.lb-rival { --b: var(--accent); background: var(--bg-2); padding: var(--sp-panel); margin: 2px 2px 6px; display: grid; gap: 12px; }
+.lb-rival-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lb-rival-top h4 { margin: 0; font-family: var(--font-display); font-size: var(--fs-d3); color: var(--accent); text-transform: uppercase; }
+.lb-you { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--fg); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.lb-rival-row { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.lb-rival-row:active { transform: translateY(2px); }
+.lb-rival-line { font-size: var(--fs-small); color: var(--muted); }
+.lb-gap { font-family: var(--font-display); font-weight: 400; color: var(--fg); }
+/* movement since the last visit: a pixel arrow and the number of places */
+.lb-delta { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d3); line-height: 1; vertical-align: middle; }
+.lb-delta i { width: 8px; height: 6px; background: currentColor; }
+.lb-delta.up { color: var(--good); } .lb-delta.up i { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.lb-delta.down { color: var(--danger); } .lb-delta.down i { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.lb-delta.same { color: var(--muted); }
+.lb-delta.new { color: var(--info); }
 
 /* ---- SHOP ---------------------------------------------------------------------------------------------------------- */
 .shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-group); }
@@ -727,13 +765,20 @@ input[type=checkbox]:checked::after {
 .pc-stat.acct { --b: var(--accent); }
 .pc-stat.acct b { color: var(--accent); }
 .fh-foot { color: var(--muted); font-size: var(--fs-tiny); margin: 8px 0 0; }
-.fh-svg { width: 100%; height: auto; display: block; }
-.fh-line { fill: none; stroke-width: 2.5; stroke-linecap: square; }
+.fh-svg { width: 100%; height: auto; display: block; shape-rendering: crispEdges; }
+.fh-line { fill: none; stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; }
+/* telemetry furniture: dashed quarter gridlines, + ticks at the corners */
+.fh-grid { stroke: var(--line-soft); stroke-width: 1; stroke-dasharray: 2 4; }
+.fh-cross { fill: none; stroke: var(--muted); stroke-width: 2; }
+.fh-band { fill: var(--acc-green); opacity: .14; stroke: var(--acc-green); stroke-opacity: .6; stroke-width: 1; stroke-dasharray: 4 2; }
+.fh-bar.in { fill: var(--acc-green); } .fh-bar.over { fill: var(--acc-orange); } .fh-bar.under { fill: var(--acc-peri); }
+.fh-bar.zero { fill: var(--bg-4); } .fh-bar.wk { fill: var(--acc-peri); opacity: .7; } .fh-bar.now { fill: var(--now); }
 .fh-area { opacity: .16; }
 .fh-big { font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d1); color: var(--fg); line-height: 1.1; }
 .fh-big.data-num { font-family: var(--font-data); font-weight: 700; font-size: 30px; }
 .fh-range { color: var(--muted); font-size: var(--fs-tiny); margin: 4px 0 10px; }
-.fh-dot { fill: var(--acc-orange); stroke: var(--bg-2); stroke-width: 1.5; }
+.fh-dot { fill: var(--acc-orange); }
+.fh-dot.end { fill: var(--fg); }
 .fh-strain { display: flex; align-items: center; gap: 16px; }
 .fh-strain-stat { flex: none; min-width: 96px; }
 .fh-strain-lbl { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; margin-top: 4px; }
@@ -761,18 +806,18 @@ input[type=checkbox]:checked::after {
 .strava-ico { width: 16px; height: 16px; flex: none; }
 
 /* two-month activity calendar */
-.cal-months { display: flex; flex-direction: column; gap: 20px; }
-.cal-month { min-width: 0; width: 100%; }
+.cal-months { display: flex; flex-wrap: wrap; gap: 20px 24px; } /* two months side by side when they fit */
+.cal-month { min-width: 0; flex: 0 0 auto; }
 .cal-month h5 { font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d3); text-transform: uppercase; margin: 0 0 10px; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 6px; row-gap: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 16px); gap: 4px; } /* 16px square tiles on a 4px grid */
 .cal-head { display: block; text-align: center; font-style: normal; color: var(--muted); font-family: var(--font-display); font-size: var(--fs-d3); }
-.cal-chip { display: block; width: 100%; height: 14px; background: var(--bg-3); position: relative; }
+.cal-chip { display: block; width: 100%; aspect-ratio: 1; background: var(--bg-3); position: relative; } /* square tiles */
 .cal-chip.pad { visibility: hidden; }
 .cal-chip.lo { background: #3E7A5A; }
 .cal-chip.mid { background: var(--good); }
 .cal-chip.hi { background: var(--accent); }
 .cal-chip.future { opacity: .4; }
-.cal-chip.is-today { box-shadow: 0 0 0 2px var(--info); }
+.cal-chip.is-today { outline: 2px solid var(--fg); outline-offset: 1px; }
 .cal-legend { display: flex; gap: 14px; align-items: center; margin-top: 14px; color: var(--muted); font-size: var(--fs-tiny); flex-wrap: wrap; }
 .cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .cal-legend .cal-chip { width: 10px; height: 10px; }
@@ -893,6 +938,36 @@ body.pg-mode .view { padding: 0; max-width: none; }
 @keyframes fx-ring { 0% { opacity: .9; transform: scale(.4); } 100% { opacity: 0; transform: scale(1.6); } }
 .pg-screen.paused *, .pg-screen.paused { animation-play-state: paused !important; }
 
+/* ---- living scenes (C1): the athlete's local time tints the scene ------------------------------------------------- */
+/* One flat multiply layer over the art (.pg-tod, under the overlays so lamps and
+   stars stay bright; .pg-art spans the whole stage, so it tints the bands too)
+   and one over the screen backdrop. Day has none.
+   Indoor scenes (gym, pool) darken less at night: their lights are on. */
+.pg-screen { --tod: transparent; }
+.pg-screen.tod-dawn { --tod: rgba(255, 196, 170, .32); }
+.pg-screen.tod-dusk { --tod: rgba(255, 140, 90, .30); }
+.pg-screen.tod-night { --tod: rgba(36, 54, 132, .58); }
+.pg-screen.tod-night.indoor { --tod: rgba(60, 80, 150, .32); }
+.pg-tod { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: var(--tod); mix-blend-mode: multiply; }
+.pg-fx { z-index: 5; } /* overlays (lamps, stars) sit above the tint */
+.pg-screen::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; background: var(--tod); mix-blend-mode: multiply;
+}
+.pg-screen.tod-day .pg-tod, .pg-screen.tod-day::before { display: none; }
+/* after dark: dim the daylight overlays, turn the lamps up */
+.tod-night .fx-cloud { opacity: .18; }
+.tod-night .fx-leaf { filter: brightness(.6); }
+.tod-night .fx-glow { mix-blend-mode: screen; animation-name: fx-pulse-night; }
+@keyframes fx-pulse-night { 0%, 100% { opacity: .22; } 50% { opacity: .46; } }
+.tod-night .fx-clock { animation-name: fx-flicker-night; }
+@keyframes fx-flicker-night { 0%, 62%, 70%, 100% { opacity: .1; } 64% { opacity: .5; } 66% { opacity: .2; } 68% { opacity: .42; } }
+.tod-dusk .fx-glow { animation-name: fx-pulse-night; }
+/* stars: one art pixel, a few two; twinkle in hard steps */
+.fx-star { left: var(--x); top: var(--y); width: .5%; height: .5%; min-width: 2px; min-height: 2px; background: #F2F5FC;
+  animation: fx-twinkle 4s steps(1, end) infinite; animation-delay: var(--delay); }
+.fx-star.big { width: .8%; height: .8%; background: #FFE7A6; }
+@keyframes fx-twinkle { 0%, 100% { opacity: .9; } 40% { opacity: .3; } 55% { opacity: 1; } 80% { opacity: .5; } }
+
 /* level-up wipe on the stage */
 .pg-wipe { position: absolute; inset: 0; background: var(--bd-top, var(--bg)); animation: pg-wipe 640ms steps(8, end) forwards; pointer-events: none; }
 @keyframes pg-wipe { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
@@ -980,6 +1055,114 @@ body.rm .pg-fx { display: none; }
 .principles { margin: 0; padding-left: 18px; color: var(--muted); font-size: var(--fs-small); }
 .sk { background: var(--bg-3); min-height: 60px; animation: sk 1.2s steps(2, end) infinite; }
 @keyframes sk { 50% { background: var(--bg-4); } }
+
+/* ---- Today's target scene strip (C8) ----------------------------------------------------------------------------- */
+/* The strip bleeds to the card's frame: negative margins cancel the panel padding. */
+.focus-card.has-strip { padding-top: 0; }
+.focus-strip { position: relative; height: 88px; margin: 0 calc(-1 * var(--sp-panel)); overflow: hidden; background: var(--bg-3); }
+.focus-strip img { image-rendering: pixelated; pointer-events: none; }
+/* stills: the art fills the width and the band is centred just above the athlete */
+/* --fy: how far down the art the athlete sits; that point lands mid-strip */
+.focus-strip { --fy: 52%; }
+.focus-strip.sp-gym { --fy: 64%; }
+.focus-strip.sp-swim { --fy: 56%; }
+.fs-still { position: absolute; left: 0; width: 100%; height: auto; aspect-ratio: var(--ar); top: 50%; transform: translateY(calc(-1 * var(--fy))); }
+/* the bike world, scaled to the card width and centred on the rider */
+.fs-world { position: absolute; left: 0; width: 100%; aspect-ratio: 572 / 1024; top: 50%; transform: translateY(-49%); }
+.fs-world img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fs-world .fs-plat { transform: scale(.87); }
+.fs-world .fs-char { inset: auto; left: 30%; top: 49%; width: 40%; height: auto; transform: translateY(-50%); }
+.fs-lvl { position: absolute; right: 10px; bottom: 8px; --b: var(--accent); --e: var(--accent-lo); --eo: 6px; background: var(--accent); color: var(--on-accent);
+  font-family: var(--font-display); font-size: var(--fs-d3); line-height: 1; padding: 4px 6px; }
+/* the strip sits under the card's notched frame; a hard 2px rule separates it from the text */
+.focus-strip::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--shade); }
+
+/* ---- trophy cabinet (C4) ---------------------------------------------------------------------------------------- */
+.tc { display: grid; gap: 12px; }
+.tc h4 { display: flex; align-items: baseline; justify-content: space-between; }
+.tc-count { font-family: var(--font-display); font-weight: 400; color: var(--muted); }
+.tc-count .data-num { color: var(--accent); }
+/* a shelf: four cups standing on a 4px wooden rail with a hard shadow */
+.tc-shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 0 4px; position: relative; }
+.tc-shelf::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: #6B4A2E; box-shadow: 0 4px 0 0 var(--shade); }
+.tc-cup { background: none; border: 0; padding: 8px 0 4px; display: grid; justify-items: center; gap: 2px; min-height: 64px; color: var(--muted); }
+.tc-ico { line-height: 0; }
+.tc-ico .ic { width: 32px; height: 32px; }
+.tc-plinth { width: 24px; height: 6px; background: var(--bg-4); margin-bottom: 4px; }
+.tc-cup.is-on { color: var(--accent); }
+.tc-cup.is-on .tc-plinth { background: var(--accent-lo); }
+/* locked: a dark silhouette of the same trophy */
+.tc-cup.is-off .tc-ico { color: var(--shade); filter: drop-shadow(1px 0 0 var(--line-soft)) drop-shadow(-1px 0 0 var(--line-soft)) drop-shadow(0 1px 0 var(--line-soft)) drop-shadow(0 -1px 0 var(--line-soft)); }
+.tc-cup[aria-pressed="true"] .tc-plinth { background: var(--fg); }
+.tc-cup:active { transform: translateY(2px); }
+.tc-info { margin: 0; min-height: 3em; color: var(--muted); font-size: var(--fs-small); }
+.tc-info b { color: var(--fg); }
+.tag.good { --b: var(--good); color: var(--good); }
+
+/* ---- share card sheet (C6) -------------------------------------------------------------------------------------- */
+.sh-preview { --b: var(--line); width: min(100%, 320px); margin: 2px auto 8px; aspect-ratio: 1080 / 1350; background: var(--bg-3); }
+.sh-preview img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.sh-preview.is-sk .sk-tile { width: 100%; height: 100%; }
+.sh-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-group); }
+.sh-actions .btn { width: calc(100% - 4px); }
+a.btn { text-decoration: none; white-space: nowrap; } /* links styled as buttons (downloads) */
+
+/* ---- week path (C2) ------------------------------------------------------------------------------------------- */
+.wk-path { padding: var(--sp-panel); display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.wk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wk-head h4 { margin: 0; white-space: nowrap; }
+.wk-ev { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-display); font-size: var(--fs-d3); color: var(--accent); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.wk-ev .ic { width: 16px; height: 16px; flex: none; }
+/* seven stops on a dashed trail; an 8th column for the finish gate when the event is later */
+.wk-track { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; position: relative; }
+.wk-track.has-gate-col { grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(0, .9fr); }
+.wk-track::before { /* the trail: 2px dashes through the middle of the tiles */
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 17px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--line-soft) 0 6px, transparent 6px 10px);
+}
+.wk-stop, .wk-gate { display: grid; justify-items: center; gap: 6px; position: relative; min-width: 0; }
+.wk-day { font-family: var(--font-display); font-size: var(--fs-d3); line-height: 1; color: var(--muted); }
+.wk-tile {
+  --b: var(--line-soft); --eo: 4px; position: relative; width: calc(100% - 4px); max-width: 36px; aspect-ratio: 1; margin: 2px;
+  display: grid; place-items: center; background: var(--bg-3); color: var(--muted);
+}
+.wk-tile .ic { width: 16px; height: 16px; }
+.wk-tile .ic + .ic { position: absolute; right: 1px; bottom: 1px; width: 12px; height: 12px; }
+.wk-stop.is-planned .wk-tile { --b: var(--line); background: var(--bg-2); }
+.wk-stop.is-verified .wk-tile { --b: var(--good); background: var(--bg-2); }
+.wk-stop.is-missed .wk-tile { opacity: .5; }
+.wk-stop.is-rest .wk-tile { background: transparent; --b: var(--line-soft); }
+.wk-stop.is-empty .wk-tile { background: transparent; }
+.wk-stop.is-today .wk-day { color: var(--accent); }
+.wk-stop.is-today .wk-tile { --b: var(--accent); }
+/* a planted flag: pole + pennant in art pixels, top-right of the tile */
+.wk-flag { position: absolute; right: -2px; top: -10px; width: 2px; height: 14px; background: var(--fg); }
+.wk-flag::after { content: ''; position: absolute; left: 2px; top: 0; width: 8px; height: 6px; background: var(--good);
+  clip-path: polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%); }
+/* "you are here": a gold marker that steps up and down above today */
+.wk-me { position: absolute; left: 50%; top: -12px; width: 8px; height: 6px; margin-left: -4px; background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 50% 100%); animation: wk-step 900ms steps(2, end) infinite; }
+@keyframes wk-step { 50% { transform: translateY(-3px); } }
+/* the finish gate: two posts and a gold banner */
+.wk-gate .wk-day { color: var(--accent); font-weight: 400; }
+.wk-gate .wk-tile, .wk-stop.has-gate .wk-tile { --b: var(--accent); --e: var(--accent-lo); --eo: 6px; background: var(--accent); color: var(--on-accent); }
+
+/* season path sheet: a vertical trail of weeks to the finish */
+.sp-goal { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--font-display); font-size: var(--fs-d3); color: var(--accent); text-transform: uppercase; }
+.sp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; position: relative; }
+.sp-list::before { content: ''; position: absolute; left: 13px; top: 14px; bottom: 14px; width: 2px;
+  background: repeating-linear-gradient(180deg, var(--line-soft) 0 6px, transparent 6px 10px); }
+.sp-week { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px; padding: 10px 0; position: relative; }
+.sp-node { --b: var(--line); --eo: 4px; width: 24px; height: 24px; margin: 2px; display: grid; place-items: center; background: var(--bg-3); position: relative; z-index: 1; }
+.sp-node .ic { width: 16px; height: 16px; }
+.sp-node .wk-me { top: -10px; }
+.sp-week.is-current .sp-node { --b: var(--accent); }
+.sp-week.is-cleared .sp-node { --b: var(--good); color: var(--good); }
+.sp-week.is-event .sp-node { --b: var(--accent); --e: var(--accent-lo); --eo: 6px; background: var(--accent); color: var(--on-accent); }
+.sp-body { display: grid; gap: 8px; min-width: 0; }
+.sp-top { display: flex; align-items: center; gap: 10px; font-size: var(--fs-small); color: var(--muted); }
+.sp-top b { font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d3); color: var(--fg); text-transform: uppercase; }
+.sp-meta { color: var(--muted); font-size: var(--fs-small); }
 
 /* ---- feel (pass 2, Phase B) ------------------------------------------------------------------------ */
 

@@ -25,6 +25,7 @@ import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
+import { openSeasonPath } from './game.js';
 
 
 // ?safe=34 fakes a bottom safe-area inset (home indicator) so the tab bar can be
@@ -336,6 +337,8 @@ function onClick(e) {
       break;
     case 'open-workout': openWorkoutDetail(id); break;
     case 'edit-goals': openGoalEditor(); break;
+    case 'open-season': openSeasonPath(buildCtx()); break;
+    case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
     case 'clear-future': {
       const t = todayISO();
       const n = prescribedSessions(t).length;

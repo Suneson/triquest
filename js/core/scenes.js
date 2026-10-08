@@ -178,6 +178,16 @@ export function cornerPolygon({ side, from, to }, step = 2) {
 // until real art lands (see docs/redesign/ART-BRIEF.md); with no portrait the
 // dialogue box shows his name and a whistle icon instead of a picture. With
 // `blink` / `talk` frames as well, he blinks and "speaks" while a line types.
+/** The athlete's local time of day, for scene lighting: dawn 5–7, day 8–16,
+ *  dusk 17–19, night 20–4. */
+export function timeOfDay(hour) {
+  const h = ((Number(hour) % 24) + 24) % 24;
+  if (h >= 5 && h < 8) return 'dawn';
+  if (h >= 8 && h < 17) return 'day';
+  if (h >= 17 && h < 20) return 'dusk';
+  return 'night';
+}
+
 export const COACH = {
   name: 'Coach',
   // from icons/trainer/source/coach-greenscreen.webp: green keyed out, box-averaged

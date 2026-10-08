@@ -213,7 +213,9 @@ export function openAuthModal() {
     await busy(e.submitter, async () => { try {
       if (pwMode === 'up') {
         const c = await client();
-        const { data, error } = await c.auth.signUp({ email, password });
+        // send the confirmation link back to this page (…/triquest/), not the
+        // project's Site URL, which may be the bare github.io domain
+        const { data, error } = await c.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo() } });
         if (error) throw error;
         if (data.session) { close(); return; } // confirmation off → signed in immediately
         msg('Account created — confirm your email, then sign in. (Or disable email confirmation in Supabase.)', true);

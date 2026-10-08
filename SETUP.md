@@ -22,6 +22,13 @@ You only need to create the Strava app and set two secrets; everything else is d
 ### 1. Create a Strava API application
 Go to **https://www.strava.com/settings/api** → create an app:
 - **Website**: `https://suneson.github.io/triquest/`
+
+**Supabase Auth → URL Configuration** (dashboard): set **Site URL** to
+`https://suneson.github.io/triquest/` and add `https://suneson.github.io/triquest/**`
+under **Redirect URLs**. The app asks for `…/triquest/` on sign-up, magic link
+and password reset, but Supabase only honours URLs on that list; anything else
+falls back to the Site URL. With the bare `https://suneson.github.io` there, the
+confirmation email lands on a GitHub 404 (the account still gets confirmed).
 - **Authorization Callback Domain** (no `https://`): `kmanszmqgmyninoplwbt.functions.supabase.co`
 
 Note your **Client ID** (public) and **Client Secret** (🔴 keep private).

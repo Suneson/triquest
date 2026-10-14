@@ -95,8 +95,8 @@ test("'train 45+' is not offered on a rest day from REST_SINCE", () => {
   }
 });
 
-test('rest quest claims wait for the server and for the day to end', () => {
-  assert.equal(CLAIMABLE.has('rest-day'), false);
+test('rest quest claims wait until the server knows the quest and the day has ended', () => {
+  assert.equal(CLAIMABLE.has('rest-day'), true, 'live since 0007');
   let d = null;
   for (let k = 0; k < 40 && !d; k++) {
     const c = addDays(REST_SINCE, k * 3);
@@ -105,7 +105,8 @@ test('rest quest claims wait for the server and for the day to end', () => {
   const ws = [plan(addDays(d, -1)), plan(addDays(d, 1))];
   const ledger = { ...emptyLedger(), backfilled: true };
   const withServer = new Set([...CLAIMABLE, 'rest-day']);
-  assert.ok(!pendingClaims(d, ws, {}, ledger).some((c) => c.quest_id === 'rest-day'), 'not claimable yet');
+  const withoutServer = new Set([...CLAIMABLE].filter((q) => q !== 'rest-day'));
+  assert.ok(!pendingClaims(addDays(d, 1), ws, {}, ledger, { claimable: withoutServer }).some((c) => c.quest_id === 'rest-day'), 'not sent before the server knows it');
   assert.ok(!pendingClaims(d, ws, {}, ledger, { claimable: withServer }).some((c) => c.quest_id === 'rest-day'), 'not on the day itself');
   assert.ok(pendingClaims(addDays(d, 1), ws, {}, ledger, { claimable: withServer }).some((c) => c.quest_id === 'rest-day' && c.day === d));
 });

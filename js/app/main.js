@@ -20,7 +20,8 @@ import { renderProfileGame, openFitnessHub, openPublicFitness } from './profile-
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
-import { confetti, playLevelUp, playBadge, playQuest, playComplete, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
+import { handleGymAction, finishView, startTicker } from './gym-logger.js';
+import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
@@ -278,6 +279,7 @@ function onClick(e) {
   const el = e.target.closest('[data-action]');
   if (!el) return;
   const { action, id } = el.dataset;
+  if (handleGymAction(action, el, gymDeps, 'click')) return;
 
   switch (action) {
     case 'tab': {
@@ -386,14 +388,8 @@ function onChange(e) {
     store.touchWorkout(id || w.id);
   };
 
-  if (action === 'toggle-exercise') {
-    const w = store.workoutById(id);
-    // interim: ticking the exercise ticks every set (the Phase 2 logger ticks sets one by one)
-    const now = el.checked ? new Date().toISOString() : null;
-    (w.exercises[+el.dataset.ex].sets || []).forEach((s) => { s.done = el.checked; s.doneAt = now; });
-    store.touchWorkout(id);
-    refreshDetail(id);
-  } else if (action === 'toggle-preset-pack') {
+  if (handleGymAction(action, el, gymDeps, 'change')) return;
+  if (action === 'toggle-preset-pack') {
     togglePacked(store.workoutById(id), el.dataset.item, el.checked);
     refreshDetail(id);
   } else if (action === 'toggle-tomorrow-pack') {
@@ -412,19 +408,10 @@ function onInput(e) {
   const { action, id } = el.dataset;
 
   // Text fields save silently (no re-render) so focus/caret survive.
+  if (handleGymAction(action, el, gymDeps, 'input')) return;
   if (action === 'notes') {
     const w = store.workoutById(id);
     w.notes = el.value;
-    store.save();
-  } else if (action === 'exercise-field') {
-    const w = store.workoutById(id);
-    // interim: the detail view logs the first work set
-    const ex = w.exercises[+el.dataset.ex];
-    const set = (ex.sets || []).find((s) => s.kind !== 'warmup') || ex.sets?.[0];
-    if (set) {
-      const v = el.value.trim().replace(',', '.');
-      set[el.dataset.field] = v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
-    }
     store.save();
   } else if (action === 'actual-field') {
     const w = store.workoutById(id);
@@ -623,6 +610,24 @@ function openGoalEditor() {
   });
 }
 
+// what the gym logger needs from the app
+const gymDeps = {
+  store,
+  refresh: (id) => refreshDetail(id),
+  close: () => closeModalRoot(),
+  toast: (msg) => toast(msg, { icon: svg('warn') }),
+  showFinish: (id) => {
+    const body = document.getElementById('wd-body');
+    const w = store.workoutById(id);
+    if (body && w) { body.innerHTML = finishView(w); body.scrollTop = 0; }
+    playComplete();
+  },
+};
+function onRestDone() {
+  playRestDone();
+  try { navigator.vibrate?.([120, 80, 120]); } catch { /* not supported */ }
+}
+
 let _detailId = null;
 function openWorkoutDetail(id) {
   const w = store.workoutById(id);
@@ -637,6 +642,7 @@ function openWorkoutDetail(id) {
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
   typeLines(root);
+  if (root.querySelector('[data-gl-bar]')) startTicker((wid) => store.workoutById(wid), onRestDone);
 }
 function openSportLevels(sport) {
   if (!sport) return;
@@ -669,10 +675,13 @@ function refreshDetail(id) {
   if (_detailId !== id) return;
   const body = document.getElementById('wd-body');
   const w = store.workoutById(id);
-  if (body && w) body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
+  if (!body || !w) return;
+  const top = body.scrollTop;
+  body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
+  body.scrollTop = top;
 }
 function closeModalRoot() {
-  _detailId = null;
+  _detailId = null; // the gym ticker stops itself once no logger is open and no rest is running
   const root = document.getElementById('modal-root');
   root.innerHTML = ''; root.classList.remove('open');
 }
@@ -826,6 +835,7 @@ async function boot() {
     e.preventDefault();
     el.click();
   });
+  startTicker((wid) => store.workoutById(wid), onRestDone); // a rest started before a reload still beeps
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
   document.addEventListener('input', onInput);

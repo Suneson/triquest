@@ -8,7 +8,8 @@ import { upgradeExercises } from '../../core/sets.js';
 import { mergeByUpdatedAt, applyRemoteChange } from '../../core/sync.js';
 
 // app-only display flags that live in the `extra` jsonb column
-const EXTRA_KEYS = ['isRace', 'optional', 'phaseId', 'weekNum', 'seeded', 'hr_zone', 'ai', 'packed', 'power'];
+const EXTRA_KEYS = ['isRace', 'optional', 'phaseId', 'weekNum', 'seeded', 'hr_zone', 'ai', 'packed', 'power',
+  'gymStartedAt', 'gymLoggedAt', 'gymDurationSec'];
 
 export function workoutToRow(w, userId) {
   const extra = {};

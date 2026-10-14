@@ -127,6 +127,14 @@ export function playAccept() {
   blip(587.33, 0.07, 0.14, 'square', 0.1);
 }
 
+/** Rest over: three short square beeps, like a gym interval timer. */
+export function playRestDone() {
+  if (!soundOn()) return;
+  const ac = ctx();
+  if (ac && ac.state === 'suspended') ac.resume();
+  [0, 0.18, 0.36].forEach((t, i) => blip(i === 2 ? 1046.5 : 783.99, t, 0.1, 'square', 0.12));
+}
+
 export function playBadge() {
   if (!soundOn()) return;
   const ac = ctx();

@@ -72,7 +72,27 @@ width, height, `loading="lazy"`. `exerciseArtSrc(libId)` only returns a path
 for ids in `ART_IDS`, so nothing requests a missing file; a test keeps
 `ART_IDS`, the PNGs and `sheets.json` in step.
 
-## Phase 2 — the logger
+## Phase 2 — the logger  ✅
+
+Done: `js/core/gym-log.js` (pure, `tests/gym-log.test.js`) holds the rules;
+`js/app/gym-logger.js` draws and wires them into the workout sheet. Session bar
+sticks to the top (elapsed clock from the first ticked set, rest timer with
+−15/+15/skip and a 10-segment bar, Finish). Each exercise: art, name, muscle ·
+equipment, rest chip (native select of presets), note chip, "How to" cues
+collapsed, set grid SET / LAST / KG / REPS / tick (bodyweight shows +KG, timed
+exercises a TIME column with a play/stop count-up). The set label is a native
+select over the W/1/D/F label: Warm-up / Work / Drop / Failure / Remove set.
+LAST fills the row on tap and shows last time's numbers as placeholders;
+ticking a blank set fills it from last time. Below ~300px of panel width
+(a 320 phone) LAST folds into a "Last …" line under each set. Timers are end
+timestamps in localStorage (`moske-rest`, `moske-stopwatch`); the ticker keeps
+running while a rest does, beeps (`playRestDone`, only with sound on) and
+vibrates; a rest that ran out while the app was shut is cleared quietly.
+Finish writes `gymLoggedAt` + `gymDurationSec` (synced through `extra`), never
+`completed`, and shows "Logged. Sync with Strava to earn XP." with time, sets
+and volume (warm-ups excluded). Screens: `docs/gym/after/phase-2/`.
+
+The brief for this phase:
 
 - Session header: elapsed timer, Finish, rest timer.
 - Per exercise: art, name, muscle, rest chip, note chip, cues collapsed.

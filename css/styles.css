@@ -112,7 +112,7 @@ img { image-rendering: pixelated; }
 .small { font-size: var(--fs-small); }
 .spacer { flex: 1; }
 .mono, .d { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; }
-.data-num, .bm b, .tg-min, .chip.data, .ex-prescribed, .avp b, .total b, .pwr-bar span, .pwr-ftp, .ob-hist-row b {
+.data-num, .bm b, .tg-min, .chip.data, .avp b, .total b, .pwr-bar span, .pwr-ftp, .ob-hist-row b {
   font-family: var(--font-data); font-weight: 700; font-variant-numeric: tabular-nums;
   letter-spacing: 0; text-transform: none;
 }
@@ -129,7 +129,7 @@ img { image-rendering: pixelated; }
 .ob-choice, .ob-note, .ob-hist-row, .btn, .icon-btn, .fab, .tabs, .chip, .tag, .zone, .lvl-chip, .ob-chip, .cap,
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
-.exercise, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
+.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
 .signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
@@ -354,6 +354,7 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
   padding: 10px 12px; width: 100%; font-size: 16px; margin: 2px;
 }
 .field input:focus, .field select:focus, .field textarea:focus, .row input:focus, .ex-log input:focus, .pack-add input:focus,
+.gl-in:focus, .gl-note:focus,
 .auth-form input:focus, .ob-field input:focus, .metric-log input:focus { outline: none; --b: var(--accent); }
 .field select { -webkit-appearance: none; appearance: none; background-image: none; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -545,8 +546,6 @@ input[type=checkbox]:checked::after {
 .pwr-bar span { position: absolute; top: -16px; left: -4px; right: -4px; text-align: center; font-size: 10px; color: var(--muted); line-height: 1; }
 .zcol-1 { background: var(--z1); } .zcol-3 { background: var(--z3); } .zcol-4 { background: var(--z4); } .zcol-5 { background: var(--z5); }
 .pwr-ftp { font-size: var(--fs-tiny); color: var(--muted); margin-top: 8px; }
-.exercise { --eo: 4px; display: flex; gap: 12px; padding: 14px; background: var(--bg-3); margin: 2px 2px 18px; }
-.exercise.done { opacity: .7; }
 .ex-img { --eo: 4px; flex: none; width: 64px; height: 64px; background: var(--bg-4); display: grid; place-items: center; overflow: hidden; color: var(--c-gym); margin: 2px; }
 .ex-img img { width: 100%; height: 100%; object-fit: cover; }
 .ex-art { background: #FBF3E6; } /* the sheets' card cream, so the art sits on its own paper */
@@ -554,14 +553,107 @@ input[type=checkbox]:checked::after {
 .pose { width: 100%; height: 100%; }
 .pose .equip { stroke: var(--accent); }
 .pose .equip.fill { fill: var(--accent); stroke: none; }
-.ex-body { flex: 1; min-width: 0; }
-.ex-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.ex-check { display: flex; align-items: center; gap: 8px; }
-.ex-prescribed { color: var(--accent); font-size: 15px; white-space: nowrap; }
 .cues { margin: 6px 0 8px; padding-left: 18px; color: var(--muted); font-size: var(--fs-small); }
 .ex-log { display: flex; gap: 8px; }
 .ex-log label { flex: 1; font-size: var(--fs-tiny); color: var(--muted); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ex-log input { padding: 8px; }
+/* ---- gym logger (js/app/gym-logger.js) -------------------------------------------------------
+   Session bar sticks to the top of the sheet; each exercise is a panel with a
+   set grid. The LAST column folds under the row when the panel is narrow. */
+.gl-bar {
+  position: sticky; top: -16px; z-index: 2; margin: -16px -16px 0; padding: 10px 16px 8px;
+  background: var(--bg-2); border-bottom: var(--px) solid var(--line-soft); display: grid; gap: 8px;
+}
+.gl-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gl-bar-row .btn { margin: 2px 2px 6px; }
+.gl-clock { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; min-width: 0; }
+.gl-clock b, .gl-rest-left { font-size: 20px; color: var(--fg); }
+.gl-k { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; color: var(--muted); line-height: 1; }
+.gl-logged { --b: var(--good); color: var(--good); }
+.gl-logged .ic { width: 16px; height: 16px; }
+.gl-rest { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 4px 10px; }
+.gl-rest-bar { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; height: 12px; padding: 2px; background: var(--shade); }
+.gl-rest-bar i { background: var(--bg-4); }
+.gl-rest-bar i.on { background: var(--info); }
+.gl-rest-btns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.gl-rest-btns .btn { margin: 2px 2px 6px; gap: 4px; }
+.gl-rest-btns .ic { width: 16px; height: 16px; }
+
+.gl { display: grid; gap: var(--sp-group); }
+.gl-ex { --eo: 4px; background: var(--bg-3); padding: 12px; margin: 2px 2px 6px; display: grid; gap: 12px; container-type: inline-size; }
+.gl-ex-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.gl-ex-head .ex-img { width: 64px; height: 64px; }
+.gl-ex-title { display: grid; gap: 2px; min-width: 0; }
+.gl-ex-title h5 { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.25; }
+.gl-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.gl-chip { --b: var(--line); position: relative; min-height: 36px; cursor: pointer; color: var(--fg); background: var(--bg-2); }
+.gl-chip::after { content: ''; position: absolute; inset: -4px; }
+.gl-chip .ic { width: 16px; height: 16px; color: var(--muted); }
+.gl-chip select {
+  -webkit-appearance: none; appearance: none; background: transparent; border: 0; color: inherit;
+  font-size: 16px; padding: 0; cursor: pointer; position: relative; z-index: 1;
+}
+.gl-chip:focus-within { outline: var(--px) solid var(--accent); outline-offset: var(--px); }
+.gl-note { --b: var(--line); --eo: 4px; background: var(--bg-4); color: var(--fg); font-size: 16px; padding: 10px 12px; margin: 2px; width: calc(100% - 4px); resize: vertical; }
+.gl-cues summary {
+  list-style: none; cursor: pointer; color: var(--muted); font-size: var(--fs-small);
+  min-height: 32px; display: inline-flex; align-items: center; gap: 8px;
+}
+.gl-cues summary::-webkit-details-marker { display: none; }
+.gl-cues summary::before { content: '+'; font-family: var(--font-display); font-size: var(--fs-d3); color: var(--fg); }
+.gl-cues[open] summary::before { content: '-'; }
+.gl-cues .cues { margin-top: 0; }
+
+.gl-grid { display: grid; gap: 4px; }
+.gl-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 68px 60px 44px; gap: 6px; align-items: center; }
+.gl-grid.is-timed .gl-row { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 136px) 44px; }
+.gl-head { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; color: var(--muted); text-align: center; line-height: 1; padding-bottom: 2px; }
+.gl-head .ic { width: 16px; height: 16px; }
+.gl-set {
+  --b: var(--line); --eo: 4px; position: relative; height: 40px; margin: 2px; display: grid; place-items: center;
+  background: var(--bg-4); font-family: var(--font-data); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums;
+}
+.gl-set select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+.gl-set:focus-within { outline: var(--px) solid var(--accent); outline-offset: var(--px); }
+.gl-set.k-warmup { color: var(--accent); }
+.gl-set.k-drop { color: var(--info); }
+.gl-set.k-failure { color: var(--danger); }
+.gl-prev {
+  background: none; border: 0; padding: 0 2px; min-height: 40px; color: var(--muted); cursor: pointer;
+  font-family: var(--font-data); font-weight: 600; font-size: var(--fs-small); font-variant-numeric: tabular-nums;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+span.gl-prev { cursor: default; }
+.gl-prev-sub { display: none; grid-column: 2 / -1; justify-self: start; min-height: 28px; text-align: left; }
+.gl-in {
+  --b: var(--line); --eo: 4px; width: calc(100% - 4px); height: 40px; margin: 2px; padding: 0 4px;
+  background: var(--bg-4); color: var(--fg); font-size: 16px; text-align: center;
+}
+.gl-in::placeholder { color: var(--muted); }
+.gl-row.done .gl-in { --b: var(--good); }
+.gl-tick {
+  --b: var(--line); --eo: 4px; width: 40px; height: 40px; margin: 2px; padding: 0; justify-self: end;
+  display: grid; place-items: center; background: var(--shade); color: var(--bg-4); cursor: pointer; position: relative;
+  transition: transform var(--t-press);
+}
+.gl-tick::after { content: ''; position: absolute; inset: -2px; }
+.gl-tick .ic { width: 16px; height: 16px; }
+.gl-tick[aria-pressed="true"] { --b: var(--good); background: var(--good); color: var(--shade); }
+.gl-tick:active { transform: translateY(2px); }
+.gl-time { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.gl-time .icon-btn { margin: 2px; }
+.gl-sw-live { display: grid; place-items: center; color: var(--fg); font-size: 18px; }
+.gl-add { width: calc(100% - 4px); }
+@container (max-width: 300px) {
+  .gl-col-prev { display: none; }
+  .gl-row { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr) 44px; }
+  .gl-grid.is-timed .gl-row { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+  .gl-prev-sub { display: block; }
+}
+.gl-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 12px; }
+.gl-sum-cell { --eo: 4px; background: var(--bg-3); padding: 10px; margin: 2px; display: grid; gap: 6px; }
+.gl-sum-cell b { font-size: 20px; }
+
 .actual-vs-planned { display: flex; flex-wrap: wrap; gap: 12px var(--sp-group); }
 .avp { --eo: 4px; background: var(--bg-3); padding: 6px 8px; font-size: var(--fs-small); margin: 2px; }
 .avp b { color: var(--good); }

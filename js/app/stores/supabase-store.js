@@ -4,6 +4,7 @@
 // updated_at; remote changes stream in via realtime.
 
 import { LocalStore } from './local-store.js';
+import { upgradeExercises } from '../../core/sets.js';
 import { mergeByUpdatedAt, applyRemoteChange } from '../../core/sync.js';
 
 // app-only display flags that live in the `extra` jsonb column
@@ -52,7 +53,7 @@ export function rowToWorkout(r) {
     phase: r.phase ?? '',
     deload: !!r.deload,
     segments: r.segments ?? [],
-    exercises: r.exercises ?? [],
+    exercises: upgradeExercises(r.exercises ?? []), // old rows from another device open in the new shape
     packing: r.packing ?? [],
     notes: r.notes ?? '',
     actual: r.actual ?? null,

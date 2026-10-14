@@ -3,6 +3,8 @@
 
 import { formatDuration, sportProgress } from '../core/scoring.js';
 import { poseSvgFor, cuesFor } from '../core/poses.js';
+import { cuesForId } from '../core/exercises.js';
+import { workSets, prescription } from '../core/sets.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
@@ -50,27 +52,35 @@ export function segmentBar(segments) {
 
 // ---- exercises --------------------------------------------------------------
 
+// Interim view of the set-based model (Phase 2's logger replaces it): the
+// exercise is done when all its sets are, and the inputs log the first work set.
 function exerciseRow(w, ex, idx) {
   const img = ex.imageUrl
-    ? `<img class="ex-img" src="${esc(ex.imageUrl)}" alt="${esc(ex.name)}" loading="lazy" onerror="this.style.display='none'">`
+    ? `<img class="ex-img" src="${esc(ex.imageUrl)}" alt="${esc(ex.name)}" width="64" height="64" loading="lazy" onerror="this.style.display='none'">`
     : `<div class="ex-img">${poseSvgFor(ex.name)}</div>`;
-  const cues = cuesFor(ex.name).map((c) => `<li>${esc(c)}</li>`).join('');
+  const cues = (cuesForId(ex.libId) || cuesFor(ex.name)).map((c) => `<li>${esc(c)}</li>`).join('');
+  const sets = ex.sets || [];
+  const done = sets.length > 0 && sets.every((s) => s.done);
+  const first = workSets(ex)[0] || sets[0] || {};
+  const timed = ex.kind === 'time';
+  const val = (v) => (v == null ? '' : v);
   return `
-    <div class="exercise ${ex.done ? 'done' : ''}">
+    <div class="exercise ${done ? 'done' : ''}">
       ${img}
       <div class="ex-body">
         <div class="ex-head">
           <label class="ex-check">
-            <input type="checkbox" data-action="toggle-exercise" data-id="${esc(w.id)}" data-ex="${idx}" ${ex.done ? 'checked' : ''}>
+            <input type="checkbox" data-action="toggle-exercise" data-id="${esc(w.id)}" data-ex="${idx}" ${done ? 'checked' : ''}>
             <b>${esc(ex.name)}</b>
           </label>
-          <span class="ex-prescribed">${esc(ex.sets)}×${esc(ex.reps)}</span>
+          <span class="ex-prescribed">${esc(prescription(ex))}</span>
         </div>
+        ${ex.note ? `<p class="muted small">${esc(ex.note)}</p>` : ''}
         <ul class="cues">${cues}</ul>
         <div class="ex-log">
-          <label>kg<input type="text" inputmode="decimal" value="${esc(ex.weight)}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="weight"></label>
-          <label>reps<input type="text" inputmode="numeric" value="${esc(ex.actualReps)}" placeholder="${esc(ex.reps)}" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="actualReps"></label>
-          <label>RPE<input type="text" inputmode="decimal" value="${esc(ex.rpe)}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="rpe"></label>
+          ${timed ? '' : `<label>kg<input type="text" inputmode="decimal" value="${esc(val(first.weight))}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="weight"></label>`}
+          <label>${timed ? 'sec' : 'reps'}<input type="text" inputmode="numeric" value="${esc(val(timed ? first.seconds : first.reps))}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="${timed ? 'seconds' : 'reps'}"></label>
+          <label>RPE<input type="text" inputmode="decimal" value="${esc(val(first.rpe))}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="rpe"></label>
         </div>
       </div>
     </div>`;

@@ -8,6 +8,8 @@ import { formatDuration } from '../core/scoring.js';
 import { todayISO } from '../core/dates.js';
 import { toast, playAccept } from './effects.js';
 import { svg } from '../core/icons.js';
+import { upgradeExercise, newSet, workSets } from '../core/sets.js';
+import { matchExercise, exerciseById } from '../core/exercises.js';
 import { MOMENT_LINES } from '../core/coach-lines.js';
 
 const SEG_KINDS = { warmup: 'Warm-up', work: 'Work', rest: 'Rest / float', cooldown: 'Cool-down' };
@@ -59,14 +61,20 @@ function renderModal() {
       <button type="button" class="icon-btn" data-del-seg="${i}" aria-label="Remove segment">${svg('close')}</button>
     </div>`).join('');
 
-  const exRows = d.exercises.map((e, i) => `
+  // interim rows on the set-based model (Phase 3's exercise editor replaces them):
+  // "sets" is the number of work sets, "reps" (or seconds) applies to all of them
+  const exRows = d.exercises.map((e, i) => {
+    const ws = workSets(e);
+    const target = e.kind === 'time' ? ws[0]?.seconds : ws[0]?.reps;
+    return `
     <div class="row ex-row" data-ex="${i}">
       <input class="grow" type="text" value="${esc(e.name)}" placeholder="Exercise" data-ex-field="name" data-i="${i}">
-      <input class="num" type="text" value="${esc(e.sets)}" placeholder="sets" data-ex-field="sets" data-i="${i}">
-      <input class="num" type="text" value="${esc(e.reps)}" placeholder="reps" data-ex-field="reps" data-i="${i}">
+      <input class="num" type="text" inputmode="numeric" value="${ws.length}" placeholder="sets" aria-label="Sets" data-ex-field="sets" data-i="${i}">
+      <input class="num" type="text" inputmode="numeric" value="${esc(target ?? '')}" placeholder="${e.kind === 'time' ? 'sec' : 'reps'}" aria-label="${e.kind === 'time' ? 'Seconds' : 'Reps'}" data-ex-field="reps" data-i="${i}">
       <input class="grow" type="url" value="${esc(e.imageUrl || '')}" placeholder="custom image URL (optional)" data-ex-field="imageUrl" data-i="${i}">
       <button type="button" class="icon-btn" data-del-ex="${i}" aria-label="Remove exercise">${svg('close')}</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   const packRows = d.packing.map((p, i) => `
     <div class="row pack-row" data-pack="${i}">
@@ -152,8 +160,21 @@ function wire(root) {
     draft.segments[i][f] = f === 'value' ? Number(el.value) : el.value;
   }));
   root.querySelectorAll('[data-ex-field]').forEach((el) => el.addEventListener('input', () => {
-    const i = +el.dataset.i;
-    draft.exercises[i][el.dataset.exField] = el.value;
+    const ex = draft.exercises[+el.dataset.i];
+    const f = el.dataset.exField;
+    const n = Math.round(Number(el.value));
+    if (f === 'sets') {
+      if (!(n >= 1 && n <= 20)) return;
+      const ws = workSets(ex);
+      const tmpl = ws[ws.length - 1] || newSet('work');
+      while (workSets(ex).length < n) ex.sets.push(newSet('work', { reps: tmpl.reps, seconds: tmpl.seconds, weight: tmpl.weight }));
+      while (workSets(ex).length > n) ex.sets.splice(ex.sets.lastIndexOf(workSets(ex).at(-1)), 1);
+    } else if (f === 'reps') {
+      const v = el.value.trim() === '' || !Number.isFinite(n) ? null : n;
+      workSets(ex).forEach((s) => { if (ex.kind === 'time') s.seconds = v; else s.reps = v; });
+    } else {
+      ex[f] = el.value;
+    }
   }));
   root.querySelectorAll('[data-pack-field]').forEach((el) => el.addEventListener('input', () => {
     draft.packing[+el.dataset.i][el.dataset.packField] = el.value;
@@ -162,7 +183,7 @@ function wire(root) {
   // add / remove rows (re-render to keep indices clean)
   const re = () => renderModal();
   root.querySelector('[data-add-seg]')?.addEventListener('click', () => { draft.segments.push({ label: 'Work', kind: 'work', value: 3, intensity: 'threshold' }); re(); });
-  root.querySelector('[data-add-ex]')?.addEventListener('click', () => { draft.exercises.push({ name: '', sets: 3, reps: '8', done: false, weight: '', actualReps: '', rpe: '', notes: '', imageUrl: '' }); re(); });
+  root.querySelector('[data-add-ex]')?.addEventListener('click', () => { draft.exercises.push(upgradeExercise({ name: '', sets: 3, reps: '8' }, draft.exercises.length)); re(); });
   root.querySelector('[data-add-pack]')?.addEventListener('click', () => { draft.packing.push({ item: '', checked: false }); re(); });
   root.querySelectorAll('[data-del-seg]').forEach((b) => b.addEventListener('click', () => { draft.segments.splice(+b.dataset.delSeg, 1); re(); }));
   root.querySelectorAll('[data-del-ex]').forEach((b) => b.addEventListener('click', () => { draft.exercises.splice(+b.dataset.delEx, 1); re(); }));
@@ -213,7 +234,13 @@ function saveDraft() {
   // Strip empty distance, clean exercises/packing
   const out = structuredClone(draft);
   if (out.metrics.distanceKm === '' || out.metrics.distanceKm == null) delete out.metrics.distanceKm;
-  out.exercises = out.exercises.filter((e) => e.name.trim());
+  out.exercises = out.exercises.filter((e) => e.name.trim()).map((e) => {
+    // a typed or renamed exercise picks up its library entry (art, muscle, cues)
+    const libId = matchExercise(e.name);
+    if (libId === e.libId) return e;
+    const lib = exerciseById(libId);
+    return { ...e, libId, muscle: lib?.muscle ?? e.muscle ?? null, equipment: lib?.equipment ?? e.equipment ?? null };
+  });
   out.packing = out.packing.filter((p) => p.item.trim());
   out.segments = out.segments.filter((s) => Number(s.value) > 0);
   upsertWorkout(out);

@@ -388,7 +388,9 @@ function onChange(e) {
 
   if (action === 'toggle-exercise') {
     const w = store.workoutById(id);
-    w.exercises[+el.dataset.ex].done = el.checked;
+    // interim: ticking the exercise ticks every set (the Phase 2 logger ticks sets one by one)
+    const now = el.checked ? new Date().toISOString() : null;
+    (w.exercises[+el.dataset.ex].sets || []).forEach((s) => { s.done = el.checked; s.doneAt = now; });
     store.touchWorkout(id);
     refreshDetail(id);
   } else if (action === 'toggle-preset-pack') {
@@ -416,7 +418,13 @@ function onInput(e) {
     store.save();
   } else if (action === 'exercise-field') {
     const w = store.workoutById(id);
-    w.exercises[+el.dataset.ex][el.dataset.field] = el.value;
+    // interim: the detail view logs the first work set
+    const ex = w.exercises[+el.dataset.ex];
+    const set = (ex.sets || []).find((s) => s.kind !== 'warmup') || ex.sets?.[0];
+    if (set) {
+      const v = el.value.trim().replace(',', '.');
+      set[el.dataset.field] = v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
+    }
     store.save();
   } else if (action === 'actual-field') {
     const w = store.workoutById(id);

@@ -20,6 +20,7 @@
 // persistence (and, later, remote sync) is the store's responsibility.
 
 import { expandPlan } from '../../core/plan.js';
+import { upgradeExercises } from '../../core/sets.js';
 
 export const STORAGE_KEY = 'triquest.v1'; // unchanged: existing data must keep loading
 export const SCHEMA_VERSION = 2;          // v2 adds `source` + `updated_at` to workouts
@@ -62,7 +63,9 @@ export function makeStorageBackend() {
 /** Give a workout the v2 fields if it predates them. */
 export function normalizeWorkout(w) {
   const source = w.source || (w.seeded ? 'plan' : 'custom');
-  return { ...w, source, updated_at: w.updated_at || w.completedAt || nowISO() };
+  // gym exercises: one prescription per exercise → their own sets (idempotent)
+  const exercises = upgradeExercises(w.exercises);
+  return { ...w, source, exercises, updated_at: w.updated_at || w.completedAt || nowISO() };
 }
 
 export function freshState() {

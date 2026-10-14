@@ -161,6 +161,16 @@ If `localStorage` is unavailable (private mode, storage blocked), the app transp
 
 **None at runtime.** No frameworks, no charting library, no confetti library, no icon CDN. Everything — confetti, sound, charts, exercise illustrations, the PNG icon generator — is written from scratch in vanilla JS/SVG/Canvas. The only "tooling" is Node itself (for the built-in test runner and the icon/serve scripts). This keeps the site fast, offline-proof, license-clean, and trivial for GitHub Pages to serve.
 
+**One build-time dev dependency:** [`sharp`](https://sharp.pixelplumbing.com/), used only by [`tools/slice-exercise-art.mjs`](tools/slice-exercise-art.mjs) to cut the pixel-art exercise sheets into one 256×256 PNG per exercise. The app never loads it, and `npm test` doesn't need it.
+
+```bash
+npm install                                   # once, for sharp
+npm run slice-art                             # every sheet listed in docs/gym/sheets.json
+node tools/slice-exercise-art.mjs sheet.png 3x3 back-squat,romanian-deadlift,...   # one sheet, ids in reading order ("-" skips a cell)
+```
+
+Each cell is cropped to the figure (the printed name/muscle band underneath is dropped), padded to a square on the sheet's cream, quantised to a small palette to clear JPEG noise, and scaled with nearest-neighbour. Output goes to `icons/Pixelart/EXERCISES/<id>.png` plus a contact sheet at `docs/gym/art-check.png` to eyeball every crop. The art is lazy-loaded and deliberately **not** precached by the service worker. PNG sheets slice cleaner than JPEGs; the tool warns when a figure has to be scaled up.
+
 ---
 
 ## ☁️ v2 — Accounts, multi-device sync & Strava

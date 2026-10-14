@@ -119,7 +119,8 @@ function exerciseBlock(w, ex, i, workouts, ss) {
     : art ? `<img src="${esc(art)}" alt="" width="64" height="64" loading="lazy" decoding="async">` : poseSvgFor(ex.name);
   const sub = [ex.muscle || lib?.muscle, ex.equipment || lib?.equipment].filter(Boolean).join(' · ');
   const cues = cuesForId(ex.libId) || cuesFor(ex.name);
-  const noteOpen = !!ex.note || openNotes.has(`${w.id}:${i}`);
+  // a note reads as one line; the text box only opens from the Note chip
+  const noteOpen = openNotes.has(`${w.id}:${i}`);
   const prev = previousSets(workouts, ex, { beforeDate: w.date, excludeId: w.id });
   const timed = ex.kind === 'time' || ex.kind === 'distance';
   const labels = setLabels(ex.sets);
@@ -151,7 +152,8 @@ function exerciseBlock(w, ex, i, workouts, ss) {
         </select></label>
         <button class="chip gl-chip" data-action="gym-note-toggle" ${ids} aria-expanded="${noteOpen}">${svg('edit')}Note</button>
       </div>
-      ${noteOpen ? `<textarea class="gl-note" rows="2" data-action="gym-note" ${ids} placeholder="A note for this exercise" aria-label="Note for ${esc(ex.name)}">${esc(ex.note || '')}</textarea>` : ''}
+      ${noteOpen ? `<textarea class="gl-note" rows="2" data-action="gym-note" ${ids} placeholder="A note for this exercise" aria-label="Note for ${esc(ex.name)}">${esc(ex.note || '')}</textarea>`
+    : ex.note ? `<p class="gl-note-txt">${esc(ex.note)}</p>` : ''}
       ${cues?.length ? `<details class="gl-cues"><summary>How to</summary><ul class="cues">${cues.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : ''}
       <div class="gl-grid ${timed ? 'is-timed' : ''}">
         <div class="gl-row gl-head" aria-hidden="true">${head}</div>
@@ -286,10 +288,8 @@ export function handleGymAction(action, el, deps, kind) {
       openPicker({
         onPick: (entries) => {
           if (!entries.length) return;
-          const at = w.exercises.length;
           entries.forEach((en) => w.exercises.push(exerciseFromEntry(en, Date.now())));
-          save(); refresh(id);
-          document.querySelectorAll('[data-gl-item]')[at]?.scrollIntoView({ block: 'start' });
+          save(); refresh(id); // refresh keeps the scroll where it was
         },
       });
       break;
@@ -313,7 +313,7 @@ export function handleGymAction(action, el, deps, kind) {
       break;
     case 'gym-note-toggle': {
       const key = `${id}:${i}`;
-      if (openNotes.has(key) && !ex?.note) openNotes.delete(key); else openNotes.add(key);
+      if (openNotes.has(key)) openNotes.delete(key); else openNotes.add(key);
       refresh(id);
       if (openNotes.has(key)) document.querySelector(`.gl-note[data-ex="${i}"]`)?.focus();
       break;

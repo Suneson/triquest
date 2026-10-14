@@ -129,7 +129,7 @@ img { image-rendering: pixelated; }
 .ob-choice, .ob-note, .ob-hist-row, .btn, .icon-btn, .fab, .tabs, .chip, .tag, .zone, .lvl-chip, .ob-chip, .cap,
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
-.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
+.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .sp-day, .sp-chip, .sp-label, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
 .signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
@@ -595,6 +595,7 @@ input[type=checkbox]:checked::after {
 }
 .gl-chip:focus-within { outline: var(--px) solid var(--accent); outline-offset: var(--px); }
 .gl-note { --b: var(--line); --eo: 4px; background: var(--bg-4); color: var(--fg); font-size: 16px; padding: 10px 12px; margin: 2px; width: calc(100% - 4px); resize: vertical; }
+.gl-note-txt { margin: 0; color: var(--muted); font-size: var(--fs-small); }
 .gl-cues summary {
   list-style: none; cursor: pointer; color: var(--muted); font-size: var(--fs-small);
   min-height: 32px; display: inline-flex; align-items: center; gap: 8px;
@@ -756,6 +757,26 @@ span.gl-prev { cursor: default; }
 .rc-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-txt small { font-size: var(--fs-tiny); }
 .rc-val { color: var(--accent); white-space: nowrap; }
+
+/* ---- gym split builder (AI questionnaire) ------------------------------------------------- */
+.sp-presets { margin-bottom: 4px; }
+.sp-days { display: grid; gap: 14px; margin: 12px 0; }
+.sp-day { --eo: 4px; background: var(--bg-3); margin: 2px; padding: 10px; display: grid; gap: 10px; }
+.sp-day.is-rest { background: transparent; --b: var(--line-soft); }
+.sp-day.is-target { --b: var(--accent); cursor: pointer; }
+.sp-day-head { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.sp-num { color: var(--muted); text-align: center; }
+.sp-label { --b: var(--line); --eo: 4px; margin: 2px; height: 40px; padding: 0 10px; background: var(--bg-4); color: var(--fg); border: 0; font-size: 16px; font-weight: 600; min-width: 0; }
+.sp-label:focus { outline: none; --b: var(--accent); }
+.sp-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sp-chip { --b: var(--c-gym); --eo: 4px; margin: 2px; min-height: 36px; padding: 6px 10px; background: var(--bg-2); color: var(--fg); font-size: var(--fs-small); cursor: grab; touch-action: none; position: relative; }
+.sp-chip::after { content: ''; position: absolute; inset: -4px; }
+.sp-chip.on { --b: var(--accent); background: var(--accent); color: var(--on-accent); }
+.sp-add select { max-width: 80px; }
+.sp-tools { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0; background: var(--bg); }
+.sp-tools .btn { margin: 2px 2px 6px; }
+.sp-add-days .btn { margin: 2px 2px 6px; }
+.sp-warn { margin: 8px 0 0; padding-left: 28px; display: grid; gap: 4px; }
 
 /* ---- routines ------------------------------------------------------------------------------------ */
 .rt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }

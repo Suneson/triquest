@@ -175,7 +175,38 @@ The brief for this phase:
 - Charts: e1RM over time, weekly volume per muscle (pixel-stepped).
 - Muscle balance over the last 4 weeks — descriptive, not prescriptive.
 
-## Phase 5 — split builder in the AI questionnaire
+## Phase 5 — split builder in the AI questionnaire  ✅ (function deployed: ai-plan v6)
+
+Done:
+- `js/core/gym-split.js` (pure, `tests/gym-split.test.js`): six presets, a
+  `normalizeSplit` validator, warnings (too many gym days for the week,
+  empty days, major muscles never trained, the same muscle on back-to-back
+  days) that never block, `moveGroup`.
+- **Old AI sessions:** the AI used to write gym work only into the notes
+  ("[Main Set] Back Squat 4x8 @ RPE 8, ..."), so sessions had no exercises,
+  no art and no set grid. `deriveGymExercises` turns that main set into
+  exercises on read (local and Supabase), once (`notesParsed`, synced via
+  `extra`); the session sheet then shows only the warm-up and cool-down as
+  text. No regeneration needed.
+- **Questionnaire step "Build your gym split"** (only when gym is in play):
+  preset chips; per day a renamable label, muscle chips, "Add" picker and a
+  remove button; tap a chip then tap a day to move it, or drag it (the list
+  scrolls at its edges), or use the up/down arrows; add training or rest
+  days (max 7). Saved to `settings.gymSplit` and sent as `gym_split`.
+- **ai-plan function (deployed as v6):** the system prompt now asks for an
+  `exercises` array on every gym session (library ids + names listed in
+  the prompt, generated into `supabase/functions/ai-plan/exercise-library.js`
+  by `tools/gen-ai-library.mjs`; a test keeps it in sync) and follows the
+  split. `gym.js` validates and clamps (sets 1–10, reps pattern, RPE 5–10,
+  unknown ids → null) and writes the classic `{ libId, name, sets, reps,
+  notes }` shape, which this branch upgrades on read and the live `main`
+  build still lists. Non-gym sessions are unchanged.
+- Also: the session editor keeps its scroll when you add a row; the logger
+  no longer jumps after "Add exercises"; an exercise note reads as one line
+  and the Note chip opens the text box.
+Screens: `docs/gym/after/phase-5/`.
+
+The brief for this phase:
 
 - Only when gym is in play: `s.eco === 'gym'`, or hybrid with "Gym / Strength".
 - Presets: Full body ×3, Upper/Lower, PPL, Arnold, Bro split ×5, PPL ×6.

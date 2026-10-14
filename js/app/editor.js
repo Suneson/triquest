@@ -37,11 +37,15 @@ export function openEditor(id = null, defaultDate = null) {
   isNew = !existing;
   draft = existing ? structuredClone(existing) : blankWorkout(defaultDate);
   if (draft.metrics?.distanceKm == null) draft.metrics.distanceKm = '';
+  const root = document.getElementById('modal-root');
+  delete root.dataset.edFocused;
+  root.innerHTML = ''; // a fresh sheet starts at the top
   renderModal();
 }
 
 function closeModal() {
   const root = document.getElementById('modal-root');
+  delete root.dataset.edFocused;
   root.innerHTML = '';
   root.classList.remove('open');
   draft = null;
@@ -55,6 +59,8 @@ function options(map, selected) {
 function renderModal() {
   const root = document.getElementById('modal-root');
   const d = draft;
+  // adding or removing a row redraws the sheet: keep the scroll where it was
+  const prevTop = root.querySelector('.modal-body')?.scrollTop ?? 0;
 
   const segRows = d.segments.map((s, i) => `
     <div class="row seg-row" data-seg="${i}">
@@ -147,6 +153,8 @@ function renderModal() {
       </footer>
     </div>`;
 
+  const body = root.querySelector('.modal-body');
+  if (body) body.scrollTop = prevTop;
   wire(root);
 }
 
@@ -223,8 +231,8 @@ function wire(root) {
   // actions
   root.querySelectorAll('[data-do]').forEach((b) => b.addEventListener('click', () => action(b.dataset.do)));
 
-  // focus title for new sessions
-  if (isNew) root.querySelector('#f-title')?.focus();
+  // focus the title once, when a new session opens (not on every redraw)
+  if (isNew && !root.dataset.edFocused) { root.dataset.edFocused = '1'; root.querySelector('#f-title')?.focus({ preventScroll: true }); }
 
   // esc to close
   root.querySelector('.modal')?.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });

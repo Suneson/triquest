@@ -9,6 +9,7 @@ import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 import { svg } from '../core/icons.js';
 import { renderLogger, hasLogger } from './gym-logger.js';
+import { mainSetIsExercises } from '../core/gym-split.js';
 import { rollNum } from './motion.js';
 import { weekPathCard } from './game.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
@@ -129,7 +130,11 @@ export function zoneBadge(z) {
 function structuredBlocks(w) {
   const n = w.notes || '';
   if (!/\[[^\]]+\]/.test(n)) return '';
-  const segs = [...n.matchAll(/\[([^\]]+)\]\s*([^[]*)/g)].map((m) => ({ label: m[1].trim(), text: m[2].trim() })).filter((s) => s.text);
+  // when the main set became real exercises (with art and a set grid), only
+  // the warm-up and cool-down stay as text
+  const hideMain = mainSetIsExercises(w);
+  const segs = [...n.matchAll(/\[([^\]]+)\]\s*([^[]*)/g)].map((m) => ({ label: m[1].trim(), text: m[2].trim() }))
+    .filter((s) => s.text && !(hideMain && /^main/i.test(s.label)));
   if (!segs.length) return '';
   return `<div class="block"><h4>Session</h4><div class="struct">${segs.map((s) => {
     const moves = s.text.split(/\s*[,;]\s*|\s+\/\s+/).map((t) => t.trim()).filter(Boolean);

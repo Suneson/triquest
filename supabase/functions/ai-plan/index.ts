@@ -5,6 +5,7 @@
 // Secret optional:  GROQ_MODEL — pin a model id; otherwise FALLBACK_MODELS is
 //                   tried in order, then a live model is discovered from Groq.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { libraryPromptLines, splitPrompt, sanitizeExercises } from "./gym.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +81,10 @@ RUNNING: program specific variations — Fartlek, track intervals (e.g. 6x400m, 
 CYCLING: program explicit CADENCE or POWER blocks — Sweet Spot, Over-Unders, Cadence Ladders, threshold. ALWAYS express power as ABSOLUTE WATTS scaled to the athlete's FTP from the questionnaire, formatted like "4x8min @ 250W" (letter W), in the [Main Set].
 For EVERY bike session you MUST ALSO output a structured "power" array: an ordered list of interval blocks covering warmup → main set → cooldown, each block {"min": integer minutes, "watts": integer absolute watts scaled to the athlete's FTP}. Expand repeats into individual blocks (e.g. 4x8min @ 250W with 2min @ 120W recoveries = eight blocks). The watt values in "power" MUST agree with the [Main Set] text. Omit "power" entirely for non-bike sessions.
 GYM/OTHER: prescribe specific movements with sets x reps and an RPE value (1-10), e.g. "Back Squat 4x5 @ RPE 8", in the [Main Set]. List each distinct movement separated by commas so it can be rendered one per line.
-Return ONLY a JSON object {"workouts": [ ... ]}. Each item has EXACTLY: "title" (string), "type" (one of ${TYPES.join("|")}), "intensity" (one of ${INTEN.join("|")}), "date" ("YYYY-MM-DD", future only starting tomorrow), "duration_min" (integer), "hr_zone" (integer 1-5, target heart-rate zone), "notes" (structured as above), and for bike sessions "power" (array of {"min":int,"watts":int}).`;
+For EVERY gym session you MUST ALSO output a structured "exercises" array (4-8 items, in the order they are done) that matches the [Main Set]: each item {"id": library id from the list below or null, "name": exercise name, "sets": integer 1-10, "reps": string such as "8", "8-10", "45s" or "10 / leg", "rpe": number 5-10}. Prefer exercises from the library and use their exact id and name; only use "id": null for a movement the library does not have. If the questionnaire has a "gym_split", every gym session follows the next day of that split in order and trains its muscle groups. Omit "exercises" for non-gym sessions.
+EXERCISE LIBRARY (id = name (main muscle, equipment)):
+${libraryPromptLines()}
+Return ONLY a JSON object {"workouts": [ ... ]}. Each item has EXACTLY: "title" (string), "type" (one of ${TYPES.join("|")}), "intensity" (one of ${INTEN.join("|")}), "date" ("YYYY-MM-DD", future only starting tomorrow), "duration_min" (integer), "hr_zone" (integer 1-5, target heart-rate zone), "notes" (structured as above), for bike sessions "power" (array of {"min":int,"watts":int}), and for gym sessions "exercises" (array as above).`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -103,6 +107,7 @@ Deno.serve(async (req) => {
   const prompt = `Today is ${new Date().toISOString().slice(0, 10)}.
 Athlete FTP: ${ftp}W (use for cycling watt targets).
 HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sessions (two-a-day / double training). Every other day must have at most one session. Never exceed ${maxDoubles} double days in any single weekly cycle.
+${splitPrompt(body.wizard?.gym_split)}
 Questionnaire: ${JSON.stringify(body.wizard || {})}
 Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`;
 
@@ -137,6 +142,8 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
           .filter((b: any) => b.watts)
           .slice(0, 40)
       : [];
+    // Structured gym exercises → the logger, art and set grid (validated like power).
+    const exercises = type === "gym" ? sanitizeExercises(p.exercises) : [];
     return {
       id: crypto.randomUUID(), user_id: userId, date: String(p.date).slice(0, 10),
       type,
@@ -144,8 +151,13 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
       intensity: INTEN.includes(p.intensity) ? p.intensity : "moderate",
       duration_min: Math.max(10, Math.min(360, parseInt(p.duration_min ?? p.duration) || 45)),
       notes: String(p.notes || ""), completed: false, source: "custom",
-      segments: [], exercises: [], packing: [],
-      extra: { ai: true, hr_zone: Math.max(1, Math.min(5, parseInt(p.hr_zone) || 2)), ...(power.length ? { power } : {}) },
+      segments: [], exercises, packing: [],
+      extra: {
+        ai: true, hr_zone: Math.max(1, Math.min(5, parseInt(p.hr_zone) || 2)),
+        ...(power.length ? { power } : {}),
+        // the main set already lives in `exercises`: the app must not re-read it from the notes
+        ...(exercises.length ? { notesParsed: true } : {}),
+      },
       updated_at: now,
     };
   });

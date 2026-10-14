@@ -5,11 +5,12 @@
 
 import { LocalStore } from './local-store.js';
 import { upgradeExercises } from '../../core/sets.js';
+import { deriveGymExercises } from '../../core/gym-split.js';
 import { mergeByUpdatedAt, applyRemoteChange } from '../../core/sync.js';
 
 // app-only display flags that live in the `extra` jsonb column
 const EXTRA_KEYS = ['isRace', 'optional', 'phaseId', 'weekNum', 'seeded', 'hr_zone', 'ai', 'packed', 'power',
-  'gymStartedAt', 'gymLoggedAt', 'gymDurationSec'];
+  'gymStartedAt', 'gymLoggedAt', 'gymDurationSec', 'notesParsed'];
 
 export function workoutToRow(w, userId) {
   const extra = {};
@@ -41,7 +42,7 @@ export function workoutToRow(w, userId) {
 }
 
 export function rowToWorkout(r) {
-  return {
+  return deriveGymExercises({
     id: r.id,
     date: r.date,
     type: r.type,
@@ -62,7 +63,7 @@ export function rowToWorkout(r) {
     source: r.source ?? 'custom',
     updated_at: r.updated_at,
     ...(r.extra || {}),
-  };
+  });
 }
 
 export class SupabaseStore {

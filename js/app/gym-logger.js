@@ -15,6 +15,12 @@ import { esc, dialogue } from './ui.js';
 import { svg } from '../core/icons.js';
 import { exerciseArtSrc, cuesForId, exerciseById } from '../core/exercises.js';
 import { cuesFor, poseSvgFor } from '../core/poses.js';
+import { openPicker, openNameSheet } from './gym-picker.js';
+import { enableDragSort } from './drag-sort.js';
+import {
+  exerciseFromEntry, replaceExercise, moveItem, linkWithNext, unlinkSuperset, cleanSupersets,
+  supersetInfo, restAfterTick, routineFromWorkout, saveRoutine,
+} from '../core/gym-edit.js';
 import {
   setLabels, previousSets, previousFor, formatSet, fillFrom, addSet, removeSet, tickSet, markStarted,
   sessionSummary, fmtClock, restLabel, REST_PRESETS, SET_KIND_LABELS, startRest, restRemaining, extendRest,
@@ -32,8 +38,8 @@ const getStopwatch = () => readJSON(SW_KEY);
 // note fields opened this session (a note with text is always open)
 const openNotes = new Set();
 
-/** Does this workout get the logger? Any session with exercises. */
-export const hasLogger = (w) => Array.isArray(w?.exercises) && w.exercises.length > 0;
+/** Does this workout get the logger? Gym sessions, and any session with exercises. */
+export const hasLogger = (w) => !!w && (w.type === 'gym' || (Array.isArray(w.exercises) && w.exercises.length > 0));
 
 // ---- render -----------------------------------------------------------------------------
 
@@ -74,12 +80,36 @@ function restSegments(left, total) {
 
 /** The whole logger for a workout. */
 export function renderLogger(w, workouts) {
-  const blocks = w.exercises.map((ex, i) => exerciseBlock(w, ex, i, workouts)).join('');
+  if (!Array.isArray(w.exercises)) w.exercises = [];
+  const ss = supersetInfo(w.exercises);
+  const blocks = w.exercises.map((ex, i) => exerciseBlock(w, ex, i, workouts, ss[i])).join('');
+  const ids = `data-id="${esc(w.id)}"`;
   return `<div class="gl-bar" data-gl-bar data-id="${esc(w.id)}">${sessionBar(w)}</div><!--gl-split-->
-    <div class="block gl"><h4>Exercises</h4>${blocks}</div>`;
+    <div class="block gl"><h4>Exercises</h4>
+      ${blocks ? `<div class="gl-list" data-gl-list ${ids}>${blocks}</div>` : '<p class="muted gl-empty">No exercises yet. Add some, or start from a routine in Settings.</p>'}
+      <button class="btn secondary block" data-action="gym-add-ex" ${ids}>${svg('plus')} Add exercises</button>
+      ${blocks ? `<button class="btn ghost block" data-action="gym-save-routine" ${ids}>${svg('copy')} Save as routine</button>` : ''}
+    </div>`;
 }
 
-function exerciseBlock(w, ex, i, workouts) {
+function exerciseMenu(w, ex, i, ss) {
+  const n = w.exercises.length;
+  const items = [
+    ['up', 'Move up', i > 0],
+    ['down', 'Move down', i < n - 1],
+    ['link', ss && !ss.last ? '' : 'Superset with next', i < n - 1 && !(ss && !ss.last)],
+    ['unlink', 'Remove from superset', !!ss],
+    ['replace', 'Replace exercise', true],
+    ['remove', 'Remove exercise', true],
+  ].filter(([, t, ok]) => t && ok);
+  return `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
+    <select data-action="gym-ex-menu" data-id="${esc(w.id)}" data-ex="${i}" aria-label="${esc(`${ex.name}: more`)}">
+      <option value="" selected disabled hidden>More</option>
+      ${items.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}
+    </select></label>`;
+}
+
+function exerciseBlock(w, ex, i, workouts, ss) {
   const lib = exerciseById(ex.libId);
   const art = exerciseArtSrc(ex.libId);
   const pic = ex.imageUrl
@@ -98,13 +128,18 @@ function exerciseBlock(w, ex, i, workouts) {
     ? `<span>Set</span><span class="gl-col-prev">Last</span><span>Time</span><span aria-label="Done">${svg('check')}</span>`
     : `<span>Set</span><span class="gl-col-prev">Last</span><span>${ex.kind === 'bodyweight' ? '+Kg' : 'Kg'}</span><span>Reps</span><span aria-label="Done">${svg('check')}</span>`;
   return `
-    <section class="gl-ex" aria-label="${esc(ex.name)}">
+    <section class="gl-ex ${ss ? `in-ss${ss.first ? ' ss-first' : ''}${ss.last ? ' ss-last' : ''}` : ''}" data-gl-item aria-label="${esc(ss ? `Superset ${ss.letter}: ${ex.name}` : ex.name)}">
+      ${ss?.first ? `<span class="tag gl-ss-tag">Superset ${ss.letter}</span>` : ''}
       <header class="gl-ex-head">
         <div class="ex-img ${art && !ex.imageUrl ? 'ex-art' : ''}">${pic}</div>
         <div class="gl-ex-title">
           <h5>${esc(ex.name)}</h5>
           ${sub ? `<span class="muted small">${esc(sub)}</span>` : ''}
         </div>
+        <span class="gl-ex-tools">
+          <button type="button" class="icon-btn tiny gl-grip" data-gl-grip aria-label="${esc(`Drag to reorder ${ex.name}`)}" title="Drag to reorder">${svg('grip')}</button>
+          ${exerciseMenu(w, ex, i, ss)}
+        </span>
       </header>
       <div class="gl-chips">
         <label class="chip gl-chip">${svg('clock')}<select data-action="gym-rest" ${ids} aria-label="Rest between sets">
@@ -211,6 +246,10 @@ export function handleGymAction(action, el, deps, kind) {
     if (action === 'gym-rest' && ex) {
       ex.restSec = Math.max(0, Math.round(+el.value) || 0);
       save();
+    } else if (action === 'gym-ex-menu' && ex) {
+      const pick = el.value;
+      el.value = '';
+      exerciseMenuAction(pick, w, i, deps);
     } else if (action === 'gym-set-kind' && ex?.sets[j]) {
       if (el.value === 'remove') removeSet(ex, j);
       else ex.sets[j].kind = el.value;
@@ -229,12 +268,34 @@ export function handleGymAction(action, el, deps, kind) {
         const prev = previousFor(previousSets(store.getWorkouts(), ex, { beforeDate: w.date, excludeId: w.id }), ex.sets, j);
         tickSet(ex, j, true, now, prev);
         markStarted(w, now);
-        const rest = startRest(w.id, ex.restSec || 0, now);
+        // inside a superset you go straight to the next exercise; rest after the last
+        const rest = startRest(w.id, restAfterTick(w.exercises, i), now);
         if (rest) writeJSON(REST_KEY, rest);
       }
       save(); refresh(id);
       break;
     }
+    case 'gym-add-ex':
+      openPicker({
+        onPick: (entries) => {
+          if (!entries.length) return;
+          const at = w.exercises.length;
+          entries.forEach((en) => w.exercises.push(exerciseFromEntry(en, Date.now())));
+          save(); refresh(id);
+          document.querySelectorAll('[data-gl-item]')[at]?.scrollIntoView({ block: 'start' });
+        },
+      });
+      break;
+    case 'gym-save-routine':
+      openNameSheet({
+        title: 'Save as routine', label: 'Routine name', value: w.title || '', submit: 'Save routine',
+        onSave: (name) => {
+          const settings = store.getSettings();
+          store.setSetting('routines', saveRoutine(settings.routines, routineFromWorkout(w, name, Date.now())));
+          deps.toast(`Saved “${name}”. Start it from Settings or the + button.`, 'check');
+        },
+      });
+      break;
     case 'gym-fill-prev': {
       const prev = previousFor(previousSets(store.getWorkouts(), ex, { beforeDate: w.date, excludeId: w.id }), ex.sets, j);
       if (prev && ex.sets[j]) { fillFrom(ex.sets[j], prev); save(); refresh(id); }
@@ -258,7 +319,7 @@ export function handleGymAction(action, el, deps, kind) {
         tickSet(ex, j, true, now);
         markStarted(w, now);
         writeJSON(SW_KEY, null);
-        const rest = startRest(w.id, ex.restSec || 0, now);
+        const rest = startRest(w.id, restAfterTick(w.exercises, i), now);
         if (rest) writeJSON(REST_KEY, rest);
         save();
       } else {
@@ -293,6 +354,44 @@ export function handleGymAction(action, el, deps, kind) {
     default: break;
   }
   return true;
+}
+
+function exerciseMenuAction(pick, w, i, deps) {
+  const { store, refresh } = deps;
+  const list = w.exercises;
+  const ex = list[i];
+  const done = () => { cleanSupersets(list); store.touchWorkout(w.id); refresh(w.id); };
+  if (pick === 'up') { moveItem(list, i, i - 1); done(); }
+  else if (pick === 'down') { moveItem(list, i, i + 1); done(); }
+  else if (pick === 'link') { linkWithNext(list, i, Date.now()); done(); }
+  else if (pick === 'unlink') { unlinkSuperset(list, i); done(); }
+  else if (pick === 'replace') {
+    openPicker({
+      title: 'Replace exercise', multi: false,
+      onPick: ([en]) => { if (en) { list[i] = replaceExercise(ex, en, Date.now()); done(); } },
+    });
+  } else if (pick === 'remove') {
+    const logged = (ex.sets || []).filter((s) => s.done).length;
+    if (logged && !confirm(`Remove ${ex.name}? Its ${logged} logged set${logged === 1 ? '' : 's'} go too.`)) return;
+    list.splice(i, 1);
+    openNotes.clear();
+    done();
+  }
+}
+
+/** Hook up drag-to-reorder after the logger is drawn. */
+export function wireLogger(root, deps) {
+  root?.querySelectorAll('[data-gl-list]').forEach((list) => enableDragSort(list, {
+    item: '[data-gl-item]',
+    handle: '[data-gl-grip]',
+    onMove: (from, to) => {
+      const w = deps.store.workoutById(list.dataset.id);
+      if (!w || !moveItem(w.exercises, from, to)) return;
+      cleanSupersets(w.exercises);
+      deps.store.touchWorkout(w.id);
+      deps.refresh(w.id);
+    },
+  }));
 }
 
 // ---- ticker --------------------------------------------------------------------------------

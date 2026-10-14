@@ -20,7 +20,8 @@ import { renderProfileGame, openFitnessHub, openPublicFitness } from './profile-
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
-import { handleGymAction, finishView, startTicker } from './gym-logger.js';
+import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logger.js';
+import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
@@ -338,6 +339,15 @@ function onClick(e) {
       render();
       break;
     case 'open-workout': openWorkoutDetail(id); break;
+    case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
+    case 'routine-delete': {
+      const rt = getRoutines().find((r) => r.id === el.dataset.rt);
+      if (rt && confirm(`Delete the routine “${rt.name}”? Sessions you already did stay.`)) {
+        deleteRoutine(rt.id);
+        if (document.querySelector('[data-set-do="ai-plan"]')) openSettings();
+      }
+      break;
+    }
     case 'edit-goals': openGoalEditor(); break;
     case 'open-season': openSeasonPath(buildCtx()); break;
     case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
@@ -505,6 +515,10 @@ function openSettings() {
         <p class="muted small">Clearing wipes upcoming sessions only; resetting wipes the whole plan, past and upcoming. Completed and Strava-verified sessions are always kept, so your XP, levels and badges are safe.</p>
 
         <hr>
+        <h3>Routines</h3>
+        ${routineRows({ withDelete: true }) || '<p class="muted small">No routines yet. Open a gym session and tap “Save as routine”.</p>'}
+
+        <hr>
         <h3>Packing presets</h3>
         <div class="pack-presets">${['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'].map((t) =>
           `<label class="field"><span>${t}</span><input type="text" data-pack-preset="${t}" value="${esc((s.packing?.[t] || []).join(', '))}" placeholder="item, item, …"></label>`).join('')}</div>
@@ -615,7 +629,7 @@ const gymDeps = {
   store,
   refresh: (id) => refreshDetail(id),
   close: () => closeModalRoot(),
-  toast: (msg) => toast(msg, { icon: svg('warn') }),
+  toast: (msg, icon = 'warn') => toast(msg, { icon: svg(icon) }),
   showFinish: (id) => {
     const body = document.getElementById('wd-body');
     const w = store.workoutById(id);
@@ -642,6 +656,7 @@ function openWorkoutDetail(id) {
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
   typeLines(root);
+  wireLogger(root, gymDeps);
   if (root.querySelector('[data-gl-bar]')) startTicker((wid) => store.workoutById(wid), onRestDone);
 }
 function openSportLevels(sport) {
@@ -679,6 +694,7 @@ function refreshDetail(id) {
   const top = body.scrollTop;
   body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
   body.scrollTop = top;
+  wireLogger(body, gymDeps);
 }
 function closeModalRoot() {
   _detailId = null; // the gym ticker stops itself once no logger is open and no rest is running
@@ -836,6 +852,7 @@ async function boot() {
     el.click();
   });
   startTicker((wid) => store.workoutById(wid), onRestDone); // a rest started before a reload still beeps
+  document.addEventListener('moske:open-workout', (e) => { closeModalRoot(); render(); openWorkoutDetail(e.detail); });
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
   document.addEventListener('input', onInput);

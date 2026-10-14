@@ -129,7 +129,7 @@ img { image-rendering: pixelated; }
 .ob-choice, .ob-note, .ob-hist-row, .btn, .icon-btn, .fab, .tabs, .chip, .tag, .zone, .lvl-chip, .ob-chip, .cap,
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
-.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
+.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
 .signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
@@ -653,6 +653,79 @@ span.gl-prev { cursor: default; }
 .gl-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 12px; }
 .gl-sum-cell { --eo: 4px; background: var(--bg-3); padding: 10px; margin: 2px; display: grid; gap: 6px; }
 .gl-sum-cell b { font-size: 20px; }
+
+/* ---- logger editing, supersets ----------------------------------------------------------- */
+.gl-list { display: grid; gap: var(--sp-group); }
+.gl-ex-tools { margin-left: auto; display: flex; gap: 6px; align-self: flex-start; }
+.gl-ex-tools .icon-btn { margin: 2px; }
+.gl-more { position: relative; cursor: pointer; }
+.gl-more select { position: absolute; inset: -6px; opacity: 0; width: calc(100% + 12px); height: calc(100% + 12px); font-size: 16px; cursor: pointer; }
+.gl-more:focus-within { outline: var(--px) solid var(--accent); outline-offset: var(--px); }
+.gl-grip { touch-action: none; cursor: grab; color: var(--muted); }
+.gl-ex.in-ss { --b: var(--c-gym); }
+.gl-ss-tag { --b: var(--c-gym); color: var(--c-gym); justify-self: start; }
+.gl-ex.in-ss:not(.ss-last) { margin-bottom: -8px; }
+.gl-empty { margin: 0; }
+.is-dragging { position: relative; z-index: 3; opacity: .85; }
+.drop-before { box-shadow: 0 -4px 0 0 var(--accent) !important; }
+.drop-after { box-shadow: 0 4px 0 0 var(--accent) !important; }
+
+/* ---- exercise picker (js/app/gym-picker.js), in its own layer over the workout sheet ---------- */
+.sheet-root { z-index: 10001; }
+.pk-modal { display: flex; flex-direction: column; }
+.pk-small { max-height: none; }
+.pk-tools { padding: 12px 16px 8px; display: grid; gap: 10px; border-bottom: var(--px) solid var(--line-soft); }
+.pk-search { --b: var(--line); --eo: 4px; margin: 2px; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--bg-4); color: var(--muted); }
+.pk-search:focus-within { --b: var(--accent); }
+.pk-search .ic { width: 16px; height: 16px; flex: none; }
+.pk-search input { flex: 1; min-width: 0; height: 44px; border: 0; background: transparent; color: var(--fg); font-size: 16px; outline: none; }
+.pk-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pk-filters .gl-chip { justify-content: center; }
+.pk-filters select { width: 100%; text-align: center; text-align-last: center; }
+.pk-body { gap: 4px; align-content: start; }
+.pk-h { margin: 12px 0 4px; color: var(--muted); }
+.pk-h:first-child { margin-top: 0; }
+.pk-ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.pk-row {
+  width: 100%; display: grid; grid-template-columns: 48px minmax(0, 1fr) 32px; align-items: center; gap: 12px;
+  padding: 6px 4px; background: none; border: 0; border-bottom: var(--px) solid var(--line-soft); color: var(--fg); text-align: left; cursor: pointer;
+}
+.pk-row.on { background: var(--bg-3); }
+.pk-row:active { background: var(--bg-3); }
+.pk-thumb { --eo: 4px; width: 48px; height: 48px; margin: 2px; display: grid; place-items: center; overflow: hidden; background: var(--bg-4); color: var(--c-gym); }
+.pk-thumb.ex-art { background: #FBF3E6; }
+.pk-thumb img { width: 100%; height: 100%; image-rendering: pixelated; }
+.pk-txt { display: grid; gap: 2px; min-width: 0; }
+.pk-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-txt small { color: var(--muted); font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-mark { width: 28px; height: 28px; display: grid; place-items: center; font-family: var(--font-data); font-weight: 700; }
+.pk-row.on .pk-mark { background: var(--good); color: var(--shade); }
+.pk-mark .ic { width: 16px; height: 16px; }
+.pk-empty { margin: 8px 0; }
+.pk-create { display: grid; gap: 14px; }
+.pk-error { color: var(--danger); margin: 0; }
+
+/* ---- session editor exercise rows ------------------------------------------------------------- */
+.ed-ex-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ed-ex { --eo: 4px; background: var(--bg-3); margin: 2px; padding: 8px; display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px 12px; align-items: center; }
+.ed-ex.in-ss { --b: var(--c-gym); }
+.ed-ex-main { display: grid; gap: 6px; min-width: 0; }
+.ed-ex-main b { font-weight: 600; overflow-wrap: anywhere; }
+.ed-ex-nums { display: flex; flex-wrap: wrap; gap: 8px 12px; color: var(--muted); font-size: var(--fs-small); }
+.ed-ex-nums label { display: inline-flex; align-items: center; gap: 6px; }
+.ed-ex .num { --b: var(--line); width: 52px; height: 36px; margin: 2px; padding: 0 4px; text-align: center; background: var(--bg-4); color: var(--fg); font-size: 16px; border: 0; }
+.ed-ex-tools { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; }
+.ed-ex-tools .icon-btn { margin: 2px; }
+.ic-up, .ic-down { display: grid; place-items: center; }
+.ic-up .ic { transform: rotate(-90deg); }
+.ic-down .ic { transform: rotate(90deg); }
+
+/* ---- routines ------------------------------------------------------------------------------------ */
+.rt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rt-row { display: flex; align-items: center; gap: 10px; }
+.rt-txt { flex: 1; display: grid; min-width: 0; }
+.rt-txt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-row .btn { margin: 2px 2px 6px; }
 
 .actual-vs-planned { display: flex; flex-wrap: wrap; gap: 12px var(--sp-group); }
 .avp { --eo: 4px; background: var(--bg-3); padding: 6px 8px; font-size: var(--fs-small); margin: 2px; }

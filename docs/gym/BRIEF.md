@@ -105,7 +105,37 @@ The brief for this phase:
 - Anti-cheat: Finish writes `extra.gymLoggedAt`, does **not** set `completed`.
   Finish screen: "Logged. Sync with Strava to earn XP." Raise, don't change.
 
-## Phase 3 — picker, editing, supersets, routines
+## Phase 3 — picker, editing, supersets, routines  ✅
+
+Done: `js/core/gym-edit.js` (pure, `tests/gym-edit.test.js`) holds search,
+recents, grouping, custom exercises, reorder, supersets and routines.
+- **Picker** (`js/app/gym-picker.js`, its own `#sheet-root` layer over the
+  workout sheet): search by word prefix over names and aliases ("db ben"),
+  equipment and muscle filters (secondary muscles count), Recent first, then
+  grouped by muscle, art thumbs. Multi-select numbered in tap order, then
+  Add N. **Create** saves a custom exercise (name, equipment, main muscle,
+  logged as weight/bodyweight/time) to `settings.customExercises`; ids are
+  `custom-<slug>`, duplicate names are refused.
+- **Editing in the logger:** a ⋮ menu per exercise (Move up / Move down /
+  Superset with next / Remove from superset / Replace / Remove — removing
+  logged sets asks first) and a grip for pointer drag (`js/app/drag-sort.js`).
+  Add exercises and Save as routine sit under the list. A gym session with no
+  exercises shows the logger with an empty state.
+- **Session editor** (`editor.js`): rows are now art + name + sets × reps with
+  ↑ ↓ buttons, a drag grip and remove; "Add exercises" opens the picker. The
+  free-text name and custom image URL fields are gone (old `imageUrl`s still
+  show in the logger).
+- **Supersets:** `supersetId` shared by neighbouring exercises; lettered
+  ("Superset A"), purple rail; no rest between exercises of a superset, rest
+  after the last. Moves and removals split or dissolve groups that stop being
+  neighbours.
+- **Routines** (`settings.routines`): Save as routine (numbers kept, ticks
+  cleared, same name replaces); start from Settings → Routines or from the +
+  button's new-session sheet ("Start a routine"), which creates a gym session
+  on that date and opens it. Delete from Settings.
+Screens: `docs/gym/after/phase-3/`.
+
+The brief for this phase:
 
 - Picker: search name/alias, filter equipment/muscle, recents, grouped by
   muscle, art-thumb rows, "Create exercise" (custom ones saved in settings).

@@ -2,13 +2,14 @@
 // injects; all interactivity is wired via delegated data-action attributes.
 
 import { formatDuration, sportProgress } from '../core/scoring.js';
-import { poseSvgFor, cuesFor } from '../core/poses.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
 import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
 import { svg } from '../core/icons.js';
+import { renderLogger, hasLogger } from './gym-logger.js';
+import { mainSetIsExercises } from '../core/gym-split.js';
 import { rollNum } from './motion.js';
 import { weekPathCard } from './game.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
@@ -49,32 +50,6 @@ export function segmentBar(segments) {
 }
 
 // ---- exercises --------------------------------------------------------------
-
-function exerciseRow(w, ex, idx) {
-  const img = ex.imageUrl
-    ? `<img class="ex-img" src="${esc(ex.imageUrl)}" alt="${esc(ex.name)}" loading="lazy" onerror="this.style.display='none'">`
-    : `<div class="ex-img">${poseSvgFor(ex.name)}</div>`;
-  const cues = cuesFor(ex.name).map((c) => `<li>${esc(c)}</li>`).join('');
-  return `
-    <div class="exercise ${ex.done ? 'done' : ''}">
-      ${img}
-      <div class="ex-body">
-        <div class="ex-head">
-          <label class="ex-check">
-            <input type="checkbox" data-action="toggle-exercise" data-id="${esc(w.id)}" data-ex="${idx}" ${ex.done ? 'checked' : ''}>
-            <b>${esc(ex.name)}</b>
-          </label>
-          <span class="ex-prescribed">${esc(ex.sets)}×${esc(ex.reps)}</span>
-        </div>
-        <ul class="cues">${cues}</ul>
-        <div class="ex-log">
-          <label>kg<input type="text" inputmode="decimal" value="${esc(ex.weight)}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="weight"></label>
-          <label>reps<input type="text" inputmode="numeric" value="${esc(ex.actualReps)}" placeholder="${esc(ex.reps)}" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="actualReps"></label>
-          <label>RPE<input type="text" inputmode="decimal" value="${esc(ex.rpe)}" placeholder="–" data-action="exercise-field" data-id="${esc(w.id)}" data-ex="${idx}" data-field="rpe"></label>
-        </div>
-      </div>
-    </div>`;
-}
 
 // ---- packing ----------------------------------------------------------------
 
@@ -155,7 +130,11 @@ export function zoneBadge(z) {
 function structuredBlocks(w) {
   const n = w.notes || '';
   if (!/\[[^\]]+\]/.test(n)) return '';
-  const segs = [...n.matchAll(/\[([^\]]+)\]\s*([^[]*)/g)].map((m) => ({ label: m[1].trim(), text: m[2].trim() })).filter((s) => s.text);
+  // when the main set became real exercises (with art and a set grid), only
+  // the warm-up and cool-down stay as text
+  const hideMain = mainSetIsExercises(w);
+  const segs = [...n.matchAll(/\[([^\]]+)\]\s*([^[]*)/g)].map((m) => ({ label: m[1].trim(), text: m[2].trim() }))
+    .filter((s) => s.text && !(hideMain && /^main/i.test(s.label)));
   if (!segs.length) return '';
   return `<div class="block"><h4>Session</h4><div class="struct">${segs.map((s) => {
     const moves = s.text.split(/\s*[,;]\s*|\s+\/\s+/).map((t) => t.trim()).filter(Boolean);
@@ -302,10 +281,11 @@ export function renderWorkoutDetail(w, units, ctx) {
   const ftp = ctx?.settings?.ftp || 250;
   const detail = w.type === 'bike' ? (powerChart(w, ftp) || structuredBlocks(w)) : structuredBlocks(w);
   const segs = segmentBar(w.segments);
-  const exercises = (w.exercises || []).length
-    ? `<div class="block"><h4>Exercises</h4>${w.exercises.map((e, i) => exerciseRow(w, e, i)).join('')}</div>` : '';
+  const logger = hasLogger(w) ? renderLogger(w, ctx?.workouts || []) : '';
   const actuals = w.strava_activity_id ? actualsBlock(w, units) : actualEntry(w);
-  return `
+  // the logger's session bar goes first so it can stick to the top of the sheet
+  const [bar, exercises] = logger ? logger.split('<!--gl-split-->') : ['', ''];
+  return `${bar}
     ${dialogue({ text: sessionLine(w), cls: 'coach-say', type: true })}
     <div class="meta">${metaChips(w, units)}</div>
     ${fuellingChip(w)}

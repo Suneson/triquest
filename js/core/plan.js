@@ -5,6 +5,7 @@
 // every day) keeps the plan tweakable and the logic unit-testable.
 
 import { dateRange, weekdayMon0, startOfWeek, diffDays, parseISO } from './dates.js';
+import { upgradeExercises } from './sets.js';
 
 export const PLAN_START = '2026-07-01';
 export const PLAN_END = '2026-12-06';
@@ -104,7 +105,7 @@ function s(desc) {
     optional: false,
     ...desc,
     packing: (desc.packing || PACKING[desc.type] || PACKING.other).map((item) => ({ item, checked: false })),
-    exercises: (desc.exercises || []).map((e) => ({ done: false, weight: '', rpe: '', actualReps: '', notes: '', imageUrl: '', ...e })),
+    exercises: upgradeExercises(desc.exercises || []),
   };
 }
 

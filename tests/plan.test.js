@@ -65,10 +65,10 @@ test('Monday base week has the Fartlek run with interval segments', () => {
 test('gym sessions carry exercises with sets/reps', () => {
   const gym = plan.find((w) => w.type === 'gym' && w.exercises.length);
   assert.ok(gym.exercises[0].name);
-  assert.ok(gym.exercises[0].sets);
-  // Runtime fields are seeded so logging works immediately.
-  assert.equal(gym.exercises[0].done, false);
-  assert.equal(gym.exercises[0].weight, '');
+  // Each exercise holds its own sets, seeded blank so logging works immediately.
+  assert.ok(Array.isArray(gym.exercises[0].sets) && gym.exercises[0].sets.length > 0);
+  assert.equal(gym.exercises[0].sets[0].done, false);
+  assert.equal(gym.exercises[0].sets[0].weight, null);
 });
 
 test('phase-3 long-run progression peaks at 32 km on 15 Nov', () => {

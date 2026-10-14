@@ -1,0 +1,20 @@
+[
+  { "file": "docs/gym/sheets/batch-1.jpg", "grid": "2x4",
+    "note": "Same exercises as batch 7 (mostly shirtless versions). Batch 7 is used; put ids here to prefer these.",
+    "ids": ["-", "-", "-", "-", "-", "-", "-", "-"] },
+  { "file": "docs/gym/sheets/batch-2.jpg", "grid": "3x3",
+    "note": "Same exercises as batch 3 plus Incline Bench Press. Batch 3 (grey suit) and batch 7 are used; put ids here to prefer these.",
+    "ids": ["-", "-", "-", "-", "-", "-", "-", "-", "-"] },
+  { "file": "docs/gym/sheets/batch-3.jpg", "grid": "3x3",
+    "ids": ["lat-pulldown", "lateral-raise", "leg-extension", "leg-press", "lying-leg-curl", "seated-cable-row", "seated-leg-curl", "shoulder-press", "back-squat"] },
+  { "file": "docs/gym/sheets/batch-4.jpg", "grid": "2x4",
+    "ids": ["triceps-pushdown", "triceps-rope-pushdown", "bicep-curl-21s", "ab-scissors", "ab-wheel", "aerobics", "air-bike", "arnold-press"] },
+  { "file": "docs/gym/sheets/batch-5.jpg", "grid": "3x3",
+    "ids": ["bicycle-crunch", "bicycle-crunch-raised-legs", "bird-dog", "box-jump", "box-squat", "boxing", "barbell-bulgarian-split-squat", "bulgarian-split-squat", "burpee"] },
+  { "file": "docs/gym/sheets/batch-6.jpg", "grid": "3x3",
+    "ids": ["calf-extension-machine", "calf-press", "chest-dip", "assisted-chest-dip", "weighted-chest-dip", "band-chest-fly", "dumbbell-chest-fly", "machine-chest-fly", "suspension-chest-fly"] },
+  { "file": "docs/gym/sheets/batch-7.jpg", "grid": "3x3",
+    "ids": ["barbell-bench-press", "dumbbell-bench-press", "bent-over-row", "dumbbell-curl", "cable-fly-crossover", "deadlift", "face-pull", "hammer-curl", "incline-dumbbell-press"] },
+  { "file": "docs/gym/sheets/batch-8.jpg", "grid": "2x4",
+    "ids": ["romanian-deadlift", "trap-bar-deadlift", "step-up", "standing-calf-raise", "nordic-hamstring-curl", "copenhagen-plank", "pull-up", "pallof-press"] }
+]

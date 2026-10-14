@@ -20,7 +20,9 @@ import { renderProfileGame, openFitnessHub, openPublicFitness } from './profile-
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
-import { confetti, playLevelUp, playBadge, playQuest, playComplete, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
+import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logger.js';
+import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
+import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
@@ -278,6 +280,7 @@ function onClick(e) {
   const el = e.target.closest('[data-action]');
   if (!el) return;
   const { action, id } = el.dataset;
+  if (handleGymAction(action, el, gymDeps, 'click')) return;
 
   switch (action) {
     case 'tab': {
@@ -336,6 +339,15 @@ function onClick(e) {
       render();
       break;
     case 'open-workout': openWorkoutDetail(id); break;
+    case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
+    case 'routine-delete': {
+      const rt = getRoutines().find((r) => r.id === el.dataset.rt);
+      if (rt && confirm(`Delete the routine “${rt.name}”? Sessions you already did stay.`)) {
+        deleteRoutine(rt.id);
+        if (document.querySelector('[data-set-do="ai-plan"]')) openSettings();
+      }
+      break;
+    }
     case 'edit-goals': openGoalEditor(); break;
     case 'open-season': openSeasonPath(buildCtx()); break;
     case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
@@ -386,12 +398,8 @@ function onChange(e) {
     store.touchWorkout(id || w.id);
   };
 
-  if (action === 'toggle-exercise') {
-    const w = store.workoutById(id);
-    w.exercises[+el.dataset.ex].done = el.checked;
-    store.touchWorkout(id);
-    refreshDetail(id);
-  } else if (action === 'toggle-preset-pack') {
+  if (handleGymAction(action, el, gymDeps, 'change')) return;
+  if (action === 'toggle-preset-pack') {
     togglePacked(store.workoutById(id), el.dataset.item, el.checked);
     refreshDetail(id);
   } else if (action === 'toggle-tomorrow-pack') {
@@ -410,13 +418,10 @@ function onInput(e) {
   const { action, id } = el.dataset;
 
   // Text fields save silently (no re-render) so focus/caret survive.
+  if (handleGymAction(action, el, gymDeps, 'input')) return;
   if (action === 'notes') {
     const w = store.workoutById(id);
     w.notes = el.value;
-    store.save();
-  } else if (action === 'exercise-field') {
-    const w = store.workoutById(id);
-    w.exercises[+el.dataset.ex][el.dataset.field] = el.value;
     store.save();
   } else if (action === 'actual-field') {
     const w = store.workoutById(id);
@@ -508,6 +513,10 @@ function openSettings() {
         </div>
         <button class="btn ghost danger block" data-action="reset-plan">${svg('regen')} Reset training plan</button>
         <p class="muted small">Clearing wipes upcoming sessions only; resetting wipes the whole plan, past and upcoming. Completed and Strava-verified sessions are always kept, so your XP, levels and badges are safe.</p>
+
+        <hr>
+        <h3>Routines</h3>
+        ${routineRows({ withDelete: true }) || '<p class="muted small">No routines yet. Open a gym session and tap “Save as routine”.</p>'}
 
         <hr>
         <h3>Packing presets</h3>
@@ -615,6 +624,29 @@ function openGoalEditor() {
   });
 }
 
+// what the gym logger needs from the app
+const gymDeps = {
+  store,
+  refresh: (id) => refreshDetail(id),
+  close: () => closeModalRoot(),
+  toast: (msg, icon = 'warn') => toast(msg, { icon: svg(icon) }),
+  onRecord: ({ name, prs, x, y }) => {
+    if (!prefersReducedMotion()) confetti(x ?? window.innerWidth / 2, y ?? 160, 70);
+    playBadge();
+    toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
+  },
+  showFinish: (id) => {
+    const body = document.getElementById('wd-body');
+    const w = store.workoutById(id);
+    if (body && w) { body.innerHTML = finishView(w); body.scrollTop = 0; }
+    playComplete();
+  },
+};
+function onRestDone() {
+  playRestDone();
+  try { navigator.vibrate?.([120, 80, 120]); } catch { /* not supported */ }
+}
+
 let _detailId = null;
 function openWorkoutDetail(id) {
   const w = store.workoutById(id);
@@ -629,6 +661,8 @@ function openWorkoutDetail(id) {
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
   typeLines(root);
+  wireLogger(root, gymDeps);
+  if (root.querySelector('[data-gl-bar]')) startTicker((wid) => store.workoutById(wid), onRestDone);
 }
 function openSportLevels(sport) {
   if (!sport) return;
@@ -661,10 +695,14 @@ function refreshDetail(id) {
   if (_detailId !== id) return;
   const body = document.getElementById('wd-body');
   const w = store.workoutById(id);
-  if (body && w) body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
+  if (!body || !w) return;
+  const top = body.scrollTop;
+  body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
+  body.scrollTop = top;
+  wireLogger(body, gymDeps);
 }
 function closeModalRoot() {
-  _detailId = null;
+  _detailId = null; // the gym ticker stops itself once no logger is open and no rest is running
   const root = document.getElementById('modal-root');
   root.innerHTML = ''; root.classList.remove('open');
 }
@@ -818,6 +856,8 @@ async function boot() {
     e.preventDefault();
     el.click();
   });
+  startTicker((wid) => store.workoutById(wid), onRestDone); // a rest started before a reload still beeps
+  document.addEventListener('moske:open-workout', (e) => { closeModalRoot(); render(); openWorkoutDetail(e.detail); });
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
   document.addEventListener('input', onInput);

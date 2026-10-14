@@ -10,6 +10,7 @@ import { toast } from './effects.js';
 import { svg } from '../core/icons.js';
 import { esc } from './ui.js';
 import { addDays, todayISO } from '../core/dates.js';
+import { SPLIT_PRESETS, SPLIT_GROUPS, presetSplit, normalizeSplit, splitWarnings, moveGroup } from '../core/gym-split.js';
 
 // ---- static choice matrices --------------------------------------------------
 
@@ -101,7 +102,10 @@ export function openOnboarding({ onDone } = {}) {
     ftp: store.getSettings().ftp || 250, runPace: '', swimPace: '', rhr: '', maxhr: '',
     sled: '', wallball: '',
     longDays: [5, 6], restDays: [], hours: 8,
+    split: store.getSettings().gymSplit ? normalizeSplit(store.getSettings().gymSplit) : presetSplit('ppl'),
   };
+  let picked = null; // the chip picked in the split editor: { day, idx }
+  const gymInPlay = () => s.eco === 'gym' || (s.eco === 'hybrid' && s.hybridSports.includes('Gym / Strength'));
   const hist = analyzeHistory(store.getWorkouts());
   let idx = 0;
 
@@ -110,7 +114,7 @@ export function openOnboarding({ onDone } = {}) {
     const k = ['eco'];
     if (s.eco === 'endurance') k.push('athlete', 'goal');
     if (s.eco === 'hybrid') k.push('hybrid');
-    if (s.eco === 'gym' || (s.eco === 'hybrid' && s.hybridSports.includes('Gym / Strength'))) k.push('gymgoal');
+    if (gymInPlay()) k.push('gymgoal', 'split');
     if (s.eco === 'hyrox') k.push('hyrox');
     if (s.eco !== 'gym') k.push('race');
     k.push('baselines', 'week', 'analysis');
@@ -156,6 +160,7 @@ export function openOnboarding({ onDone } = {}) {
     if (key === 'gymgoal') {
       return `<h2>What is your primary weight room goal?</h2>${choiceGrid(GYM_GOALS, 'gymgoal', s.gymGoal)}`;
     }
+    if (key === 'split') return splitHtml();
     if (key === 'hyrox') {
       return `<h2>Your HYROX pacing &amp; functional baselines.</h2>
         <div class="ob-fields">
@@ -219,6 +224,152 @@ export function openOnboarding({ onDone } = {}) {
           : `<p class="ob-note">No recent history found — the plan starts from a conservative base and builds gradually.</p>`}`;
   };
 
+  // ---- split builder: presets, then a chip editor (tap a chip, then tap a
+  // day to move it; or drag it; or use the arrows). Warnings, never blocks.
+  function splitHtml() {
+    const sp = s.split;
+    const warn = splitWarnings(sp, { trainingDays: 7 - s.restDays.length });
+    const sel = picked && sp.days[picked.day]?.groups[picked.idx];
+    const day = (x, i) => {
+      const chips = x.rest ? '<span class="muted small">Rest day</span>' : x.groups.map((g, j) => {
+        const on = picked && picked.day === i && picked.idx === j;
+        return `<button type="button" class="sp-chip ${on ? 'on' : ''}" data-sp-chip="${i}:${j}" aria-pressed="${on}">${esc(g)}</button>`;
+      }).join('');
+      const free = SPLIT_GROUPS.filter((g) => !x.groups.includes(g));
+      return `<section class="sp-day ${x.rest ? 'is-rest' : ''} ${sel && picked.day !== i && !x.rest ? 'is-target' : ''}" data-sp-day="${i}"
+          aria-label="${esc(x.label)}${sel && picked.day !== i && !x.rest ? `: tap to move ${esc(sel)} here` : ''}">
+        <div class="sp-day-head">
+          <span class="sp-num data-num">${i + 1}</span>
+          <input class="sp-label" type="text" maxlength="24" value="${esc(x.label)}" data-sp-label="${i}" aria-label="Name of day ${i + 1}">
+          <button type="button" class="icon-btn tiny danger" data-sp-del="${i}" aria-label="Remove ${esc(x.label)}">${svg('close')}</button>
+        </div>
+        <div class="sp-chips">${chips}
+          ${x.rest ? '' : `<label class="sp-add chip gl-chip">${svg('plus')}<select data-sp-add="${i}" aria-label="Add a muscle group to ${esc(x.label)}">
+            <option value="" selected>Add</option>${free.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('')}</select></label>`}
+        </div>
+      </section>`;
+    };
+    return `<h2>Build your gym split.</h2>
+      <div class="ob-sub">Start from a preset, then shape it. Tap a muscle, then tap another day to move it, or drag it.</div>
+      <div class="ob-chip-row sp-presets">${SPLIT_PRESETS.map((p) =>
+        `<button type="button" class="ob-chip wide ${sp.preset === p.id ? 'on' : ''}" data-sp-preset="${p.id}">${esc(p.name)}</button>`).join('')}</div>
+      <div class="sp-days" data-sp-days>${sp.days.map(day).join('')}</div>
+      ${sel ? `<div class="sp-tools" role="group" aria-label="${esc(sel)} selected">
+          <span class="small"><b>${esc(sel)}</b> selected</span>
+          <button type="button" class="btn tiny secondary" data-sp-arrow="-1" aria-label="Move ${esc(sel)} to the day before"><span class="ic-up">${svg('chevron')}</span></button>
+          <button type="button" class="btn tiny secondary" data-sp-arrow="1" aria-label="Move ${esc(sel)} to the day after"><span class="ic-down">${svg('chevron')}</span></button>
+          <button type="button" class="btn tiny ghost danger" data-sp-remove>Remove</button>
+        </div>` : ''}
+      <div class="row sp-add-days">
+        <button type="button" class="btn tiny secondary" data-sp-add-day ${sp.days.length >= 7 ? 'disabled' : ''}>${svg('plus')} Training day</button>
+        <button type="button" class="btn tiny ghost" data-sp-add-rest ${sp.days.length >= 7 ? 'disabled' : ''}>${svg('plus')} Rest day</button>
+      </div>
+      <div aria-live="polite">${warn.length ? `<ul class="ob-note warn sp-warn">${warn.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}</div>`;
+  }
+
+  function redrawSplit() {
+    const card = root.querySelector('.ob-card'); // the scrolling box: keep its place
+    if (!card) return;
+    const top = card.scrollTop;
+    card.innerHTML = splitHtml();
+    card.scrollTop = top;
+    wireSplit();
+  }
+
+  function wireSplit() {
+    const sp = s.split;
+    const custom = () => { sp.preset = 'custom'; };
+    root.querySelectorAll('[data-sp-preset]').forEach((b) => b.addEventListener('click', () => {
+      s.split = presetSplit(b.dataset.spPreset); picked = null; redrawSplit();
+    }));
+    root.querySelectorAll('[data-sp-label]').forEach((el) => {
+      el.addEventListener('input', () => { sp.days[+el.dataset.spLabel].label = el.value; custom(); });
+      el.addEventListener('change', () => { s.split = normalizeSplit(sp); redrawSplit(); });
+    });
+    root.querySelectorAll('[data-sp-del]').forEach((b) => b.addEventListener('click', () => {
+      sp.days.splice(+b.dataset.spDel, 1); picked = null; custom(); redrawSplit();
+    }));
+    root.querySelectorAll('[data-sp-add]').forEach((el) => el.addEventListener('change', () => {
+      if (!el.value) return;
+      sp.days[+el.dataset.spAdd].groups.push(el.value); custom(); redrawSplit();
+    }));
+    root.querySelector('[data-sp-add-day]')?.addEventListener('click', () => {
+      sp.days.push({ label: `Day ${sp.days.length + 1}`, groups: [] }); custom(); redrawSplit();
+    });
+    root.querySelector('[data-sp-add-rest]')?.addEventListener('click', () => {
+      sp.days.push({ label: 'Rest', groups: [], rest: true }); custom(); redrawSplit();
+    });
+    root.querySelector('[data-sp-remove]')?.addEventListener('click', () => {
+      sp.days[picked.day].groups.splice(picked.idx, 1); picked = null; custom(); redrawSplit();
+    });
+    root.querySelectorAll('[data-sp-arrow]').forEach((b) => b.addEventListener('click', () => {
+      const dir = +b.dataset.spArrow;
+      let to = picked.day + dir;
+      while (sp.days[to]?.rest) to += dir; // skip rest days
+      if (!sp.days[to]) return;
+      const g = sp.days[picked.day].groups[picked.idx];
+      if (moveGroup(sp, picked.day, picked.idx, to)) { picked = { day: to, idx: sp.days[to].groups.indexOf(g) }; custom(); redrawSplit(); }
+    }));
+    // tap a chip to pick it; tap another day to drop it there; or drag it
+    const days = root.querySelector('[data-sp-days]');
+    if (!days) return;
+    days.addEventListener('click', (e) => {
+      if (e.target.closest('input, select, label, [data-sp-del]')) return;
+      const chip = e.target.closest('[data-sp-chip]');
+      if (chip) {
+        const [d, j] = chip.dataset.spChip.split(':').map(Number);
+        picked = picked && picked.day === d && picked.idx === j ? null : { day: d, idx: j };
+        redrawSplit();
+        return;
+      }
+      const target = e.target.closest('[data-sp-day]');
+      if (target && picked && moveGroup(sp, picked.day, picked.idx, +target.dataset.spDay)) {
+        picked = null; custom(); redrawSplit();
+      }
+    });
+    days.addEventListener('pointerdown', (e) => {
+      const chip = e.target.closest('[data-sp-chip]');
+      if (!chip || e.button > 0) return;
+      const [d, j] = chip.dataset.spChip.split(':').map(Number);
+      const x0 = e.clientX; const y0 = e.clientY;
+      let dragging = false;
+      let scrollShift = 0; // how far the list scrolled under the dragged chip
+      const move = (ev) => {
+        const dx = ev.clientX - x0; const dy = ev.clientY - y0;
+        if (!dragging && Math.hypot(dx, dy) < 8) return;
+        dragging = true;
+        chip.classList.add('is-dragging');
+        // near the top or bottom edge, scroll the list so far-away days can be reached
+        const card = root.querySelector('.ob-card');
+        const box = card?.getBoundingClientRect();
+        let scrolled = 0;
+        if (box && ev.clientY > box.bottom - 48) scrolled = 12;
+        else if (box && ev.clientY < box.top + 48) scrolled = -12;
+        if (scrolled) { const t0 = card.scrollTop; card.scrollTop += scrolled; scrollShift += card.scrollTop - t0; }
+        chip.style.transform = `translate(${Math.round(dx / 2) * 2}px, ${Math.round((dy + scrollShift) / 2) * 2}px)`;
+      };
+      const up = (ev) => {
+        chip.removeEventListener('pointermove', move);
+        chip.removeEventListener('pointerup', up);
+        chip.removeEventListener('pointercancel', up);
+        if (!dragging) return; // a plain tap: the click handler picks it
+        chip.style.visibility = 'hidden'; // look past the dragged chip to the day under the finger
+        const over = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-sp-day]');
+        chip.style.visibility = '';
+        chip.style.transform = '';
+        chip.classList.remove('is-dragging');
+        const swallow = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
+        days.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => days.removeEventListener('click', swallow, { capture: true }), 0);
+        if (over && moveGroup(sp, d, j, +over.dataset.spDay)) { picked = null; custom(); redrawSplit(); }
+      };
+      chip.setPointerCapture?.(e.pointerId);
+      chip.addEventListener('pointermove', move);
+      chip.addEventListener('pointerup', up);
+      chip.addEventListener('pointercancel', up);
+    });
+  }
+
   const draw = (dir = 1) => {
     const keys = stepKeys();
     idx = Math.min(idx, keys.length - 1);
@@ -269,6 +420,7 @@ export function openOnboarding({ onDone } = {}) {
         ? [{ title: s.raceName || goal?.name || eco.name, date: s.raceDate }] : [];
       if (events.length) store.setSetting('events', events);
       store.setSetting('ftp', s.ftp);
+      if (gymInPlay()) store.setSetting('gymSplit', normalizeSplit(s.split));
 
       const r = await generateAIWorkoutPlan({
         sports: sportsOf(),
@@ -278,6 +430,7 @@ export function openOnboarding({ onDone } = {}) {
           : s.eco === 'hyrox' ? 'HYROX race'
           : s.eco === 'gym' ? (gymGoal?.name || 'Strength') : 'Hybrid athlete',
         gym_goal: gymGoal?.name || null,
+        gym_split: gymInPlay() ? normalizeSplit(s.split) : null,
         hyrox_baselines: s.eco === 'hyrox'
           ? { run_pace: s.runPace, sled_push_pull: s.sled, wall_ball_threshold: s.wallball } : null,
         a_race: { name: s.raceName, date: s.raceDate, execution: s.raceMode === 'pr' ? 'competitive time goal' : 'finish comfortably' },
@@ -316,6 +469,7 @@ export function openOnboarding({ onDone } = {}) {
   };
 
   function wire(key) {
+    if (key === 'split') wireSplit();
     root.querySelector('[data-ob-back]').addEventListener('click', () => {
       if (idx === 0) { close(); return; }
       idx -= 1; draw(-1);

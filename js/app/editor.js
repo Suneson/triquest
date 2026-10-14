@@ -8,6 +8,12 @@ import { formatDuration } from '../core/scoring.js';
 import { todayISO } from '../core/dates.js';
 import { toast, playAccept } from './effects.js';
 import { svg } from '../core/icons.js';
+import { newSet, workSets } from '../core/sets.js';
+import { matchExercise, exerciseById, exerciseArtSrc } from '../core/exercises.js';
+import { exerciseFromEntry, moveItem, cleanSupersets, supersetInfo } from '../core/gym-edit.js';
+import { openPicker } from './gym-picker.js';
+import { enableDragSort } from './drag-sort.js';
+import { routineRows } from './gym-routines.js';
 import { MOMENT_LINES } from '../core/coach-lines.js';
 
 const SEG_KINDS = { warmup: 'Warm-up', work: 'Work', rest: 'Rest / float', cooldown: 'Cool-down' };
@@ -31,11 +37,15 @@ export function openEditor(id = null, defaultDate = null) {
   isNew = !existing;
   draft = existing ? structuredClone(existing) : blankWorkout(defaultDate);
   if (draft.metrics?.distanceKm == null) draft.metrics.distanceKm = '';
+  const root = document.getElementById('modal-root');
+  delete root.dataset.edFocused;
+  root.innerHTML = ''; // a fresh sheet starts at the top
   renderModal();
 }
 
 function closeModal() {
   const root = document.getElementById('modal-root');
+  delete root.dataset.edFocused;
   root.innerHTML = '';
   root.classList.remove('open');
   draft = null;
@@ -49,6 +59,8 @@ function options(map, selected) {
 function renderModal() {
   const root = document.getElementById('modal-root');
   const d = draft;
+  // adding or removing a row redraws the sheet: keep the scroll where it was
+  const prevTop = root.querySelector('.modal-body')?.scrollTop ?? 0;
 
   const segRows = d.segments.map((s, i) => `
     <div class="row seg-row" data-seg="${i}">
@@ -59,14 +71,32 @@ function renderModal() {
       <button type="button" class="icon-btn" data-del-seg="${i}" aria-label="Remove segment">${svg('close')}</button>
     </div>`).join('');
 
-  const exRows = d.exercises.map((e, i) => `
-    <div class="row ex-row" data-ex="${i}">
-      <input class="grow" type="text" value="${esc(e.name)}" placeholder="Exercise" data-ex-field="name" data-i="${i}">
-      <input class="num" type="text" value="${esc(e.sets)}" placeholder="sets" data-ex-field="sets" data-i="${i}">
-      <input class="num" type="text" value="${esc(e.reps)}" placeholder="reps" data-ex-field="reps" data-i="${i}">
-      <input class="grow" type="url" value="${esc(e.imageUrl || '')}" placeholder="custom image URL (optional)" data-ex-field="imageUrl" data-i="${i}">
-      <button type="button" class="icon-btn" data-del-ex="${i}" aria-label="Remove exercise">${svg('close')}</button>
-    </div>`).join('');
+  // one row per exercise: picture, name, sets × reps; reorder with the arrows
+  // or by dragging the grip; add more from the picker
+  const ss = supersetInfo(d.exercises);
+  const exRows = d.exercises.map((e, i) => {
+    const ws = workSets(e);
+    const timed = e.kind === 'time';
+    const target = timed ? ws[0]?.seconds : ws[0]?.reps;
+    const art = exerciseArtSrc(e.libId);
+    return `
+    <li class="ed-ex ${ss[i] ? 'in-ss' : ''}" data-ed-item>
+      <span class="pk-thumb ${art ? 'ex-art' : ''}" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" width="48" height="48" loading="lazy" decoding="async">` : svg('gym')}</span>
+      <span class="ed-ex-main">
+        <b>${esc(e.name || 'Exercise')}</b>${ss[i] ? ` <small class="muted">Superset ${ss[i].letter}</small>` : ''}
+        <span class="ed-ex-nums">
+          <label><input class="num" type="text" inputmode="numeric" value="${ws.length}" aria-label="${esc(`${e.name} sets`)}" data-ex-field="sets" data-i="${i}"> sets</label>
+          <label>× <input class="num" type="text" inputmode="numeric" value="${esc(target ?? '')}" aria-label="${esc(`${e.name} ${timed ? 'seconds' : 'reps'}`)}" data-ex-field="reps" data-i="${i}"> ${timed ? 's' : 'reps'}</label>
+        </span>
+      </span>
+      <span class="ed-ex-tools">
+        <button type="button" class="icon-btn tiny" data-mv-ex="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="${esc(`Move ${e.name} up`)}"><span class="ic-up">${svg('chevron')}</span></button>
+        <button type="button" class="icon-btn tiny" data-mv-ex="${i}" data-dir="1" ${i === d.exercises.length - 1 ? 'disabled' : ''} aria-label="${esc(`Move ${e.name} down`)}"><span class="ic-down">${svg('chevron')}</span></button>
+        <button type="button" class="icon-btn tiny gl-grip" data-ed-grip aria-label="${esc(`Drag to reorder ${e.name}`)}">${svg('grip')}</button>
+        <button type="button" class="icon-btn tiny danger" data-del-ex="${i}" aria-label="${esc(`Remove ${e.name}`)}">${svg('close')}</button>
+      </span>
+    </li>`;
+  }).join('');
 
   const packRows = d.packing.map((p, i) => `
     <div class="row pack-row" data-pack="${i}">
@@ -83,6 +113,7 @@ function renderModal() {
         <button class="icon-btn" data-close aria-label="Close">${svg('close')}</button>
       </header>
       <div class="modal-body">
+        ${isNew && routineRows({ date: d.date }) ? `<fieldset class="sub-list"><legend>Start a routine</legend>${routineRows({ date: d.date })}</fieldset>` : ''}
         <label class="field"><span>Title</span>
           <input type="text" id="f-title" value="${esc(d.title)}" placeholder="e.g. Long ride Z2" data-field="title"></label>
 
@@ -105,8 +136,8 @@ function renderModal() {
         </fieldset>
 
         <fieldset class="sub-list"><legend>Gym exercises</legend>
-          ${exRows || '<p class="muted small">No exercises.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-ex>${svg('plus')} Add exercise</button>
+          ${exRows ? `<ul class="ed-ex-list" data-ed-list>${exRows}</ul>` : '<p class="muted small">No exercises.</p>'}
+          <button type="button" class="btn tiny ghost" data-add-ex>${svg('plus')} Add exercises</button>
         </fieldset>
 
         <fieldset class="sub-list"><legend>Packing list</legend>
@@ -122,6 +153,8 @@ function renderModal() {
       </footer>
     </div>`;
 
+  const body = root.querySelector('.modal-body');
+  if (body) body.scrollTop = prevTop;
   wire(root);
 }
 
@@ -152,8 +185,21 @@ function wire(root) {
     draft.segments[i][f] = f === 'value' ? Number(el.value) : el.value;
   }));
   root.querySelectorAll('[data-ex-field]').forEach((el) => el.addEventListener('input', () => {
-    const i = +el.dataset.i;
-    draft.exercises[i][el.dataset.exField] = el.value;
+    const ex = draft.exercises[+el.dataset.i];
+    const f = el.dataset.exField;
+    const n = Math.round(Number(el.value));
+    if (f === 'sets') {
+      if (!(n >= 1 && n <= 20)) return;
+      const ws = workSets(ex);
+      const tmpl = ws[ws.length - 1] || newSet('work');
+      while (workSets(ex).length < n) ex.sets.push(newSet('work', { reps: tmpl.reps, seconds: tmpl.seconds, weight: tmpl.weight }));
+      while (workSets(ex).length > n) ex.sets.splice(ex.sets.lastIndexOf(workSets(ex).at(-1)), 1);
+    } else if (f === 'reps') {
+      const v = el.value.trim() === '' || !Number.isFinite(n) ? null : n;
+      workSets(ex).forEach((s) => { if (ex.kind === 'time') s.seconds = v; else s.reps = v; });
+    } else {
+      ex[f] = el.value;
+    }
   }));
   root.querySelectorAll('[data-pack-field]').forEach((el) => el.addEventListener('input', () => {
     draft.packing[+el.dataset.i][el.dataset.packField] = el.value;
@@ -162,17 +208,31 @@ function wire(root) {
   // add / remove rows (re-render to keep indices clean)
   const re = () => renderModal();
   root.querySelector('[data-add-seg]')?.addEventListener('click', () => { draft.segments.push({ label: 'Work', kind: 'work', value: 3, intensity: 'threshold' }); re(); });
-  root.querySelector('[data-add-ex]')?.addEventListener('click', () => { draft.exercises.push({ name: '', sets: 3, reps: '8', done: false, weight: '', actualReps: '', rpe: '', notes: '', imageUrl: '' }); re(); });
+  root.querySelector('[data-add-ex]')?.addEventListener('click', () => openPicker({
+    onPick: (entries) => {
+      entries.forEach((en) => draft?.exercises.push(exerciseFromEntry(en, Date.now())));
+      if (entries.length && draft.type !== 'gym' && !draft.exercises.length) draft.type = 'gym';
+      re();
+    },
+  }));
+  root.querySelectorAll('[data-mv-ex]').forEach((b) => b.addEventListener('click', () => {
+    const i = +b.dataset.mvEx;
+    if (moveItem(draft.exercises, i, i + Number(b.dataset.dir))) { cleanSupersets(draft.exercises); re(); }
+  }));
+  enableDragSort(root.querySelector('[data-ed-list]'), {
+    item: '[data-ed-item]', handle: '[data-ed-grip]',
+    onMove: (from, to) => { if (moveItem(draft.exercises, from, to)) { cleanSupersets(draft.exercises); re(); } },
+  });
   root.querySelector('[data-add-pack]')?.addEventListener('click', () => { draft.packing.push({ item: '', checked: false }); re(); });
   root.querySelectorAll('[data-del-seg]').forEach((b) => b.addEventListener('click', () => { draft.segments.splice(+b.dataset.delSeg, 1); re(); }));
-  root.querySelectorAll('[data-del-ex]').forEach((b) => b.addEventListener('click', () => { draft.exercises.splice(+b.dataset.delEx, 1); re(); }));
+  root.querySelectorAll('[data-del-ex]').forEach((b) => b.addEventListener('click', () => { draft.exercises.splice(+b.dataset.delEx, 1); cleanSupersets(draft.exercises); re(); }));
   root.querySelectorAll('[data-del-pack]').forEach((b) => b.addEventListener('click', () => { draft.packing.splice(+b.dataset.delPack, 1); re(); }));
 
   // actions
   root.querySelectorAll('[data-do]').forEach((b) => b.addEventListener('click', () => action(b.dataset.do)));
 
-  // focus title for new sessions
-  if (isNew) root.querySelector('#f-title')?.focus();
+  // focus the title once, when a new session opens (not on every redraw)
+  if (isNew && !root.dataset.edFocused) { root.dataset.edFocused = '1'; root.querySelector('#f-title')?.focus({ preventScroll: true }); }
 
   // esc to close
   root.querySelector('.modal')?.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
@@ -213,7 +273,15 @@ function saveDraft() {
   // Strip empty distance, clean exercises/packing
   const out = structuredClone(draft);
   if (out.metrics.distanceKm === '' || out.metrics.distanceKm == null) delete out.metrics.distanceKm;
-  out.exercises = out.exercises.filter((e) => e.name.trim());
+  out.exercises = out.exercises.filter((e) => e.name.trim()).map((e) => {
+    // exercises come from the picker with their library (or custom) id; only
+    // an old free-text one without an id tries to pick up its library entry
+    if (e.libId) return e;
+    const libId = matchExercise(e.name);
+    if (!libId) return e;
+    const lib = exerciseById(libId);
+    return { ...e, libId, muscle: lib?.muscle ?? e.muscle ?? null, equipment: lib?.equipment ?? e.equipment ?? null };
+  });
   out.packing = out.packing.filter((p) => p.item.trim());
   out.segments = out.segments.filter((s) => Number(s.value) > 0);
   upsertWorkout(out);

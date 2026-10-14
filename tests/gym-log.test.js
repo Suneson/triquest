@@ -129,3 +129,20 @@ test('finish logs the session and never marks it completed (XP comes from Strava
   const onlyWarmups = { exercises: [ex([done({ weight: 40, reps: 10 }, 'warmup')])] };
   assert.equal(finishPatch(onlyWarmups, T0), null, 'warm-ups alone are not a session');
 });
+
+import { setOrder, nextSet } from '../js/core/gym-log.js';
+
+test('guided order: exercise by exercise, alternating inside a superset', () => {
+  const ex = (n, ss) => ({ sets: Array.from({ length: n }, () => newSet('work')), ...(ss ? { supersetId: ss } : {}) });
+  const list = [ex(2), ex(3, 's'), ex(2, 's'), ex(1)];
+  assert.deepEqual(setOrder(list), [[0, 0], [0, 1], [1, 0], [2, 0], [1, 1], [2, 1], [1, 2], [3, 0]]);
+  assert.deepEqual(nextSet(list), { ex: 0, set: 0 });
+  list[0].sets[0].done = true; list[0].sets[1].done = true; list[1].sets[0].done = true;
+  assert.deepEqual(nextSet(list), { ex: 2, set: 0 }, 'superset partner comes next');
+  list.forEach((e) => e.sets.forEach((s) => { s.done = true; }));
+  assert.equal(nextSet(list), null);
+  assert.equal(nextSet([]), null);
+  // warm-ups are part of the exercise and come first
+  const w = [{ sets: [newSet('warmup'), newSet('work')] }];
+  assert.deepEqual(nextSet(w), { ex: 0, set: 0 });
+});

@@ -102,7 +102,7 @@ export function openPicker({ title = 'Add exercises', multi = true, onPick } = {
   function draw() {
     root.innerHTML = `
       <div class="modal-backdrop" data-pk-close></div>
-      <div class="modal pk-modal" role="dialog" aria-modal="true" aria-label="${esc(st.mode === 'create' ? 'Create exercise' : title)}">
+      <div class="modal pk-modal" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(st.mode === 'create' ? 'Create exercise' : title)}">
         <header class="modal-head"><h2>${svg(st.mode === 'create' ? 'plus' : 'gym')} ${esc(st.mode === 'create' ? 'Create exercise' : title)}</h2>
           <button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
         ${st.mode === 'create' ? `<div class="modal-body">${createHtml()}</div>` : `
@@ -168,7 +168,9 @@ export function openPicker({ title = 'Add exercises', multi = true, onPick } = {
   };
   root.onkeydown = (e) => { if (e.key === 'Escape') closeLayer(); };
   draw();
-  root.querySelector('[data-pk-q]')?.focus({ preventScroll: true });
+  // focus the sheet, not the search box: the full list shows first and the
+  // phone keyboard stays down until you tap Search yourself
+  root.querySelector('.pk-modal')?.focus({ preventScroll: true });
 }
 
 /** A one-field sheet on top of the workout sheet: "Save as routine" and the like. */

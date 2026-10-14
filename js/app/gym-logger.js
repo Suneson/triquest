@@ -26,7 +26,7 @@ import {
 import {
   setLabels, previousSets, previousFor, formatSet, fillFrom, addSet, removeSet, tickSet, markStarted,
   sessionSummary, fmtClock, restLabel, REST_PRESETS, SET_KIND_LABELS, startRest, restRemaining, extendRest,
-  startStopwatch, stopwatchElapsed, finishPatch,
+  startStopwatch, stopwatchElapsed, finishPatch, nextSet,
 } from '../core/gym-log.js';
 
 const REST_KEY = 'moske-rest';
@@ -68,9 +68,11 @@ export function sessionBar(w, now = Date.now()) {
       <div class="gl-clock">
         <span class="gl-k">Time</span>
         <b class="data-num" data-gl-elapsed>${sum.durationSec != null ? fmtClock(sum.durationSec) : '0:00'}</b>
-        ${sum.durationSec == null ? '<small class="muted">starts on your first set</small>' : logged}
+        ${sum.durationSec == null ? '<small class="muted">press Start when you’re ready</small>' : logged}
       </div>
-      <button class="btn primary tiny gl-finish" data-action="gym-finish" data-id="${esc(w.id)}">${w.gymLoggedAt ? 'Save' : 'Finish'}</button>
+      ${!w.gymStartedAt && !w.gymLoggedAt && w.exercises?.length
+    ? `<button class="btn primary tiny gl-finish" data-action="gym-start" data-id="${esc(w.id)}">Start</button>`
+    : `<button class="btn primary tiny gl-finish" data-action="gym-finish" data-id="${esc(w.id)}">${w.gymLoggedAt ? 'Save' : 'Finish'}</button>`}
     </div>${restRow}`;
 }
 
@@ -78,6 +80,43 @@ function restSegments(left, total) {
   const n = 10;
   const on = Math.max(0, Math.min(n, Math.ceil((left / Math.max(1, total)) * n)));
   return Array.from({ length: n }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('');
+}
+
+// ---- guided workout: the set to do next ------------------------------------------------------
+// Once the session has started, the next unticked set (in the order you do
+// them; supersets alternate) is outlined in gold. While a rest runs it is
+// only marked as up next; when the rest ends (or you skip it) it lights up
+// and scrolls into view.
+
+function cursorFor(w) {
+  if (!w?.gymStartedAt || w.gymLoggedAt) return null;
+  const n = nextSet(w.exercises);
+  if (!n) return null;
+  const rest = getRest();
+  const resting = rest && rest.workoutId === w.id && restRemaining(rest, Date.now()) > 0;
+  return { ...n, cls: resting ? 'is-upnext' : 'is-next' };
+}
+
+/** Re-mark the next set on screen without redrawing (inputs keep focus). */
+export function paintCursor() {
+  document.querySelectorAll('[data-gl-list]').forEach((list) => {
+    const w = _getWorkout?.(list.dataset.id);
+    const cur = w && cursorFor(w);
+    list.querySelectorAll('[data-gl-row]').forEach((row) => {
+      const on = cur && row.dataset.glRow === `${cur.ex}:${cur.set}`;
+      row.classList.toggle('is-next', !!on && cur.cls === 'is-next');
+      row.classList.toggle('is-upnext', !!on && cur.cls === 'is-upnext');
+    });
+  });
+}
+
+/** Bring the next set into view, unless you're typing somewhere in the log. */
+export function scrollToNext() {
+  const row = document.querySelector('[data-gl-list] .gl-row.is-next, [data-gl-list] .gl-row.is-upnext');
+  if (!row) return;
+  if (document.activeElement?.closest?.('[data-gl-list]') && document.activeElement.matches('input, textarea')) return;
+  const calm = document.body.classList.contains('rm') || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  row.scrollIntoView({ block: 'center', behavior: calm ? 'auto' : 'smooth' });
 }
 
 /** The whole logger for a workout. */
@@ -125,8 +164,10 @@ function exerciseBlock(w, ex, i, workouts, ss) {
   const timed = ex.kind === 'time' || ex.kind === 'distance';
   const labels = setLabels(ex.sets);
   const sw = getStopwatch();
+  const cur = cursorFor(w);
   const rows = ex.sets.map((s, j) => setRow(w, ex, i, s, j, labels[j], previousFor(prev, ex.sets, j), timed, sw,
-    s.done && s.kind !== 'warmup' && detectPRs(workouts, w, i, j).length > 0)).join('');
+    s.done && s.kind !== 'warmup' && detectPRs(workouts, w, i, j).length > 0,
+    cur && cur.ex === i && cur.set === j ? cur.cls : '')).join('');
   const ids = `data-id="${esc(w.id)}" data-ex="${i}"`;
   const head = timed
     ? `<span>Set</span><span class="gl-col-prev">Last</span><span>Time</span><span aria-label="Done">${svg('check')}</span>`
@@ -163,7 +204,7 @@ function exerciseBlock(w, ex, i, workouts, ss) {
     </section>`;
 }
 
-function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false) {
+function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false, cursorCls = '') {
   const ids = `data-id="${esc(w.id)}" data-ex="${i}" data-set="${j}"`;
   const name = `${label === 'W' ? 'Warm-up' : SET_KIND_LABELS[s.kind]} set ${label}`;
   const prevText = formatSet(prevSet, ex.kind);
@@ -192,7 +233,7 @@ function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false) {
   } else {
     cells = `${num('weight', 'decimal', s.weight, ex.kind === 'bodyweight' ? 'added kilos' : 'kilos')}${num('reps', 'numeric', s.reps, 'reps')}`;
   }
-  return `<div class="gl-row ${s.done ? 'done' : ''}">
+  return `<div class="gl-row ${s.done ? 'done' : ''} ${cursorCls}" data-gl-row="${i}:${j}">
       ${kindSel}
       ${prevBtn('gl-col-prev')}
       ${cells}
@@ -279,8 +320,16 @@ export function handleGymAction(action, el, deps, kind) {
       }
       save(); refresh(id);
       if (s.done) celebrate(deps, w, i, j, el);
+      // no rest to wait for (rest off, or mid-superset): go straight to the next set
+      if (s.done && !getRest()) scrollToNext();
       break;
     }
+    case 'gym-start':
+      markStarted(w, now);
+      save(); refresh(id);
+      _getWorkout = _getWorkout || ((wid) => store.workoutById(wid));
+      scrollToNext(); // past the warm-up text, to the first set
+      break;
     case 'gym-history':
       if (ex) openExerciseHistory({ libId: ex.libId, name: ex.name });
       break;
@@ -346,6 +395,8 @@ export function handleGymAction(action, el, deps, kind) {
     case 'gym-rest-skip':
       writeJSON(REST_KEY, null);
       paintBars();
+      paintCursor();
+      scrollToNext();
       break;
     case 'gym-finish': {
       const patch = finishPatch(w, now);
@@ -444,6 +495,10 @@ export function startTicker(getWorkout, onRestDone) {
     if (r && restRemaining(r, Date.now()) === 0) {
       writeJSON(REST_KEY, null);
       _onRestDone?.();
+      paintBars();
+      paintCursor(); // the next set lights up
+      scrollToNext();
+      return;
     }
     paintBars();
   }, 1000);

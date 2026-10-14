@@ -198,3 +198,31 @@ export function finishPatch(w, now) {
   if (!sum.sets) return null;
   return { gymLoggedAt: new Date(now).toISOString(), gymDurationSec: sum.durationSec };
 }
+
+// ---- guided workout -----------------------------------------------------------------------
+
+/**
+ * The order you do the sets in: exercise by exercise, except inside a
+ * superset, where you alternate (A1, B1, A2, B2, …). Returns [[ex, set], …].
+ */
+export function setOrder(exercises) {
+  const list = exercises || [];
+  const out = [];
+  for (let i = 0; i < list.length;) {
+    const id = list[i].supersetId;
+    let end = i + 1;
+    if (id) while (end < list.length && list[end].supersetId === id) end++;
+    const group = [];
+    for (let k = i; k < end; k++) group.push(k);
+    const rounds = Math.max(...group.map((k) => list[k].sets?.length || 0));
+    for (let r = 0; r < rounds; r++) for (const k of group) if (r < (list[k].sets?.length || 0)) out.push([k, r]);
+    i = end;
+  }
+  return out;
+}
+
+/** The next set to do (the first unticked one in that order), or null when all are done. */
+export function nextSet(exercises) {
+  const hit = setOrder(exercises).find(([i, j]) => !exercises[i].sets[j].done);
+  return hit ? { ex: hit[0], set: hit[1] } : null;
+}

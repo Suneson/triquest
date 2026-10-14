@@ -549,6 +549,8 @@ input[type=checkbox]:checked::after {
 .exercise.done { opacity: .7; }
 .ex-img { --eo: 4px; flex: none; width: 64px; height: 64px; background: var(--bg-4); display: grid; place-items: center; overflow: hidden; color: var(--c-gym); margin: 2px; }
 .ex-img img { width: 100%; height: 100%; object-fit: cover; }
+.ex-art { background: #FBF3E6; } /* the sheets' card cream, so the art sits on its own paper */
+.ex-art img { image-rendering: pixelated; }
 .pose { width: 100%; height: 100%; }
 .pose .equip { stroke: var(--accent); }
 .pose .equip.fill { fill: var(--accent); stroke: none; }

@@ -6,25 +6,24 @@ up where the last one stopped. Branch: `feature/gym-trainer` (cut from
 
 ## Where the source images live
 
-These are on the owner's PC. A cloud session **cannot read a `D:\` path**, so
-before the art step they have to be put in the repo (or attached in chat):
+These are on the owner's PC; a cloud session can't read a `D:\` path. Copies
+are now in the repo:
 
 | What | Owner's path | Put them in the repo at |
 | --- | --- | --- |
-| 7 exercise sheets (3×3 cards, ~63 exercises) | `D:\00_CLAUDE\MOSKE APP NEW FILES\PIXEL GYM` | `docs/gym/sheets/` (PNG preferred over JPEG) |
-| 4 Hevy screenshots (behaviour reference only — never copy the look) | `D:\00_CLAUDE\MOSKE APP NEW FILES\FEATURES REFERENCE` | `docs/gym/reference/` |
+| 7 exercise sheets (61 cards, 44 different exercises) | `D:\00_CLAUDE\MOSKE APP NEW FILES\PIXEL GYM` | `docs/gym/sheets/batch-1…7.jpg` ✅ |
+| 4 Hevy screenshots (behaviour reference only — never copy the look) | `D:\00_CLAUDE\MOSKE APP NEW FILES\FEATURES REFERENCE` | `docs/gym/reference/IMG_9187…9190.PNG` ✅ |
 
 House style of the sheets: 3×3 grid of cards on cream, a figure with the
 working muscles highlighted orange, exercise name and muscle group printed
 underneath.
 
-Once the sheets are in `docs/gym/sheets/`, list them in `docs/gym/sheets.json`:
-
-```json
-[{ "file": "docs/gym/sheets/sheet-1.png", "grid": "3x3", "ids": ["back-squat", "romanian-deadlift", "..."] }]
-```
-
-then `npm install && npm run slice-art` and check `docs/gym/art-check.png`.
+Batches 1 and 4 are 2×4 grids; the rest are 3×3. Batch 7 repeats batch 1
+(plus Incline Bench Press) and batch 3 repeats batch 2 (plus Squat). Where an
+exercise appears twice the grey-suit version is used (batches 3 and 7), to
+match the other sheets; `docs/gym/sheets.json` maps every cell to a library id
+("-" = skipped), so swapping a version is a one-line change and
+`npm run slice-art` again. Check `docs/gym/art-check.png` afterwards.
 
 ## Standing constraints
 
@@ -44,7 +43,7 @@ image-to-code (analysis/implementation only — no image generation),
 imagegen-frontend-mobile (prompts only), dataviz, web-design-guidelines,
 playwright-cli, full-output-enforcement.
 
-## Phase 1 — model, library, art pipeline  ✅ (art waiting on the sheets)
+## Phase 1 — model, library, art pipeline  ✅
 
 1.1 **Sets model.** Exercise `{ id, libId, name, equipment, muscle, kind, restSec, note, sets: [...] }`,
 set `{ kind: warmup|work|drop|failure, weight, reps, seconds, done, doneAt, rpe }`,
@@ -57,16 +56,23 @@ No SQL migration (`exercises` is jsonb).
 1.2 **Library** `js/core/exercises.js`: `{ id, name, equipment, muscle, secondary, defaultKind, defaultRestSec, cues, aliases }`.
 `matchExercise(freeText)` → id or null. Tested against every seed-plan name.
 Cues from `poses.js` folded in; `poseSvgFor()` stays as the fallback picture.
-**Status:** 14 entries (everything the built-in plan uses). The other ~49 come
-from reading the printed names on the sheets.
+**Status:** 52 entries: the 44 on the sheets plus the 8 plan exercises that
+have no card (Romanian deadlift, trap-bar deadlift, step-up, standing calf
+raise, Nordic curl, Copenhagen plank, pull-up, Pallof press — these keep the
+drawn pose until they get art). Muscle names follow the app's list: the sheets'
+"Lats"/"Upper Back" → Back, "Quadriceps" → Quads, "Abdominals" → Abs.
 
 1.3 **Slicer** `tools/slice-exercise-art.mjs` (sharp): cell crop → figure bbox on
 cream (label band dropped) → pad to square → palette quantise → 256×256
 nearest-neighbour → `icons/Pixelart/EXERCISES/<id>.png`, contact sheet
-`docs/gym/art-check.png`. Documented in README. **Not yet run** — needs the sheets.
+`docs/gym/art-check.png`. Documented in README. Run on all seven sheets: 44
+images, ~13 KB each. Machine Chest Fly loses a few pixels at the feet, where
+the printed name touches them.
 
 1.4 Art is **not** precached (not in `ASSETS`), lazy-loaded; every `<img>` has
-width, height, `loading="lazy"`.
+width, height, `loading="lazy"`. `exerciseArtSrc(libId)` only returns a path
+for ids in `ART_IDS`, so nothing requests a missing file; a test keeps
+`ART_IDS`, the PNGs and `sheets.json` in step.
 
 ## Phase 2 — the logger
 

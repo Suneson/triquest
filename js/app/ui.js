@@ -3,7 +3,7 @@
 
 import { formatDuration, sportProgress } from '../core/scoring.js';
 import { poseSvgFor, cuesFor } from '../core/poses.js';
-import { cuesForId } from '../core/exercises.js';
+import { cuesForId, exerciseArtSrc } from '../core/exercises.js';
 import { workSets, prescription } from '../core/sets.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
@@ -55,9 +55,13 @@ export function segmentBar(segments) {
 // Interim view of the set-based model (Phase 2's logger replaces it): the
 // exercise is done when all its sets are, and the inputs log the first work set.
 function exerciseRow(w, ex, idx) {
+  // the athlete's own picture, then the library's pixel art, then a drawn pose
+  const art = exerciseArtSrc(ex.libId);
   const img = ex.imageUrl
     ? `<img class="ex-img" src="${esc(ex.imageUrl)}" alt="${esc(ex.name)}" width="64" height="64" loading="lazy" onerror="this.style.display='none'">`
-    : `<div class="ex-img">${poseSvgFor(ex.name)}</div>`;
+    : art
+      ? `<div class="ex-img ex-art"><img src="${esc(art)}" alt="" width="64" height="64" loading="lazy" decoding="async"></div>`
+      : `<div class="ex-img">${poseSvgFor(ex.name)}</div>`;
   const cues = (cuesForId(ex.libId) || cuesFor(ex.name)).map((c) => `<li>${esc(c)}</li>`).join('');
   const sets = ex.sets || [];
   const done = sets.length > 0 && sets.every((s) => s.done);

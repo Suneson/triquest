@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EXERCISES, MUSCLES, EQUIPMENT, EXERCISE_KINDS, matchExercise, exerciseById, normName, cuesForId } from '../js/core/exercises.js';
+import { EXERCISES, MUSCLES, EQUIPMENT, EXERCISE_KINDS, ART_IDS, matchExercise, exerciseById, normName, cuesForId, exerciseArtSrc } from '../js/core/exercises.js';
+import { readFileSync, readdirSync } from 'node:fs';
 import { upgradeExercise, upgradeExercises, parsePrescription, isUpgraded, newSet, workSets, prescription, SET_KINDS } from '../js/core/sets.js';
 import { expandPlan } from '../js/core/plan.js';
 import { normalizeWorkout, migrate } from '../js/app/stores/local-store.js';
@@ -55,6 +56,49 @@ test('matchExercise: the names from the brief, variants and junk', () => {
   assert.equal(matchExercise(''), null);
   assert.equal(matchExercise(null), null);
   assert.equal(matchExercise('underwater basket weaving'), null);
+});
+
+test('every sheet name matches its own entry; the art list, the files and the sheet mapping agree', () => {
+  const sheetNames = {
+    'Bench Press (Barbell)': 'barbell-bench-press', 'Bench Press (Dumbbell)': 'dumbbell-bench-press',
+    'Bent Over Row (Barbell)': 'bent-over-row', 'Bicep Curl (Dumbbell)': 'dumbbell-curl',
+    'Cable Fly Crossovers': 'cable-fly-crossover', 'Deadlift (Barbell)': 'deadlift', 'Face Pull': 'face-pull',
+    'Hammer Curl (Dumbbell)': 'hammer-curl', 'Incline Bench Press (Dumbbell)': 'incline-dumbbell-press',
+    'Lat Pulldown (Cable)': 'lat-pulldown', 'Lateral Raise (Dumbbell)': 'lateral-raise',
+    'Leg Extension (Machine)': 'leg-extension', 'Leg Press (Machine)': 'leg-press',
+    'Lying Leg Curl (Machine)': 'lying-leg-curl', 'Seated Cable Row - V Grip (Cable)': 'seated-cable-row',
+    'Seated Leg Curl (Machine)': 'seated-leg-curl', 'Shoulder Press (Dumbbell)': 'shoulder-press',
+    'Squat (Barbell)': 'back-squat', 'Triceps Pushdown': 'triceps-pushdown', 'Triceps Rope Pushdown': 'triceps-rope-pushdown',
+    '21s Bicep Curl': 'bicep-curl-21s', 'Ab Scissors': 'ab-scissors', 'Ab Wheel': 'ab-wheel', 'Aerobics': 'aerobics',
+    'Air Bike': 'air-bike', 'Arnold Press (Dumbbell)': 'arnold-press', 'Bicycle Crunch': 'bicycle-crunch',
+    'Bicycle Crunch Raised Legs': 'bicycle-crunch-raised-legs', 'Bird Dog': 'bird-dog', 'Box Jump': 'box-jump',
+    'Box Squat (Barbell)': 'box-squat', 'Boxing': 'boxing', 'Bulgarian Split Squat (Barbell)': 'barbell-bulgarian-split-squat',
+    'Bulgarian Split Squat (Dumbbell)': 'bulgarian-split-squat', 'Burpee': 'burpee',
+    'Calf Extension (Machine)': 'calf-extension-machine', 'Calf Press (Machine)': 'calf-press', 'Chest Dip': 'chest-dip',
+    'Chest Dip (Assisted)': 'assisted-chest-dip', 'Chest Dip (Weighted)': 'weighted-chest-dip',
+    'Chest Fly (Band)': 'band-chest-fly', 'Chest Fly (Dumbbell)': 'dumbbell-chest-fly',
+    'Chest Fly (Machine)': 'machine-chest-fly', 'Chest Fly (Suspension)': 'suspension-chest-fly',
+  };
+  assert.equal(Object.keys(sheetNames).length, 44);
+  for (const [name, id] of Object.entries(sheetNames)) assert.equal(matchExercise(name), id, name);
+  for (const id of ART_IDS) assert.ok(exerciseById(id), `art for unknown id ${id}`);
+  const files = readdirSync(new URL('../icons/Pixelart/EXERCISES/', import.meta.url)).map((f) => f.replace(/\.png$/, ''));
+  assert.deepEqual([...files].sort(), [...ART_IDS].sort());
+  const mapped = JSON.parse(readFileSync(new URL('../docs/gym/sheets.json', import.meta.url), 'utf8'))
+    .flatMap((sh) => sh.ids).filter((id) => id !== '-');
+  assert.deepEqual([...mapped].sort(), [...ART_IDS].sort());
+  assert.equal(exerciseArtSrc('deadlift'), 'icons/Pixelart/EXERCISES/deadlift.png');
+  assert.equal(exerciseArtSrc('pallof-press'), null);
+});
+
+test('common names land on the right variant', () => {
+  const cases = {
+    'Bench press': 'barbell-bench-press', 'Incline DB press': 'incline-dumbbell-press', 'Dips': 'chest-dip',
+    'Pec deck': 'machine-chest-fly', 'Barbell row': 'bent-over-row', 'Assault bike': 'air-bike', 'Leg curl': 'lying-leg-curl',
+    'Deadlift': 'deadlift', 'Romanian deadlift': 'romanian-deadlift', 'Bulgarian split squat': 'bulgarian-split-squat',
+    'Box squat': 'box-squat', 'Rope pushdown': 'triceps-rope-pushdown', 'Leg press calf raise': 'calf-press',
+  };
+  for (const [text, id] of Object.entries(cases)) assert.equal(matchExercise(text), id, text);
 });
 
 test('the longest name wins: "split squat" inside "bulgarian split squat"', () => {

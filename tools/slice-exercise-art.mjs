@@ -49,14 +49,21 @@ function sheetsToRun() {
 
 const dist = (r1, g1, b1, r2, g2, b2) => Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
 
-/** Median colour of a cell's outer border = the card background. */
-function borderColour(px, w, h, ch) {
-  const rs = []; const gs = []; const bs = [];
-  const push = (x, y) => { const i = (y * w + x) * ch; rs.push(px[i]); gs.push(px[i + 1]); bs.push(px[i + 2]); };
-  for (let x = 0; x < w; x += 2) { push(x, 0); push(x, h - 1); }
-  for (let y = 0; y < h; y += 2) { push(0, y); push(w - 1, y); }
-  const med = (a) => a.sort((p, q) => p - q)[a.length >> 1];
-  return [med(rs), med(gs), med(bs)];
+/** The card's cream: the most common colour in the cell (sampled, 4-level buckets). */
+function cardColour(px, w, h, ch) {
+  const buckets = new Map();
+  for (let y = 0; y < h; y += 3) {
+    for (let x = 0; x < w; x += 3) {
+      const i = (y * w + x) * ch;
+      const k = ((px[i] >> 2) << 12) | ((px[i + 1] >> 2) << 6) | (px[i + 2] >> 2);
+      const b = buckets.get(k) || { n: 0, r: 0, g: 0, b: 0 };
+      b.n++; b.r += px[i]; b.g += px[i + 1]; b.b += px[i + 2];
+      buckets.set(k, b);
+    }
+  }
+  let best = null;
+  for (const b of buckets.values()) if (!best || b.n > best.n) best = b;
+  return [Math.round(best.r / best.n), Math.round(best.g / best.n), Math.round(best.b / best.n)];
 }
 
 /**
@@ -65,10 +72,40 @@ function borderColour(px, w, h, ch) {
  * band is the figure, the short ones under it are printed text.
  */
 export function findFigure(px, w, h, ch, bg, { threshold = 60, minPixels = 2 } = {}) {
-  const fg = (x, y) => { const i = (y * w + x) * ch; return dist(px[i], px[i + 1], px[i + 2], ...bg) > threshold; };
+  // Ink is anything dark or saturated. The cream card, the page around it and
+  // the card's soft shadow are all light and nearly grey, so they never count.
+  const fg = (x, y) => {
+    const i = (y * w + x) * ch;
+    const r = px[i]; const g = px[i + 1]; const b = px[i + 2];
+    if (dist(r, g, b, ...bg) <= threshold) return false;
+    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luma < 175 || Math.max(r, g, b) - Math.min(r, g, b) > 55;
+  };
   const rowCount = new Array(h).fill(0);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (fg(x, y)) rowCount[y]++;
-  const gap = Math.max(2, Math.round(h * 0.015)); // empty rows that split two bands
+  // The printed name sits at the bottom of the card. Text flips between ink
+  // and card many times per row (feet, bench legs and machine bases don't),
+  // so find the highest such row in the lower half, step up through the
+  // letters' tops, and ignore everything from there down.
+  const flips = (y) => {
+    let n = 0; let prev = false;
+    for (let x = 0; x < w; x++) { const f = fg(x, y); if (f !== prev) n++; prev = f; }
+    return n;
+  };
+  let labelTop = h;
+  const maxGap = Math.round(h * 0.08);
+  for (let y = h - 1, miss = 0; y > h * 0.5 && miss < maxGap; y--) {
+    if (flips(y) >= 14) { labelTop = y; miss = 0; } else if (labelTop < h) miss++;
+  }
+  // the card above can spill a sliver of its label into this cell's top edge
+  for (let y = 0; y < Math.round(h * 0.02); y++) rowCount[y] = 0;
+  if (labelTop < h) {
+    const capH = Math.round(h * 0.035);
+    let y = labelTop;
+    while (y > labelTop - capH && rowCount[y - 1] >= minPixels) y--;
+    for (let k = y - 1; k < h; k++) if (k >= 0) rowCount[k] = 0;
+  }
+  const gap = Math.max(2, Math.round(h * 0.006)); // empty rows that split two bands
   const bands = [];
   let start = -1; let empty = 0;
   for (let y = 0; y < h; y++) {
@@ -81,9 +118,11 @@ export function findFigure(px, w, h, ch, bg, { threshold = 60, minPixels = 2 } =
   }
   if (start >= 0) bands.push([start, h - 1]);
   if (!bands.length) return null;
-  const [top, bottom] = bands.reduce((a, b) => (b[1] - b[0] > a[1] - a[0] ? b : a));
+  // the figure is the band with the most ink; the printed name is a short band below it
+  const mass = ([a, b]) => { let m = 0; for (let y = a; y <= b; y++) m += rowCount[y]; return m; };
+  const [top, bottom] = bands.reduce((a, b) => (mass(b) > mass(a) ? b : a));
   let left = w; let right = -1;
-  for (let y = top; y <= bottom; y++) for (let x = 0; x < w; x++) if (fg(x, y)) { if (x < left) left = x; if (x > right) right = x; }
+  for (let y = top; y <= bottom; y++) if (rowCount[y]) for (let x = 0; x < w; x++) if (fg(x, y)) { if (x < left) left = x; if (x > right) right = x; }
   if (right < 0) return null;
   return { left, top, width: right - left + 1, height: bottom - top + 1 };
 }
@@ -105,18 +144,17 @@ async function sliceSheet({ file, grid, ids }) {
       const w = cw - inset * 2; const h = chh - inset * 2;
       const cell = Buffer.alloc(w * h * ch);
       for (let y = 0; y < h; y++) raw.data.copy(cell, y * w * ch, ((cy + y) * W + cx) * ch, ((cy + y) * W + cx + w) * ch);
-      const bg = borderColour(cell, w, h, ch);
+      const bg = cardColour(cell, w, h, ch);
       const box = findFigure(cell, w, h, ch, bg);
       if (!box) { console.warn(`  ${id}: no figure found in ${file} r${r + 1}c${c + 1}`); continue; }
-      // square around the figure, with a margin, clamped to the cell
+      // keep only the figure's own box (so neither the label nor the card's
+      // edge can creep in), then pad it to a square with the card's cream
       const side = Math.round(Math.max(box.width, box.height) * (1 + MARGIN * 2));
-      const sx = Math.round(box.left + box.width / 2 - side / 2);
-      const sy = Math.round(box.top + box.height / 2 - side / 2);
-      const pad = { top: Math.max(0, -sy), left: Math.max(0, -sx), bottom: Math.max(0, sy + side - h), right: Math.max(0, sx + side - w) };
-      const ex = { left: Math.max(0, sx), top: Math.max(0, sy), width: Math.min(side, w - Math.max(0, sx)), height: Math.min(side, h - Math.max(0, sy)) };
+      const padX = side - box.width; const padY = side - box.height;
       const square = await sharp(cell, { raw: { width: w, height: h, channels: ch } })
-        .extract(ex)
-        .extend({ ...pad, background: { r: bg[0], g: bg[1], b: bg[2] } })
+        .extract(box)
+        .extend({ top: padY >> 1, bottom: padY - (padY >> 1), left: padX >> 1, right: padX - (padX >> 1),
+          background: { r: bg[0], g: bg[1], b: bg[2] } })
         .png({ palette: true, colors: COLORS, dither: 0 })
         .toBuffer();
       const png = await sharp(square)

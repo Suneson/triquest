@@ -102,7 +102,9 @@ export function findFigure(px, w, h, ch, bg, { threshold = 60, minPixels = 2 } =
   if (labelTop < h) {
     const capH = Math.round(h * 0.035);
     let y = labelTop;
-    while (y > labelTop - capH && rowCount[y - 1] >= minPixels) y--;
+    // climb through the tops of tall letters (still a few flips per row), but
+    // stop at feet or a box that the label happens to touch
+    while (y > labelTop - capH && rowCount[y - 1] >= minPixels && flips(y - 1) >= 8) y--;
     for (let k = y - 1; k < h; k++) if (k >= 0) rowCount[k] = 0;
   }
   const gap = Math.max(2, Math.round(h * 0.006)); // empty rows that split two bands

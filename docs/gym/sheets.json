@@ -14,5 +14,7 @@
   { "file": "docs/gym/sheets/batch-6.jpg", "grid": "3x3",
     "ids": ["calf-extension-machine", "calf-press", "chest-dip", "assisted-chest-dip", "weighted-chest-dip", "band-chest-fly", "dumbbell-chest-fly", "machine-chest-fly", "suspension-chest-fly"] },
   { "file": "docs/gym/sheets/batch-7.jpg", "grid": "3x3",
-    "ids": ["barbell-bench-press", "dumbbell-bench-press", "bent-over-row", "dumbbell-curl", "cable-fly-crossover", "deadlift", "face-pull", "hammer-curl", "incline-dumbbell-press"] }
+    "ids": ["barbell-bench-press", "dumbbell-bench-press", "bent-over-row", "dumbbell-curl", "cable-fly-crossover", "deadlift", "face-pull", "hammer-curl", "incline-dumbbell-press"] },
+  { "file": "docs/gym/sheets/batch-8.jpg", "grid": "2x4",
+    "ids": ["romanian-deadlift", "trap-bar-deadlift", "step-up", "standing-calf-raise", "nordic-hamstring-curl", "copenhagen-plank", "pull-up", "pallof-press"] }
 ]

@@ -78,8 +78,11 @@ test('every sheet name matches its own entry; the art list, the files and the sh
     'Chest Dip (Assisted)': 'assisted-chest-dip', 'Chest Dip (Weighted)': 'weighted-chest-dip',
     'Chest Fly (Band)': 'band-chest-fly', 'Chest Fly (Dumbbell)': 'dumbbell-chest-fly',
     'Chest Fly (Machine)': 'machine-chest-fly', 'Chest Fly (Suspension)': 'suspension-chest-fly',
+    'Romanian Deadlift': 'romanian-deadlift', 'Trap-Bar Deadlift': 'trap-bar-deadlift', 'Step-Up': 'step-up',
+    'Standing Calf Raise': 'standing-calf-raise', 'Nordic Curl': 'nordic-hamstring-curl',
+    'Copenhagen Plank': 'copenhagen-plank', 'Pull-Up': 'pull-up', 'Pallof Press': 'pallof-press',
   };
-  assert.equal(Object.keys(sheetNames).length, 44);
+  assert.equal(Object.keys(sheetNames).length, 52);
   for (const [name, id] of Object.entries(sheetNames)) assert.equal(matchExercise(name), id, name);
   for (const id of ART_IDS) assert.ok(exerciseById(id), `art for unknown id ${id}`);
   const files = readdirSync(new URL('../icons/Pixelart/EXERCISES/', import.meta.url)).map((f) => f.replace(/\.png$/, ''));
@@ -88,7 +91,8 @@ test('every sheet name matches its own entry; the art list, the files and the sh
     .flatMap((sh) => sh.ids).filter((id) => id !== '-');
   assert.deepEqual([...mapped].sort(), [...ART_IDS].sort());
   assert.equal(exerciseArtSrc('deadlift'), 'icons/Pixelart/EXERCISES/deadlift.png');
-  assert.equal(exerciseArtSrc('pallof-press'), null);
+  assert.equal(exerciseArtSrc('nope'), null);
+  assert.equal(EXERCISES.length, ART_IDS.size, 'every library entry has art');
 });
 
 test('common names land on the right variant', () => {

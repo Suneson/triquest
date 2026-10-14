@@ -11,14 +11,14 @@ are now in the repo:
 
 | What | Owner's path | Put them in the repo at |
 | --- | --- | --- |
-| 7 exercise sheets (61 cards, 44 different exercises) | `D:\00_CLAUDE\MOSKE APP NEW FILES\PIXEL GYM` | `docs/gym/sheets/batch-1…7.jpg` ✅ |
+| 8 exercise sheets (69 cards, 52 different exercises) | `D:\00_CLAUDE\MOSKE APP NEW FILES\PIXEL GYM` | `docs/gym/sheets/batch-1…8.jpg` ✅ |
 | 4 Hevy screenshots (behaviour reference only — never copy the look) | `D:\00_CLAUDE\MOSKE APP NEW FILES\FEATURES REFERENCE` | `docs/gym/reference/IMG_9187…9190.PNG` ✅ |
 
 House style of the sheets: 3×3 grid of cards on cream, a figure with the
 working muscles highlighted orange, exercise name and muscle group printed
 underneath.
 
-Batches 1 and 4 are 2×4 grids; the rest are 3×3. Batch 7 repeats batch 1
+Batches 1, 4 and 8 are 2×4 grids; the rest are 3×3. Batch 8 holds the eight plan exercises the first seven lacked. Batch 7 repeats batch 1
 (plus Incline Bench Press) and batch 3 repeats batch 2 (plus Squat). Where an
 exercise appears twice the grey-suit version is used (batches 3 and 7), to
 match the other sheets; `docs/gym/sheets.json` maps every cell to a library id
@@ -56,18 +56,16 @@ No SQL migration (`exercises` is jsonb).
 1.2 **Library** `js/core/exercises.js`: `{ id, name, equipment, muscle, secondary, defaultKind, defaultRestSec, cues, aliases }`.
 `matchExercise(freeText)` → id or null. Tested against every seed-plan name.
 Cues from `poses.js` folded in; `poseSvgFor()` stays as the fallback picture.
-**Status:** 52 entries: the 44 on the sheets plus the 8 plan exercises that
-have no card (Romanian deadlift, trap-bar deadlift, step-up, standing calf
-raise, Nordic curl, Copenhagen plank, pull-up, Pallof press — these keep the
-drawn pose until they get art). Muscle names follow the app's list: the sheets'
-"Lats"/"Upper Back" → Back, "Quadriceps" → Quads, "Abdominals" → Abs.
+**Status:** 52 entries, all with art. Muscle names follow the app's list: the
+sheets' "Lats"/"Upper Back" → Back, "Quadriceps" → Quads, "Abdominals" → Abs,
+"Obliques" → Abs.
 
 1.3 **Slicer** `tools/slice-exercise-art.mjs` (sharp): cell crop → figure bbox on
 cream (label band dropped) → pad to square → palette quantise → 256×256
 nearest-neighbour → `icons/Pixelart/EXERCISES/<id>.png`, contact sheet
-`docs/gym/art-check.png`. Documented in README. Run on all seven sheets: 44
-images, ~13 KB each. Machine Chest Fly loses a few pixels at the feet, where
-the printed name touches them.
+`docs/gym/art-check.png`. Documented in README. Run on all eight sheets: 52
+images, ~13 KB each. Machine Chest Fly and Standing Calf Raise lose a few
+pixels at the feet, where the printed name touches them.
 
 1.4 Art is **not** precached (not in `ASSETS`), lazy-loaded; every `<img>` has
 width, height, `loading="lazy"`. `exerciseArtSrc(libId)` only returns a path

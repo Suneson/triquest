@@ -10,8 +10,8 @@
 // by tools/slice-exercise-art.mjs). Until an entry has art, the app falls back
 // to the line drawing from poses.js.
 //
-// Covers every exercise the built-in plan uses plus the 44 on the exercise
-// sheets (docs/gym/sheets, mapping in docs/gym/sheets.json).
+// Covers the 52 exercises on the sheets (docs/gym/sheets, mapping in
+// docs/gym/sheets.json), which include every exercise the built-in plan uses.
 
 export const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Traps',
   'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Adductors', 'Abs', 'Full body', 'Cardio'];
@@ -247,6 +247,8 @@ export const ART_IDS = new Set([
   'box-jump', 'calf-press', 'calf-extension-machine',
   'bird-dog', 'ab-wheel', 'ab-scissors', 'bicycle-crunch', 'bicycle-crunch-raised-legs',
   'burpee', 'air-bike', 'aerobics', 'boxing',
+  'romanian-deadlift', 'trap-bar-deadlift', 'step-up', 'standing-calf-raise', 'nordic-hamstring-curl',
+  'copenhagen-plank', 'pull-up', 'pallof-press',
 ]);
 
 /** The exercise's pixel art, or null when it has none (the app then draws a pose). */

@@ -17,6 +17,8 @@ import { exerciseArtSrc, cuesForId, exerciseById } from '../core/exercises.js';
 import { cuesFor, poseSvgFor } from '../core/poses.js';
 import { openPicker, openNameSheet } from './gym-picker.js';
 import { enableDragSort } from './drag-sort.js';
+import { openExerciseHistory } from './gym-history.js';
+import { detectPRs } from '../core/gym-stats.js';
 import {
   exerciseFromEntry, replaceExercise, moveItem, linkWithNext, unlinkSuperset, cleanSupersets,
   supersetInfo, restAfterTick, routineFromWorkout, saveRoutine,
@@ -122,7 +124,8 @@ function exerciseBlock(w, ex, i, workouts, ss) {
   const timed = ex.kind === 'time' || ex.kind === 'distance';
   const labels = setLabels(ex.sets);
   const sw = getStopwatch();
-  const rows = ex.sets.map((s, j) => setRow(w, ex, i, s, j, labels[j], previousFor(prev, ex.sets, j), timed, sw)).join('');
+  const rows = ex.sets.map((s, j) => setRow(w, ex, i, s, j, labels[j], previousFor(prev, ex.sets, j), timed, sw,
+    s.done && s.kind !== 'warmup' && detectPRs(workouts, w, i, j).length > 0)).join('');
   const ids = `data-id="${esc(w.id)}" data-ex="${i}"`;
   const head = timed
     ? `<span>Set</span><span class="gl-col-prev">Last</span><span>Time</span><span aria-label="Done">${svg('check')}</span>`
@@ -133,7 +136,7 @@ function exerciseBlock(w, ex, i, workouts, ss) {
       <header class="gl-ex-head">
         <div class="ex-img ${art && !ex.imageUrl ? 'ex-art' : ''}">${pic}</div>
         <div class="gl-ex-title">
-          <h5>${esc(ex.name)}</h5>
+          <h5><button type="button" class="gl-name" data-action="gym-history" ${ids} aria-label="${esc(`${ex.name}: history and records`)}">${esc(ex.name)}</button></h5>
           ${sub ? `<span class="muted small">${esc(sub)}</span>` : ''}
         </div>
         <span class="gl-ex-tools">
@@ -158,7 +161,7 @@ function exerciseBlock(w, ex, i, workouts, ss) {
     </section>`;
 }
 
-function setRow(w, ex, i, s, j, label, prevSet, timed, sw) {
+function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false) {
   const ids = `data-id="${esc(w.id)}" data-ex="${i}" data-set="${j}"`;
   const name = `${label === 'W' ? 'Warm-up' : SET_KIND_LABELS[s.kind]} set ${label}`;
   const prevText = formatSet(prevSet, ex.kind);
@@ -191,7 +194,7 @@ function setRow(w, ex, i, s, j, label, prevSet, timed, sw) {
       ${kindSel}
       ${prevBtn('gl-col-prev')}
       ${cells}
-      <button class="gl-tick" data-action="gym-tick" ${ids} aria-pressed="${s.done}" aria-label="${esc(`${name} done`)}">${svg('check')}</button>
+      <button class="gl-tick ${isPR ? 'is-pr' : ''}" data-action="gym-tick" ${ids} aria-pressed="${s.done}" aria-label="${esc(`${name} done${isPR ? ', personal record' : ''}`)}">${isPR ? '<span class="gl-pr">PR</span>' : svg('check')}</button>
       ${prevText ? prevBtn('gl-prev-sub') : ''}
     </div>`;
 }
@@ -273,8 +276,12 @@ export function handleGymAction(action, el, deps, kind) {
         if (rest) writeJSON(REST_KEY, rest);
       }
       save(); refresh(id);
+      if (s.done) celebrate(deps, w, i, j, el);
       break;
     }
+    case 'gym-history':
+      if (ex) openExerciseHistory({ libId: ex.libId, name: ex.name });
+      break;
     case 'gym-add-ex':
       openPicker({
         onPick: (entries) => {
@@ -322,6 +329,7 @@ export function handleGymAction(action, el, deps, kind) {
         const rest = startRest(w.id, restAfterTick(w.exercises, i), now);
         if (rest) writeJSON(REST_KEY, rest);
         save();
+        celebrate(deps, w, i, j, el);
       } else {
         writeJSON(SW_KEY, startStopwatch(id, i, j, now));
         markStarted(w, now); save();
@@ -354,6 +362,14 @@ export function handleGymAction(action, el, deps, kind) {
     default: break;
   }
   return true;
+}
+
+// a ticked set that beats your best: confetti from the tick, a sound, a toast
+function celebrate(deps, w, i, j, el) {
+  const prs = detectPRs(deps.store.getWorkouts(), w, i, j);
+  if (!prs.length) return;
+  const r = el?.getBoundingClientRect?.();
+  deps.onRecord?.({ name: w.exercises[i].name, prs, x: r ? r.left + r.width / 2 : null, y: r ? r.top : null });
 }
 
 function exerciseMenuAction(pick, w, i, deps) {

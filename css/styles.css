@@ -129,7 +129,7 @@ img { image-rendering: pixelated; }
 .ob-choice, .ob-note, .ob-hist-row, .btn, .icon-btn, .fab, .tabs, .chip, .tag, .zone, .lvl-chip, .ob-chip, .cap,
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
-.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
+.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
 .signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
@@ -719,6 +719,43 @@ span.gl-prev { cursor: default; }
 .ic-up, .ic-down { display: grid; place-items: center; }
 .ic-up .ic { transform: rotate(-90deg); }
 .ic-down .ic { transform: rotate(90deg); }
+
+/* ---- gym tracking (js/app/gym-history.js) ---------------------------------------------------- */
+.gl-name { background: none; border: 0; padding: 0; color: var(--fg); font: inherit; text-align: left; cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--line-soft); text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.gl-tick.is-pr { --b: var(--accent); background: var(--accent); color: var(--on-accent); }
+.gl-pr { font-family: var(--font-display); font-size: var(--fs-d3); line-height: 1; }
+.gh-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 12px; }
+.gh-tile { --eo: 4px; background: var(--bg-3); margin: 2px; padding: 10px; display: grid; gap: 4px; align-content: start; }
+.gh-tile b { font-size: 20px; }
+.gh-tile small { font-size: var(--fs-tiny); }
+.gh-note { margin: 0; }
+.gh-chart h4, .gh-card h4 { margin-bottom: 8px; }
+.gh-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.gh-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: var(--px) solid var(--line-soft); }
+.gh-date { color: var(--muted); font-size: var(--fs-small); }
+.gh-sets { font-family: var(--font-data); font-weight: 600; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.gh-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.gh-bal-h { margin-top: 20px; }
+.gh-desc { margin: 0 0 10px; color: var(--fg); }
+.gh-bal { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gh-bal li { display: grid; grid-template-columns: 96px minmax(0, 1fr) 32px; align-items: center; gap: 10px; font-size: var(--fs-small); }
+.fh-bar.gnow { fill: var(--c-gym); }
+.gh-track { height: 12px; padding: 2px; background: var(--shade); display: block; }
+.gh-track i { display: block; height: 100%; background: var(--c-gym); }
+.gh-n { text-align: right; }
+.rc { margin-top: 20px; display: grid; gap: 8px; }
+.rc-h { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; color: var(--accent); margin: 0; }
+.rc-shelf { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.rc-plaque {
+  --b: var(--accent-lo); --eo: 4px; width: calc(100% - 4px); margin: 2px; padding: 6px 10px 6px 6px; background: var(--bg-3);
+  display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 10px; color: var(--fg); text-align: left; cursor: pointer;
+}
+.rc-plaque:active { transform: translateY(2px); }
+.rc-txt { display: grid; min-width: 0; }
+.rc-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-txt small { font-size: var(--fs-tiny); }
+.rc-val { color: var(--accent); white-space: nowrap; }
 
 /* ---- routines ------------------------------------------------------------------------------------ */
 .rt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }

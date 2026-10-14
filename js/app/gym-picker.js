@@ -15,7 +15,7 @@ import { catalogue, searchExercises, recentIds, groupByMuscle, makeCustomExercis
 
 const KIND_OPTIONS = { weight_reps: 'Weight and reps', bodyweight: 'Bodyweight reps', time: 'Time' };
 
-function layer() {
+export function layer() {
   let root = document.getElementById('sheet-root');
   if (!root) {
     root = document.createElement('div');
@@ -26,7 +26,7 @@ function layer() {
   return root;
 }
 
-function closeLayer() {
+export function closeLayer() {
   const root = document.getElementById('sheet-root');
   if (root) { root.innerHTML = ''; root.classList.remove('open'); }
 }

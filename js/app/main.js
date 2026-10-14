@@ -630,6 +630,11 @@ const gymDeps = {
   refresh: (id) => refreshDetail(id),
   close: () => closeModalRoot(),
   toast: (msg, icon = 'warn') => toast(msg, { icon: svg(icon) }),
+  onRecord: ({ name, prs, x, y }) => {
+    if (!prefersReducedMotion()) confetti(x ?? window.innerWidth / 2, y ?? 160, 70);
+    playBadge();
+    toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
+  },
   showFinish: (id) => {
     const body = document.getElementById('wd-body');
     const w = store.workoutById(id);

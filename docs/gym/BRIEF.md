@@ -144,7 +144,31 @@ The brief for this phase:
 - Supersets.
 - Routines in settings: save / start; reachable from a gym session and the plus button.
 
-## Phase 4 — tracking
+## Phase 4 — tracking  ✅
+
+Done: `js/core/gym-stats.js` (pure, `tests/gym-stats.test.js`): Epley
+estimated 1RM (1–12 reps only, labelled "Est." everywhere with a footnote in
+the history sheet), best set, per-exercise history, records (heaviest, est.
+1RM, most reps, longest, best session volume), `detectPRs` (only ticked work
+sets; your first sets of an exercise never count), records shelf, weekly
+working sets per muscle, muscle balance + a plain description.
+- **History sheet** (`js/app/gym-history.js`, opened by tapping an exercise
+  name in the logger or a record): record tiles, a stepped est. 1RM line
+  (or most reps / longest for bodyweight and timed), every session's sets.
+- **PRs:** ticking a set that beats a record fires pixel confetti from the
+  tick (skipped under reduced motion), the badge sound and a "New record"
+  toast; the set's tick turns gold and reads PR.
+- **Records shelf** under the trophy shelves: one gold plaque per exercise
+  with its headline record, newest first; tap for its history.
+- **Gym volume card** in the Fitness hub: sets this week, 8 weeks of
+  working sets as block bars (filter by muscle), muscle balance for the last
+  4 weeks as bars and one descriptive sentence. Chart pieces moved to
+  `js/app/pixel-chart.js`, shared with the hub's other charts.
+Volume here is counted in working sets (main muscle), so bodyweight and timed
+work count too; kg volume is in the history sheet. Screens:
+`docs/gym/after/phase-4/`.
+
+The brief for this phase:
 
 - Per-exercise history, best set, Epley e1RM (labelled as an estimate), volume.
 - PR detection → confetti + a records shelf in the trophy cabinet.

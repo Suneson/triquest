@@ -104,3 +104,31 @@ export function demoSocial(now = Date.now()) {
   ];
   return { me: { id: DEMO_ME, username: 'lucia_f' }, friends, messages, notifications };
 }
+
+/** The General room for ?demo=1: same shapes as room_messages and room_authors(). */
+export function demoRoom(now = Date.now()) {
+  const ago = (min) => new Date(now - min * 60000).toISOString();
+  const handle = { 'd-01': 'marta_e', 'd-02': 'joaco', 'd-03': 'saanvi', 'd-04': 'oskar_l', 'd-05': 'amara_runs', 'd-06': 'teo_w',
+    'd-07': 'lucia_f', 'd-08': 'kenji_w', 'd-09': 'elin_b', 'd-10': 'rafa_c', 'd-11': 'hannah_s', 'd-12': 'yusuf_d' };
+  const authors = ATHLETES.map(([user_id, display_name, xp]) => ({ user_id, display_name, username: handle[user_id], avatar: null, xp }));
+  const lines = [
+    ['d-02', 'Anyone racing the Valencia half in December?', 300],
+    ['d-01', 'Me. Target is sub 1:35, legs permitting.', 296],
+    ['d-06', 'Same here. First time on that course.', 290],
+    ['d-09', 'Pool was empty at 6am, best set in weeks.', 240],
+    ['d-04', 'Long ride Sunday, 120 km, easy pace. Who is in?', 200],
+    ['d-10', 'Count me in if it stays dry.', 196],
+    ['d-12', 'Is it normal for the gym timer to keep going when I close the app? It stopped when I tapped Finish.', 150],
+    ['d-05', 'Yes, it keeps your rest running in the background.', 148],
+    ['d-03', 'Tempo run done. 6 × 1 km at threshold, the last two hurt.', 90],
+    ['d-08', 'Nice. Recovery day for me.', 85],
+    ['d-11', 'Swim tips for breathing on both sides?', 40],
+    ['d-09', 'Every third stroke on easy laps, until it feels boring.', 36],
+    ['d-01', 'And exhale fully under water, that fixed it for me.', 33],
+    ['d-02', 'Week path all green so far. Six to go.', 12],
+    ['d-06', 'Congrats on the podium spot this month, Marta.', 6],
+  ];
+  const messages = lines.map(([user_id, body, min], i) => ({ id: 1000 + i, user_id, body, client_id: null, created_at: ago(min), deleted_at: null }));
+  messages.splice(9, 0, { id: 1100, user_id: 'd-04', body: '', client_id: null, created_at: ago(88), deleted_at: ago(80) });
+  return { authors, messages, blocked: [], isAdmin: false };
+}

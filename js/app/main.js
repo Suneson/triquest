@@ -23,7 +23,8 @@ import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logger.js';
 import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
-import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi } from './chat.js';
+import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi, chatMode } from './chat.js';
+import { startRoom, stopRoom } from './room.js';
 import { startSocial, stopSocial, refreshSocial } from './social.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -857,7 +858,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) startSocial(); else stopSocial();
+  if (user) { startSocial(); startRoom(); } else { stopSocial(); stopRoom(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();
@@ -976,7 +977,8 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSocial(); });
   // Home, Ranks and Chat: pull down from the top to refresh
   enablePull(document.getElementById('view'), {
-    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers(),
+    // (in General, scrolling to the top loads earlier messages instead)
+    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers() && !(appState.tab === 'chat' && chatMode() === 'general'),
     onRefresh: async () => {
       if (appState.tab === 'leaderboards') { await loadLeaderboard(appState.lbView, todayISO()); return; }
       if (appState.tab === 'chat') { await refreshSocial(); return; }
@@ -989,8 +991,8 @@ async function boot() {
     when: () => appState.tab === 'progress' && !hasLayers(),
   });
 
-  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); });
-  else startSocial().then(() => paintBell()); // demo mode
+  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); startRoom(); });
+  else { startSocial().then(() => paintBell()); startRoom(); } // demo mode
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

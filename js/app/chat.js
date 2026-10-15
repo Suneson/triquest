@@ -15,6 +15,8 @@ import {
   sendMessage, markThreadRead, unreadNotifications, markNotificationsRead, bellCount, unreadMessages,
 } from './social.js';
 import { sheetHead } from './sheet.js';
+import { onRoom, unreadRoom } from './room.js';
+import { mountRoom, unmountRoom } from './room-view.js';
 
 const ui = { open: null, view: null, draft: new Map() }; // open = friend user_id in the thread view
 
@@ -57,6 +59,27 @@ function skeleton() {
     <ul class="ch-list" aria-hidden="true">${[0, 1, 2].map(row).join('')}</ul>`;
 }
 
+// ---- General | Direct --------------------------------------------------------------------
+// Two places to talk: General (everyone) and Direct (your friends). The choice
+// is remembered; each side shows its own unread count, and the tab badge adds
+// them up.
+const MODE_KEY = 'moske-chat-mode';
+export function chatMode() {
+  try { return localStorage.getItem(MODE_KEY) === 'direct' ? 'direct' : 'general'; } catch { return 'general'; }
+}
+function setChatMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch { /* private mode */ } }
+
+function segHtml(mode) {
+  const n = { general: unreadRoom(), direct: socialState().ready ? unreadMessages() : 0 };
+  const opt = (id, label) => `<button class="ch-seg-btn${mode === id ? ' on' : ''}" role="tab" aria-selected="${mode === id}" data-ch="mode" data-mode="${id}">
+      ${label}${n[id] ? ` <span class="ch-seg-n data-num" aria-label="${n[id]} unread">${n[id] > 9 ? '9+' : n[id]}</span>` : ''}</button>`;
+  return `<div class="ch-seg" role="tablist" aria-label="Chat">${opt('general', 'General')}${opt('direct', 'Direct')}</div>`;
+}
+function paintSeg() {
+  const seg = document.querySelector('#chat-root .ch-seg');
+  if (seg) seg.outerHTML = segHtml(chatMode());
+}
+
 // a row's quieter actions live behind ⋮ (a native menu: keyboard and screen readers for free)
 function rowMenu(label, items, attrs) {
   return `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
@@ -76,12 +99,26 @@ export function drawChat() {
   const inc = incoming();
   const out = outgoing();
   const ts = threads();
-  root.innerHTML = `
+  const mode = chatMode();
+  const head = `
     <div class="day-header ch-header">
       <div class="ch-title"><h2>Chat</h2>
         <button class="link ch-me" data-ch="edit-name" aria-label="Your username: ${esc(me?.username || 'not set')}. Edit">${me?.username ? `@${esc(me.username)}` : 'Set your username'} ${svg('edit')}</button></div>
-      <button class="btn tiny secondary ch-add-btn" data-ch="add-friend">${svg('friend')} Add friend</button>
+      ${mode === 'direct' ? `<button class="btn tiny secondary ch-add-btn" data-ch="add-friend">${svg('friend')} Add friend</button>` : ''}
     </div>
+    ${segHtml(mode)}`;
+  if (mode === 'general') {
+    // General keeps itself live (room-view.js); a redraw here would cost the
+    // scroll position and the composer's focus, so only the switch repaints
+    if (root.querySelector('#room-root')) { paintSeg(); return; }
+    unmountRoom();
+    root.innerHTML = `${head}<div class="rm" id="room-root"></div>`;
+    wireChat(root);
+    mountRoom(root.querySelector('#room-root'), ui.view || document.getElementById('view'));
+    return;
+  }
+  unmountRoom();
+  root.innerHTML = `${head}
     ${inc.length || ts.length || out.length ? `<ul class="ch-list">
       ${inc.map((f) => `<li class="ch-row is-pending">
         ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted"><span class="ch-chip">Request</span>${esc(handle(f))} wants to be friends</small></span>
@@ -240,6 +277,7 @@ function wireChat(root) {
       else if (act === 'cancel') { await removeFriend(b.dataset.uid); }
       else if (act === 'edit-name') editUsername();
       else if (act === 'add-friend') openAddFriend(b);
+      else if (act === 'mode' && b.dataset.mode !== chatMode()) { setChatMode(b.dataset.mode); drawChat(); }
       else if (act === 'profile') openProfile(friendRow(ui.open));
     } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
   };
@@ -315,6 +353,7 @@ export function wireSocialUi({ getTab }) {
     paintBell(reason === 'notification' || (reason === 'refresh' && bellCount() > lastBell));
     lastBell = bellCount();
     paintChatBadge();
+    paintSeg();
     if (getTab() !== 'chat') {
       if (reason === 'message') {
         const t = threads().find((x) => x.unread && x.last && x.last.sender !== socialState().me?.id);
@@ -328,14 +367,17 @@ export function wireSocialUi({ getTab }) {
       return;
     }
     if (ui.open && (reason === 'message' || reason === 'read' || reason === 'sent')) refreshThread();
-    else if (!ui.open || reason === 'refresh' || reason === 'load') drawChat();
+    else if (chatMode() === 'direct' && (!ui.open || reason === 'refresh' || reason === 'load')) drawChat();
   });
 }
+
+// General's updates light the badge and the switch too
+onRoom(() => { paintChatBadge(); paintSeg(); });
 
 function paintChatBadge() {
   const tab = document.querySelector('.tab[data-tab="chat"]');
   if (!tab) return;
-  const n = socialState().ready ? unreadMessages() : 0;
+  const n = (socialState().ready ? unreadMessages() : 0) + unreadRoom();
   let b = tab.querySelector('.tab-badge');
   if (!n) { b?.remove(); tab.setAttribute('aria-label', 'Chat'); return; }
   if (!b) { b = document.createElement('span'); b.className = 'tab-badge data-num'; tab.appendChild(b); }

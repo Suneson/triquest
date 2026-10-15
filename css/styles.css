@@ -977,6 +977,48 @@ body.chat-mode .view > .chat { flex: 1 0 auto; }
 .ch-who:active { transform: translateY(1px); }
 .ch-who:focus-visible { outline: var(--px) solid var(--accent); outline-offset: 2px; }
 .ch-msgs { list-style: none; margin: 0; padding: 4px 0 8px; display: grid; gap: 6px; align-content: end; flex: 1 0 auto; }
+
+/* ---- General | Direct --------------------------------------------------------------------------------- */
+.ch-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 4px; background: var(--bg-2); box-shadow: inset 0 0 0 var(--px) var(--line-soft); }
+.ch-seg-btn { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; background: none; border: 0; color: var(--muted);
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); text-transform: uppercase; cursor: pointer; }
+.ch-seg-btn.on { background: var(--bg-4); color: var(--fg); box-shadow: inset 0 calc(-1 * var(--px)) 0 var(--fg); }
+.ch-seg-n { min-width: 20px; height: 20px; padding: 0 5px; display: grid; place-items: center; background: var(--danger); color: var(--shade);
+  font-family: var(--font-data); font-size: 12px; }
+
+/* ---- General (room-view.js) ---------------------------------------------------------------------------- */
+.rm { display: flex; flex-direction: column; flex: 1 0 auto; }
+.rm-msgs { list-style: none; margin: 0; padding: 4px 0 8px; display: grid; gap: 10px; align-content: end; flex: 1 0 auto; }
+.rm-msg { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.rm-msg.cont { margin-top: -6px; }
+.rm-msg.mine { grid-template-columns: minmax(0, 1fr) auto; }
+.rm-av { padding: 0; background: none; border: 0; cursor: pointer; }
+.rm-av .lb-avatar, .rm-msg .lb-avatar { width: 36px; height: 36px; }
+.rm-av-gap { width: 36px; }
+.rm-bub { --b: var(--line-soft); --eo: 4px; justify-self: start; max-width: 100%; margin: 2px; padding: 8px 12px 8px; background: var(--bg-3); display: grid; gap: 4px; min-width: 0; }
+.rm-msg.mine .rm-bub { --b: var(--brand-hi); background: var(--brand); justify-self: end; }
+.rm-bub p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
+.rm-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rm-name { padding: 0; min-height: 24px; background: none; border: 0; color: var(--fg); font: 700 var(--fs-small)/1.2 var(--font-body);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.rm-lvl { margin: 0; padding: 2px 5px; font-size: 12px; flex: none; }
+.rm-head time { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.rm-status { font-size: 11px; color: var(--muted); justify-self: end; display: flex; gap: 10px; align-items: center; }
+.rm-msg.mine .rm-status { color: #C8D8F5; }
+.rm-msg.is-pending .rm-bub { opacity: .7; }
+.rm-status.is-failed { color: var(--danger); }
+.rm-msg.mine .rm-status.is-failed { color: #FFD2D2; }
+.rm-status .link { min-height: 32px; padding: 0; color: inherit; font-size: 12px; }
+.rm-note { grid-template-columns: minmax(0, 1fr) auto; }
+.rm-note p { margin: 0; padding: 6px 10px; font-size: var(--fs-small); color: var(--muted); font-style: italic; box-shadow: inset 0 0 0 var(--px) var(--line-soft); justify-self: start; }
+.rm-note.mine p { justify-self: end; }
+/* a message's ⋮ is quiet: no frame, muted, full 44px target */
+.rm-more { align-self: center; --b: transparent; --e: transparent; background: none; color: var(--muted); width: 32px; }
+.rm-top { text-align: center; padding: 8px 0; }
+.rm-offline { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; font-size: var(--fs-small); color: var(--fg); background: var(--bg-3);
+  box-shadow: inset 4px 0 0 var(--info); }
+.rm-offline .ic { width: 16px; height: 16px; color: var(--info); }
+.rm-compose textarea:disabled, .rm-compose .btn:disabled { opacity: .5; }
 .ch-msg { --eo: 4px; max-width: 82%; padding: 8px 12px 6px; margin: 2px; display: grid; gap: 2px; }
 .ch-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
 .ch-msg small { font-size: 11px; color: var(--muted); justify-self: end; }

@@ -16,6 +16,7 @@ import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
 import { sessionLine, dayLine, raceOn } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
 import { t, fmtDate, fmtNum, capFirst } from '../core/i18n.js';
+import { planTitle, planNotes, planWord, planItem } from '../core/plan-i18n.js';
 
 export { DISCIPLINES, INTENSITIES };
 
@@ -40,7 +41,7 @@ export function segmentBar(segments) {
   const total = segments.reduce((a, s) => a + (Number(s.value) || 0), 0) || 1;
   const bars = segments.map((s) => {
     const w = ((Number(s.value) || 0) / total) * 100;
-    return `<div class="seg seg-${esc(s.intensity)}" style="width:${w}%" title="${esc(s.label)} · ${esc(s.value)}′ · ${esc(SEG_INTENSITY[s.intensity] || s.intensity)}"></div>`;
+    return `<div class="seg seg-${esc(s.intensity)}" style="width:${w}%" title="${esc(planWord(s.label))} · ${esc(s.value)}′ · ${esc(SEG_INTENSITY[s.intensity] || s.intensity)}"></div>`;
   }).join('');
   const present = [...new Set(segments.map((s) => s.intensity))];
   const legend = present.map((i) =>
@@ -55,8 +56,8 @@ export function segmentBar(segments) {
 function packingList(w) {
   const items = (w.packing || []).map((p, i) => `
     <li class="${p.checked ? 'checked' : ''}">
-      <label><input type="checkbox" data-action="toggle-pack" data-id="${esc(w.id)}" data-pi="${i}" ${p.checked ? 'checked' : ''}><span>${esc(p.item)}</span></label>
-      <button class="icon-btn tiny" data-action="remove-pack" data-id="${esc(w.id)}" data-pi="${i}" aria-label="${esc(t('ui.packRemove', { item: p.item }))}">${svg('close')}</button>
+      <label><input type="checkbox" data-action="toggle-pack" data-id="${esc(w.id)}" data-pi="${i}" ${p.checked ? 'checked' : ''}><span>${esc(planWord(p.item))}</span></label>
+      <button class="icon-btn tiny" data-action="remove-pack" data-id="${esc(w.id)}" data-pi="${i}" aria-label="${esc(t('ui.packRemove', { item: planWord(p.item) }))}">${svg('close')}</button>
     </li>`).join('');
   return `
     <div class="packing">
@@ -127,7 +128,7 @@ export function zoneBadge(z) {
 // Any comma / slash / semicolon-separated movement list is exploded into one
 // pill per line so gym sets read as a clean vertical index, not a run-on row.
 function structuredBlocks(w) {
-  const n = w.notes || '';
+  const n = planNotes(w.notes || '');
   if (!/\[[^\]]+\]/.test(n)) return '';
   // when the main set became real exercises (with art and a set grid), only
   // the warm-up and cool-down stay as text
@@ -136,7 +137,7 @@ function structuredBlocks(w) {
     .filter((s) => s.text && !(hideMain && /^main/i.test(s.label)));
   if (!segs.length) return '';
   return `<div class="block"><h4>${t('ui.sessionBlock')}</h4><div class="struct">${segs.map((s) => {
-    const moves = s.text.split(/\s*[,;]\s*|\s+\/\s+/).map((t) => t.trim()).filter(Boolean);
+    const moves = s.text.split(/\s*[,;]\s*|\s+\/\s+/).map((x) => x.trim()).filter(Boolean);
     const body = moves.length > 1
       ? `<ul class="move-list">${moves.map((m) => `<li class="move-pill mono">${esc(m)}</li>`).join('')}</ul>`
       : `<span class="struct-text mono">${esc(s.text)}</span>`;
@@ -236,7 +237,7 @@ function packingChecklist(w, settings) {
   if (!preset.length) return '';
   const packed = new Set(w.packed || []);
   return `<div class="block"><h4>${t('ui.packing')}</h4><ul class="pack-items">${preset.map((item) => `
-    <li class="${packed.has(item) ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-preset-pack" data-id="${esc(w.id)}" data-item="${esc(item)}" ${packed.has(item) ? 'checked' : ''}><span>${esc(item)}</span></label></li>`).join('')}</ul></div>`;
+    <li class="${packed.has(item) ? 'checked' : ''}"><label><input type="checkbox" data-action="toggle-preset-pack" data-id="${esc(w.id)}" data-item="${esc(item)}" ${packed.has(item) ? 'checked' : ''}><span>${esc(planItem(item, w.type))}</span></label></li>`).join('')}</ul></div>`;
 }
 
 function metaChips(w, units) {
@@ -263,7 +264,7 @@ export function sessionCard(w, units, { isNext = false } = {}) {
   return `<article class="card bento type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-action="open-workout" data-id="${esc(w.id)}" role="button" tabindex="0">
     <div class="bento-top">
       <span class="status-dot ${w.completed ? 'on' : ''}" title="${w.completed ? t('ui.completed') : t('ui.planned')}"></span>
-      <h3>${esc(w.title)}</h3>
+      <h3>${esc(planTitle(w.title))}</h3>
       ${isNext ? `<span class="tag next">${t('ui.next')}</span>` : ''}${w.hr_zone ? zoneBadge(w.hr_zone) : ''}
     </div>
     <div class="bento-metrics">
@@ -414,7 +415,7 @@ function tomorrowGlance(ctx) {
     const d = DISCIPLINES[w.type] || DISCIPLINES.other;
     const extra = sessions.length > 1 ? ` <span class="tg-extra">+${sessions.length - 1}</span>` : '';
     inner = `<span class="sport-dot type-${esc(w.type)}"></span>
-      <span class="tg-title">${esc(t('ui.tomorrowLine', { sport: d.label, title: w.title }))}${extra}</span>
+      <span class="tg-title">${esc(t('ui.tomorrowLine', { sport: d.label, title: planTitle(w.title) }))}${extra}</span>
       <span class="tg-min">${w.durationMin || 0}<small class="data-unit"> min</small></span>`;
     attrs = `data-action="open-workout" data-id="${esc(w.id)}"`;
   } else {
@@ -511,7 +512,7 @@ function focusCard(ctx) {
     return `<section class="card focus-card" data-action="open-editor-new" data-date="${esc(today)}" role="button" tabindex="0">
       <div class="focus-top"><span class="focus-sport">${svg('moon')} ${t('ui.today')}</span></div>
       <div class="focus-big">${t('ui.rest')}</div>
-      <div class="focus-sub">${next ? esc(t('ui.nextUpLine', { title: next.title, date: shortLabel(next.date) })) : t('ui.nothingScheduled')}</div>
+      <div class="focus-sub">${next ? esc(t('ui.nextUpLine', { title: planTitle(next.title), date: shortLabel(next.date) })) : t('ui.nothingScheduled')}</div>
     </section>`;
   }
 
@@ -526,7 +527,7 @@ function focusCard(ctx) {
         <span class="focus-sport">${svg(focus.type, `tint-${focus.type}`)} ${esc(d.label)}</span>
         ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}
         <span class="focus-state">${focus.completed ? t('ui.done') : t('ui.nextUp')}</span></div>
-      <h3 class="focus-title">${esc(focus.title)}</h3>
+      <h3 class="focus-title">${esc(planTitle(focus.title))}</h3>
       <div class="bento-metrics">
         <div class="bm"><span class="bm-ico">${svg('clock')}</span><b>${focus.durationMin || 0}</b><small>min</small></div>
         ${km ? `<div class="bm"><span class="bm-ico">${svg('route')}</span><b>${fmtNum(km, { maximumFractionDigits: 1 })}</b><small>${units === 'imperial' ? 'mi' : 'km'}</small></div>` : ''}
@@ -657,15 +658,15 @@ function weeklyVolumeChart(workouts, today) {
 function disciplineBreakdown(stats) {
   const order = ['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'];
   const entries = order
-    .map((t) => ({ t, min: stats.minutesByType[t] || 0 }))
+    .map((type) => ({ type, min: stats.minutesByType[type] || 0 }))
     .filter((e) => e.min > 0);
   const total = entries.reduce((a, e) => a + e.min, 0) || 1;
   const rows = entries.map((e) => {
-    const d = DISCIPLINES[e.t];
+    const d = DISCIPLINES[e.type];
     const pct = Math.round((e.min / total) * 100);
-    return `<div class="disc-row"><span class="disc-label">${svg(e.t)} ${d.label}</span>
-      <div class="disc-bar"><div class="disc-fill type-${e.t}" style="width:${pct}%"></div></div>
-      <span class="disc-val">${(e.min / 60).toFixed(1)} h</span></div>`;
+    return `<div class="disc-row"><span class="disc-label">${svg(e.type)} ${d.label}</span>
+      <div class="disc-bar"><div class="disc-fill type-${e.type}" style="width:${pct}%"></div></div>
+      <span class="disc-val">${fmtNum(e.min / 60, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h</span></div>`;
   }).join('');
   return `<section class="card"><h3>${t('ui.disciplineBreakdown')}</h3>${rows || `<p class="muted">${t('ui.noSplit')}</p>`}</section>`;
 }
@@ -703,8 +704,8 @@ export function badgeWall(unlocked) {
 
 function referenceCards() {
   const paces = PACE_REFERENCE.map((p) =>
-    `<li><span class="dot seg-${p.kind}"></span><b>${esc(p.label)}</b><span>${esc(p.value)}</span></li>`).join('');
-  const principles = PLAN_PRINCIPLES.map((p) => `<li>${esc(p)}</li>`).join('');
+    `<li><span class="dot seg-${p.kind}"></span><b>${esc(planWord(p.label))}</b><span>${esc(planWord(p.value))}</span></li>`).join('');
+  const principles = PLAN_PRINCIPLES.map((p) => `<li>${esc(planWord(p))}</li>`).join('');
   return `
     <section class="card"><h3>${esc(t('ui.paceRef'))}</h3><ul class="ref-list">${paces}</ul></section>
     <section class="card"><h3>${t('ui.planPrinciples')}</h3><ul class="principles">${principles}</ul></section>`;
@@ -746,5 +747,5 @@ export function raceBanner(today) {
     .sort((a, b) => a.date.localeCompare(b.date))[0];
   if (!upcoming) return '';
   const days = diffDays(upcoming.date, today);
-  return `<div class="race-banner">${svg('flag')} ${t('ui.raceIn', { title: `<b>${esc(upcoming.title)}</b>`, n: days })} <span class="muted">· ${shortLabel(upcoming.date)}</span></div>`;
+  return `<div class="race-banner">${svg('flag')} ${t('ui.raceIn', { title: `<b>${esc(planTitle(upcoming.title))}</b>`, n: days })} <span class="muted">· ${shortLabel(upcoming.date)}</span></div>`;
 }

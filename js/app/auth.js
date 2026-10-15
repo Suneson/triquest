@@ -12,6 +12,7 @@ import { svg } from '../core/icons.js';
 import { busy } from './motion.js';
 import { openLayer, closeLayer, topLayerName } from './nav.js';
 import { sheetHead } from './sheet.js';
+import { t } from '../core/i18n.js';
 
 let _client = null;
 let _user = null;
@@ -77,18 +78,30 @@ async function activateUser(user, { silent = false } = {}) {
     // A delete that never reached the server comes back on the next sync, so
     // say so rather than letting the athlete believe the wipe stuck.
     onWriteError: (e) => toast(
-      `Couldn’t save that change to your account — it may reappear when you reload. ${e?.message || 'Check your connection and try again.'}`,
+      escHtml(t('auth.writeError', { detail: e?.message || t('auth.checkConnection') })),
       { icon: svg('warn') },
     ),
   });
   await store.useStore(_store); // hydrate: pull + LWW merge + push local-only
   if (!silent) {
     const uploaded = _store.uploadedLocal;
-    toast(uploaded
-      ? `Signed in · synced ${uploaded} local session${uploaded === 1 ? '' : 's'} to your account`
-      : 'Signed in · your data is now syncing', { icon: svg('cloud') });
+    toast(uploaded ? t('auth.signedInSynced', { n: uploaded }) : t('auth.signedInSyncing'), { icon: svg('cloud') });
   }
 }
+
+// Supabase answers in English; the common ones read in the active language
+const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// i18n-ignore-start (Supabase's English messages, matched as keys)
+const AUTH_ERRORS = {
+  'Invalid login credentials': 'invalid', 'Email not confirmed': 'unconfirmed',
+  'User already registered': 'exists', 'Password should be at least 6 characters.': 'short',
+};
+// i18n-ignore-end
+const authError = (err, fallback) => {
+  const m = String(err?.message || '');
+  return AUTH_ERRORS[m] ? t(`auth.err.${AUTH_ERRORS[m]}`) : (m || t(fallback));
+};
 
 // ---- sign-in actions -------------------------------------------------------
 
@@ -112,15 +125,15 @@ function openSetPassword() {
   const root = openLayer('set-password', { swipeBack: false });
   root.innerHTML = `
     <div class="modal-backdrop"></div>
-    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Set a new password">
-      ${sheetHead({ icon: 'lock', title: 'Set a new password', noLead: true })}
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="${t('auth.setPassword')}">
+      ${sheetHead({ icon: 'lock', title: t('auth.setPassword'), noLead: true })}
       <div class="modal-body">
         <form data-set-pw>
-          <label class="field"><span>New password</span>
+          <label class="field"><span>${t('auth.newPassword')}</span>
             <input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
-          <label class="field"><span>Confirm new password</span>
+          <label class="field"><span>${t('auth.confirmPassword')}</span>
             <input type="password" name="confirm" required minlength="6" autocomplete="new-password"></label>
-          <button class="btn primary" type="submit">Update password</button>
+          <button class="btn primary" type="submit">${t('auth.updatePassword')}</button>
         </form>
         <p class="auth-msg" role="status" hidden></p>
       </div>
@@ -129,7 +142,7 @@ function openSetPassword() {
   root.querySelector('[data-set-pw]').addEventListener('submit', async (e) => {
     e.preventDefault();
     const password = e.target.password.value;
-    if (password !== e.target.confirm.value) { msgEl.hidden = false; msgEl.textContent = 'Passwords don’t match.'; return; }
+    if (password !== e.target.confirm.value) { msgEl.hidden = false; msgEl.textContent = t('auth.noMatch'); return; }
     await busy(e.submitter, async () => { try {
       const c = await client();
       const { error } = await c.auth.updateUser({ password });
@@ -137,8 +150,8 @@ function openSetPassword() {
       closeLayer(root);
       const { data: { user } } = await c.auth.getUser();
       if (user && !_user) { await activateUser(user, { silent: true }); if (_onChange) _onChange(_user); }
-      toast('Password updated. You’re signed in.', { icon: svg('lock') });
-    } catch (err) { msgEl.hidden = false; msgEl.textContent = err.message || 'Could not update password'; }
+      toast(t('auth.updated'), { icon: svg('lock') });
+    } catch (err) { msgEl.hidden = false; msgEl.textContent = authError(err, 'auth.updateFailed'); }
     });
   });
 }
@@ -160,23 +173,23 @@ export function openAuthModal() {
   const root = openLayer('auth');
   root.innerHTML = `
     <div class="modal-backdrop" data-auth-close></div>
-    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Sign in">
-      <button class="icon-btn auth-x" data-auth-close aria-label="Close">${svg('close')}</button>
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="${t('auth.signIn')}">
+      <button class="icon-btn auth-x" data-auth-close aria-label="${t('auth.close')}">${svg('close')}</button>
       <div class="auth-head">
         <div class="auth-logo">MOSKE</div>
-        <h2>Sign in to sync</h2>
-        <p>Your training, on every device.</p>
+        <h2>${t('auth.title')}</h2>
+        <p>${t('auth.sub')}</p>
       </div>
       <form data-auth-password class="auth-form">
-        <input type="email" name="email" required placeholder="Email" autocomplete="email">
-        <input type="password" name="password" required minlength="6" placeholder="Password" autocomplete="current-password">
-        <button class="btn primary block" type="submit" data-pw-mode="in">Sign in</button>
-        <button class="btn ghost block" type="submit" data-pw-mode="up">Create account</button>
+        <input type="email" name="email" required placeholder="${t('auth.email')}" autocomplete="email">
+        <input type="password" name="password" required minlength="6" placeholder="${t('auth.password')}" autocomplete="current-password">
+        <button class="btn primary block" type="submit" data-pw-mode="in">${t('auth.signIn')}</button>
+        <button class="btn ghost block" type="submit" data-pw-mode="up">${t('auth.create')}</button>
       </form>
       <div class="auth-links">
-        <button type="button" class="auth-link" data-auth-forgot>Forgot password?</button>
+        <button type="button" class="auth-link" data-auth-forgot>${t('auth.forgot')}</button>
         <span>·</span>
-        <button type="button" class="auth-link" data-auth-magic-send>Email me a magic link</button>
+        <button type="button" class="auth-link" data-auth-magic-send>${t('auth.magic')}</button>
       </div>
       <p class="auth-msg" role="status" hidden></p>
     </div>`;
@@ -192,16 +205,16 @@ export function openAuthModal() {
 
   root.querySelector('[data-auth-magic-send]').addEventListener('click', async () => {
     const email = emailValue();
-    if (!email) { msg('Type your email above first.'); return; }
-    try { await signInWithEmail(email); msg('Check your email for the magic link.', true); }
-    catch (err) { msg(err.message || 'Could not send link'); }
+    if (!email) { msg(t('auth.emailFirst')); return; }
+    try { await signInWithEmail(email); msg(t('auth.magicSent'), true); }
+    catch (err) { msg(authError(err, 'auth.magicFailed')); }
   });
 
   root.querySelector('[data-auth-forgot]').addEventListener('click', async () => {
     const email = emailValue();
-    if (!email) { msg('Type your email above first.'); return; }
-    try { await resetPassword(email); msg('Check your email for a password-reset link.', true); }
-    catch (err) { msg(err.message || 'Could not send reset email'); }
+    if (!email) { msg(t('auth.emailFirst')); return; }
+    try { await resetPassword(email); msg(t('auth.resetSent'), true); }
+    catch (err) { msg(authError(err, 'auth.resetFailed')); }
   });
 
   let pwMode = 'in';
@@ -218,12 +231,12 @@ export function openAuthModal() {
         const { data, error } = await c.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo() } });
         if (error) throw error;
         if (data.session) { close(); return; } // confirmation off → signed in immediately
-        msg('Account created — confirm your email, then sign in. (Or disable email confirmation in Supabase.)', true);
+        msg(t('auth.created'), true);
       } else {
         await signInWithPassword(email, password);
         close();
       }
-    } catch (err) { msg(err.message || 'Sign-in failed'); }
+    } catch (err) { msg(authError(err, 'auth.failed')); }
     });
   });
 }

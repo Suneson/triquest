@@ -7,6 +7,7 @@
 // `closeAttr` to keep a sheet's existing close hook (it runs as well).
 
 import { svg } from '../core/icons.js';
+import { t } from '../core/i18n.js';
 
 /**
  * @param {object} o
@@ -22,7 +23,7 @@ import { svg } from '../core/icons.js';
  * @param {boolean} [o.noLead]  no way back here (a step that must be finished)
  */
 export function sheetHead({ title, icon = '', lead = 'close', label, closeAttr = '', before = '', after = '', action = '', id = '', noLead = false }) {
-  const name = label || (lead === 'back' ? 'Back' : 'Close');
+  const name = label || (lead === 'back' ? t('sheet.back') : t('sheet.close'));
   return `<header class="sh-head sh-head--${lead}">
     ${noLead ? '<span class="sh-lead-gap" aria-hidden="true"></span>'
       : `<button type="button" class="sh-lead" data-layer-close ${closeAttr} aria-label="${name}">${svg(lead === 'back' ? 'back' : 'close')}</button>`}

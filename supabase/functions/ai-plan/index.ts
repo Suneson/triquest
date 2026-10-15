@@ -86,6 +86,15 @@ EXERCISE LIBRARY (id = name (main muscle, equipment)):
 ${libraryPromptLines()}
 Return ONLY a JSON object {"workouts": [ ... ]}. Each item has EXACTLY: "title" (string), "type" (one of ${TYPES.join("|")}), "intensity" (one of ${INTEN.join("|")}), "date" ("YYYY-MM-DD", future only starting tomorrow), "duration_min" (integer), "hr_zone" (integer 1-5, target heart-rate zone), "notes" (structured as above), for bike sessions "power" (array of {"min":int,"watts":int}), and for gym sessions "exercises" (array as above).`;
 
+// The athlete's language (the wizard sends "en" or "es"). Titles and the prose
+// in notes follow it; everything the app reads stays in English, so nothing
+// downstream changes. English keeps the prompt exactly as it was.
+const LANGS = ["en", "es"];
+const LANGUAGE_RULE: Record<string, string> = {
+  es: `LANGUAGE: write every "title" and all the prose inside "notes" in Spanish from Spain, the way a Spanish coach talks to a triathlete or a lifter: "Tirada larga", "Rodaje suave", "Series", "Umbral", "Sweet spot", "Calentamiento", "Vuelta a la calma", "Fartlek", "Tempo", "Press de banca", "Sentadilla". Keep the following EXACTLY in English, because the app reads them: every JSON key; the values of "type", "intensity" and "date"; the segment labels "[Warmup]", "[Main Set]" and "[Cooldown]"; every exercise "id"; and in the "exercises" array, the "name" of a library exercise exactly as listed. Numbers, units and the set notation stay as they are (km, W, min, s, RPE, "4x8min @ 250W", "4x5 @ RPE 8").`,
+};
+const FALLBACK_TITLE: Record<string, string> = { en: "AI session", es: "Sesión IA" };
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -104,6 +113,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const maxDoubles = Math.max(0, Math.min(5, parseInt(body.wizard?.max_double_days) || 0));
   const ftp = Math.max(50, Math.min(600, parseInt(body.wizard?.ftp) || 250));
+  const lang = LANGS.includes(body.wizard?.lang) ? body.wizard.lang : "en";
   const prompt = `Today is ${new Date().toISOString().slice(0, 10)}.
 Athlete FTP: ${ftp}W (use for cycling watt targets).
 HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sessions (two-a-day / double training). Every other day must have at most one session. Never exceed ${maxDoubles} double days in any single weekly cycle.
@@ -117,7 +127,7 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
   let g: any;
   try {
     g = await groqComplete(key, models, [
-      { role: "system", content: SYSTEM },
+      { role: "system", content: LANGUAGE_RULE[lang] ? `${SYSTEM}\n${LANGUAGE_RULE[lang]}` : SYSTEM },
       { role: "user", content: prompt },
     ]);
   } catch (e) {
@@ -147,7 +157,7 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
     return {
       id: crypto.randomUUID(), user_id: userId, date: String(p.date).slice(0, 10),
       type,
-      title: String(p.title || "AI session").slice(0, 120),
+      title: String(p.title || FALLBACK_TITLE[lang]).slice(0, 120),
       intensity: INTEN.includes(p.intensity) ? p.intensity : "moderate",
       duration_min: Math.max(10, Math.min(360, parseInt(p.duration_min ?? p.duration) || 45)),
       notes: String(p.notes || ""), completed: false, source: "custom",

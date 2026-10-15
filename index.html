@@ -21,7 +21,7 @@
   <!-- The app shell: a fixed, full-screen grid of header / banners / view / tab
        bar. Nothing here depends on 100vh or 100dvh, so the bar can't float up. -->
   <div class="app">
-    <div id="storage-banner" class="storage-banner" hidden role="alert">
+    <div id="storage-banner" class="storage-banner" hidden role="alert" data-i18n="app.storageBlocked">
       Storage is blocked (private mode?). Your data is kept in memory only and will be lost when you close this tab.
     </div>
 
@@ -55,7 +55,7 @@
 
   <div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
 
-  <noscript><p style="padding:2rem;text-align:center">MOSKE needs JavaScript enabled.</p></noscript>
+  <noscript><p style="padding:2rem;text-align:center">MOSKE needs JavaScript enabled.<br><span lang="es">MOSKE necesita JavaScript activado.</span></p></noscript>
   <script type="module" src="js/app/main.js"></script>
 </body>
 </html>

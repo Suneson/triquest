@@ -2,6 +2,8 @@
 // storage, so it's unit-testable and shared by the frontend poller and (mirrored)
 // the Edge Function webhook. Strava is metric (metres, seconds, m of elevation).
 
+import { t } from './i18n.js';
+
 /** Strava sport_type -> app workout type. */
 export const SPORT_TYPE_MAP = {
   Ride: 'bike', VirtualRide: 'bike', GravelRide: 'bike', MountainBikeRide: 'bike', EBikeRide: 'bike',
@@ -88,7 +90,7 @@ export function buildStravaWorkout(activity, id) {
     id,
     date,
     type,
-    title: activity.name || 'Strava activity',
+    title: activity.name || t('misc.stravaActivity'),
     intensity: 'steady',
     durationMin: actual.durationMin || 0,
     metrics: { distanceKm: actual.distanceKm || 0 },

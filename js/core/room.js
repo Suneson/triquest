@@ -2,20 +2,22 @@
 // say, how fast you may post, what's unread, how a blocked author shows,
 // and how optimistic bubbles reconcile with the server's copy.
 
+import { t } from './i18n.js';
+
 export const MAX_LEN = 500;
 export const RATE_PER_MIN = 10; // mirrors the server trigger (0012_general_chat.sql)
 
 /** Trimmed text if it may be sent, or an error message. */
 export function checkBody(text) {
-  const t = String(text ?? '').trim();
-  if (!t) return { error: 'Write something first.' };
-  if (t.length > MAX_LEN) return { error: `Keep it under ${MAX_LEN} characters.` };
-  return { body: t };
+  const body = String(text ?? '').trim();
+  if (!body) return { error: t('room.writeFirst') };
+  if (body.length > MAX_LEN) return { error: t('room.tooLong', { n: MAX_LEN }) };
+  return { body };
 }
 
 /** Would one more post now break the per-minute limit? `sentAt` = my recent post times (ms). */
 export function rateLimited(sentAt, now = Date.now(), limit = RATE_PER_MIN) {
-  return sentAt.filter((t) => now - t < 60000).length >= limit;
+  return sentAt.filter((at) => now - at < 60000).length >= limit;
 }
 
 /**

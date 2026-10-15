@@ -13,7 +13,7 @@
 
 import { esc, dialogue } from './ui.js';
 import { svg } from '../core/icons.js';
-import { exerciseArtSrc, cuesForId, exerciseById } from '../core/exercises.js';
+import { exerciseArtSrc, cuesForId, exerciseById, exName, muscleLabel, equipLabel } from '../core/exercises.js';
 import { cuesFor, poseSvgFor } from '../core/poses.js';
 import { openPicker, openNameSheet } from './gym-picker.js';
 import { haptic } from './haptics.js';
@@ -31,6 +31,8 @@ import {
   sessionSummary, fmtClock, restLabel, REST_PRESETS, SET_KIND_LABELS, startRest, restRemaining, extendRest,
   startStopwatch, stopwatchElapsed, finishPatch, nextSet,
 } from '../core/gym-log.js';
+import { t, fmtNum } from '../core/i18n.js';
+import { planTitle } from '../core/plan-i18n.js';
 
 const REST_KEY = 'moske-rest';
 const SW_KEY = 'moske-stopwatch';
@@ -54,27 +56,27 @@ export function sessionBar(w, now = Date.now()) {
   const rest = getRest();
   const left = rest && rest.workoutId === w.id ? restRemaining(rest, now) : 0;
   const logged = w.gymLoggedAt
-    ? `<span class="tag gl-logged">${svg('check')} Logged</span>` : '';
+    ? `<span class="tag gl-logged">${svg('check')} ${t('gym.logged')}</span>` : '';
   const restRow = left > 0 ? `
-    <div class="gl-rest${left <= 3 ? ' is-ending' : ''}" role="timer" aria-label="Rest ${fmtClock(left)} left">
+    <div class="gl-rest${left <= 3 ? ' is-ending' : ''}" role="timer" aria-label="${t('gym.restLeft', { time: fmtClock(left) })}">
       <span class="gl-ring">${restRing(left, rest.totalSec)}<b class="data-num gl-rest-left">${fmtClock(left)}</b></span>
-      <span class="gl-k">Rest</span>
+      <span class="gl-k">${t('gym.restK')}</span>
       <span class="gl-rest-btns">
-        <button class="btn tiny secondary" data-action="gym-rest-adjust" data-by="-15" data-id="${esc(w.id)}" aria-label="15 seconds less">${svg('minus')}15</button>
-        <button class="btn tiny secondary" data-action="gym-rest-adjust" data-by="15" data-id="${esc(w.id)}" aria-label="15 seconds more">${svg('plus')}15</button>
-        <button class="btn tiny ghost" data-action="gym-rest-skip" data-id="${esc(w.id)}">Skip</button>
+        <button class="btn tiny secondary" data-action="gym-rest-adjust" data-by="-15" data-id="${esc(w.id)}" aria-label="${t('gym.less15')}">${svg('minus')}15</button>
+        <button class="btn tiny secondary" data-action="gym-rest-adjust" data-by="15" data-id="${esc(w.id)}" aria-label="${t('gym.more15')}">${svg('plus')}15</button>
+        <button class="btn tiny ghost" data-action="gym-rest-skip" data-id="${esc(w.id)}">${t('gym.skip')}</button>
       </span>
     </div>` : '';
   return `
     <div class="gl-bar-row">
       <div class="gl-clock">
-        <span class="gl-k">Time</span>
+        <span class="gl-k">${t('gym.time')}</span>
         <b class="data-num" data-gl-elapsed>${sum.durationSec != null ? fmtClock(sum.durationSec) : '0:00'}</b>
-        ${sum.durationSec == null ? '<small class="muted">press Start when you’re ready</small>' : logged}
+        ${sum.durationSec == null ? `<small class="muted">${t('gym.pressStart')}</small>` : logged}
       </div>
       ${!w.gymStartedAt && !w.gymLoggedAt && w.exercises?.length
-    ? `<button class="btn primary tiny gl-finish" data-action="gym-start" data-id="${esc(w.id)}">Start</button>`
-    : `<button class="btn primary tiny gl-finish" data-action="gym-finish" data-id="${esc(w.id)}">${w.gymLoggedAt ? 'Save' : 'Finish'}</button>`}
+    ? `<button class="btn primary tiny gl-finish" data-action="gym-start" data-id="${esc(w.id)}">${t('gym.start')}</button>`
+    : `<button class="btn primary tiny gl-finish" data-action="gym-finish" data-id="${esc(w.id)}">${w.gymLoggedAt ? t('gym.save') : t('gym.finish')}</button>`}
     </div>${restRow}`;
 }
 
@@ -136,27 +138,27 @@ export function renderLogger(w, workouts) {
   const blocks = w.exercises.map((ex, i) => exerciseBlock(w, ex, i, workouts, ss[i])).join('');
   const ids = `data-id="${esc(w.id)}"`;
   return `<div class="gl-bar" data-gl-bar data-id="${esc(w.id)}">${sessionBar(w)}</div><!--gl-split-->
-    <div class="block gl"><h4>Exercises</h4>
-      ${blocks ? `<div class="gl-list" data-gl-list ${ids}>${blocks}</div>` : '<p class="muted gl-empty">No exercises yet. Add some, or start from a routine in Settings.</p>'}
-      <button class="btn secondary block" data-action="gym-add-ex" ${ids}>${svg('plus')} Add exercises</button>
-      ${blocks ? `<button class="btn ghost block" data-action="gym-save-routine" ${ids}>${svg('copy')} Save as routine</button>` : ''}
+    <div class="block gl"><h4>${t('gym.exercises')}</h4>
+      ${blocks ? `<div class="gl-list" data-gl-list ${ids}>${blocks}</div>` : `<p class="muted gl-empty">${t('gym.noExercises')}</p>`}
+      <button class="btn secondary block" data-action="gym-add-ex" ${ids}>${svg('plus')} ${t('gym.addExercises')}</button>
+      ${blocks ? `<button class="btn ghost block" data-action="gym-save-routine" ${ids}>${svg('copy')} ${t('gym.saveRoutine')}</button>` : ''}
     </div>`;
 }
 
 function exerciseMenu(w, ex, i, ss) {
   const n = w.exercises.length;
   const items = [
-    ['up', 'Move up', i > 0],
-    ['down', 'Move down', i < n - 1],
-    ['link', ss && !ss.last ? '' : 'Superset with next', i < n - 1 && !(ss && !ss.last)],
-    ['unlink', 'Remove from superset', !!ss],
-    ['replace', 'Replace exercise', true],
-    ['remove', 'Remove exercise', true],
-  ].filter(([, t, ok]) => t && ok);
-  return `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
-    <select data-action="gym-ex-menu" data-id="${esc(w.id)}" data-ex="${i}" aria-label="${esc(`${ex.name}: more`)}">
-      <option value="" selected disabled hidden>More</option>
-      ${items.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}
+    ['up', i > 0],
+    ['down', i < n - 1],
+    ['link', i < n - 1 && !(ss && !ss.last)],
+    ['unlink', !!ss],
+    ['replace', true],
+    ['remove', true],
+  ].filter(([, ok]) => ok);
+  return `<label class="icon-btn tiny gl-more" title="${t('gym.more')}">${svg('more')}
+    <select data-action="gym-ex-menu" data-id="${esc(w.id)}" data-ex="${i}" aria-label="${esc(t('gym.moreAria', { name: exName(ex) }))}">
+      <option value="" selected disabled hidden>${t('gym.more')}</option>
+      ${items.map(([v]) => `<option value="${v}">${t(`gym.menu.${v}`)}</option>`).join('')}
     </select></label>`;
 }
 
@@ -166,7 +168,8 @@ function exerciseBlock(w, ex, i, workouts, ss) {
   const pic = ex.imageUrl
     ? `<img src="${esc(ex.imageUrl)}" alt="" width="64" height="64" loading="lazy" onerror="this.style.display='none'">`
     : art ? `<img src="${esc(art)}" alt="" width="64" height="64" loading="lazy" decoding="async">` : poseSvgFor(ex.name);
-  const sub = [ex.muscle || lib?.muscle, ex.equipment || lib?.equipment].filter(Boolean).join(' · ');
+  const name = exName(ex);
+  const sub = [muscleLabel(ex.muscle || lib?.muscle), equipLabel(ex.equipment || lib?.equipment)].filter(Boolean).join(' · ');
   const cues = cuesForId(ex.libId) || cuesFor(ex.name);
   // a note reads as one line; the text box only opens from the Note chip
   const noteOpen = openNotes.has(`${w.id}:${i}`);
@@ -180,74 +183,74 @@ function exerciseBlock(w, ex, i, workouts, ss) {
     cur && cur.ex === i && cur.set === j ? cur.cls : '')).join('');
   const ids = `data-id="${esc(w.id)}" data-ex="${i}"`;
   const head = timed
-    ? `<span>Set</span><span class="gl-col-prev">Last</span><span>Time</span><span aria-label="Done">${svg('check')}</span>`
-    : `<span>Set</span><span class="gl-col-prev">Last</span><span>${ex.kind === 'bodyweight' ? '+Kg' : 'Kg'}</span><span>Reps</span><span aria-label="Done">${svg('check')}</span>`;
+    ? `<span>${t('gym.colSet')}</span><span class="gl-col-prev">${t('gym.colLast')}</span><span>${t('gym.colTime')}</span><span aria-label="${t('gym.done')}">${svg('check')}</span>`
+    : `<span>${t('gym.colSet')}</span><span class="gl-col-prev">${t('gym.colLast')}</span><span>${ex.kind === 'bodyweight' ? t('gym.colPlusKg') : t('gym.colKg')}</span><span>${t('gym.colReps')}</span><span aria-label="${t('gym.done')}">${svg('check')}</span>`;
   return `
-    <section class="gl-ex ${ss ? `in-ss${ss.first ? ' ss-first' : ''}${ss.last ? ' ss-last' : ''}` : ''}" data-gl-item aria-label="${esc(ss ? `Superset ${ss.letter}: ${ex.name}` : ex.name)}">
-      ${ss?.first ? `<span class="tag gl-ss-tag">Superset ${ss.letter}</span>` : ''}
+    <section class="gl-ex ${ss ? `in-ss${ss.first ? ' ss-first' : ''}${ss.last ? ' ss-last' : ''}` : ''}" data-gl-item aria-label="${esc(ss ? t('gym.supersetAria', { letter: ss.letter, name }) : name)}">
+      ${ss?.first ? `<span class="tag gl-ss-tag">${esc(t('gym.superset', { letter: ss.letter }))}</span>` : ''}
       <header class="gl-ex-head">
         <div class="ex-img ${art && !ex.imageUrl ? 'ex-art' : ''}">${pic}</div>
         <div class="gl-ex-title">
-          <h5><button type="button" class="gl-name" data-action="gym-history" ${ids} aria-label="${esc(`${ex.name}: history and records`)}">${esc(ex.name)}</button></h5>
+          <h5><button type="button" class="gl-name" data-action="gym-history" ${ids} aria-label="${esc(t('gym.historyAria', { name }))}">${esc(name)}</button></h5>
           ${sub ? `<span class="muted small">${esc(sub)}</span>` : ''}
         </div>
         <span class="gl-ex-tools">
-          <button type="button" class="icon-btn tiny gl-grip" data-gl-grip aria-label="${esc(`Drag to reorder ${ex.name}`)}" title="Drag to reorder">${svg('grip')}</button>
+          <button type="button" class="icon-btn tiny gl-grip" data-gl-grip aria-label="${esc(t('gym.dragAria', { name }))}" title="${t('gym.dragTitle')}">${svg('grip')}</button>
           ${exerciseMenu(w, ex, i, ss)}
         </span>
       </header>
       <div class="gl-chips">
-        <label class="chip gl-chip">${svg('clock')}<select data-action="gym-rest" ${ids} aria-label="Rest between sets">
+        <label class="chip gl-chip">${svg('clock')}<select data-action="gym-rest" ${ids} aria-label="${t('gym.restBetween')}">
           ${[...new Set([...REST_PRESETS, ex.restSec || 0])].sort((a, b) => a - b)
     .map((sec) => `<option value="${sec}" ${sec === (ex.restSec || 0) ? 'selected' : ''}>${restLabel(sec)}</option>`).join('')}
         </select></label>
-        <button class="chip gl-chip" data-action="gym-note-toggle" ${ids} aria-expanded="${noteOpen}">${svg('edit')}Note</button>
+        <button class="chip gl-chip" data-action="gym-note-toggle" ${ids} aria-expanded="${noteOpen}">${svg('edit')}${t('gym.note')}</button>
       </div>
-      ${noteOpen ? `<textarea class="gl-note" rows="2" data-action="gym-note" ${ids} placeholder="A note for this exercise" aria-label="Note for ${esc(ex.name)}">${esc(ex.note || '')}</textarea>`
+      ${noteOpen ? `<textarea class="gl-note" rows="2" data-action="gym-note" ${ids} placeholder="${t('gym.notePh')}" aria-label="${esc(t('gym.noteAria', { name }))}">${esc(ex.note || '')}</textarea>`
     : ex.note ? `<p class="gl-note-txt">${esc(ex.note)}</p>` : ''}
-      ${cues?.length ? `<details class="gl-cues"><summary>How to</summary><ul class="cues">${cues.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : ''}
+      ${cues?.length ? `<details class="gl-cues"><summary>${t('gym.howTo')}</summary><ul class="cues">${cues.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : ''}
       <div class="gl-grid ${timed ? 'is-timed' : ''}">
         <div class="gl-row gl-head" aria-hidden="true">${head}</div>
         ${rows}
       </div>
-      <button class="btn secondary gl-add" data-action="gym-add-set" ${ids}>${svg('plus')} Add set</button>
+      <button class="btn secondary gl-add" data-action="gym-add-set" ${ids}>${svg('plus')} ${t('gym.addSet')}</button>
     </section>`;
 }
 
 function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false, cursorCls = '') {
   const ids = `data-id="${esc(w.id)}" data-ex="${i}" data-set="${j}"`;
-  const name = `${label === 'W' ? 'Warm-up' : SET_KIND_LABELS[s.kind]} set ${label}`;
+  const name = t('gym.setName', { kind: SET_KIND_LABELS[s.kind] || SET_KIND_LABELS.work, label });
   const prevText = formatSet(prevSet, ex.kind);
   const prevBtn = (cls) => (prevText
-    ? `<button class="gl-prev ${cls}" data-action="gym-fill-prev" ${ids} aria-label="Use last time: ${esc(prevText)}">${cls === 'gl-prev-sub' ? 'Last ' : ''}${esc(prevText)}</button>`
+    ? `<button class="gl-prev ${cls}" data-action="gym-fill-prev" ${ids} aria-label="${esc(t('gym.useLast', { set: prevText }))}">${cls === 'gl-prev-sub' ? t('gym.lastPrefix') : ''}${esc(prevText)}</button>`
     : `<span class="gl-prev ${cls} muted" aria-hidden="true">${cls === 'gl-prev-sub' ? '' : '–'}</span>`);
   const num = (field, mode, value, aria) => `<input class="gl-in data-num" type="text" inputmode="${mode}" autocomplete="off"
       value="${value == null ? '' : esc(String(value))}" placeholder="${esc(prevSet?.[field] != null ? String(prevSet[field]) : '–')}"
       data-action="gym-field" data-field="${field}" ${ids} aria-label="${esc(`${name} ${aria}`)}">`;
   const kindSel = `<label class="gl-set k-${s.kind}">
       <span aria-hidden="true">${label}</span>
-      <select data-action="gym-set-kind" ${ids} aria-label="${esc(`${name}. Change type or remove`)}">
-        ${Object.entries(SET_KIND_LABELS).map(([k, t]) => `<option value="${k}" ${k === s.kind ? 'selected' : ''}>${t}</option>`).join('')}
-        <option value="remove" ${ex.sets.length <= 1 ? 'disabled' : ''}>Remove set</option>
+      <select data-action="gym-set-kind" ${ids} aria-label="${esc(t('gym.changeType', { name }))}">
+        ${Object.entries(SET_KIND_LABELS).map(([k, label]) => `<option value="${k}" ${k === s.kind ? 'selected' : ''}>${label}</option>`).join('')}
+        <option value="remove" ${ex.sets.length <= 1 ? 'disabled' : ''}>${t('gym.removeSet')}</option>
       </select>
     </label>`;
   let cells;
   if (timed) {
     const running = sw && sw.workoutId === w.id && sw.ex === i && sw.set === j;
     cells = `<span class="gl-time">
-        <button class="icon-btn tiny gl-sw" data-action="gym-stopwatch" ${ids} aria-label="${running ? 'Stop' : 'Start'} the clock for ${esc(name)}">${svg(running ? 'stop' : 'play')}</button>
+        <button class="icon-btn tiny gl-sw" data-action="gym-stopwatch" ${ids} aria-label="${esc(t(running ? 'gym.clockAria.stop' : 'gym.clockAria.start', { name }))}">${svg(running ? 'stop' : 'play')}</button>
         ${running
     ? `<b class="gl-in gl-sw-live data-num" data-gl-sw="${esc(`${w.id}:${i}:${j}`)}" role="timer">${fmtClock(stopwatchElapsed(sw, Date.now()))}</b>`
-    : num('seconds', 'numeric', s.seconds, 'seconds')}
+    : num('seconds', 'numeric', s.seconds, t('gym.seconds'))}
       </span>`;
   } else {
-    cells = `${num('weight', 'decimal', s.weight, ex.kind === 'bodyweight' ? 'added kilos' : 'kilos')}${num('reps', 'numeric', s.reps, 'reps')}`;
+    cells = `${num('weight', 'decimal', s.weight, ex.kind === 'bodyweight' ? t('gym.addedKilos') : t('gym.kilos'))}${num('reps', 'numeric', s.reps, t('gym.reps'))}`;
   }
   return `<div class="gl-row ${s.done ? 'done' : ''} ${cursorCls}" data-gl-row="${i}:${j}">
       ${kindSel}
       ${prevBtn('gl-col-prev')}
       ${cells}
-      <button class="gl-tick ${isPR ? 'is-pr' : ''}" data-action="gym-tick" ${ids} aria-pressed="${s.done}" aria-label="${esc(`${name} done${isPR ? ', personal record' : ''}`)}">${isPR ? '<span class="gl-pr">PR</span>' : svg('check')}</button>
+      <button class="gl-tick ${isPR ? 'is-pr' : ''}" data-action="gym-tick" ${ids} aria-pressed="${s.done}" aria-label="${esc(t(isPR ? 'gym.setDonePR' : 'gym.setDone', { name }))}">${isPR ? `<span class="gl-pr">${t('gym.pr')}</span>` : svg('check')}</button>
       ${prevText ? prevBtn('gl-prev-sub') : ''}
     </div>`;
 }
@@ -258,13 +261,13 @@ export function finishView(w) {
   const dur = w.gymDurationSec != null ? w.gymDurationSec : sum.durationSec;
   return `
     <div class="gl-sum gl-sum-reveal">
-      <div class="gl-sum-cell" style="--d:0"><span class="gl-k">Sets</span><b class="data-num">${sum.sets}</b></div>
-      <div class="gl-sum-cell" style="--d:1"><span class="gl-k">Volume</span><b class="data-num">${sum.volumeKg.toLocaleString()}<span class="data-unit"> kg</span></b></div>
-      <div class="gl-sum-cell" style="--d:2"><span class="gl-k">Time</span><b class="data-num">${dur != null ? fmtClock(dur) : '–'}</b></div>
+      <div class="gl-sum-cell" style="--d:0"><span class="gl-k">${t('gym.sumSets')}</span><b class="data-num">${sum.sets}</b></div>
+      <div class="gl-sum-cell" style="--d:1"><span class="gl-k">${t('gym.sumVolume')}</span><b class="data-num">${fmtNum(sum.volumeKg)}<span class="data-unit"> kg</span></b></div>
+      <div class="gl-sum-cell" style="--d:2"><span class="gl-k">${t('gym.sumTime')}</span><b class="data-num">${dur != null ? fmtClock(dur) : '–'}</b></div>
     </div>
-    <div role="status">${dialogue({ text: 'Saved. This session earned', body: `<span class="xp-land">+${xpForWorkout(w)} XP</span>`, cls: 'coach-say gl-done' })}</div>
-    <button class="btn primary" data-action="gym-done" data-id="${esc(w.id)}">Done</button>
-    <button class="btn ghost" data-action="gym-back" data-id="${esc(w.id)}">Back to the log</button>`;
+    <div role="status">${dialogue({ text: t('gym.savedEarned'), body: `<span class="xp-land">+${xpForWorkout(w)} XP</span>`, cls: 'coach-say gl-done' })}</div>
+    <button class="btn primary" data-action="gym-done" data-id="${esc(w.id)}">${t('main.done')}</button>
+    <button class="btn ghost" data-action="gym-back" data-id="${esc(w.id)}">${t('gym.backToLog')}</button>`;
 }
 
 // ---- actions ------------------------------------------------------------------------------
@@ -356,11 +359,11 @@ export function handleGymAction(action, el, deps, kind) {
       break;
     case 'gym-save-routine':
       openNameSheet({
-        title: 'Save as routine', label: 'Routine name', value: w.title || '', submit: 'Save routine',
+        title: t('gym.routineTitle'), label: t('gym.routineLabel'), value: planTitle(w.title) || '', submit: t('gym.routineSubmit'),
         onSave: (name) => {
           const settings = store.getSettings();
           store.setSetting('routines', saveRoutine(settings.routines, routineFromWorkout(w, name, Date.now())));
-          deps.toast(`Saved “${name}”. Start it from Settings or the + button.`, 'check');
+          deps.toast(esc(t('gym.routineSaved', { name })), 'check');
         },
       });
       break;
@@ -412,14 +415,14 @@ export function handleGymAction(action, el, deps, kind) {
       break;
     case 'gym-finish': {
       const patch = finishPatch(w, now);
-      if (!patch) { deps.toast('Tick at least one working set first.'); break; }
+      if (!patch) { deps.toast(t('gym.tickFirst')); break; }
       const wasLogged = !!w.gymLoggedAt;
       writeJSON(REST_KEY, null);
       writeJSON(SW_KEY, null);
       // completes the session (gym earns XP without Strava), freezes the clock,
       // saves and redraws the app so XP and levels update
       store.updateWorkout(id, patch);
-      if (wasLogged) { refresh(id); deps.toast('Saved', 'check'); } else deps.showFinish(id);
+      if (wasLogged) { refresh(id); deps.toast(t('gym.saved'), 'check'); } else deps.showFinish(id);
       break;
     }
     case 'gym-back': refresh(id); break;
@@ -443,7 +446,7 @@ function tickFeedback(i, j) {
   if (!from || !to || !document.body.animate) return;
   const chip = document.createElement('span');
   chip.className = 'fly-chip';
-  chip.textContent = '+1 set';
+  chip.textContent = t('gym.flyChip');
   chip.setAttribute('aria-hidden', 'true');
   chip.style.left = `${from.left + from.width / 2}px`;
   chip.style.top = `${from.top}px`;
@@ -466,7 +469,7 @@ function celebrate(deps, w, i, j, el) {
   const tick = document.querySelector(`[data-gl-row="${i}:${j}"] .gl-tick`) || el;
   const r = tick?.getBoundingClientRect?.();
   deps.onRecord?.({
-    name: w.exercises[i].name, prs, target: tick,
+    name: exName(w.exercises[i]), prs, target: tick,
     key: `${w.id}:${w.exercises[i].id || i}:${j}:${prs.map((p) => p.label).join('|')}`, // one stamp per record
     x: r ? r.left + r.width / 2 : null, y: r ? r.top : null,
   });
@@ -483,12 +486,12 @@ function exerciseMenuAction(pick, w, i, deps) {
   else if (pick === 'unlink') { unlinkSuperset(list, i); done(); }
   else if (pick === 'replace') {
     openPicker({
-      title: 'Replace exercise', multi: false,
+      title: t('gym.replaceTitle'), multi: false,
       onPick: ([en]) => { if (en) { list[i] = replaceExercise(ex, en, Date.now()); done(); } },
     });
   } else if (pick === 'remove') {
     const logged = (ex.sets || []).filter((s) => s.done).length;
-    if (logged && !confirm(`Remove ${ex.name}? Its ${logged} logged set${logged === 1 ? '' : 's'} go too.`)) return;
+    if (logged && !confirm(t('gym.removeConfirm', { name: exName(ex), n: logged }))) return;
     list.splice(i, 1);
     openNotes.clear();
     done();

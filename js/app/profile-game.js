@@ -24,6 +24,8 @@ import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
 import { langToggle } from './lang-toggle.js';
 import { t, tList, fmtDate, fmtNum } from '../core/i18n.js';
+import { planTitle } from '../core/plan-i18n.js';
+import { DISCIPLINES } from '../core/disciplines.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -431,7 +433,7 @@ export function openActivityDetail(ctx) {
       .filter(Boolean).join(' · ');
     return `<div class="ah-row" data-action="open-workout" data-id="${esc(w.id)}" role="button" tabindex="0">
       <span class="sport-dot type-${esc(w.type)}"></span>
-      <div class="ah-body"><b>${esc(w.title || w.type)}</b><small>${esc(meta)}</small></div>
+      <div class="ah-body"><b>${esc(planTitle(w.title) || (DISCIPLINES[w.type] || DISCIPLINES.other).label)}</b><small>${esc(meta)}</small></div>
       ${w.strava_activity_id || w.source === 'strava' ? STRAVA_ICO() : ''}
     </div>`;
   }).join('') || `<p class="fh-foot">${t('pg.noCompleted')}</p>`;

@@ -5,12 +5,13 @@
 import { addDays, diffDays, startOfWeek } from './dates.js';
 import { isVerified } from './quests.js';
 import { plannedDaySet, isRestDay } from './rest.js';
+import { t } from './i18n.js';
 
 /** The next event on or after today, with days left. */
 export function nextEvent(events, today) {
   const ev = (events || []).filter((e) => e && e.date && e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))[0];
-  return ev ? { title: ev.title || 'Event', date: ev.date, daysLeft: diffDays(ev.date, today) } : null;
+  return ev ? { title: ev.title || t('rt.event'), date: ev.date, daysLeft: diffDays(ev.date, today) } : null;
 }
 
 /**

@@ -11,8 +11,9 @@
 // before the function returned structured exercises still gets the logger,
 // the art and the set grid.
 
-import { MUSCLES } from './exercises.js';
+import { MUSCLES, muscleLabel } from './exercises.js';
 import { upgradeExercises } from './sets.js';
+import { t } from './i18n.js';
 
 export const SPLIT_GROUPS = MUSCLES;
 const MAJOR = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Glutes'];
@@ -22,19 +23,22 @@ const PUSH = ['Chest', 'Shoulders', 'Triceps'];
 const PULL = ['Back', 'Biceps', 'Traps'];
 const LEGS = ['Quads', 'Hamstrings', 'Glutes', 'Calves'];
 
+// day labels are keys under split.day.*; a preset's days get their names in
+// the active language when the athlete picks it (after that they're theirs to edit)
+const preset = (id, days) => ({ id, get name() { return t(`split.preset.${id}`); }, days });
 export const SPLIT_PRESETS = [
-  { id: 'full3', name: 'Full body ×3', days: [d('Full body A', 'Full body', 'Chest', 'Back', 'Quads'), d('Full body B', 'Full body', 'Shoulders', 'Hamstrings', 'Glutes'), d('Full body C', 'Full body', 'Back', 'Quads', 'Abs')] },
-  { id: 'upper-lower', name: 'Upper / Lower', days: [d('Upper', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps'), d('Lower', ...LEGS), d('Upper', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps'), d('Lower', ...LEGS, 'Abs')] },
-  { id: 'ppl', name: 'Push / Pull / Legs', days: [d('Push', ...PUSH), d('Pull', ...PULL), d('Legs', ...LEGS)] },
-  { id: 'arnold', name: 'Arnold split', days: [d('Chest & back', 'Chest', 'Back'), d('Shoulders & arms', 'Shoulders', 'Biceps', 'Triceps', 'Forearms'), d('Legs', ...LEGS, 'Abs'), d('Chest & back', 'Chest', 'Back'), d('Shoulders & arms', 'Shoulders', 'Biceps', 'Triceps', 'Forearms'), d('Legs', ...LEGS, 'Abs')] },
-  { id: 'bro5', name: 'Bro split ×5', days: [d('Chest', 'Chest'), d('Back', 'Back', 'Traps'), d('Shoulders', 'Shoulders'), d('Arms', 'Biceps', 'Triceps', 'Forearms'), d('Legs', ...LEGS)] },
-  { id: 'ppl6', name: 'Push / Pull / Legs ×6', days: [d('Push', ...PUSH), d('Pull', ...PULL), d('Legs', ...LEGS), d('Push', ...PUSH), d('Pull', ...PULL), d('Legs', ...LEGS)] },
+  preset('full3', [d('fullA', 'Full body', 'Chest', 'Back', 'Quads'), d('fullB', 'Full body', 'Shoulders', 'Hamstrings', 'Glutes'), d('fullC', 'Full body', 'Back', 'Quads', 'Abs')]),
+  preset('upper-lower', [d('upper', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps'), d('lower', ...LEGS), d('upper', 'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps'), d('lower', ...LEGS, 'Abs')]),
+  preset('ppl', [d('push', ...PUSH), d('pull', ...PULL), d('legs', ...LEGS)]),
+  preset('arnold', [d('chestBack', 'Chest', 'Back'), d('shouldersArms', 'Shoulders', 'Biceps', 'Triceps', 'Forearms'), d('legs', ...LEGS, 'Abs'), d('chestBack', 'Chest', 'Back'), d('shouldersArms', 'Shoulders', 'Biceps', 'Triceps', 'Forearms'), d('legs', ...LEGS, 'Abs')]),
+  preset('bro5', [d('chest', 'Chest'), d('back', 'Back', 'Traps'), d('shoulders', 'Shoulders'), d('arms', 'Biceps', 'Triceps', 'Forearms'), d('legs', ...LEGS)]),
+  preset('ppl6', [d('push', ...PUSH), d('pull', ...PULL), d('legs', ...LEGS), d('push', ...PUSH), d('pull', ...PULL), d('legs', ...LEGS)]),
 ];
 
 /** A fresh copy of a preset (so edits never touch the table above). */
 export function presetSplit(id) {
   const p = SPLIT_PRESETS.find((x) => x.id === id) || SPLIT_PRESETS[0];
-  return { preset: p.id, days: p.days.map((x) => ({ label: x.label, groups: [...x.groups] })) };
+  return { preset: p.id, days: p.days.map((x) => ({ label: t(`split.day.${x.label}`), groups: [...x.groups] })) };
 }
 
 /** Clean anything (wizard state, settings, the network) into a valid split. */
@@ -42,7 +46,7 @@ export function normalizeSplit(raw) {
   const days = (Array.isArray(raw?.days) ? raw.days : []).slice(0, 7).map((x, i) => {
     const rest = !!x?.rest;
     const groups = rest ? [] : [...new Set((Array.isArray(x?.groups) ? x.groups : []).filter((g) => SPLIT_GROUPS.includes(g)))];
-    const label = String(x?.label ?? '').trim().slice(0, 24) || (rest ? 'Rest' : `Day ${i + 1}`);
+    const label = String(x?.label ?? '').trim().slice(0, 24) || (rest ? t('split.rest') : t('split.dayN', { n: i + 1 }));
     return rest ? { label, groups, rest: true } : { label, groups };
   });
   const preset = SPLIT_PRESETS.some((p) => p.id === raw?.preset) ? raw.preset : 'custom';
@@ -54,16 +58,16 @@ export function splitWarnings(split, { trainingDays = 7 } = {}) {
   const days = split?.days || [];
   const train = days.filter((x) => !x.rest);
   const out = [];
-  if (!train.length) return ['Add at least one training day.'];
-  if (train.length > trainingDays) out.push(`${train.length} gym days, but only ${trainingDays} training days a week. The coach will fit what it can.`);
-  train.forEach((x) => { if (!x.groups.length) out.push(`${x.label} has no muscle groups yet.`); });
+  if (!train.length) return [t('split.addDay')];
+  if (train.length > trainingDays) out.push(t('split.tooMany', { gym: train.length, days: trainingDays }));
+  train.forEach((x) => { if (!x.groups.length) out.push(t('split.noGroups', { label: x.label })); });
   const hit = new Set(train.flatMap((x) => x.groups));
   const missing = hit.has('Full body') ? [] : MAJOR.filter((m) => !hit.has(m));
-  if (missing.length) out.push(`No day trains ${missing.join(', ')}.`);
+  if (missing.length) out.push(t('split.missing', { list: missing.map(muscleLabel).join(', ') }));
   for (let i = 1; i < days.length; i++) {
     if (days[i].rest || days[i - 1].rest) continue;
     const both = days[i].groups.filter((g) => g !== 'Full body' && g !== 'Abs' && days[i - 1].groups.includes(g));
-    if (both.length) out.push(`${days[i - 1].label} and ${days[i].label} both train ${both.join(', ')} on back-to-back days.`);
+    if (both.length) out.push(t('split.backToBack', { a: days[i - 1].label, b: days[i].label, list: both.map(muscleLabel).join(', ') }));
   }
   return out;
 }
@@ -89,8 +93,8 @@ const ITEM = /^(.*?[a-z].*?)\s+(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*[-–]\s*\d{1,3
 export function itemsFromNotes(notes) {
   const m = MAIN.exec(String(notes || ''));
   if (!m) return [];
-  return m[1].split(/\s*[,;]\s*|\n+/).map((t) => t.trim()).filter(Boolean).map((t) => {
-    const hit = ITEM.exec(t);
+  return m[1].split(/\s*[,;]\s*|\n+/).map((x) => x.trim()).filter(Boolean).map((item) => {
+    const hit = ITEM.exec(item);
     if (!hit) return null;
     const [, name, sets, reps, rest] = hit;
     const per = /\b(each|per)\s+(leg|side|arm)\b/i.exec(rest);

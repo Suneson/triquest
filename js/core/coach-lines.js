@@ -4,6 +4,7 @@
 // locales under coach.*; this file only decides which line fits.
 
 import { t, tList } from './i18n.js';
+import { planTitle } from './plan-i18n.js';
 
 const ZONES = [1, 2, 3, 4, 5];
 const INTENSITY_KEYS = ['easy', 'steady', 'moderate', 'threshold', 'quality', 'vo2', 'race'];
@@ -34,7 +35,7 @@ const pick = (list, seed) => list[[...String(seed)].reduce((a, c) => a + c.charC
  */
 export function raceOn(workouts = [], events = [], iso) {
   const w = workouts.find((x) => x.date === iso && x.isRace);
-  if (w) return { title: cleanRaceTitle(w.title), type: w.type || 'other', done: !!w.completed };
+  if (w) return { title: planTitle(cleanRaceTitle(w.title)), type: w.type || 'other', done: !!w.completed };
   const e = events.find((x) => x?.date === iso);
   return e ? { title: cleanRaceTitle(e.title), type: e.type || 'other', done: false } : null;
 }
@@ -57,7 +58,7 @@ export function sessionLine(w) {
   if (w.completed) {
     return w.strava_activity_id || w.source === 'strava' ? t('coach.verified') : t('coach.markedDone');
   }
-  if (w.isRace) return raceLine({ title: cleanRaceTitle(w.title), type: w.type }, { seed: w.date });
+  if (w.isRace) return raceLine({ title: planTitle(cleanRaceTitle(w.title)), type: w.type }, { seed: w.date });
   const open = opener(w.type);
   const main = mainSet(w.notes).replace(/[.;,\s]+$/, '');
   if (main) return t('coach.mainSet', { opener: open, main: clip(main) });

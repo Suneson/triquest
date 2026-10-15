@@ -5,6 +5,8 @@
 // poseKeyFor(name) maps a free-text exercise name to the closest pose.
 // poseSvg(key) returns a full <svg> string. cuesFor(name) returns coaching cues.
 
+import { tList, has } from './i18n.js';
+
 // Inner SVG markup per pose. viewBox is 0 0 120 100 for all of them.
 const P = {
   'back-squat': `
@@ -205,8 +207,16 @@ const CUES = {
   fallback: ['Control the eccentric', 'Full range of motion', 'Log weight + RPE'],
 };
 
+// pose keys that are library exercises under another id
+const LIB_ID = { 'db-bench-press': 'dumbbell-bench-press', 'seated-row': 'seated-cable-row' };
+
+/** Cues in the active language (library exercises use their own, the rest pose.*). */
 export function cuesFor(name) {
-  return CUES[poseKeyFor(name)] || CUES.fallback;
+  const key = CUES[poseKeyFor(name)] ? poseKeyFor(name) : 'fallback';
+  const lib = `ex.${LIB_ID[key] || key}.cues`;
+  if (has(lib)) return tList(lib);
+  if (has(`pose.${key}`)) return tList(`pose.${key}`);
+  return CUES[key];
 }
 
 export const ALL_POSE_KEYS = Object.keys(P);

@@ -2,6 +2,7 @@
 // Function (which holds the Gemini key and inserts into the user's calendar).
 import { client } from './auth.js';
 import { functionsBaseUrl } from './config.js';
+import { t } from '../core/i18n.js';
 
 /** Compact summary of the user's recent (Strava-verified) training. */
 export function stravaSummary(workouts) {
@@ -16,10 +17,19 @@ export function stravaSummary(workouts) {
     }));
 }
 
+// the function's errors are English keys; show them in the active language
+// i18n-ignore-start (the server's messages, matched as keys)
+const SERVER_ERRORS = {
+  'AI coach unavailable': 'ai.unavailable', 'AI returned invalid JSON': 'ai.bad',
+  'AI returned no sessions': 'ai.bad', 'no valid sessions': 'ai.bad',
+};
+// i18n-ignore-end
+const serverError = (e) => (SERVER_ERRORS[e] ? t(SERVER_ERRORS[e]) : (e || t('ai.failed')));
+
 export async function generateAIWorkoutPlan(wizardData, stravaHistory) {
   const c = await client();
   const { data: { session } } = await c.auth.getSession();
-  if (!session) throw new Error('Sign in to generate a plan.');
+  if (!session) throw new Error(t('ob.signIn'));
   const res = await fetch(`${functionsBaseUrl()}/ai-plan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -30,7 +40,7 @@ export async function generateAIWorkoutPlan(wizardData, stravaHistory) {
     // Keep the server's detail — a dead model id or a missing key is otherwise
     // indistinguishable from "the wizard is broken".
     const detail = json.detail ? ` (${String(json.detail).slice(0, 200)})` : '';
-    throw new Error(`${json.error || 'AI plan generation failed.'}${detail}`);
+    throw new Error(`${serverError(json.error)}${detail}`);
   }
   return json; // { inserted: N }
 }

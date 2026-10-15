@@ -6,6 +6,7 @@
 // Phase 2 swaps in SupabaseStore on sign-in without changing this surface.
 
 import { LocalStore, freshState, migrate } from './stores/local-store.js';
+import { t } from '../core/i18n.js';
 
 let activeStore = new LocalStore();
 
@@ -121,7 +122,7 @@ export function duplicateWorkout(id) {
   if (!w) return null;
   const copy = structuredClone(w);
   copy.id = newId();
-  copy.title = `${w.title} (copy)`;
+  copy.title = t('ed.copy', { title: w.title });
   copy.completed = false;
   copy.completedAt = null;
   copy.seeded = false;

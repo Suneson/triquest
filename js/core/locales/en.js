@@ -5,6 +5,7 @@
 const en = {};
 
 en.app = {
+  "storageBlocked": "Storage is blocked (private mode?). Your data is kept in memory only and will be lost when you close this tab.",
   "title": "MOSKE — Triathlon Training Tracker",
   "description": "MOSKE — a gamified, offline-first triathlon training tracker.",
   "noscript": "MOSKE needs JavaScript enabled."
@@ -1053,6 +1054,822 @@ en.equip = {
   "Trap bar": "Trap bar",
   "Bodyweight": "Bodyweight",
   "Other": "Other"
+};
+
+en.gym = {
+  "kind": {
+    "warmup": "Warm-up",
+    "work": "Work",
+    "drop": "Drop",
+    "failure": "Failure"
+  },
+  "letter": {
+    "warmup": "W",
+    "drop": "D",
+    "failure": "F"
+  },
+  "rest": "Rest {time}",
+  "restOff": "Rest off",
+  "logged": "Logged",
+  "restLeft": "Rest {time} left",
+  "restK": "Rest",
+  "less15": "15 seconds less",
+  "more15": "15 seconds more",
+  "skip": "Skip",
+  "time": "Time",
+  "pressStart": "press Start when you’re ready",
+  "start": "Start",
+  "save": "Save",
+  "finish": "Finish",
+  "exercises": "Exercises",
+  "noExercises": "No exercises yet. Add some, or start from a routine in Settings.",
+  "addExercises": "Add exercises",
+  "saveRoutine": "Save as routine",
+  "menu": {
+    "up": "Move up",
+    "down": "Move down",
+    "link": "Superset with next",
+    "unlink": "Remove from superset",
+    "replace": "Replace exercise",
+    "remove": "Remove exercise"
+  },
+  "more": "More",
+  "moreAria": "{name}: more",
+  "colSet": "Set",
+  "colLast": "Last",
+  "colTime": "Time",
+  "colKg": "Kg",
+  "colPlusKg": "+Kg",
+  "colReps": "Reps",
+  "done": "Done",
+  "supersetAria": "Superset {letter}: {name}",
+  "superset": "Superset {letter}",
+  "historyAria": "{name}: history and records",
+  "dragAria": "Drag to reorder {name}",
+  "dragTitle": "Drag to reorder",
+  "restBetween": "Rest between sets",
+  "note": "Note",
+  "notePh": "A note for this exercise",
+  "noteAria": "Note for {name}",
+  "howTo": "How to",
+  "addSet": "Add set",
+  "setName": "{kind} set {label}",
+  "useLast": "Use last time: {set}",
+  "lastPrefix": "Last ",
+  "changeType": "{name}. Change type or remove",
+  "removeSet": "Remove set",
+  "clockAria": {
+    "start": "Start the clock for {name}",
+    "stop": "Stop the clock for {name}"
+  },
+  "seconds": "seconds",
+  "addedKilos": "added kilos",
+  "kilos": "kilos",
+  "reps": "reps",
+  "setDone": "{name} done",
+  "setDonePR": "{name} done, personal record",
+  "pr": "PR",
+  "sumSets": "Sets",
+  "sumVolume": "Volume",
+  "sumTime": "Time",
+  "savedEarned": "Saved. This session earned",
+  "backToLog": "Back to the log",
+  "routineTitle": "Save as routine",
+  "routineLabel": "Routine name",
+  "routineSubmit": "Save routine",
+  "routineSaved": "Saved “{name}”. Start it from Settings or the + button.",
+  "tickFirst": "Tick at least one working set first.",
+  "saved": "Saved",
+  "flyChip": "+1 set",
+  "replaceTitle": "Replace exercise",
+  "removeConfirm": {
+    "one": "Remove {name}? Its {n} logged set goes too.",
+    "other": "Remove {name}? Its {n} logged sets go too."
+  }
+};
+
+en.pose = {
+  "run": [
+    "Tall posture, relaxed shoulders",
+    "Quick light cadence (~180 spm)",
+    "Land under your hips"
+  ],
+  "bike": [
+    "Smooth, round pedal stroke",
+    "Relaxed grip and shoulders",
+    "Hold target RPE / HR"
+  ],
+  "swim": [
+    "Long reach, high elbow catch",
+    "Rotate from the hips",
+    "Exhale steadily underwater"
+  ],
+  "mobility": [
+    "Move slow and controlled",
+    "Breathe into each position",
+    "Never force a stretch"
+  ],
+  "fallback": [
+    "Control the eccentric",
+    "Full range of motion",
+    "Log weight + RPE"
+  ]
+};
+
+en.stats = {
+  "heaviest": "Heaviest: {v} kg",
+  "e1rm": "Est. 1RM: {v} kg",
+  "mostReps": "Most reps: {v}",
+  "longest": "Longest: {v} s",
+  "subE1rm": "est. 1RM",
+  "subHeaviest": "heaviest",
+  "subLongest": "longest",
+  "subReps": "most reps",
+  "repsN": "{n} reps",
+  "noSets": "No gym sets logged in the last four weeks.",
+  "balance": "{total} working sets in four weeks. {muscle} got the most ({pct}%).",
+  "noneFor": "None for {list}.",
+  "groupsNoSets": "{n} muscle groups had no sets.",
+  "or": "or"
+};
+
+en.split = {
+  "preset": {
+    "full3": "Full body ×3",
+    "upper-lower": "Upper / Lower",
+    "ppl": "Push / Pull / Legs",
+    "arnold": "Arnold split",
+    "bro5": "Bro split ×5",
+    "ppl6": "Push / Pull / Legs ×6"
+  },
+  "day": {
+    "fullA": "Full body A",
+    "fullB": "Full body B",
+    "fullC": "Full body C",
+    "upper": "Upper",
+    "lower": "Lower",
+    "push": "Push",
+    "pull": "Pull",
+    "legs": "Legs",
+    "chestBack": "Chest & back",
+    "shouldersArms": "Shoulders & arms",
+    "chest": "Chest",
+    "back": "Back",
+    "shoulders": "Shoulders",
+    "arms": "Arms"
+  },
+  "rest": "Rest",
+  "dayN": "Day {n}",
+  "addDay": "Add at least one training day.",
+  "tooMany": "{gym} gym days, but only {days} training days a week. The coach will fit what it can.",
+  "noGroups": "{label} has no muscle groups yet.",
+  "missing": "No day trains {list}.",
+  "backToBack": "{a} and {b} both train {list} on back-to-back days."
+};
+
+en.gh = {
+  "est1rm": "Estimated 1RM",
+  "longestSet": "Longest set",
+  "mostReps": "Most reps",
+  "chartAria": "From {a} on {da} to {b} on {db}",
+  "exercise": "Exercise",
+  "tE1rm": "Est. 1RM",
+  "tHeaviest": "Heaviest",
+  "tMostReps": "Most reps",
+  "tLongest": "Longest",
+  "tBest": "Best session",
+  "volumeOn": "volume · {date}",
+  "historyAria": "{name} history",
+  "history": "History",
+  "e1rmNote": "Est. 1RM is an estimate from your best set (Epley formula, sets of {n} reps or fewer), not a lift you did.",
+  "sessions": "Sessions",
+  "noTicked": "No ticked sets for this exercise yet. Its records and chart start with your first logged session.",
+  "records": "Records",
+  "recordsEmpty": "Your best lifts land here once you’ve logged a gym session.",
+  "plaqueAria": "{name}: {value} {sub}. Open history",
+  "weeklyAria": "Working sets per week: {vals}",
+  "weeklyAriaM": "Working sets per week for {muscle}: {vals}",
+  "gym": "Gym",
+  "gymEmpty": "Log a gym session and your weekly volume and muscle balance show up here.",
+  "gymVolume": "Gym volume",
+  "setsThisWeek": " sets this week",
+  "muscle": "Muscle",
+  "allMuscles": "All muscles",
+  "perWeek": "Working sets per week · {from} – this week",
+  "balance": "Muscle balance",
+  "last4": "last 4 weeks"
+};
+
+en.pk = {
+  "kind": {
+    "weight_reps": "Weight and reps",
+    "bodyweight": "Bodyweight reps",
+    "time": "Time"
+  },
+  "addExercises": "Add exercises",
+  "yours": " · yours",
+  "nothing": "Nothing matches. Try fewer letters, clear a filter, or create it.",
+  "recent": "Recent",
+  "create": "Create",
+  "add": "Add",
+  "addN": "Add {n}",
+  "name": "Name",
+  "equipment": "Equipment",
+  "mainMuscle": "Main muscle",
+  "loggedAs": "Logged as",
+  "back": "Back",
+  "saveExercise": "Save exercise",
+  "createExercise": "Create exercise",
+  "search": "Search exercise",
+  "allEquipment": "All equipment",
+  "allMuscles": "All muscles",
+  "muscle": "Muscle",
+  "save": "Save",
+  "errName": "Give it a name.",
+  "errExists": "That exercise already exists.",
+  "routine": "Routine"
+};
+
+en.ed = {
+  "segKind": {
+    "warmup": "Warm-up",
+    "work": "Work",
+    "rest": "Rest / float",
+    "cooldown": "Cool-down"
+  },
+  "label": "Label",
+  "min": "min",
+  "removeSegment": "Remove segment",
+  "exercise": "Exercise",
+  "superset": "Superset {letter}",
+  "setsAria": "{name} sets",
+  "repsAria": "{name} reps",
+  "secondsAria": "{name} seconds",
+  "sets": " sets",
+  "reps": "reps",
+  "s": "s",
+  "moveUp": "Move {name} up",
+  "moveDown": "Move {name} down",
+  "drag": "Drag to reorder {name}",
+  "remove": "Remove {name}",
+  "item": "Item",
+  "removeItem": "Remove item",
+  "newSession": "New session",
+  "editSession": "Edit session",
+  "startRoutine": "Start a routine",
+  "title": "Title",
+  "titlePh": "e.g. Long ride Z2",
+  "type": "Type",
+  "intensity": "Intensity",
+  "date": "Date",
+  "distance": "Distance (km, optional)",
+  "duration": "Duration: {d}",
+  "notes": "Notes / plan",
+  "notesPh": "Targets, paces, reminders…",
+  "intervals": "Interval structure",
+  "noSegments": "No segments. Add work/rest blocks to draw the interval chart.",
+  "addSegment": "Add segment",
+  "gymExercises": "Gym exercises",
+  "noExercises": "No exercises.",
+  "addExercises": "Add exercises",
+  "packing": "Packing list",
+  "noItems": "No items.",
+  "addItem": "Add item",
+  "delete": "Delete",
+  "duplicate": "Duplicate",
+  "cancel": "Cancel",
+  "save": "Save",
+  "newSeg": "Work",
+  "deleteConfirm": "Delete this session? This cannot be undone.",
+  "deleted": "Session deleted",
+  "duplicated": "Session duplicated",
+  "session": "Session",
+  "questAccepted": "Quest accepted",
+  "saved": "Session saved",
+  "copy": "{title} (copy)"
+};
+
+en.ob = {
+  "eco": {
+    "endurance": {
+      "name": "Endurance / Triathlon",
+      "sub": "Swim, bike & run progression"
+    },
+    "hyrox": {
+      "name": "HYROX",
+      "sub": "Functional hybrid power + aerobic pacing"
+    },
+    "hybrid": {
+      "name": "Hybrid Athlete",
+      "sub": "Weight-room strength + cardio disciplines"
+    },
+    "gym": {
+      "name": "Only Gym / Strength",
+      "sub": "Weight training, splits & conditioning"
+    }
+  },
+  "athlete": {
+    "tri": {
+      "name": "Triathlete",
+      "sub": "Swim · bike · run"
+    },
+    "run": {
+      "name": "Runner",
+      "sub": "5k to ultra-marathon"
+    },
+    "bike": {
+      "name": "Cyclist",
+      "sub": "Road, gravel & endurance"
+    },
+    "swim": {
+      "name": "Swimmer",
+      "sub": "Pool & open water"
+    }
+  },
+  "goal": {
+    "sprint": {
+      "name": "Sprint Triathlon",
+      "sub": "750m swim · 20k bike · 5k run"
+    },
+    "olympic": {
+      "name": "Olympic Triathlon",
+      "sub": "1.5k swim · 40k bike · 10k run"
+    },
+    "half": {
+      "name": "70.3 · Half-Ironman",
+      "sub": "1.9k swim · 90k bike · 21.1k run"
+    },
+    "full": {
+      "name": "140.6 · Full Ironman",
+      "sub": "3.8k swim · 180k bike · 42.2k run"
+    },
+    "5k": {
+      "name": "5k · 10k",
+      "sub": "Speed & threshold development"
+    },
+    "half-mar": {
+      "name": "Half Marathon",
+      "sub": "21.1k endurance build"
+    },
+    "marathon": {
+      "name": "Marathon",
+      "sub": "42.2k full distance"
+    },
+    "ultra": {
+      "name": "Ultra / Trail",
+      "sub": "50k+ time-on-feet focus"
+    },
+    "fondo": {
+      "name": "Gran Fondo",
+      "sub": "100–160k endurance event"
+    },
+    "century": {
+      "name": "Century Ride",
+      "sub": "160k / 100 miles"
+    },
+    "stage": {
+      "name": "Stage Race / Tour",
+      "sub": "Multi-day back-to-back load"
+    },
+    "ftp": {
+      "name": "FTP Builder",
+      "sub": "No race — raise raw power"
+    },
+    "ow15": {
+      "name": "Open Water 1.5k",
+      "sub": "First open-water distance"
+    },
+    "ow3k": {
+      "name": "Open Water 3k+",
+      "sub": "Marathon-swim endurance"
+    },
+    "meet": {
+      "name": "Pool Meet",
+      "sub": "100–400m race pace"
+    },
+    "fitness": {
+      "name": "General Fitness",
+      "sub": "Technique & aerobic base"
+    }
+  },
+  "gymgoal": {
+    "strength": {
+      "name": "Maximum Strength",
+      "sub": "Heavy compound lifts, low reps"
+    },
+    "hypertrophy": {
+      "name": "Hypertrophy / Muscle Building",
+      "sub": "Volume-driven splits"
+    },
+    "conditioning": {
+      "name": "Functional Conditioning",
+      "sub": "Engine work, circuits, carries"
+    },
+    "support": {
+      "name": "Endurance & Injury Prevention",
+      "sub": "Strength that supports cardio sport"
+    }
+  },
+  "hyb": {
+    "Gym / Strength": "Gym / Strength",
+    "Running": "Running",
+    "Cycling": "Cycling",
+    "Swimming": "Swimming"
+  },
+  "gen": [
+    "AI Coach compiling multi-sport macrocycle…",
+    "Balancing periodization curves…",
+    "Calculating intensity distribution…",
+    "Scaling strength & watt targets to your baselines…",
+    "Validating progressive recovery phases…"
+  ],
+  "qEco": "Select your primary training ecosystem:",
+  "qAthlete": "What kind of endurance athlete are you?",
+  "qGoal": "What is your primary distance goal?",
+  "qHybrid": "Build your hybrid mix.",
+  "hybridSub": "Pick every discipline your week should include",
+  "qGymGoal": "What is your primary weight room goal?",
+  "qHyrox": "Your HYROX pacing & functional baselines.",
+  "runPace1k": "Current run pace (1k repeats)",
+  "runPacePh": "4:45 min/km",
+  "sled": "Sled push / pull comfort",
+  "sledPh": "e.g. 125 kg push, steady",
+  "wallball": "Wall ball threshold (unbroken reps)",
+  "wallballPh": "e.g. 40 reps @ 6 kg",
+  "qRace": "When is your primary A-Race?",
+  "raceDate": "Race date",
+  "raceName": "Race name",
+  "raceNamePhHyrox": "HYROX Stockholm",
+  "raceNamePh": "Ironman 70.3 Marbella",
+  "finish": "Just finish comfortably",
+  "pr": "Execute a PR / time goal",
+  "qBaselines": "Set your performance baselines.",
+  "ftp": "Cycling FTP (W)",
+  "runThreshold": "Run threshold pace",
+  "runThresholdPh": "4:30 min/km",
+  "swimPace": "Swim 100m pace",
+  "swimPacePh": "1:45 / 100m",
+  "rhr": "Resting HR",
+  "maxhr": "Max HR",
+  "optional": "optional",
+  "qWeek": "What does your training week look like?",
+  "longDays": "Preferred long-session days",
+  "restDays": "Absolute rest days",
+  "capacity": "Weekly training capacity",
+  "perWeek": " h / week",
+  "qAnalysis": "Analyzing your athletic profile with Strava",
+  "hSessions": "Sessions · last 4 weeks",
+  "hVolume": "Avg weekly volume",
+  "hBike": "Weekly bike",
+  "hRun": "Weekly run",
+  "hSwim": "Weekly swim",
+  "hVerified": "Strava-verified",
+  "gap": "Your target of <b>{target} h/week</b> is well above your recent ~{recent} h/week. The plan will apply an injury-prevention ramp: volume builds at most 10–15% per week from your real baseline.",
+  "match": "Your target of <b>{target} h/week</b> matches your recent training. The plan builds straight from your baseline.",
+  "noHistory": "No recent history found. The plan starts from a conservative base and builds gradually.",
+  "restDay": "Rest day",
+  "moveHere": ": tap to move {group} here",
+  "dayName": "Name of day {n}",
+  "removeDay": "Remove {label}",
+  "addGroup": "Add a muscle group to {label}",
+  "add": "Add",
+  "qSplit": "Build your gym split.",
+  "splitSub": "Start from a preset, then shape it. Tap a muscle, then tap another day to move it, or drag it.",
+  "selectedAria": "{group} selected",
+  "selected": "<b>{group}</b> selected",
+  "moveBefore": "Move {group} to the day before",
+  "moveAfter": "Move {group} to the day after",
+  "remove": "Remove",
+  "trainingDay": "Training day",
+  "restDayBtn": "Rest day",
+  "aria": "AI coach setup",
+  "back": "Back",
+  "stepAnalysis": "AI Coach · Strava analysis",
+  "step": "AI Coach · Step {n} of {total}",
+  "generate": "Generate tailored plan",
+  "continue": "Continue",
+  "genAria": "Generating plan",
+  "genSub": "This takes a few seconds. Your plan is being tailored.",
+  "added": {
+    "one": "AI Coach added {n} tailored session to your calendar",
+    "other": "AI Coach added {n} tailored sessions to your calendar"
+  },
+  "failed": "Plan generation failed. Try again.",
+  "pickEco": "Pick your training ecosystem first",
+  "pickAthlete": "Pick your discipline first",
+  "pickGoal": "Pick your distance goal first",
+  "pickHybrid": "Pick at least one discipline",
+  "pickGymGoal": "Pick your weight room goal first",
+  "signIn": "Sign in to generate a plan."
+};
+
+en.chat = {
+  "chat": "Chat",
+  "signInText": "Sign in to add friends and message them. Your training stays private; only what you send is shared.",
+  "signIn": "Sign in",
+  "loading": "Loading your chats…",
+  "unreadN": "{n} unread",
+  "general": "General",
+  "direct": "Direct",
+  "more": "More",
+  "yourUsername": "Your username: {name}. Edit",
+  "notSet": "not set",
+  "setUsername": "Set your username",
+  "addFriend": "Add friend",
+  "request": "Request",
+  "wantsFriends": "{handle} wants to be friends",
+  "accept": "Accept",
+  "moreFor": "More for {name}",
+  "declineRequest": "Decline request",
+  "you": "You: ",
+  "sayHello": "Say hello",
+  "threadAria": "{name}",
+  "threadAriaUnread": {
+    "one": "{name}, {n} unread",
+    "other": "{name}, {n} unread"
+  },
+  "requested": "Requested",
+  "waitingFor": "Waiting for {who}",
+  "them": "them",
+  "cancelRequest": "Cancel request",
+  "noFriends": "No friends yet. Tap Add friend and type their username, or open an athlete on Ranks.",
+  "noMessages": "No messages yet. Say hello.",
+  "read": " · Read",
+  "backToChats": "Back to chats",
+  "viewProfileOf": "View {name}’s profile",
+  "friend": "Friend",
+  "moreOptions": "More options",
+  "viewProfile": "View profile",
+  "removeFriend": "Remove friend",
+  "messagePh": "Message {name}",
+  "message": "Message",
+  "send": "Send",
+  "theirUsername": "Their username",
+  "add": "Add",
+  "addHint": "Type their exact username, or tap an athlete on Ranks and add them from their profile.",
+  "usernameRule": "Usernames are 3–20 letters, numbers or _",
+  "nowFriendsWith": "You and {name} are friends",
+  "requestSent": "Request sent to @{name}",
+  "friendAdded": "Friend added",
+  "wentWrong": "Something went wrong",
+  "removeConfirm": "Remove {name} from your friends? You won’t be able to message each other.",
+  "usernamePrompt": "Your username (3–20 letters, numbers or _). Friends use it to find you.",
+  "nowAt": "You’re now @{name}",
+  "open": "Open",
+  "chatUnread": "Chat, {n} unread",
+  "notifications": "Notifications",
+  "notificationsNew": "Notifications, {n} new",
+  "friendRequests": "Friend requests",
+  "decline": "Decline {name}",
+  "updates": "Updates",
+  "nothingNew": "Nothing new. Friend requests and app news show up here.",
+  "notif": {
+    "accepted": "{name} accepted your friend request",
+    "request": "{name} wants to be friends"
+  },
+  "btn": {
+    "friends": "Message",
+    "incoming": "Accept request",
+    "outgoing": "Requested",
+    "none": "Add friend"
+  },
+  "nowFriends": "You’re now friends",
+  "requestSentShort": "Friend request sent"
+};
+
+en.room = {
+  "athlete": "Athlete",
+  "unblock": "Unblock {name}",
+  "report": "Report message",
+  "block": "Block {name}",
+  "removeMine": "Remove my message",
+  "removeAdmin": "Remove (admin)",
+  "more": "More",
+  "moreAria": "More for this message",
+  "removed": "Message removed",
+  "hidden": "Message hidden (you blocked {name})",
+  "sending": "Sending…",
+  "notSent": "Not sent.",
+  "retry": "Retry",
+  "discard": "Discard",
+  "openProfile": "{name}, open profile",
+  "loadingEarlier": "Loading earlier messages…",
+  "start": "This is the start of General. Be kind, keep it about training.",
+  "empty": "No messages yet. Say hello to everyone.",
+  "loading": "Loading General…",
+  "general": "General",
+  "loadFailed": "Couldn’t load General. {error}",
+  "tryAgain": "Try again",
+  "aria": "General chat",
+  "offline": "You’re offline. You can read; sending waits until you’re back.",
+  "ph": "Message everyone",
+  "phAria": "Message everyone in General",
+  "send": "Send",
+  "whatsWrong": "What’s wrong? (optional)",
+  "reportNote": "The owner of MOSKE reviews every report. The author isn’t told who reported it.",
+  "reportBtn": "Report",
+  "reported": "Reported. Thanks for keeping General friendly.",
+  "reportFailed": "Couldn’t report",
+  "blockConfirm": "Block {name}? Their messages will be hidden for you. They won’t be told.",
+  "blocked": "{name} is blocked",
+  "removeConfirm": "Remove this message for everyone?",
+  "wentWrong": "Something went wrong",
+  "roomFailed": "Couldn’t load the room",
+  "offlineSend": "You’re offline. Your message will need sending again once you’re back.",
+  "slowDown": "Slow down: at most 10 messages a minute.",
+  "slowDownShort": "Slow down: at most 10 a minute.",
+  "writeFirst": "Write something first.",
+  "tooLong": "Keep it under {n} characters."
+};
+
+en.auth = {
+  "writeError": "Couldn’t save that change to your account. It may reappear when you reload. {detail}",
+  "checkConnection": "Check your connection and try again.",
+  "signedInSynced": {
+    "one": "Signed in · synced {n} local session to your account",
+    "other": "Signed in · synced {n} local sessions to your account"
+  },
+  "signedInSyncing": "Signed in · your data is now syncing",
+  "setPassword": "Set a new password",
+  "newPassword": "New password",
+  "confirmPassword": "Confirm new password",
+  "updatePassword": "Update password",
+  "noMatch": "Passwords don’t match.",
+  "updated": "Password updated. You’re signed in.",
+  "updateFailed": "Could not update password",
+  "signIn": "Sign in",
+  "close": "Close",
+  "title": "Sign in to sync",
+  "sub": "Your training, on every device.",
+  "email": "Email",
+  "password": "Password",
+  "create": "Create account",
+  "forgot": "Forgot password?",
+  "magic": "Email me a magic link",
+  "emailFirst": "Type your email above first.",
+  "magicSent": "Check your email for the magic link.",
+  "magicFailed": "Could not send link",
+  "resetSent": "Check your email for a password-reset link.",
+  "resetFailed": "Could not send reset email",
+  "created": "Account created. Confirm your email, then sign in.",
+  "failed": "Sign-in failed",
+  "err": {
+    "invalid": "Wrong email or password.",
+    "unconfirmed": "Confirm your email first, then sign in.",
+    "exists": "There’s already an account with that email. Sign in instead.",
+    "short": "The password needs at least 6 characters."
+  }
+};
+
+en.lb = {
+  "daysLeft": {
+    "one": "<b>{n}</b> day left in season {s}",
+    "other": "<b>{n}</b> days left in season {s}"
+  },
+  "title": "Leaderboards",
+  "monthly": "Monthly season",
+  "prize": "First place wins a 20% discount on your next MOSKE order.",
+  "season": "Season",
+  "allTime": "All-time",
+  "loading": "Loading the leaderboard…",
+  "ranks": "Ranks",
+  "noSync": "Leaderboards need cloud sync configured.",
+  "empty": "No ranked athletes yet. Complete a verified workout to appear here.",
+  "failed": "Couldn’t load the leaderboard. Check your connection and try again.",
+  "up": "Up {n} since your last visit",
+  "down": "Down {n} since your last visit",
+  "new": "New",
+  "same": "Same rank as your last visit",
+  "top3": "Top three",
+  "podAria": "#{rank} {name}, {xp} XP",
+  "toPass": "<b class=\"lb-gap\">{xp} XP</b> to pass {name}",
+  "behind": "{name} is <b class=\"lb-gap\">{xp} XP</b> behind you",
+  "rival": "Your rival",
+  "chaser": "Your chaser",
+  "you": "You #{rank}"
+};
+
+en.pp = {
+  "ms": {
+    "first": "First Steps",
+    "tenK": "First 10K",
+    "centurion": "Centurion",
+    "half": "Half Century",
+    "king": "Consistency King",
+    "beast": "Fortnight Beast"
+  },
+  "profile": "Profile",
+  "athlete": "Athlete",
+  "rank": "Season rank #{rank} · ",
+  "level": "Level {n}",
+  "workouts": "Workouts",
+  "distance": "Distance",
+  "streak": "Streak",
+  "hours": "Hours",
+  "achievements": "Achievements",
+  "failed": "Couldn’t load this profile.",
+  "loading": "Loading profile…"
+};
+
+en.misc = {
+  "week": "Week path",
+  "stopLabel": "{day}: {what}",
+  "restLow": "rest",
+  "nothing": "nothing planned",
+  "and": " and ",
+  "verified": ", verified",
+  "today": ", today",
+  "gateAria": "{title} in {n} days",
+  "daysShort": "{n}d",
+  "todayLow": "today",
+  "dShort": "{n} d",
+  "weekAria": "Week path: {flags} of {planned} days verified{ev}. Open the season path",
+  "weekAriaEv": ", {title} in {n} days",
+  "weekN": "Week {n}",
+  "now": "Now",
+  "sessionsVerified": "{done} of {planned} sessions verified",
+  "sessionsWord": " sessions · ",
+  "hPlanned": " h planned",
+  "next8": "Next 8 weeks",
+  "seasonPath": "Season path",
+  "addRace": "Add a race in Settings and the path runs to its finish gate.",
+  "shop": "Shop",
+  "loadingProducts": "Loading products…",
+  "noProducts": "No products in this drop yet.",
+  "shopFailed": "Couldn’t load the shop. Check your connection and try again.",
+  "shareCard": "Share card",
+  "drawing": "Drawing your card…",
+  "drawFailed": "Couldn’t draw the card. Try again in a moment.",
+  "shareAlt": "Your share card: {title}",
+  "sharePost": "Share post",
+  "shareStory": "Share story",
+  "savePost": "Save post",
+  "saveStory": "Save story",
+  "sizes": "Post is 1080 × 1350, story is 1080 × 1920.",
+  "session": "Session",
+  "shareText": "{title} · done",
+  "shareFailed": "Sharing didn’t work here. Try Save instead.",
+  "trainedWith": "TRAINED WITH MOSKE",
+  "refreshing": "Refreshing…",
+  "upToDate": "Up to date",
+  "refreshFailed": "Couldn’t refresh",
+  "demoAthlete": "Demo athlete",
+  "wentWrong": "Something went wrong",
+  "thatsYou": "That’s you.",
+  "noAthlete": "No athlete is called @{name}.",
+  "friendsOnly": "You can only message friends.",
+  "signInFirst": "Sign in first",
+  "syncFailed": "Sync failed ({status})",
+  "stravaActivity": "Strava activity"
+};
+
+en.pace = {
+  "run": {
+    "easy": "~5:05–5:30 /km",
+    "steady": "~5:00 /km",
+    "moderate": "MP ~4:40–4:55 /km",
+    "threshold": "~4:10–4:25 /km (RPE 6–7)",
+    "quality": "hard reps, RPE 7–8",
+    "vo2": "RPE 8–9",
+    "race": "race pace"
+  },
+  "bike": {
+    "easy": "Z2 recovery, RPE 3",
+    "steady": "Z2 conversational, RPE 3–4",
+    "threshold": "2–3×12–15′, RPE 6–7",
+    "quality": "RPE 7",
+    "vo2": "5×3′, RPE 8–9",
+    "race": "race effort"
+  },
+  "swim": {
+    "easy": "easy aerobic",
+    "steady": "aerobic technique"
+  },
+  "brick": {
+    "race": "70.3 race pace off the bike"
+  }
+};
+
+en.sheet = {
+  "back": "Back",
+  "close": "Close"
+};
+
+en.rt = {
+  "exercises": {
+    "one": "{n} exercise",
+    "other": "{n} exercises"
+  },
+  "start": "Start",
+  "delete": "Delete routine {name}",
+  "newRecord": "New record",
+  "event": "Event"
+};
+
+en.ai = {
+  "failed": "AI plan generation failed.",
+  "unavailable": "The AI coach is unavailable right now.",
+  "bad": "The AI coach sent back a plan the app couldn’t read. Try again."
 };
 
 export default en;

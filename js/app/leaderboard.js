@@ -9,6 +9,7 @@ import { svg } from '../core/icons.js';
 import { isDemo, demoLeaderboard, DEMO_ME } from './demo.js';
 import { podium, rankDelta, rivalOf } from '../core/ranks.js';
 import { meter } from './ui.js';
+import { t, fmtNum } from '../core/i18n.js';
 
 const SEASON_EPOCH = new Date('2026-01-01T00:00:00'); // monthly seasons
 const SEASON_MONTHS = 1;
@@ -25,12 +26,12 @@ export function seasonInfo(todayIso) {
 export function leaderboardShell(view, today) {
   const s = seasonInfo(today);
   const countdown = view === 'season'
-    ? `<div class="lb-countdown">${svg('clock')} <b>${s.daysRemaining}</b> days left in season ${s.number}</div>` : '';
-  return `<div class="day-header"><h2>Leaderboards</h2></div>
-    <div class="lb-banner">${svg('trophy')}<div><b>Monthly season</b>First place wins a 20% discount on your next MOSKE order.</div></div>
+    ? `<div class="lb-countdown">${svg('clock')} ${t('lb.daysLeft', { n: s.daysRemaining, s: s.number })}</div>` : '';
+  return `<div class="day-header"><h2>${t('lb.title')}</h2></div>
+    <div class="lb-banner">${svg('trophy')}<div><b>${t('lb.monthly')}</b>${t('lb.prize')}</div></div>
     <div class="lb-toggle">
-      <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">Season</button>
-      <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">All-time</button>
+      <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">${t('lb.season')}</button>
+      <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">${t('lb.allTime')}</button>
     </div>${countdown}
     <div id="lb-body" aria-busy="true">${skeletonRows()}</div>`;
 }
@@ -51,14 +52,14 @@ function skeletonRows(n = 4) {
       <span class="lb-id"><b class="lb-name"><i class="sk-line" style="width:${[62, 48, 70, 55, 66, 44][i % 6]}%"></i></b>
         <small class="lb-meta"><i class="sk-line" style="width:40%"></i></small></span>
     </li>`;
-  return `<span class="sr">Loading the leaderboard…</span><div class="lb-podium" aria-hidden="true">${pod(2, 0)}${pod(1, 1)}${pod(3, 2)}</div>${rival}<ul class="lb-list">${Array.from({ length: n }, (_, i) => row(i + 4)).join('')}</ul>`;
+  return `<span class="sr">${t('lb.loading')}</span><div class="lb-podium" aria-hidden="true">${pod(2, 0)}${pod(1, 1)}${pod(3, 2)}</div>${rival}<ul class="lb-list">${Array.from({ length: n }, (_, i) => row(i + 4)).join('')}</ul>`;
 }
 
 export async function loadLeaderboard(view, today) {
   const body = document.getElementById('lb-body');
   if (!body) return;
   const done = () => body.removeAttribute('aria-busy');
-  if (!SYNC_ENABLED && !isDemo()) { body.innerHTML = dialogue({ who: 'Ranks', icon: 'trophy', text: 'Leaderboards need cloud sync configured.', cls: 'empty-dlg' }); return; }
+  if (!SYNC_ENABLED && !isDemo()) { body.innerHTML = dialogue({ who: t('lb.ranks'), icon: 'trophy', text: t('lb.noSync'), cls: 'empty-dlg' }); return; }
   try {
     let data;
     if (isDemo()) {
@@ -78,14 +79,14 @@ export async function loadLeaderboard(view, today) {
     if (myRank) rememberRank(view, me, myRank);
     body.innerHTML = rows.length
       ? podiumBlock(rows, me) + rivalBlock(rows, me, delta) + list(rows.slice(3), me, delta)
-      : dialogue({ who: 'Ranks', icon: 'trophy', text: 'No ranked athletes yet. Complete a verified workout to appear here.', cls: 'empty-dlg' });
+      : dialogue({ who: t('lb.ranks'), icon: 'trophy', text: t('lb.empty'), cls: 'empty-dlg' });
   } catch (e) {
-    body.innerHTML = dialogue({ who: 'Ranks', icon: 'trophy', text: 'Couldn’t load the leaderboard. Check your connection and try again.', cls: 'empty-dlg' });
+    body.innerHTML = dialogue({ who: t('lb.ranks'), icon: 'trophy', text: t('lb.failed'), cls: 'empty-dlg' });
   }
   done();
 }
 
-const xp = (n) => Number(n).toLocaleString();
+const xp = (n) => fmtNum(n);
 
 // Last-loaded athletes by id — lets the profile view reuse avatar/xp/rank
 // without stuffing large base64 photos into data attributes.
@@ -94,12 +95,12 @@ export const athleteByUid = (uid) => _athletes.get(uid) || null;
 
 // Dynamic per-athlete discipline indicators: only the sports they actually log.
 const SPORT_ORDER = ['run', 'bike', 'swim'];
-const SPORT_TITLE = { run: 'Running', bike: 'Cycling', swim: 'Swimming' };
+const SPORT_TITLE = { run: 'running', bike: 'cycling', swim: 'swimming' }; // keys under sport.*
 function sportDots(sports) {
-  const active = SPORT_ORDER.filter((t) => (sports || []).includes(t));
+  const active = SPORT_ORDER.filter((s) => (sports || []).includes(s));
   if (!active.length) return '';
-  return `<span class="lb-sports">${active.map((t) =>
-    `<i class="lbs lbs-${t}" title="${SPORT_TITLE[t]}"></i>`).join('')}</span>`;
+  return `<span class="lb-sports">${active.map((s) =>
+    `<i class="lbs lbs-${s}" title="${t(`sport.${SPORT_TITLE[s]}`)}"></i>`).join('')}</span>`;
 }
 
 // ---- rank memory: "since my last visit" ----------------------------------------
@@ -127,18 +128,18 @@ const rowAttrs = (r) => `data-action="view-athlete-profile" data-uid="${esc(r.us
 /** ▲2 / ▼1 / NEW / — : movement since the last visit. */
 function deltaBadge(d) {
   if (!d) return '';
-  if (d.dir === 'up') return `<span class="lb-delta up" aria-label="Up ${d.by} since your last visit"><i></i>${d.by}</span>`;
-  if (d.dir === 'down') return `<span class="lb-delta down" aria-label="Down ${d.by} since your last visit"><i></i>${d.by}</span>`;
-  if (d.dir === 'new') return '<span class="lb-delta new">New</span>';
-  return '<span class="lb-delta same" aria-label="Same rank as your last visit">=</span>';
+  if (d.dir === 'up') return `<span class="lb-delta up" aria-label="${t('lb.up', { n: d.by })}"><i></i>${d.by}</span>`;
+  if (d.dir === 'down') return `<span class="lb-delta down" aria-label="${t('lb.down', { n: d.by })}"><i></i>${d.by}</span>`;
+  if (d.dir === 'new') return `<span class="lb-delta new">${t('lb.new')}</span>`;
+  return `<span class="lb-delta same" aria-label="${t('lb.same')}">=</span>`;
 }
 
 // The top three on blocks: second, first, third. Taller block, higher place.
 function podiumBlock(rows, me) {
   const top = podium(rows);
   if (!top.length) return '';
-  return `<div class="lb-podium" role="list" aria-label="Top three">${top.map((r) => `
-    <button class="pod pod-r${r.rank}${r.user_id === me ? ' me' : ''}" role="listitem" ${rowAttrs(r)} aria-label="${esc(`#${r.rank} ${r.display_name}, ${xp(r.xp)} XP`)}">
+  return `<div class="lb-podium" role="list" aria-label="${t('lb.top3')}">${top.map((r) => `
+    <button class="pod pod-r${r.rank}${r.user_id === me ? ' me' : ''}" role="listitem" ${rowAttrs(r)} aria-label="${esc(t('lb.podAria', { rank: r.rank, name: r.display_name, xp: xp(r.xp) }))}">
       ${r.rank === 1 ? `<span class="pod-crown" aria-hidden="true">${svg('trophy')}</span>` : ''}
       ${avatar(r)}
       <b class="pod-name">${esc((r.display_name || '').split(' ')[0])}</b>
@@ -153,11 +154,11 @@ function rivalBlock(rows, me, delta) {
   const r = rivalOf(rows, me);
   if (!r) return '';
   const head = r.kind === 'above'
-    ? `<b class="lb-gap">${xp(r.gap)} XP</b> to pass ${esc(r.rival.display_name)}`
-    : `${esc(r.rival.display_name)} is <b class="lb-gap">${xp(r.gap)} XP</b> behind you`;
-  return `<section class="lb-rival" aria-label="Your rival">
-    <div class="lb-rival-top"><h4>${r.kind === 'above' ? 'Your rival' : 'Your chaser'}</h4>
-      <span class="lb-you">You #${r.me.rank} ${deltaBadge(delta)}</span></div>
+    ? t('lb.toPass', { xp: xp(r.gap), name: esc(r.rival.display_name) })
+    : t('lb.behind', { xp: xp(r.gap), name: esc(r.rival.display_name) });
+  return `<section class="lb-rival" aria-label="${t('lb.rival')}">
+    <div class="lb-rival-top"><h4>${r.kind === 'above' ? t('lb.rival') : t('lb.chaser')}</h4>
+      <span class="lb-you">${t('lb.you', { rank: r.me.rank })} ${deltaBadge(delta)}</span></div>
     <div class="lb-rival-row" role="button" tabindex="0" ${rowAttrs(r.rival)}>
       <span class="lb-rank">${r.rival.rank}</span>${avatar(r.rival)}
       <span class="lb-id"><span class="lb-rival-line">${head}</span>

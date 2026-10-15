@@ -42,6 +42,7 @@ import { t, setLang, onLang, pickLang, getLang } from '../core/i18n.js';
 import { applyStatic } from './i18n-dom.js';
 import { DISCIPLINES } from '../core/disciplines.js';
 import { langToggle } from './lang-toggle.js';
+import { planTitle, planItem } from '../core/plan-i18n.js';
 
 
 // ?safe=34 fakes an iPhone's safe areas in a desktop browser or headless
@@ -220,11 +221,11 @@ function render() {
   }
 
   paintTabCursor();
-  document.querySelectorAll('.tab').forEach((t) => {
+  document.querySelectorAll('.tab').forEach((tab) => {
     // the calendar (route id 'journal') opens from Home, so Home stays lit while it's showing
-    const on = t.dataset.tab === appState.tab || (appState.tab === 'journal' && t.dataset.tab === 'home');
-    t.classList.toggle('active', on);
-    if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+    const on = tab.dataset.tab === appState.tab || (appState.tab === 'journal' && tab.dataset.tab === 'home');
+    tab.classList.toggle('active', on);
+    if (on) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
   });
 
   // Profile tab is a sealed full-screen game viewport: hide app chrome, lock scroll.
@@ -267,7 +268,7 @@ function paintTabCursor() {
   if (!cur) { cur = document.createElement('span'); cur.className = 'tab-cursor'; cur.setAttribute('aria-hidden', 'true'); bar.prepend(cur); bar.classList.add('has-cursor'); }
   const tabs = [...bar.querySelectorAll('.tab')];
   const lit = appState.tab === 'journal' ? 'home' : appState.tab;
-  const i = Math.max(0, tabs.findIndex((t) => t.dataset.tab === lit));
+  const i = Math.max(0, tabs.findIndex((tab) => tab.dataset.tab === lit));
   bar.style.setProperty('--i', String(i));
   if (_tabIdx >= 0 && i !== _tabIdx) {
     const ico = tabs[i]?.querySelector('.tab-ico');
@@ -624,7 +625,7 @@ function openSettings() {
         <hr>
         <h3>${t('main.packingPresets')}</h3>
         <div class="pack-presets">${['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'].map((k) =>
-          `<label class="field"><span>${esc(DISCIPLINES[k].label)}</span><input type="text" data-pack-preset="${k}" value="${esc((s.packing?.[k] || []).join(', '))}" placeholder="${t('main.presetPh')}"></label>`).join('')}</div>
+          `<label class="field"><span>${esc(DISCIPLINES[k].label)}</span><input type="text" data-pack-preset="${k}" value="${esc((s.packing?.[k] || []).map((x) => planItem(x, k)).join(', '))}" placeholder="${t('main.presetPh')}"></label>`).join('')}</div>
 
         <hr>
         <h3>${t('main.dangerZone')}</h3>
@@ -770,8 +771,8 @@ function openWorkoutDetail(id) {
   // the open session (the gym ticker stops once no logger is open)
   const root = openLayer('workout', { reuse: false, onClose: () => { if (_detailId === id) _detailId = null; } });
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
-    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(w.title)}">
-      ${sheetHead({ title: `${esc(w.title)}`, closeAttr: 'data-wd-close' })}
+    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(planTitle(w.title))}">
+      ${sheetHead({ title: `${esc(planTitle(w.title))}`, closeAttr: 'data-wd-close' })}
       <div class="modal-body" id="wd-body">${renderWorkoutDetail(w, store.getSettings().units, buildCtx())}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));

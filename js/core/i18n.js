@@ -56,7 +56,11 @@ function lookup(dict, key) {
   return v;
 }
 
-const isPlural = (v) => v && typeof v === 'object' && !Array.isArray(v) && 'other' in v;
+// a plural is { one, other } (and the other CLDR forms) holding strings only;
+// a namespace that happens to have an `other` key (sport.other) is not one
+const PLURAL_FORMS = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
+const isPlural = (v) => !!v && typeof v === 'object' && !Array.isArray(v) && 'other' in v
+  && Object.entries(v).every(([k, x]) => PLURAL_FORMS.has(k) && typeof x === 'string');
 
 function interpolate(s, vars) {
   return s.replace(/\{(\w+)\}/g, (m, k) => (vars[k] == null ? m : String(vars[k])));

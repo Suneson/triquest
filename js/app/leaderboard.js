@@ -33,6 +33,7 @@ export function leaderboardShell(view, today) {
       <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">${t('lb.season')}</button>
       <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">${t('lb.allTime')}</button>
     </div>${countdown}
+    <p class="lb-legend muted small">${esc(t('xp.lbLegend'))}</p>
     <div id="lb-body" aria-busy="true">${skeletonRows()}</div>`;
 }
 
@@ -67,9 +68,14 @@ export async function loadLeaderboard(view, today) {
     } else {
       const c = await client();
       const since = view === 'season' ? seasonInfo(today).start.toISOString() : null;
-      const res = await c.rpc('leaderboard', { p_since: since });
+      // the proof share is a separate call so the board still loads if it fails
+      const [res, proof] = await Promise.all([
+        c.rpc('leaderboard', { p_since: since }),
+        Promise.resolve(c.rpc('leaderboard_proof', { p_since: since })).catch(() => ({ data: null })),
+      ]);
       if (res.error) throw res.error;
-      data = res.data;
+      const pct = new Map((proof?.data || []).map((p) => [p.user_id, p.verified_pct]));
+      data = (res.data || []).map((r) => ({ ...r, verified_pct: pct.get(r.user_id) ?? null }));
     }
     const me = isDemo() ? DEMO_ME : currentUser()?.id;
     const rows = (data || []).map((r, i) => ({ ...r, rank: i + 1, level: levelFromTotalXp(Number(r.xp)).level }));
@@ -87,6 +93,10 @@ export async function loadLeaderboard(view, today) {
 }
 
 const xp = (n) => fmtNum(n);
+
+// ✓ and the share of the athlete's XP that Strava verified (nothing when none)
+const proofChip = (r) => (r.verified_pct > 0
+  ? ` <span class="lb-proof" aria-label="${esc(t('xp.lbAria', { pct: r.verified_pct }))}" title="${esc(t('xp.lbAria', { pct: r.verified_pct }))}">${svg('check')}${t('xp.lbChip', { pct: r.verified_pct })}</span>` : '');
 
 // Last-loaded athletes by id — lets the profile view reuse avatar/xp/rank
 // without stuffing large base64 photos into data attributes.
@@ -143,7 +153,7 @@ function podiumBlock(rows, me) {
       ${r.rank === 1 ? `<span class="pod-crown" aria-hidden="true">${svg('trophy')}</span>` : ''}
       ${avatar(r)}
       <b class="pod-name">${esc((r.display_name || '').split(' ')[0])}</b>
-      <small class="pod-xp">${xp(r.xp)} XP</small>
+      <small class="pod-xp">${xp(r.xp)} XP${proofChip(r)}</small>
       <span class="pod-block" aria-hidden="true">${r.rank}</span>
     </button>`).join('')}</div>`;
 }
@@ -177,7 +187,7 @@ function list(rows, me, delta) {
       ${avatar(r)}
       <span class="lb-id">
         <b class="lb-name">${esc(r.display_name)}${r.user_id === me ? ` ${deltaBadge(delta)}` : ''}</b>
-        <small class="lb-meta">LVL ${r.level} · ${xp(r.xp)} XP</small>
+        <small class="lb-meta">LVL ${r.level} · ${xp(r.xp)} XP${proofChip(r)}</small>
       </span>
       ${sportDots(r.sports)}
     </li>`).join('')}</ul>`;

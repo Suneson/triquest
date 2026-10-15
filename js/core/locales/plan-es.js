@@ -19,7 +19,7 @@ export const TITLES = {
   'Easy swim': 'Nado suave',
   'Bike Z2 long': 'Bici Z2 larga',
   'Easy run': 'Rodaje suave',
-  'Brick — ride + run': 'Transición — bici + carrera',
+  'Brick — ride + run': 'Brick — bici + correr',
   'Long run + 70.3 pace': 'Tirada larga + ritmo 70.3',
   'Swim aerobic': 'Nado aeróbico',
   'Gym — strength maintenance': 'Gimnasio — mantenimiento de fuerza',

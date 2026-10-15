@@ -122,3 +122,13 @@ test('the split reads as plain instructions; no split, no text', () => {
   assert.equal(splitPrompt(null), '');
   assert.equal(splitPrompt({ days: [] }), '');
 });
+
+test('an AI plan only holds the disciplines the athlete picked', async () => {
+  const { allowedTypes } = await import('../supabase/functions/ai-plan/rules.js');
+  const ALL = ['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'];
+  assert.deepEqual(allowedTypes(['Running'], ALL), ['run']);
+  assert.deepEqual(allowedTypes(['Gym'], ALL), ['gym']);
+  assert.deepEqual(allowedTypes(['Swimming', 'Cycling', 'Running', 'Gym'], ALL).sort(), ['bike', 'brick', 'gym', 'run', 'swim']);
+  assert.deepEqual(allowedTypes([], ALL), ALL);
+  assert.deepEqual(allowedTypes(undefined, ALL), ALL);
+});

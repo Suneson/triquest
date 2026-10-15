@@ -17,7 +17,7 @@ import { exerciseArtSrc, cuesForId, exerciseById, exName, muscleLabel, equipLabe
 import { cuesFor, poseSvgFor } from '../core/poses.js';
 import { openPicker, openNameSheet } from './gym-picker.js';
 import { haptic } from './haptics.js';
-import { xpForWorkout } from '../core/scoring.js';
+import { xpStatus } from '../core/scoring.js';
 import { enableDragSort } from './drag-sort.js';
 import { openExerciseHistory } from './gym-history.js';
 import { morph } from './vt.js';
@@ -33,6 +33,7 @@ import {
 } from '../core/gym-log.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { planTitle } from '../core/plan-i18n.js';
+import { checkinOn, atGym } from './checkin.js';
 
 const REST_KEY = 'moske-rest';
 const SW_KEY = 'moske-stopwatch';
@@ -256,7 +257,11 @@ function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false, cursorC
 }
 
 /** Shown in the sheet after Finish. */
-export function finishView(w) {
+export function finishView(w, workouts = []) {
+  const st = xpStatus(w, workouts);
+  const earned = st.xp > 0
+    ? dialogue({ text: t('gym.savedEarned'), body: `<span class="xp-land">+${st.xp} XP</span>${st.capped ? `<p class="xp-line is-cap">${esc(t('xp.reason.cap'))}</p>` : ''}`, cls: 'coach-say gl-done' })
+    : dialogue({ text: t('xp.savedNot'), body: `<p class="xp-line is-off">${esc(t(`xp.reason.${st.reason || 'sets'}`))}</p>`, cls: 'coach-say gl-done' });
   const sum = sessionSummary(w, Date.parse(w.gymLoggedAt) || Date.now());
   const dur = w.gymDurationSec != null ? w.gymDurationSec : sum.durationSec;
   return `
@@ -265,7 +270,7 @@ export function finishView(w) {
       <div class="gl-sum-cell" style="--d:1"><span class="gl-k">${t('gym.sumVolume')}</span><b class="data-num">${fmtNum(sum.volumeKg)}<span class="data-unit"> kg</span></b></div>
       <div class="gl-sum-cell" style="--d:2"><span class="gl-k">${t('gym.sumTime')}</span><b class="data-num">${dur != null ? fmtClock(dur) : '–'}</b></div>
     </div>
-    <div role="status">${dialogue({ text: t('gym.savedEarned'), body: `<span class="xp-land">+${xpForWorkout(w)} XP</span>`, cls: 'coach-say gl-done' })}</div>
+    <div role="status">${earned}</div>
     <button class="btn primary" data-action="gym-done" data-id="${esc(w.id)}">${t('main.done')}</button>
     <button class="btn ghost" data-action="gym-back" data-id="${esc(w.id)}">${t('gym.backToLog')}</button>`;
 }
@@ -423,6 +428,8 @@ export function handleGymAction(action, el, deps, kind) {
       // saves and redraws the app so XP and levels update
       store.updateWorkout(id, patch);
       if (wasLogged) { refresh(id); deps.toast(t('gym.saved'), 'check'); } else deps.showFinish(id);
+      // the optional check-in: only a yes is kept, never where you were
+      if (!wasLogged && checkinOn()) atGym().then((yes) => { if (yes) store.updateWorkout(id, { gymCheckin: true }); });
       break;
     }
     case 'gym-back': refresh(id); break;

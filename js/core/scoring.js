@@ -1,47 +1,13 @@
 // scoring.js — pure XP, level and volume logic. No DOM, no storage.
 // Single source of truth: everything is derived from the list of workouts.
 
-/** How much each discipline is "worth" per minute. */
-export const TYPE_FACTOR = {
-  run: 1.1,
-  bike: 1.0,
-  swim: 1.2,
-  gym: 1.0,
-  brick: 1.35,
-  mobility: 0.6,
-  other: 1.0,
-};
-
-/** Intensity multiplier — harder sessions earn more per minute. */
-export const INTENSITY_FACTOR = {
-  easy: 1.0,
-  steady: 1.1,
-  moderate: 1.15,
-  threshold: 1.3,
-  quality: 1.35,
-  vo2: 1.45,
-  race: 1.6,
-};
-
-/** XP earned for a single session (whether or not it is completed). */
-/**
- * Does this session earn XP? It must be completed, and either carry Strava
- * proof or be a gym session logged in the app (Finish/Save). Every other sport
- * needs Strava. The leaderboard and quest server use the same rule
- * (supabase/migrations/0008_xp_rule.sql earns_xp).
- */
-export const earnsXp = (w) => !!(w && w.completed
-  && (w.strava_activity_id || w.source === 'strava' || (w.type === 'gym' && w.gymLoggedAt)));
-
-export function xpForWorkout(w) {
-  const dur = Math.max(0, Number(w.durationMin) || 0);
-  const tf = TYPE_FACTOR[w.type] ?? 1.0;
-  const inf = INTENSITY_FACTOR[w.intensity] ?? 1.0;
-  // Small distance bonus so long endurance days feel rewarding.
-  const km = Math.max(0, Number(w.metrics?.distanceKm) || 0);
-  const base = dur * tf * inf + km * 1.5;
-  return Math.round(base);
-}
+// Who earns XP and how much lives in xp-rules.js (the two paths, the gym
+// plausibility rules, the Strava bonus and the daily gym cap); re-exported
+// here so the rest of the app keeps importing from scoring.js.
+export {
+  TYPE_FACTOR, INTENSITY_FACTOR, earnsXp, xpForWorkout, xpLedger, xpStatus, proofOf, gymVerdict, hasStravaProof,
+} from './xp-rules.js';
+import { xpLedger } from './xp-rules.js';
 
 /**
  * Total cumulative XP required to *be* at a given level.
@@ -83,9 +49,7 @@ export function levelFromTotalXp(totalXp) {
  */
 export function sportProgress(workouts, type) {
   let xp = 0;
-  for (const w of workouts) {
-    if (earnsXp(w) && w.type === type) xp += xpForWorkout(w);
-  }
+  for (const r of xpLedger(workouts)) if (r.w.type === type) xp += r.xp;
   return levelFromTotalXp(xp);
 }
 
@@ -99,15 +63,16 @@ export function levelForType(workouts, type) {
  * Only sessions that earn XP (see earnsXp) count toward XP, volume and counts.
  */
 export function computeStats(workouts) {
-  const completed = workouts.filter(earnsXp);
+  const ledger = xpLedger(workouts);
+  const completed = ledger.map((r) => r.w);
   let totalXp = 0;
   let totalMinutes = 0;
   let totalKm = 0;
   const minutesByType = {};
   const kmByType = {};
 
-  for (const w of completed) {
-    totalXp += xpForWorkout(w);
+  for (const { w, xp } of ledger) {
+    totalXp += xp;
     const dur = Math.max(0, Number(w.durationMin) || 0);
     const km = Math.max(0, Number(w.metrics?.distanceKm) || 0);
     totalMinutes += dur;

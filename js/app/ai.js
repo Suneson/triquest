@@ -26,14 +26,14 @@ const SERVER_ERRORS = {
 // i18n-ignore-end
 const serverError = (e) => (SERVER_ERRORS[e] ? t(SERVER_ERRORS[e]) : (e || t('ai.failed')));
 
-export async function generateAIWorkoutPlan(wizardData, stravaHistory) {
+export async function generateAIWorkoutPlan(wizardData, stravaHistory, { wipeFrom = null } = {}) {
   const c = await client();
   const { data: { session } } = await c.auth.getSession();
   if (!session) throw new Error(t('ob.signIn'));
   const res = await fetch(`${functionsBaseUrl()}/ai-plan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ wizard: wizardData, strava: stravaHistory }),
+    body: JSON.stringify({ wizard: wizardData, strava: stravaHistory, wipe_from: wipeFrom }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -42,5 +42,5 @@ export async function generateAIWorkoutPlan(wizardData, stravaHistory) {
     const detail = json.detail ? ` (${String(json.detail).slice(0, 200)})` : '';
     throw new Error(`${serverError(json.error)}${detail}`);
   }
-  return json; // { inserted: N }
+  return json; // { inserted: N, removed: N }
 }

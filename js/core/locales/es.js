@@ -30,15 +30,15 @@ es.nav = {
 };
 
 es.sport = {
-  "run": "Carrera",
+  "run": "Correr",
   "bike": "Bici",
   "swim": "Natación",
   "gym": "Gimnasio",
-  "brick": "Transición",
+  "brick": "Brick",
   "mobility": "Movilidad",
   "other": "Otro",
   "cycling": "Ciclismo",
-  "running": "Carrera",
+  "running": "Correr",
   "swimming": "Natación"
 };
 
@@ -210,7 +210,7 @@ es.ui = {
     "unknown": "creando tu base"
   },
   "noRunLastWeek": "La semana pasada no corriste, no hay con qué comparar.",
-  "runVolume": "Volumen de carrera {pct}% respecto a la semana pasada ({last}→{now} km).",
+  "runVolume": "Volumen corriendo {pct}% respecto a la semana pasada ({last}→{now} km).",
   "trainingLoad": "Carga de entrenamiento",
   "acute": "Aguda (7 d)",
   "chronic": "Crónica (semanal)",
@@ -478,7 +478,7 @@ es.coach = {
     "bike": "Toca bici.",
     "swim": "Al agua.",
     "gym": "Sesión de gimnasio.",
-    "brick": "Día de transición: bici y directo a correr.",
+    "brick": "Día de brick: bici y directo a correr.",
     "mobility": "Trabajo de movilidad.",
     "other": "Sesión en la pizarra."
   },
@@ -572,7 +572,7 @@ es.badge = {
   },
   "brick": {
     "name": "Albañil",
-    "desc": "Completa una sesión de transición"
+    "desc": "Completa una sesión brick"
   },
   "triple": {
     "name": "Triple amenaza",
@@ -580,7 +580,7 @@ es.badge = {
   },
   "all-rounder": {
     "name": "Todoterreno",
-    "desc": "Completa una sesión de carrera, bici, natación y gimnasio"
+    "desc": "Completa una sesión de correr, bici, natación y gimnasio"
   },
   "long-run-30": {
     "name": "Listo para el maratón",
@@ -598,7 +598,7 @@ es.quest = {
   "two-disc": "Dos deportes en un mismo día",
   "streak": "Mantén viva la racha",
   "km-10": "Haz 10 km hoy",
-  "brick": "Clava la sesión de transición",
+  "brick": "Clava la sesión brick",
   "pack-bag": "Prepara la bolsa de mañana",
   "rest-day": "Día de descanso: tómatelo, también cuenta"
 };
@@ -1199,7 +1199,7 @@ es.split = {
     "upper-lower": "Torso / Pierna",
     "ppl": "Empuje / Tirón / Pierna",
     "arnold": "Rutina Arnold",
-    "bro5": "Weider ×5",
+    "bro5": "Bro split ×5",
     "ppl6": "Empuje / Tirón / Pierna ×6"
   },
   "day": {
@@ -1353,7 +1353,7 @@ es.ob = {
   "eco": {
     "endurance": {
       "name": "Resistencia / Triatlón",
-      "sub": "Progresión en natación, bici y carrera"
+      "sub": "Progresión en natación, bici y correr"
     },
     "hyrox": {
       "name": "HYROX",
@@ -1371,7 +1371,7 @@ es.ob = {
   "athlete": {
     "tri": {
       "name": "Triatleta",
-      "sub": "Natación · bici · carrera"
+      "sub": "Natación · bici · correr"
     },
     "run": {
       "name": "Corredor",
@@ -1472,7 +1472,7 @@ es.ob = {
   },
   "hyb": {
     "Gym / Strength": "Gimnasio / fuerza",
-    "Running": "Carrera",
+    "Running": "Correr",
     "Cycling": "Ciclismo",
     "Swimming": "Natación"
   },
@@ -1490,7 +1490,7 @@ es.ob = {
   "hybridSub": "Elige todos los deportes que quieras en tu semana",
   "qGymGoal": "¿Cuál es tu objetivo principal en el gimnasio?",
   "qHyrox": "Tus ritmos y marcas funcionales de HYROX.",
-  "runPace1k": "Ritmo actual de carrera (series de 1 km)",
+  "runPace1k": "Ritmo actual corriendo (series de 1 km)",
   "runPacePh": "4:45 min/km",
   "sled": "Soltura con el trineo (empuje / arrastre)",
   "sledPh": "p. ej. 125 kg de empuje, constante",
@@ -1521,7 +1521,7 @@ es.ob = {
   "hSessions": "Sesiones · últimas 4 semanas",
   "hVolume": "Volumen semanal medio",
   "hBike": "Bici por semana",
-  "hRun": "Carrera por semana",
+  "hRun": "Correr por semana",
   "hSwim": "Natación por semana",
   "hVerified": "Verificadas por Strava",
   "gap": "Tu objetivo de <b>{target} h/semana</b> está muy por encima de tus ~{recent} h/semana recientes. El plan aplicará una progresión para prevenir lesiones: el volumen sube como mucho un 10–15% por semana desde tu base real.",
@@ -1870,6 +1870,45 @@ es.ai = {
   "failed": "No se pudo crear el plan con IA.",
   "unavailable": "El entrenador IA no está disponible ahora mismo.",
   "bad": "El entrenador IA ha devuelto un plan que la app no puede leer. Vuelve a intentarlo."
+};
+
+es.xp = {
+  "reason": {
+    "proof": "No cuenta: vincúlala en Strava para ganar XP.",
+    "sets": "No cuenta: marca al menos 3 series efectivas.",
+    "timestamps": "No cuenta: hay series marcadas sin hora.",
+    "tooFast": "No cuenta: las series se marcaron demasiado rápido para ser una sesión.",
+    "tooLong": "No cuenta: las series se reparten en más de 4 horas.",
+    "short": "No cuenta: dura menos de 10 minutos.",
+    "cap": "Tope diario de gimnasio: el gimnasio apuntado en la app da como mucho 150 XP al día."
+  },
+  "verified": "Verificada por Strava: +10% de XP",
+  "verifiedShort": "Verificada",
+  "checkin": "Check-in en tu gimnasio",
+  "notCounted": "No cuenta",
+  "savedNot": "Guardado. Esta sesión no ha dado XP:",
+  "lbChip": "{pct}%",
+  "lbAria": "El {pct}% de su XP está verificado por Strava",
+  "lbLegend": "✓ es la parte de la XP de cada atleta verificada por Strava. El gimnasio apuntado en la app también cuenta, dentro de las reglas de XP."
+};
+
+es.checkin = {
+  "title": "Check-in",
+  "settingsLabel": "Check-in en el gimnasio",
+  "stateOn": "Activado",
+  "stateOff": "Desactivado",
+  "what": "Al terminar una sesión de gimnasio, MOSKE puede comprobar si estás en el gimnasio que guardaste y, si es así, poner un pin en la sesión.",
+  "p1": "Con la sesión solo se guarda un sí: nunca dónde estabas.",
+  "p2": "La ubicación de tu gimnasio se guarda solo en este móvil. No se sincroniza ni se envía a ningún sitio.",
+  "p3": "Está desactivado salvo que lo actives, y no cambia tu XP.",
+  "onSaved": "Activado. Tu gimnasio está guardado en este móvil.",
+  "onNoSpot": "Activado, pero aún no hay gimnasio guardado en este móvil.",
+  "saveHere": "Guardar este sitio como mi gimnasio",
+  "turnOff": "Desactivar y olvidar mi gimnasio",
+  "turnOn": "Activar y guardar este sitio como mi gimnasio",
+  "notNow": "Ahora no",
+  "saved": "Gimnasio guardado. Al terminar una sesión aquí se añade el pin.",
+  "noLocation": "No se pudo obtener tu ubicación. Revisa el permiso de ubicación del navegador."
 };
 
 export default es;

@@ -1,7 +1,7 @@
 // ui.js — pure-ish HTML rendering. Functions return HTML strings that main.js
 // injects; all interactivity is wired via delegated data-action attributes.
 
-import { formatDuration, sportProgress, earnsXp } from '../core/scoring.js';
+import { formatDuration, sportProgress, earnsXp, xpStatus, proofOf } from '../core/scoring.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
@@ -259,13 +259,35 @@ function metaChips(w, units) {
 
 // ---- compact bento card (Home/Week list) ------------------------------------
 
-export function sessionCard(w, units, { isNext = false } = {}) {
+/** The proof badges on a session: ✓ for Strava, a pin for a gym check-in,
+ *  and "Not counted" when a finished session earned nothing (the detail says why). */
+export function proofBadges(w, workouts) {
+  const out = [];
+  if (w.completed && proofOf(w) === 'strava') out.push(`<span class="proof-badge is-strava" title="${t('xp.verified')}" aria-label="${t('xp.verified')}">${svg('check')}</span>`);
+  if (w.gymCheckin) out.push(`<span class="proof-badge is-checkin" title="${t('xp.checkin')}" aria-label="${t('xp.checkin')}">${svg('pin')}</span>`);
+  if (w.completed && workouts) {
+    const st = xpStatus(w, workouts);
+    if (st.reason && st.reason !== 'cap') out.push(`<span class="tag not-counted" title="${esc(t(`xp.reason.${st.reason}`))}">${t('xp.notCounted')}</span>`);
+  }
+  return out.join('');
+}
+
+/** One line under a finished session's chips: why it earned nothing, the cap, or the Strava bonus. */
+function xpLine(w, workouts) {
+  if (!w.completed) return '';
+  const st = xpStatus(w, workouts || []);
+  if (st.reason) return `<p class="xp-line ${st.reason === 'cap' ? 'is-cap' : 'is-off'}">${svg('warn')} ${esc(t(`xp.reason.${st.reason}`))}</p>`;
+  if (proofOf(w) === 'strava') return `<p class="xp-line is-ok">${svg('check')} ${t('xp.verified')}</p>`;
+  return '';
+}
+
+export function sessionCard(w, units, { isNext = false, workouts = null } = {}) {
   const km = w.metrics?.distanceKm;
   return `<article class="card bento type-${w.type} ${w.completed ? 'completed' : ''} ${isNext ? 'is-next' : ''}" data-action="open-workout" data-id="${esc(w.id)}" role="button" tabindex="0">
     <div class="bento-top">
       <span class="status-dot ${w.completed ? 'on' : ''}" title="${w.completed ? t('ui.completed') : t('ui.planned')}"></span>
       <h3>${esc(planTitle(w.title))}</h3>
-      ${isNext ? `<span class="tag next">${t('ui.next')}</span>` : ''}${w.hr_zone ? zoneBadge(w.hr_zone) : ''}
+      ${proofBadges(w, workouts)}${isNext ? `<span class="tag next">${t('ui.next')}</span>` : ''}${w.hr_zone ? zoneBadge(w.hr_zone) : ''}
     </div>
     <div class="bento-metrics">
       <div class="bm"><span class="bm-ico">${svg('clock')}</span><b>${w.durationMin || 0}</b><small>min</small></div>
@@ -288,6 +310,7 @@ export function renderWorkoutDetail(w, units, ctx) {
   return `${bar}
     ${dialogue({ text: sessionLine(w), cls: 'coach-say', type: true })}
     <div class="meta">${metaChips(w, units)}</div>
+    ${xpLine(w, ctx?.workouts)}
     ${fuellingChip(w)}
     ${detail}
     ${segs ? `<div class="block">${segs}</div>` : ''}
@@ -525,7 +548,7 @@ function focusCard(ctx) {
       ${strip}
       <div class="focus-top">
         <span class="focus-sport">${svg(focus.type, `tint-${focus.type}`)} ${esc(d.label)}</span>
-        ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}
+        ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}${proofBadges(focus, workouts)}
         <span class="focus-state">${focus.completed ? t('ui.done') : t('ui.nextUp')}</span></div>
       <h3 class="focus-title">${esc(planTitle(focus.title))}</h3>
       <div class="bento-metrics">
@@ -553,7 +576,7 @@ export function renderJournal(ctx, selectedIso) {
     const isToday = iso === today;
     const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
     const cards = sessions.length
-      ? sessions.map((w) => sessionCard(w, units, { isNext: false })).join('')
+      ? sessions.map((w) => sessionCard(w, units, { isNext: false, workouts })).join('')
       : `<div class="rest-day">${svg('moon')} ${t('ui.restDay')} · <button class="link" data-action="open-editor-new" data-date="${esc(iso)}">${t('ui.addSession')}</button></div>`;
     return `<div class="jr-row ${isToday ? 'is-today' : ''}">
       <div class="jr-row-head"><b>${esc(weekdayName(iso))}</b><span>${esc(shortLabel(iso))}</span>${isToday ? `<span class="tag today">${t('ui.today')}</span>` : ''}</div>

@@ -11,7 +11,7 @@
 
 import { addDays, diffDays } from './dates.js';
 import { isPlanned, isRestDay } from './rest.js';
-import { levelFromTotalXp, xpForWorkout, earnsXp } from './scoring.js';
+import { levelFromTotalXp, earnsXp, xpLedger } from './scoring.js';
 import { t } from './i18n.js';
 
 /** First day quests exist. Days before it earn no quest XP. */
@@ -181,7 +181,7 @@ export function questXpThrough(today, workouts, settings) {
 
 /** Training XP from completed sessions (same rule as computeStats). */
 export function trainingXp(workouts) {
-  return (workouts || []).reduce((a, w) => a + (earnsXp(w) ? xpForWorkout(w) : 0), 0);
+  return xpLedger(workouts).reduce((a, r) => a + r.xp, 0);
 }
 
 /** The account level: training XP + quest XP on the shared level curve.

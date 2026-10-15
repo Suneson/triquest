@@ -6,6 +6,7 @@
 //                   tried in order, then a live model is discovered from Groq.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { libraryPromptLines, splitPrompt, sanitizeExercises } from "./gym.js";
+import { allowedTypes } from "./rules.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -95,6 +96,8 @@ const LANGUAGE_RULE: Record<string, string> = {
 };
 const FALLBACK_TITLE: Record<string, string> = { en: "AI session", es: "Sesión IA" };
 
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
@@ -114,9 +117,14 @@ Deno.serve(async (req) => {
   const maxDoubles = Math.max(0, Math.min(5, parseInt(body.wizard?.max_double_days) || 0));
   const ftp = Math.max(50, Math.min(600, parseInt(body.wizard?.ftp) || 250));
   const lang = LANGS.includes(body.wizard?.lang) ? body.wizard.lang : "en";
+  const allowed = allowedTypes(body.wizard?.sports, TYPES);
+  // the athlete's Monday of this week (their local date): every unfinished,
+  // unverified session from there on is replaced by the new plan
+  const wipeFrom = ISO.test(String(body.wipe_from || "")) ? String(body.wipe_from) : null;
   const prompt = `Today is ${new Date().toISOString().slice(0, 10)}.
 Athlete FTP: ${ftp}W (use for cycling watt targets).
 HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sessions (two-a-day / double training). Every other day must have at most one session. Never exceed ${maxDoubles} double days in any single weekly cycle.
+ALLOWED DISCIPLINES: every session's "type" MUST be one of: ${allowed.join(", ")}. Never schedule any other type, not even as cross-training or recovery.
 ${splitPrompt(body.wizard?.gym_split)}
 Questionnaire: ${JSON.stringify(body.wizard || {})}
 Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`;
@@ -140,7 +148,8 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
   if (!Array.isArray(plan) || !plan.length) return json({ error: "AI returned no sessions" }, 502);
 
   const now = new Date().toISOString();
-  const rows = plan.slice(0, 120).filter((p: any) => p?.date && p?.type).map((p: any) => {
+  // sessions in a discipline the athlete didn't pick are dropped, whatever the model sent
+  const rows = plan.slice(0, 120).filter((p: any) => p?.date && p?.type && allowed.includes(p.type)).map((p: any) => {
     const type = TYPES.includes(p.type) ? p.type : "other";
     // Structured cycling power intervals → exact Zwift-style bars (no regex parsing of notes).
     const power = type === "bike" && Array.isArray(p.power)
@@ -173,7 +182,19 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
   });
   if (!rows.length) return json({ error: "no valid sessions" }, 502);
 
+  // A new plan replaces the old one: unfinished, unverified sessions from this
+  // week's Monday on go (completed and Strava-verified history always stays),
+  // so the new plan never lands on top of the old one.
+  let removed = 0;
+  if (wipeFrom) {
+    const { data: gone, error: delErr } = await admin.from("workouts").delete()
+      .eq("user_id", userId).gte("date", wipeFrom).eq("completed", false).is("strava_activity_id", null)
+      .select("id");
+    if (delErr) return json({ error: delErr.message }, 500);
+    removed = gone?.length || 0;
+  }
+
   const { error: insErr } = await admin.from("workouts").insert(rows);
   if (insErr) return json({ error: insErr.message }, 500);
-  return json({ inserted: rows.length });
+  return json({ inserted: rows.length, removed });
 });

@@ -8,7 +8,7 @@ import * as store from './store.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { toast } from './effects.js';
 import { svg } from '../core/icons.js';
-import { esc } from './ui.js';
+import { esc, mondayOf } from './ui.js';
 import { addDays, todayISO } from '../core/dates.js';
 import { SPLIT_PRESETS, SPLIT_GROUPS, presetSplit, normalizeSplit, splitWarnings, moveGroup } from '../core/gym-split.js';
 import { openLayer, closeLayer } from './nav.js';
@@ -27,9 +27,10 @@ const ECOS = [
 
 const ATHLETES = [
   { id: 'tri', name: 'Triathlete', sub: 'Swim · bike · run', sports: ['Swimming', 'Cycling', 'Running', 'Gym'] },
-  { id: 'run', name: 'Runner', sub: '5k to ultra-marathon', sports: ['Running', 'Gym'] },
-  { id: 'bike', name: 'Cyclist', sub: 'Road, gravel & endurance', sports: ['Cycling', 'Gym'] },
-  { id: 'swim', name: 'Swimmer', sub: 'Pool & open water', sports: ['Swimming', 'Gym'] },
+  // a runner gets runs only (pick Hybrid for running plus the gym)
+  { id: 'run', name: 'Runner', sub: '5k to ultra-marathon', sports: ['Running'] },
+  { id: 'bike', name: 'Cyclist', sub: 'Road, gravel & endurance', sports: ['Cycling'] },
+  { id: 'swim', name: 'Swimmer', sub: 'Pool & open water', sports: ['Swimming'] },
 ];
 
 const GOALS_BY = {
@@ -123,7 +124,7 @@ export function openOnboarding({ onDone } = {}) {
 
   const sportsOf = () => {
     if (s.eco === 'gym') return ['Gym'];
-    if (s.eco === 'hyrox') return ['Running', 'Gym'];
+    if (s.eco === 'hyrox') return ['Running', 'Gym']; // HYROX is running plus functional stations
     if (s.eco === 'hybrid') {
       const picked = s.hybridSports.map((x) => HYBRID_MAP[x]).filter(Boolean);
       return picked.length ? picked : ['Gym', 'Running'];
@@ -422,6 +423,13 @@ export function openOnboarding({ onDone } = {}) {
       store.setSetting('ftp', s.ftp);
       if (gymInPlay()) store.setSetting('gymSplit', normalizeSplit(s.split));
 
+      // the new plan replaces the old one from this week's Monday on: what is
+      // planned and not yet done goes (the server deletes it as it writes the
+      // new plan); completed and Strava-verified sessions always stay
+      const wipeFrom = mondayOf(todayISO());
+      const replaced = store.getWorkouts()
+        .filter((w) => w.date >= wipeFrom && !w.completed && !w.strava_activity_id).map((w) => w.id);
+
       const r = await generateAIWorkoutPlan({
         // titles and notes come back in this language; types, intensities and
         // exercise ids stay English (see supabase/functions/ai-plan)
@@ -448,7 +456,11 @@ export function openOnboarding({ onDone } = {}) {
         ramp_rule: gap
           ? `athlete's real recent volume is only ${hist.weeklyHours} h/week — start near that baseline and increase total weekly volume by no more than 10-15% per week toward the ${s.hours} h target`
           : null,
-      }, stravaSummary(store.getWorkouts()));
+      }, stravaSummary(store.getWorkouts()), { wipeFrom });
+
+      // drop the replaced sessions here too (the ids were taken before the new
+      // plan existed, so nothing new can be caught), then pull the new plan
+      store.deleteWorkouts(replaced);
 
       // The sessions are written server-side, so pull them in before revealing
       // the calendar — otherwise they only land whenever realtime gets around

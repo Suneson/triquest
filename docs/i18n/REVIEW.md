@@ -1,5 +1,10 @@
 # Spanish terms to decide
 
+**Decided (15 Oct):** Run is "Correr", Brick stays "Brick", Taper is "Tapering",
+the bro split stays "Bro split", Quests are "Misiones", the Fitness hub is "Mi
+forma". These are in `es.js`; the rest of the list below stands as shipped
+until you say otherwise.
+
 Spanish is your first language, so these are the calls I'd like you to make.
 Each line says what the app shows now and the alternatives I weighed. Change
 any of them in `js/core/locales/es.js` (or `plan-es.js` for the seeded plan)

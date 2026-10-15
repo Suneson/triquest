@@ -1,7 +1,7 @@
 // main.js — bootstrap, derived state, rendering orchestration and event wiring.
 
 import * as store from './store.js';
-import { computeStats, sportProgress, xpForWorkout, earnsXp } from '../core/scoring.js';
+import { computeStats, sportProgress, xpStatus, earnsXp } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
 import { evaluateBadges, BADGES } from '../core/badges.js';
 import { questsFor, accountProgress, msUntilReset, formatCountdown } from '../core/quests.js';
@@ -43,6 +43,7 @@ import { applyStatic } from './i18n-dom.js';
 import { DISCIPLINES } from '../core/disciplines.js';
 import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
+import { openCheckinSheet } from './checkin.js';
 
 
 // ?safe=34 fakes an iPhone's safe areas in a desktop browser or headless
@@ -151,7 +152,7 @@ function feedbackMoments(ctx) {
   fresh.slice(0, 3).forEach((w, i) => setTimeout(() => {
     const el = document.querySelector(`[data-id="${CSS.escape(w.id)}"]`);
     const r = el?.getBoundingClientRect();
-    xpPop(`+${xpForWorkout(w)} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3);
+    xpPop(`+${xpStatus(w, ctx.workouts).xp} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3);
     playComplete();
   }, 300 + i * 500));
 
@@ -590,6 +591,7 @@ function openSettings() {
       <div class="modal-body">
         ${accountSectionHtml()}
         ${langToggle()}
+        <button type="button" class="row-btn" data-set-do="checkin">${svg('pin')} <span>${t('checkin.settingsLabel')}</span><span class="spacer"></span><b>${s.gymCheckin ? t('checkin.stateOn') : t('checkin.stateOff')}</b></button>
         <label class="toggle"><span>${svg('sound')} ${t('main.sound')}</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
         <label class="toggle"><span>${svg('motion')} ${t('main.reduceMotion')}</span><input type="checkbox" data-set="reduceMotion" ${s.reduceMotion ? 'checked' : ''}></label>
         <label class="field"><span>${t('main.units')}</span><select data-set="units"><option value="metric" ${s.units === 'metric' ? 'selected' : ''}>${t('main.metric')}</option><option value="imperial" ${s.units === 'imperial' ? 'selected' : ''}>${t('main.imperial')}</option></select></label>
@@ -656,6 +658,7 @@ function openSettings() {
     else if (act === 'reseed') { if (confirm(t('main.reseedConfirm'))) { doExport(); store.reseed(); appState.lastLevel = null; appState.seen = null; close(); toast(t('main.reseeded'), { icon: svg('regen') }); } }
     else if (act === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; close(); }
     else if (act === 'ai-plan') { close(); startAIPlan(); }
+    else if (act === 'checkin') openCheckinSheet({ onChange: () => { if (topLayerName() === 'settings') openSettings(); } });
     else if (act === 'signin') { close(); auth.openAuthModal(); }
     else if (act === 'signout') { if (confirm(t('main.signOutConfirm'))) { auth.signOut(); close(); } }
     else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || t('main.stravaConnectFailed')))); }
@@ -745,7 +748,7 @@ const gymDeps = {
   showFinish: (id) => {
     const body = document.getElementById('wd-body');
     const w = store.workoutById(id);
-    if (body && w) { body.innerHTML = finishView(w); body.scrollTop = 0; }
+    if (body && w) { body.innerHTML = finishView(w, store.getWorkouts()); body.scrollTop = 0; }
     playComplete();
   },
 };

@@ -1872,4 +1872,43 @@ en.ai = {
   "bad": "The AI coach sent back a plan the app couldn’t read. Try again."
 };
 
+en.xp = {
+  "reason": {
+    "proof": "Not counted: link it on Strava to earn XP.",
+    "sets": "Not counted: tick at least 3 working sets.",
+    "timestamps": "Not counted: some sets were ticked without a time.",
+    "tooFast": "Not counted: the sets were ticked too fast to be one session.",
+    "tooLong": "Not counted: the sets are spread over more than 4 hours.",
+    "short": "Not counted: shorter than 10 minutes.",
+    "cap": "Daily gym cap reached: gym XP logged in the app tops out at 150 a day."
+  },
+  "verified": "Verified by Strava: +10% XP",
+  "verifiedShort": "Verified",
+  "checkin": "Checked in at your gym",
+  "notCounted": "Not counted",
+  "savedNot": "Saved. This session didn’t earn XP:",
+  "lbChip": "{pct}%",
+  "lbAria": "{pct}% of their XP is verified by Strava",
+  "lbLegend": "✓ is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules."
+};
+
+en.checkin = {
+  "title": "Gym check-in",
+  "settingsLabel": "Gym check-in",
+  "stateOn": "On",
+  "stateOff": "Off",
+  "what": "When you finish a gym session, MOSKE can check whether you’re at the gym you saved, and put a pin on the session when you are.",
+  "p1": "Only a yes is kept with the session: never where you were.",
+  "p2": "Your gym’s position is saved on this phone only. It isn’t synced or sent anywhere.",
+  "p3": "It’s off unless you turn it on, and it doesn’t change your XP.",
+  "onSaved": "On. Your gym is saved on this phone.",
+  "onNoSpot": "On, but no gym is saved on this phone yet.",
+  "saveHere": "Save this place as my gym",
+  "turnOff": "Turn off and forget my gym",
+  "turnOn": "Turn on and save this place as my gym",
+  "notNow": "Not now",
+  "saved": "Gym saved. Finishing a session here adds the pin.",
+  "noLocation": "Couldn’t get your location. Check the browser’s location permission."
+};
+
 export default en;

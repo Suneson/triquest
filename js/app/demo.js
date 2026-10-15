@@ -30,6 +30,8 @@ export function demoLeaderboard(view) {
   const k = view === 'season' ? 0.17 : 1;
   return ATHLETES.map(([user_id, display_name, xp, sports]) => ({
     user_id, display_name, xp: Math.round(xp * k), sports, avatar: null,
+    // the Strava-verified share: endurance athletes high, gym-only ones none
+    verified_pct: sports.includes('run') || sports.includes('bike') ? Math.min(100, 40 + (xp % 61)) : 0,
   }));
 }
 

@@ -18,6 +18,8 @@
 // Profile draws the plate and plays the athlete over it; `src` stays the full
 // still for everything else (share card, Home strip, level carousel).
 
+import { t } from './i18n.js';
+
 const ART = 'icons/Pixelart';
 
 // Every 512×512 still carries a level label bottom-left and a generator mark
@@ -112,10 +114,10 @@ const bike = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 export const SCENES = {
-  bike: { kind: 'layered', label: 'Cycling', levels: bike },
-  run: { kind: 'still', label: 'Running', levels: run },
-  gym: { kind: 'still', label: 'Gym', levels: gym },
-  swim: { kind: 'still', label: 'Swimming', levels: swim },
+  bike: { kind: 'layered', get label() { return t('sport.cycling'); }, levels: bike },
+  run: { kind: 'still', get label() { return t('sport.running'); }, levels: run },
+  gym: { kind: 'still', get label() { return t('sport.gym'); }, levels: gym },
+  swim: { kind: 'still', get label() { return t('sport.swimming'); }, levels: swim },
 };
 
 export const SCENE_SPORTS = ['bike', 'swim', 'run', 'gym'];
@@ -164,10 +166,10 @@ export function cornerPolygon({ side, from, to }, step = 2) {
   const span = side === 'left' ? to : 100 - to;
   const n = Math.max(1, Math.round(span / step));
   for (let k = 0; k <= n; k++) {
-    const t = k / n;
-    const xOff = span * t;
+    const f = k / n;
+    const xOff = span * f;
     const x = side === 'left' ? xOff : 100 - xOff;
-    const y = from + (100 - from) * t;
+    const y = from + (100 - from) * f;
     pts.push([x, y]);
     if (k < n) {
       const nextX = side === 'left' ? span * ((k + 1) / n) : 100 - span * ((k + 1) / n);
@@ -194,7 +196,7 @@ export function timeOfDay(hour) {
 }
 
 export const COACH = {
-  name: 'Coach',
+  get name() { return t('scene.coach'); },
   // from icons/trainer/source/coach-greenscreen.webp: green keyed out, box-averaged
   // to the art's own pixel grid, palette reduced (see ART-BRIEF.md)
   portrait: 'icons/trainer/portrait.png', // 96×96 head and shoulders

@@ -8,7 +8,7 @@
 import * as store from './store.js';
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
-import { exerciseArtSrc, exerciseById, MUSCLES } from '../core/exercises.js';
+import { exerciseArtSrc, exerciseById, exName, MUSCLES, muscleLabel, equipLabel } from '../core/exercises.js';
 import { shortLabel } from '../core/dates.js';
 import { fmtClock, formatSet } from '../core/gym-log.js';
 import {
@@ -17,8 +17,9 @@ import {
 import { layer, closeLayer } from './gym-picker.js';
 import { PAD, wavePath, telemetryGrid, square, blockBars } from './pixel-chart.js';
 import { sheetHead } from './sheet.js';
+import { t, fmtNum } from '../core/i18n.js';
 
-const kg = (v) => `${Number.isInteger(v) ? v : v.toFixed(1)}<span class="data-unit"> kg</span>`;
+const kg = (v) => `${fmtNum(v, { maximumFractionDigits: 1 })}<span class="data-unit"> kg</span>`;
 
 function tile(label, value, sub = '') {
   return `<div class="gh-tile"><span class="gl-k">${esc(label)}</span><b class="data-num">${value}</b>${sub ? `<small class="muted">${esc(sub)}</small>` : ''}</div>`;
@@ -26,9 +27,9 @@ function tile(label, value, sub = '') {
 
 /** The metric charted per session: estimated 1RM, else best reps, else longest time. */
 function series(hist) {
-  if (hist.some((h) => h.e1rm)) return { label: 'Estimated 1RM', unit: 'kg', vals: hist.filter((h) => h.e1rm).map((h) => ({ v: h.e1rm, date: h.date })) };
-  if (hist.some((h) => h.best?.seconds)) return { label: 'Longest set', unit: 's', vals: hist.map((h) => ({ v: h.best?.seconds || 0, date: h.date })) };
-  return { label: 'Most reps', unit: 'reps', vals: hist.map((h) => ({ v: Math.max(0, ...h.sets.map((s) => s.reps || 0)), date: h.date })) };
+  if (hist.some((h) => h.e1rm)) return { label: t('gh.est1rm'), unit: 'kg', vals: hist.filter((h) => h.e1rm).map((h) => ({ v: h.e1rm, date: h.date })) };
+  if (hist.some((h) => h.best?.seconds)) return { label: t('gh.longestSet'), unit: 's', vals: hist.map((h) => ({ v: h.best?.seconds || 0, date: h.date })) };
+  return { label: t('gh.mostReps'), unit: 'reps', vals: hist.map((h) => ({ v: Math.max(0, ...h.sets.map((s) => s.reps || 0)), date: h.date })) };
 }
 
 function lineChart(points, W = 320, H = 120) {
@@ -41,7 +42,7 @@ function lineChart(points, W = 320, H = 120) {
   const { d, pts } = wavePath(shifted, W, H, Math.max(...shifted) * 1.1 || 1);
   const dots = pts.map(([x, y], i) => square(x, y, i === pts.length - 1 ? 8 : 4, `class="fh-dot ${i === pts.length - 1 ? 'end' : ''}"`)).join('');
   return `<svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
-      aria-label="${esc(`From ${points[0].v} on ${points[0].date} to ${points.at(-1).v} on ${points.at(-1).date}`)}">
+      aria-label="${esc(t('gh.chartAria', { a: fmtNum(points[0].v), da: shortLabel(points[0].date), b: fmtNum(points.at(-1).v), db: shortLabel(points.at(-1).date) }))}">
     ${telemetryGrid(W, H)}
     <path class="fh-area" d="${d} V ${H - PAD} H ${PAD} Z" fill="var(--acc-orange)"/>
     <path class="fh-line" d="${d}" stroke="var(--acc-orange)"/>${dots}
@@ -53,18 +54,18 @@ export function openExerciseHistory(key) {
   const workouts = store.getWorkouts();
   const lib = exerciseById(key.libId);
   const custom = (store.getSettings().customExercises || []).find((c) => c.id === key.libId);
-  const name = lib?.name || custom?.name || key.name || 'Exercise';
+  const name = lib?.name || custom?.name || key.name || t('gh.exercise');
   const hist = exerciseHistory(workouts, key);
   const rec = exerciseRecords(hist);
   const art = exerciseArtSrc(key.libId);
   const kind = hist.at(-1)?.kind || lib?.defaultKind || 'weight_reps';
 
   const tiles = [
-    rec.e1rm && tile('Est. 1RM', kg(rec.e1rm.value), `${rec.e1rm.weight} kg × ${rec.e1rm.reps} · ${shortLabel(rec.e1rm.date)}`),
-    rec.heaviest && tile('Heaviest', kg(rec.heaviest.weight), `× ${rec.heaviest.reps} · ${shortLabel(rec.heaviest.date)}`),
-    rec.reps && tile('Most reps', `${rec.reps.reps}`, shortLabel(rec.reps.date)),
-    rec.time && tile('Longest', fmtClock(rec.time.seconds), shortLabel(rec.time.date)),
-    rec.volume && tile('Best session', kg(rec.volume.value), `volume · ${shortLabel(rec.volume.date)}`),
+    rec.e1rm && tile(t('gh.tE1rm'), kg(rec.e1rm.value), `${fmtNum(rec.e1rm.weight)} kg × ${rec.e1rm.reps} · ${shortLabel(rec.e1rm.date)}`),
+    rec.heaviest && tile(t('gh.tHeaviest'), kg(rec.heaviest.weight), `× ${rec.heaviest.reps} · ${shortLabel(rec.heaviest.date)}`),
+    rec.reps && tile(t('gh.tMostReps'), `${rec.reps.reps}`, shortLabel(rec.reps.date)),
+    rec.time && tile(t('gh.tLongest'), fmtClock(rec.time.seconds), shortLabel(rec.time.date)),
+    rec.volume && tile(t('gh.tBest'), kg(rec.volume.value), t('gh.volumeOn', { date: shortLabel(rec.volume.date) })),
   ].filter(Boolean).join('');
   const sr = series(hist);
   const chart = lineChart(sr.vals);
@@ -76,20 +77,20 @@ export function openExerciseHistory(key) {
   const root = layer('exercise-history');
   root.innerHTML = `
     <div class="modal-backdrop" data-pk-close></div>
-    <div class="modal pk-modal" role="dialog" aria-modal="true" aria-label="${esc(name)} history">
-      ${sheetHead({ icon: 'trophy', title: `History`, closeAttr: 'data-pk-close' })}
+    <div class="modal pk-modal" role="dialog" aria-modal="true" aria-label="${esc(t('gh.historyAria', { name }))}">
+      ${sheetHead({ icon: 'trophy', title: t('gh.history'), closeAttr: 'data-pk-close' })}
       <div class="modal-body">
         <div class="gl-ex-head">
           <div class="ex-img ${art ? 'ex-art' : ''}">${art ? `<img src="${esc(art)}" alt="" width="64" height="64" loading="lazy">` : svg('gym')}</div>
-          <div class="gl-ex-title"><h5>${esc(name)}</h5><span class="muted small">${esc([lib?.muscle || custom?.muscle, lib?.equipment || custom?.equipment].filter(Boolean).join(' · '))}</span></div>
+          <div class="gl-ex-title"><h5>${esc(name)}</h5><span class="muted small">${esc([muscleLabel(lib?.muscle || custom?.muscle), equipLabel(lib?.equipment || custom?.equipment)].filter(Boolean).join(' · '))}</span></div>
         </div>
         ${hist.length ? `
           <div class="gh-tiles">${tiles}</div>
-          ${rec.e1rm ? `<p class="muted small gh-note">Est. 1RM is an estimate from your best set (Epley formula, sets of ${E1RM_MAX_REPS} reps or fewer), not a lift you did.</p>` : ''}
+          ${rec.e1rm ? `<p class="muted small gh-note">${t('gh.e1rmNote', { n: E1RM_MAX_REPS })}</p>` : ''}
           ${chart ? `<section class="gh-chart"><h4>${esc(sr.label)}</h4>${chart}
             <div class="fh-range">${esc(shortLabel(sr.vals[0].date))} – ${esc(shortLabel(sr.vals.at(-1).date))}</div></section>` : ''}
-          <section><h4>Sessions <span class="muted data-num">${hist.length}</span></h4><ul class="gh-list">${rows}</ul></section>`
-    : '<p class="muted">No ticked sets for this exercise yet. Its records and chart start with your first logged session.</p>'}
+          <section><h4>${t('gh.sessions')} <span class="muted data-num">${hist.length}</span></h4><ul class="gh-list">${rows}</ul></section>`
+    : `<p class="muted">${t('gh.noTicked')}</p>`}
       </div>
     </div>`;
   root.onclick = (e) => { if (e.target.closest('[data-pk-close]')) closeLayer(); };
@@ -100,14 +101,15 @@ export function openExerciseHistory(key) {
 
 export function recordsShelfHtml(workouts) {
   const rows = recordsShelf(workouts, 8);
-  if (!rows.length) return `<div class="rc"><h5 class="rc-h">Records</h5><p class="muted small">Your best lifts land here once you've logged a gym session.</p></div>`;
-  return `<div class="rc"><h5 class="rc-h">Records</h5>
+  if (!rows.length) return `<div class="rc"><h5 class="rc-h">${t('gh.records')}</h5><p class="muted small">${t('gh.recordsEmpty')}</p></div>`;
+  return `<div class="rc"><h5 class="rc-h">${t('gh.records')}</h5>
     <ul class="rc-shelf">${rows.map((r) => {
     const art = exerciseArtSrc(r.key.libId);
     const sk = `${r.name}|${r.headline.text}`;
-    return `<li><button class="rc-plaque${shelfSeen().includes(sk) ? '' : ' is-new'}" data-rec-key="${esc(sk)}" data-rec-lib="${esc(r.key.libId || '')}" data-rec-name="${esc(r.name)}" aria-label="${esc(`${r.name}: ${r.headline.text} ${r.headline.sub}. Open history`)}">
+    const name = exName({ libId: r.key.libId, name: r.name });
+    return `<li><button class="rc-plaque${shelfSeen().includes(sk) ? '' : ' is-new'}" data-rec-key="${esc(sk)}" data-rec-lib="${esc(r.key.libId || '')}" data-rec-name="${esc(r.name)}" aria-label="${esc(t('gh.plaqueAria', { name, value: r.headline.text, sub: r.headline.sub }))}">
         <span class="pk-thumb ${art ? 'ex-art' : ''}" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" width="48" height="48" loading="lazy">` : svg('gym')}</span>
-        <span class="rc-txt"><b>${esc(r.name)}</b><small class="muted">${esc(r.headline.sub)} · ${esc(shortLabel(r.date))}</small></span>
+        <span class="rc-txt"><b>${esc(name)}</b><small class="muted">${esc(r.headline.sub)} · ${esc(shortLabel(r.date))}</small></span>
         <b class="rc-val data-num">${esc(r.headline.text)}</b>
       </button></li>`;
   }).join('')}</ul></div>`;
@@ -132,7 +134,7 @@ function weeklyChart(weeks, muscle) {
   const max = Math.max(4, ...vals);
   const bars = blockBars(vals, W, H, max, (i, v) => (!v ? 'zero' : i === vals.length - 1 ? 'gnow' : 'wk'));
   return `<svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
-      aria-label="${esc(`Working sets per week${muscle ? ` for ${muscle}` : ''}: ${vals.join(', ')}`)}">
+      aria-label="${esc(muscle ? t('gh.weeklyAriaM', { muscle: muscleLabel(muscle), vals: vals.join(', ') }) : t('gh.weeklyAria', { vals: vals.join(', ') }))}">
     ${telemetryGrid(W, H)}${bars}</svg>`;
 }
 
@@ -141,25 +143,25 @@ export function gymCardHtml(ctx) {
   const any = weeks.some((w) => w.total);
   const bal = muscleBalance(ctx.workouts, ctx.today, 28);
   if (!any && !bal.total) {
-    return `<section class="card fh-block gh-card"><h4>Gym</h4><p class="muted small">Log a gym session and your weekly volume and muscle balance show up here.</p></section>`;
+    return `<section class="card fh-block gh-card"><h4>${t('gh.gym')}</h4><p class="muted small">${t('gh.gymEmpty')}</p></section>`;
   }
   const trained = MUSCLES.filter((m) => weeks.some((w) => w.byMuscle[m]));
   const thisWeek = weeks.at(-1).total;
   const maxShare = Math.max(...bal.rows.map((r) => r.share), 0.01);
   return `<section class="card fh-block gh-card" data-gh-card>
-    <h4>Gym volume</h4>
+    <h4>${t('gh.gymVolume')}</h4>
     <div class="gh-head">
-      <div class="fh-big data-num">${thisWeek}<small class="data-unit"> sets this week</small></div>
-      <label class="chip gl-chip"><select data-gh-muscle aria-label="Muscle">
-        <option value="">All muscles</option>${trained.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}
+      <div class="fh-big data-num">${thisWeek}<small class="data-unit">${t('gh.setsThisWeek')}</small></div>
+      <label class="chip gl-chip"><select data-gh-muscle aria-label="${t('gh.muscle')}">
+        <option value="">${t('gh.allMuscles')}</option>${trained.map((m) => `<option value="${esc(m)}">${esc(muscleLabel(m))}</option>`).join('')}
       </select></label>
     </div>
     <div data-gh-weekly>${weeklyChart(weeks, '')}</div>
-    <div class="fh-range">Working sets per week · ${esc(shortLabel(weeks[0].weekStart))} – this week</div>
-    <h4 class="gh-bal-h">Muscle balance <small class="muted">last 4 weeks</small></h4>
+    <div class="fh-range">${esc(t('gh.perWeek', { from: shortLabel(weeks[0].weekStart) }))}</div>
+    <h4 class="gh-bal-h">${t('gh.balance')} <small class="muted">${t('gh.last4')}</small></h4>
     <p class="small gh-desc">${esc(describeBalance(bal))}</p>
     <ul class="gh-bal">${bal.rows.map((r) => `<li>
-      <span class="gh-m">${esc(r.muscle)}</span>
+      <span class="gh-m">${esc(muscleLabel(r.muscle))}</span>
       <span class="gh-track" aria-hidden="true"><i style="width:${Math.max(4, Math.round((r.share / maxShare) * 100))}%"></i></span>
       <span class="data-num gh-n">${r.sets}</span>
     </li>`).join('')}</ul>

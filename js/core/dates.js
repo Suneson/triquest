@@ -1,5 +1,6 @@
 // dates.js — pure date helpers working on 'YYYY-MM-DD' strings.
 // All Date objects are anchored at local noon to dodge DST / timezone edge cases.
+import { t, tList } from './i18n.js';
 
 /** Build a local Date at noon from a 'YYYY-MM-DD' string. */
 export function parseISO(iso) {
@@ -62,22 +63,24 @@ export function dateRange(startIso, endIso) {
   return out;
 }
 
+// names come from the active language (js/core/locales); the arrays stay
+// exported for anything that wants the English set
 const SHORT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/** 'Mon 6 Jul' style label. */
+/** 'Mon 6 Jul' / 'lun 6 jul' style label. */
 export function shortLabel(iso) {
   const dt = parseISO(iso);
-  return `${SHORT_DAYS[weekdayMon0(iso)]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}`;
+  return t('date.shortLabel', { day: tList('date.daysShort')[weekdayMon0(iso)], date: dt.getDate(), month: tList('date.months')[dt.getMonth()] });
 }
 
-/** 'Monday' weekday name. */
+/** 'Monday' / 'lunes' weekday name. */
 export function weekdayName(iso) {
-  return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][weekdayMon0(iso)];
+  return tList('date.days')[weekdayMon0(iso)];
 }
 
 export function monthName(iso) {
-  return MONTHS[parseISO(iso).getMonth()];
+  return tList('date.months')[parseISO(iso).getMonth()];
 }
 
 export { SHORT_DAYS, MONTHS };

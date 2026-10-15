@@ -16,6 +16,8 @@ import { shortLabel } from '../core/dates.js';
 import { esc } from './ui.js';
 import { toast } from './effects.js';
 import { sheetHead } from './sheet.js';
+import { t, fmtNum, localeTag } from '../core/i18n.js';
+import { planTitle } from '../core/plan-i18n.js';
 
 const C = {
   bg: '#0B1222', bg2: '#121C33', bg3: '#1A2744', line: '#5372B5', shade: '#050912',
@@ -155,11 +157,11 @@ export async function renderShareCard(w, workouts, { tall = false } = {}) {
   let ty = py + (tall ? 56 : 36);
   if (icon) g.drawImage(icon, ix, ty, icon.width, icon.height);
   g.fillStyle = C.accent; g.font = `400 ${tall ? 40 : 32}px ${PIXEL}`;
-  g.fillText(`${d.label.toUpperCase()} · ${shortLabel(w.date).toUpperCase()}`, ix + (icon ? icon.width + 20 : 0), ty + (tall ? 12 : 8));
+  g.fillText(`${d.label.toLocaleUpperCase(localeTag())} · ${shortLabel(w.date).toLocaleUpperCase(localeTag())}`, ix + (icon ? icon.width + 20 : 0), ty + (tall ? 12 : 8));
   ty += tall ? 96 : 72;
   // the title in the body font; long titles are cut with an ellipsis
   g.fillStyle = C.fg; g.font = `700 ${tall ? 56 : 44}px ${DATA}`;
-  let title = w.title || d.label;
+  let title = planTitle(w.title) || d.label;
   while (g.measureText(title).width > W - 176 && title.length > 4) title = `${title.slice(0, -2).trimEnd()}…`;
   g.fillText(title, ix, ty);
   ty += tall ? 112 : 76;
@@ -169,7 +171,7 @@ export async function renderShareCard(w, workouts, { tall = false } = {}) {
   let sx = ix;
   for (const [v, unit] of stats) {
     g.fillStyle = C.fg; g.font = `700 ${tall ? 120 : 80}px ${DATA}`;
-    const vs = String(v);
+    const vs = fmtNum(v, { maximumFractionDigits: 1 });
     g.fillText(vs, sx, ty);
     const vw = g.measureText(vs).width;
     g.fillStyle = C.muted; g.font = `600 ${tall ? 40 : 32}px ${DATA}`;
@@ -183,7 +185,7 @@ export async function renderShareCard(w, workouts, { tall = false } = {}) {
   // story footer: the app's line, where a feed post has no room for it
   if (tall) {
     g.fillStyle = C.muted; g.font = `400 32px ${PIXEL}`;
-    g.fillText('TRAINED WITH MOSKE', 56, H - 140);
+    g.fillText(t('misc.trainedWith'), 56, H - 140);
   }
   return canvas;
 }
@@ -198,10 +200,10 @@ export async function openShareSheet(w, workouts) {
   });
   const close = () => closeLayer(root);
   root.innerHTML = `<div class="modal-backdrop" data-sh-close></div>
-    <div class="modal sh-modal" role="dialog" aria-modal="true" aria-label="Share card">
-      ${sheetHead({ icon: 'upload', title: `Share card`, closeAttr: 'data-sh-close' })}
+    <div class="modal sh-modal" role="dialog" aria-modal="true" aria-label="${t('misc.shareCard')}">
+      ${sheetHead({ icon: 'upload', title: t('misc.shareCard'), closeAttr: 'data-sh-close' })}
       <div class="modal-body" id="sh-body" aria-busy="true">
-        <span class="sr">Drawing your card…</span>
+        <span class="sr">${t('misc.drawing')}</span>
         <div class="sh-preview is-sk"><div class="sk-tile"></div></div>
       </div>
     </div>`;
@@ -215,7 +217,7 @@ export async function openShareSheet(w, workouts) {
     ]);
   } catch {
     const body = document.getElementById('sh-body');
-    if (body) { body.removeAttribute('aria-busy'); body.innerHTML = '<p class="muted">Couldn’t draw the card. Try again in a moment.</p>'; }
+    if (body) { body.removeAttribute('aria-busy'); body.innerHTML = `<p class="muted">${t('misc.drawFailed')}</p>`; }
     return;
   }
   const body = document.getElementById('sh-body');
@@ -226,20 +228,20 @@ export async function openShareSheet(w, workouts) {
   const url = URL.createObjectURL(post);
   body.removeAttribute('aria-busy');
   body.innerHTML = `
-    <div class="sh-preview"><img src="${url}" data-url="${url}" alt="Your share card: ${esc(w.title || '')}" width="1080" height="1350"></div>
+    <div class="sh-preview"><img src="${url}" data-url="${url}" alt="${esc(t('misc.shareAlt', { title: planTitle(w.title) || '' }))}" width="1080" height="1350"></div>
     <div class="sh-actions">
       ${canShare
-        ? `<button class="btn primary" data-sh="post">${svg('upload')} Share post</button><button class="btn" data-sh="story">${svg('upload')} Share story</button>`
-        : `<a class="btn primary" data-dl="post" download="${files.post.name}">${svg('download')} Save post</a><a class="btn" data-dl="story" download="${files.story.name}">${svg('download')} Save story</a>`}
+        ? `<button class="btn primary" data-sh="post">${svg('upload')} ${t('misc.sharePost')}</button><button class="btn" data-sh="story">${svg('upload')} ${t('misc.shareStory')}</button>`
+        : `<a class="btn primary" data-dl="post" download="${files.post.name}">${svg('download')} ${t('misc.savePost')}</a><a class="btn" data-dl="story" download="${files.story.name}">${svg('download')} ${t('misc.saveStory')}</a>`}
     </div>
-    <p class="muted small">Post is 1080 × 1350, story is 1080 × 1920.</p>`;
+    <p class="muted small">${t('misc.sizes')}</p>`;
   body.querySelectorAll('[data-dl]').forEach((a) => {
     const u = URL.createObjectURL(files[a.dataset.dl]);
     a.href = u;
     a.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(u), 4000), { once: true });
   });
   body.querySelectorAll('[data-sh]').forEach((b) => b.addEventListener('click', () => {
-    navigator.share({ files: [files[b.dataset.sh]], title: 'MOSKE', text: `${w.title || 'Session'} · done` })
-      .catch((e) => { if (e?.name !== 'AbortError') toast('Sharing didn’t work here. Try Save instead.'); });
+    navigator.share({ files: [files[b.dataset.sh]], title: 'MOSKE', text: t('misc.shareText', { title: planTitle(w.title) || t('misc.session') }) })
+      .catch((e) => { if (e?.name !== 'AbortError') toast(t('misc.shareFailed')); });
   }));
 }

@@ -1,7 +1,7 @@
 // main.js — bootstrap, derived state, rendering orchestration and event wiring.
 
 import * as store from './store.js';
-import { computeStats, sportProgress, xpForWorkout, earnsXp } from '../core/scoring.js';
+import { computeStats, sportProgress, xpStatus, earnsXp } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
 import { evaluateBadges, BADGES } from '../core/badges.js';
 import { questsFor, accountProgress, msUntilReset, formatCountdown } from '../core/quests.js';
@@ -38,6 +38,12 @@ import { enablePull } from './pull.js';
 import { morph } from './vt.js';
 import { stampRecord, firstStamp } from './stamp.js';
 import { sheetHead } from './sheet.js';
+import { t, setLang, onLang, pickLang, getLang } from '../core/i18n.js';
+import { applyStatic } from './i18n-dom.js';
+import { DISCIPLINES } from '../core/disciplines.js';
+import { langToggle } from './lang-toggle.js';
+import { planTitle, planItem } from '../core/plan-i18n.js';
+import { openCheckinSheet } from './checkin.js';
 
 
 // ?safe=34 fakes an iPhone's safe areas in a desktop browser or headless
@@ -99,14 +105,14 @@ function syncProgress(ctx) {
     if (appState.booted) {
       fresh.forEach((id, i) => {
         const b = BADGES.find((x) => x.id === id);
-        if (b) setTimeout(() => { toast(`<b>Badge unlocked</b><br>${esc(b.name)}: ${esc(b.desc)}`, { icon: svg(b.icon) }); playBadge(); }, 400 + i * 600);
+        if (b) setTimeout(() => { toast(`<b>${t('main.badgeUnlocked')}</b><br>${esc(b.name)}: ${esc(b.desc)}`, { icon: svg(b.icon) }); playBadge(); }, 400 + i * 600);
       });
     }
   }
 
   if (appState.lastLevel != null && ctx.acct.level > appState.lastLevel && appState.booted) {
     setTimeout(() => {
-      toast(`<b>Account level ${ctx.acct.level}</b><br>${esc(MOMENT_LINES.accountLevel(ctx.acct.level))}`, { icon: svg('star') });
+      toast(`<b>${t('main.accountLevel', { level: ctx.acct.level })}</b><br>${esc(MOMENT_LINES.accountLevel(ctx.acct.level))}`, { icon: svg('star') });
       playLevelUp();
       if (!prefersReducedMotion()) confetti(window.innerWidth / 2, 120, 140);
     }, 200);
@@ -146,7 +152,7 @@ function feedbackMoments(ctx) {
   fresh.slice(0, 3).forEach((w, i) => setTimeout(() => {
     const el = document.querySelector(`[data-id="${CSS.escape(w.id)}"]`);
     const r = el?.getBoundingClientRect();
-    xpPop(`+${xpForWorkout(w)} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3);
+    xpPop(`+${xpStatus(w, ctx.workouts).xp} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3);
     playComplete();
   }, 300 + i * 500));
 
@@ -157,7 +163,7 @@ function feedbackMoments(ctx) {
     if (done.length) {
       // several at once (one Strava sync can clear a few) → one toast, not a pile
       const xp = done.reduce((a, q) => a + q.xp, 0);
-      const head = done.length === 1 ? `Quest complete +${xp} XP` : `${done.length} quests complete +${xp} XP`;
+      const head = done.length === 1 ? t('main.questOne', { xp }) : t('main.questMany', { n: done.length, xp });
       setTimeout(() => {
         toast(`<b>${head}</b><br>${done.map((q) => esc(q.text)).join('<br>')}`, { icon: coachMini(), duration: 5200 });
         playQuest();
@@ -172,8 +178,26 @@ function feedbackMoments(ctx) {
 
 // ---- render -----------------------------------------------------------------
 
+// the language follows settings.lang (saved on Profile, synced through the
+// profile), or the device's language until one is chosen
+function syncLang(settings) {
+  const l = pickLang(settings?.lang, navigator.language);
+  if (l !== getLang()) setLang(l);
+}
+// a language change redraws the static chrome and any sheet that is open;
+// render() then redraws the view (the chat view rebuilds from scratch)
+onLang(() => {
+  applyStatic();
+  const view = document.getElementById('view');
+  if (view?.querySelector('#chat-root')) view.innerHTML = '';
+  const top = topLayerName();
+  if (top === 'settings') openSettings();
+  else if (top === 'fitness') openFitnessHub(buildCtx());
+});
+
 function render() {
   const ctx = buildCtx();
+  syncLang(ctx.settings);
   syncProgress(ctx);
   document.body.classList.toggle('rm', prefersReducedMotion());
 
@@ -182,7 +206,7 @@ function render() {
 
   // Header avatar: uploaded photo if set, otherwise the athlete's initial.
   const u = auth.currentUser?.();
-  const name = (u?.user_metadata?.display_name || u?.email || 'A').trim();
+  const name = (u?.user_metadata?.display_name || u?.email || 'A').trim(); // 'A' = athlete's initial fallback
   const avatarEl = document.getElementById('header-avatar');
   if (avatarEl) {
     avatarEl.innerHTML = ctx.settings?.avatar
@@ -194,15 +218,15 @@ function render() {
   if (chip) {
     chip.hidden = false;
     chip.innerHTML = `LVL ${rollNum(ctx.acct.level, 'acct-lvl')}`;
-    chip.setAttribute('aria-label', `Account level ${ctx.acct.level}, ${ctx.acct.toNext} XP to the next level`);
+    chip.setAttribute('aria-label', t('nav.accountLevelFull', { level: ctx.acct.level, toNext: ctx.acct.toNext }));
   }
 
   paintTabCursor();
-  document.querySelectorAll('.tab').forEach((t) => {
+  document.querySelectorAll('.tab').forEach((tab) => {
     // the calendar (route id 'journal') opens from Home, so Home stays lit while it's showing
-    const on = t.dataset.tab === appState.tab || (appState.tab === 'journal' && t.dataset.tab === 'home');
-    t.classList.toggle('active', on);
-    if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+    const on = tab.dataset.tab === appState.tab || (appState.tab === 'journal' && tab.dataset.tab === 'home');
+    tab.classList.toggle('active', on);
+    if (on) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
   });
 
   // Profile tab is a sealed full-screen game viewport: hide app chrome, lock scroll.
@@ -245,7 +269,7 @@ function paintTabCursor() {
   if (!cur) { cur = document.createElement('span'); cur.className = 'tab-cursor'; cur.setAttribute('aria-hidden', 'true'); bar.prepend(cur); bar.classList.add('has-cursor'); }
   const tabs = [...bar.querySelectorAll('.tab')];
   const lit = appState.tab === 'journal' ? 'home' : appState.tab;
-  const i = Math.max(0, tabs.findIndex((t) => t.dataset.tab === lit));
+  const i = Math.max(0, tabs.findIndex((tab) => tab.dataset.tab === lit));
   bar.style.setProperty('--i', String(i));
   if (_tabIdx >= 0 && i !== _tabIdx) {
     const ico = tabs[i]?.querySelector('.tab-ico');
@@ -291,17 +315,17 @@ function openLevelUp(sport, level) {
     onClose: () => { appState.sceneHold = false; document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden); },
   });
   root.innerHTML = `<div class="modal-backdrop" data-lu-close></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Level up">
-      ${sheetHead({ icon: 'star', title: `Level up`, closeAttr: 'data-lu-close' })}
+    <div class="modal" role="dialog" aria-modal="true" aria-label="${t('main.levelUp')}">
+      ${sheetHead({ icon: 'star', title: t('main.levelUp'), closeAttr: 'data-lu-close' })}
       <div class="modal-body lvlup">
         <div class="lvlup-art${fresh ? ' has-curtain' : ''}" style="--ar:${ar}">
-          <img class="lvlup-new" src="${esc(art(after))}" alt="${esc(after.label)} level ${level}">
+          <img class="lvlup-new" src="${esc(art(after))}" alt="${esc(t('main.levelAlt', { sport: after.label, n: level }))}">
           ${fresh ? `<img src="${esc(art(before))}" alt="" class="lvlup-curtain is-l"><img src="${esc(art(before))}" alt="" class="lvlup-curtain is-r">` : ''}
           ${after.kind === 'still' ? stillCorners(after.entry) : ''}
         </div>
-        <h2 aria-label="Level ${level}">LVL <span class="lvl-roll" aria-hidden="true"><i>${level - 1}</i><i>${level}</i></span></h2>
-        ${dialogue({ text: `${MOMENT_LINES.sportLevel(after.label, level)}${after.level > after.maxArt ? ' New scenery is on its way.' : ''}`, portrait: COACH.cheer || COACH.portrait })}
-        <button class="btn primary" data-lu-close>Continue</button>
+        <h2 aria-label="${t('main.levelAria', { n: level })}">LVL <span class="lvl-roll" aria-hidden="true"><i>${level - 1}</i><i>${level}</i></span></h2>
+        ${dialogue({ text: `${MOMENT_LINES.sportLevel(after.label, level)}${after.level > after.maxArt ? t('main.newScenery') : ''}`, portrait: COACH.cheer || COACH.portrait })}
+        <button class="btn primary" data-lu-close>${t('main.continue')}</button>
       </div>
     </div>`;
   root.querySelectorAll('[data-lu-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
@@ -314,7 +338,7 @@ function openLevelUp(sport, level) {
 // Quest reset countdown on Home ticks once a minute (no per-second redraws).
 function tickQuestReset() {
   const el = document.querySelector('[data-quest-reset]');
-  if (el) el.textContent = `RESETS ${formatCountdown(msUntilReset())}`;
+  if (el) el.textContent = t('ui.resetsIn', { time: formatCountdown(msUntilReset()) });
 }
 
 // ---- plan clearing ----------------------------------------------------------
@@ -330,7 +354,7 @@ function prescribedSessions(from = null) {
 
 function clearPrescribed(from, message) {
   const n = store.deleteWorkouts(prescribedSessions(from).map((w) => w.id));
-  toast(`${message} · ${n} session${n === 1 ? '' : 's'} removed`, { icon: svg('trash') });
+  toast(t('main.removed', { message, n }), { icon: svg('trash') });
   // Both buttons live in Settings — redraw it so its session counts aren't stale.
   if (topLayerName() === 'settings') openSettings();
   return n;
@@ -391,19 +415,19 @@ function onClick(e) {
     case 'pg-profile': openFitnessHub(buildCtx()); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
-      if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); closeAllLayers(); }
+      if (confirm(t('main.signOutConfirm'))) { auth.signOut(); closeAllLayers(); }
       break;
     case 'hub-strava-connect':
-      import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed')));
+      import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || t('main.stravaConnectFailed'))));
       break;
     case 'hub-strava-sync':
       busy(el, () => import('./strava-client.js').then((m) => m.syncNow())
-        .then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); })
-        .catch((e) => toast(e.message || 'Sync failed')));
+        .then((r) => { store.commit(); toast(t('main.stravaSync', { link: r.link || 0, insert: r.insert || 0 }), { icon: svg('sync') }); })
+        .catch((e) => toast(e.message || t('main.syncFailed'))));
       break;
     case 'hub-strava-disconnect':
       import('./strava-client.js').then((m) => m.disconnectStrava()
-        .then(() => toast('Strava disconnected')).catch((e) => toast(e.message || 'Disconnect failed')));
+        .then(() => toast(t('main.stravaDisconnected'))).catch((e) => toast(e.message || t('main.disconnectFailed'))));
       break;
     case 'pg-sport': setPgSport(el.dataset.sport); break;
     case 'open-workout':
@@ -414,7 +438,7 @@ function onClick(e) {
     case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
     case 'routine-delete': {
       const rt = getRoutines().find((r) => r.id === el.dataset.rt);
-      if (rt && confirm(`Delete the routine “${rt.name}”? Sessions you already did stay.`)) {
+      if (rt && confirm(t('main.deleteRoutine', { name: rt.name }))) {
         deleteRoutine(rt.id);
         if (document.querySelector('[data-set-do="ai-plan"]')) openSettings();
       }
@@ -434,25 +458,25 @@ function onClick(e) {
     case 'open-season': openSeasonPath(buildCtx()); break;
     case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
     case 'clear-future': {
-      const t = todayISO();
-      const n = prescribedSessions(t).length;
-      if (!n) { toast('Nothing to clear — no upcoming planned sessions.'); break; }
-      if (!confirm(`Clear ${n} upcoming planned session${n === 1 ? '' : 's'} from today onward?\n\nCompleted and Strava-verified sessions are kept.`)) break;
-      clearPrescribed(t, 'Future workouts cleared');
+      const from = todayISO();
+      const n = prescribedSessions(from).length;
+      if (!n) { toast(t('main.nothingToClear')); break; }
+      if (!confirm(t('main.clearConfirm', { n }))) break;
+      clearPrescribed(from, t('main.futureCleared'));
       break;
     }
     case 'reset-plan': {
       const n = prescribedSessions().length;
-      if (!n) { toast('Your plan is already empty — generate a new one below.'); break; }
-      if (!confirm(`Reset your training plan?\n\nThis removes all ${n} planned session${n === 1 ? '' : 's'}, past and upcoming. Your completed and Strava-verified history, XP, levels and badges are kept.`)) break;
-      clearPrescribed(null, 'Training plan reset. Build a new one with AI training plan');
+      if (!n) { toast(t('main.planEmpty')); break; }
+      if (!confirm(t('main.resetConfirm', { n }))) break;
+      clearPrescribed(null, t('main.planReset'));
       break;
     }
     case 'shop-open': window.open(el.dataset.url, '_blank', 'noopener,noreferrer'); break;
     case 'edit': openEditor(id); break;
-    case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
+    case 'duplicate': store.duplicateWorkout(id); toast(t('main.duplicated')); break;
     case 'delete':
-      if (confirm('Delete this session?')) { store.deleteWorkout(id); if (_detailId === id) closeLayer('workout'); toast('Session deleted'); }
+      if (confirm(t('main.deleteConfirm'))) { store.deleteWorkout(id); if (_detailId === id) closeLayer('workout'); toast(t('main.deleted')); }
       break;
     case 'open-editor-new': openEditor(null, el.dataset.date); break;
     case 'remove-pack': {
@@ -462,6 +486,7 @@ function onClick(e) {
       break;
     }
     case 'open-settings': openSettings(); break;
+    case 'set-lang': if (el.dataset.lang !== getLang()) { store.setSetting('lang', el.dataset.lang); haptic('tick'); } break;
     case 'open-auth': auth.openAuthModal(); break;
     case 'dismiss-sync': sessionStorage.setItem('tq-sync-dismissed', '1'); render(); break;
     default: break;
@@ -531,7 +556,7 @@ function onSubmit(e) {
     const log = (store.getSettings().bodyMetrics || []).filter((m) => m.date !== date);
     log.push({ ...((store.getSettings().bodyMetrics || []).find((m) => m.date === date) || {}), ...entry });
     store.setSetting('bodyMetrics', log);
-    toast('Logged today’s metrics', { icon: svg('check') });
+    toast(t('main.metricsLogged'), { icon: svg('check') });
     return;
   }
 
@@ -546,7 +571,7 @@ function onSubmit(e) {
   } else if (el.dataset.action === 'tomorrow-pack-add') {
     const tomorrow = el.dataset.date;
     let target = store.getWorkouts().find((w) => w.date === tomorrow);
-    if (!target) { toast('No session tomorrow to attach the item to.'); return; }
+    if (!target) { toast(t('main.noTomorrow')); return; }
     target.packing.push({ item: val, checked: false });
     store.commit();
   }
@@ -561,54 +586,54 @@ function openSettings() {
   const root = openLayer('settings');
   root.innerHTML = `
     <div class="modal-backdrop" data-set-close></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Settings">
-      ${sheetHead({ icon: 'gear', title: `Settings`, closeAttr: 'data-set-close' })}
+    <div class="modal" role="dialog" aria-modal="true" aria-label="${t('main.settings')}">
+      ${sheetHead({ icon: 'gear', title: t('main.settings'), closeAttr: 'data-set-close' })}
       <div class="modal-body">
         ${accountSectionHtml()}
-        <label class="toggle"><span>${svg('sound')} Sound effects</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
-        <label class="toggle"><span>${svg('motion')} Reduce motion</span><input type="checkbox" data-set="reduceMotion" ${s.reduceMotion ? 'checked' : ''}></label>
-        <label class="field"><span>Units</span><select data-set="units"><option value="metric" ${s.units === 'metric' ? 'selected' : ''}>Metric (km)</option><option value="imperial" ${s.units === 'imperial' ? 'selected' : ''}>Imperial (mi)</option></select></label>
-        <label class="field"><span>Week starts on</span><select data-set="weekStart"><option value="1" ${s.weekStart === 1 ? 'selected' : ''}>Monday</option><option value="0" ${s.weekStart === 0 ? 'selected' : ''}>Sunday</option></select></label>
+        ${langToggle()}
+        <button type="button" class="row-btn" data-set-do="checkin">${svg('pin')} <span>${t('checkin.settingsLabel')}</span><span class="spacer"></span><b>${s.gymCheckin ? t('checkin.stateOn') : t('checkin.stateOff')}</b></button>
+        <label class="toggle"><span>${svg('sound')} ${t('main.sound')}</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
+        <label class="toggle"><span>${svg('motion')} ${t('main.reduceMotion')}</span><input type="checkbox" data-set="reduceMotion" ${s.reduceMotion ? 'checked' : ''}></label>
+        <label class="field"><span>${t('main.units')}</span><select data-set="units"><option value="metric" ${s.units === 'metric' ? 'selected' : ''}>${t('main.metric')}</option><option value="imperial" ${s.units === 'imperial' ? 'selected' : ''}>${t('main.imperial')}</option></select></label>
+        <label class="field"><span>${t('main.weekStarts')}</span><select data-set="weekStart"><option value="1" ${s.weekStart === 1 ? 'selected' : ''}>${t('main.monday')}</option><option value="0" ${s.weekStart === 0 ? 'selected' : ''}>${t('main.sunday')}</option></select></label>
 
         <hr>
-        <h3>Backup</h3>
-        <p class="muted small">${auth.currentUser()
-          ? 'Signed in — your data syncs across devices automatically. Export/import still works for an extra offline backup.'
-          : 'Data is stored <b>per-device in this browser</b> (localStorage). It does <b>not</b> sync between your phone and laptop — sign in above, or use export/import to move it.'}</p>
+        <h3>${t('main.backup')}</h3>
+        <p class="muted small">${auth.currentUser() ? t('main.backupSignedIn') : t('main.backupLocal')}</p>
         <div class="row">
-          <button class="btn ghost" data-set-do="export">${svg('download')} Export</button>
-          <button class="btn ghost" data-set-do="import">${svg('upload')} Import</button>
-          <button class="btn ghost" data-set-do="export-ics">${svg('calendar')} Calendar file</button>
+          <button class="btn ghost" data-set-do="export">${svg('download')} ${t('main.export')}</button>
+          <button class="btn ghost" data-set-do="import">${svg('upload')} ${t('main.import')}</button>
+          <button class="btn ghost" data-set-do="export-ics">${svg('calendar')} ${t('main.calendarFile')}</button>
         </div>
         <input type="file" id="import-file" accept="application/json" hidden>
 
-        ${deferredInstall ? `<hr><button class="btn primary" data-set-do="install">${svg('install')} Install app</button>` : ''}
+        ${deferredInstall ? `<hr><button class="btn primary" data-set-do="install">${svg('install')} ${t('main.install')}</button>` : ''}
 
         <hr>
-        <h3>Training plan</h3>
-        <label class="field"><span>Bike FTP (Watts)</span><input type="number" min="0" step="5" data-set="ftp" value="${s.ftp || 250}"></label>
-        <p class="muted small">${planned} planned session${planned === 1 ? '' : 's'} on your calendar (${upcoming} from today onward).</p>
+        <h3>${t('main.trainingPlan')}</h3>
+        <label class="field"><span>${t('main.ftp')}</span><input type="number" min="0" step="5" data-set="ftp" value="${s.ftp || 250}"></label>
+        <p class="muted small">${t('main.plannedCount', { n: planned, upcoming })}</p>
         <div class="row">
-          <button class="btn primary" data-set-do="ai-plan">${svg('spark')} AI training plan</button>
-          <button class="btn ghost danger" data-action="clear-future">${svg('trash')} Clear future</button>
+          <button class="btn primary" data-set-do="ai-plan">${svg('spark')} ${t('main.aiPlan')}</button>
+          <button class="btn ghost danger" data-action="clear-future">${svg('trash')} ${t('main.clearFuture')}</button>
         </div>
-        <button class="btn ghost danger block" data-action="reset-plan">${svg('regen')} Reset training plan</button>
-        <p class="muted small">Clearing wipes upcoming sessions only; resetting wipes the whole plan, past and upcoming. Completed and Strava-verified sessions are always kept, so your XP, levels and badges are safe.</p>
+        <button class="btn ghost danger block" data-action="reset-plan">${svg('regen')} ${t('main.resetPlan')}</button>
+        <p class="muted small">${t('main.clearNote')}</p>
 
         <hr>
-        <h3>Routines</h3>
-        ${routineRows({ withDelete: true }) || '<p class="muted small">No routines yet. Open a gym session and tap “Save as routine”.</p>'}
+        <h3>${t('main.routines')}</h3>
+        ${routineRows({ withDelete: true }) || `<p class="muted small">${t('main.noRoutines')}</p>`}
 
         <hr>
-        <h3>Packing presets</h3>
-        <div class="pack-presets">${['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'].map((t) =>
-          `<label class="field"><span>${t}</span><input type="text" data-pack-preset="${t}" value="${esc((s.packing?.[t] || []).join(', '))}" placeholder="item, item, …"></label>`).join('')}</div>
+        <h3>${t('main.packingPresets')}</h3>
+        <div class="pack-presets">${['run', 'bike', 'swim', 'gym', 'brick', 'mobility', 'other'].map((k) =>
+          `<label class="field"><span>${esc(DISCIPLINES[k].label)}</span><input type="text" data-pack-preset="${k}" value="${esc((s.packing?.[k] || []).map((x) => planItem(x, k)).join(', '))}" placeholder="${t('main.presetPh')}"></label>`).join('')}</div>
 
         <hr>
-        <h3>Danger zone</h3>
-        <button class="btn ghost danger" data-set-do="reseed">${svg('regen')} Reset &amp; reseed plan</button>
+        <h3>${t('main.dangerZone')}</h3>
+        <button class="btn ghost danger" data-set-do="reseed">${svg('regen')} ${esc(t('main.reseed'))}</button>
       </div>
-      <footer class="modal-foot"><span class="spacer"></span><button class="btn primary" data-set-close>Done</button></footer>
+      <footer class="modal-foot"><span class="spacer"></span><button class="btn primary" data-set-close>${t('main.done')}</button></footer>
     </div>`;
 
   const close = () => closeLayer(root);
@@ -630,22 +655,23 @@ function openSettings() {
     if (act === 'export') doExport();
     else if (act === 'export-ics') doExportICS();
     else if (act === 'import') root.querySelector('#import-file').click();
-    else if (act === 'reseed') { if (confirm('Reset everything and reload the original plan? Your logged progress will be lost.')) { doExport(); store.reseed(); appState.lastLevel = null; appState.seen = null; close(); toast('Backup exported, plan reseeded', { icon: svg('regen') }); } }
+    else if (act === 'reseed') { if (confirm(t('main.reseedConfirm'))) { doExport(); store.reseed(); appState.lastLevel = null; appState.seen = null; close(); toast(t('main.reseeded'), { icon: svg('regen') }); } }
     else if (act === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; close(); }
     else if (act === 'ai-plan') { close(); startAIPlan(); }
+    else if (act === 'checkin') openCheckinSheet({ onChange: () => { if (topLayerName() === 'settings') openSettings(); } });
     else if (act === 'signin') { close(); auth.openAuthModal(); }
-    else if (act === 'signout') { if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); close(); } }
-    else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed'))); }
-    else if (act === 'strava-disconnect') { import('./strava-client.js').then((m) => m.disconnectStrava().then(() => { toast('Strava disconnected'); openSettings(); })); }
-    else if (act === 'strava-sync') { busy(b, () => import('./strava-client.js').then((m) => m.syncNow()).then((r) => { store.commit(); toast(`Strava sync: ${r.link || 0} linked, ${r.insert || 0} added`, { icon: svg('sync') }); }).catch((e) => toast(e.message || 'Sync failed'))); }
+    else if (act === 'signout') { if (confirm(t('main.signOutConfirm'))) { auth.signOut(); close(); } }
+    else if (act === 'strava-connect') { import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || t('main.stravaConnectFailed')))); }
+    else if (act === 'strava-disconnect') { import('./strava-client.js').then((m) => m.disconnectStrava().then(() => { toast(t('main.stravaDisconnected')); openSettings(); })); }
+    else if (act === 'strava-sync') { busy(b, () => import('./strava-client.js').then((m) => m.syncNow()).then((r) => { store.commit(); toast(t('main.stravaSync', { link: r.link || 0, insert: r.insert || 0 }), { icon: svg('sync') }); }).catch((e) => toast(e.message || t('main.syncFailed')))); }
   }));
   root.querySelector('#import-file')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      try { store.importData(reader.result); appState.lastLevel = null; appState.seen = null; close(); toast('Data imported', { icon: svg('upload') }); }
-      catch { toast('Import failed — invalid file.'); }
+      try { store.importData(reader.result); appState.lastLevel = null; appState.seen = null; close(); toast(t('main.imported'), { icon: svg('upload') }); }
+      catch { toast(t('main.importFailed')); }
     };
     reader.readAsText(file);
   });
@@ -659,7 +685,7 @@ function doExport() {
   a.download = `moske-backup-${todayISO()}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast('Backup exported', { icon: svg('download') });
+  toast(t('main.exported'), { icon: svg('download') });
 }
 
 function doExportICS() {
@@ -671,7 +697,7 @@ function doExportICS() {
     a.download = 'moske-training.ics';
     a.click();
     URL.revokeObjectURL(url);
-    toast('Calendar exported', { icon: svg('calendar') });
+    toast(t('main.calExported'), { icon: svg('calendar') });
   });
 }
 
@@ -680,14 +706,14 @@ function openGoalEditor() {
   const root = openLayer('goals');
   root.innerHTML = `
     <div class="modal-backdrop" data-goal-close></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Edit weekly goals">
-      ${sheetHead({ icon: 'target', title: `Weekly goals`, closeAttr: 'data-goal-close' })}
+    <div class="modal" role="dialog" aria-modal="true" aria-label="${t('main.goalsAria')}">
+      ${sheetHead({ icon: 'target', title: t('main.goalsTitle'), closeAttr: 'data-goal-close' })}
       <div class="modal-body">
         <form data-goal-form>
-          <label class="field"><span>Planned sessions</span><input type="number" name="sessions" min="0" step="1" value="${g.sessions}" required></label>
-          <label class="field"><span>Distance / volume (km)</span><input type="number" name="km" min="0" step="1" value="${g.km}" required></label>
-          <label class="field"><span>Training hours</span><input type="number" name="hours" min="0" step="0.5" value="${g.hours}" required></label>
-          <button class="btn primary" type="submit">Save goals</button>
+          <label class="field"><span>${t('main.goalSessions')}</span><input type="number" name="sessions" min="0" step="1" value="${g.sessions}" required></label>
+          <label class="field"><span>${t('main.goalKm')}</span><input type="number" name="km" min="0" step="1" value="${g.km}" required></label>
+          <label class="field"><span>${t('main.goalHours')}</span><input type="number" name="hours" min="0" step="0.5" value="${g.hours}" required></label>
+          <button class="btn primary" type="submit">${t('main.saveGoals')}</button>
         </form>
       </div>
     </div>`;
@@ -700,7 +726,7 @@ function openGoalEditor() {
       km: Math.max(0, +e.target.km.value || 0),
       hours: Math.max(0, +e.target.hours.value || 0),
     });
-    close(); render(); toast('Goals updated', { icon: svg('target') });
+    close(); render(); toast(t('main.goalsUpdated'), { icon: svg('target') });
   });
 }
 
@@ -714,15 +740,15 @@ const gymDeps = {
     if (key && !firstStamp(key)) return; // this record was celebrated already
     playBadge();
     haptic('record');
-    const text = `New record · ${name}: ${prs.map((p) => p.label).join(' · ')}`;
+    const text = t('main.newRecord', { name, prs: prs.map((p) => p.label).join(' · ') });
     // the plaque stamps down and settles into the set; with reduced motion, a toast says it
     if (stampRecord({ name, prs, target })) announce(text);
-    else toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
+    else toast(`<b>${esc(t('main.newRecordHead', { name }))}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
   },
   showFinish: (id) => {
     const body = document.getElementById('wd-body');
     const w = store.workoutById(id);
-    if (body && w) { body.innerHTML = finishView(w); body.scrollTop = 0; }
+    if (body && w) { body.innerHTML = finishView(w, store.getWorkouts()); body.scrollTop = 0; }
     playComplete();
   },
 };
@@ -748,8 +774,8 @@ function openWorkoutDetail(id) {
   // the open session (the gym ticker stops once no logger is open)
   const root = openLayer('workout', { reuse: false, onClose: () => { if (_detailId === id) _detailId = null; } });
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
-    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(w.title)}">
-      ${sheetHead({ title: `${esc(w.title)}`, closeAttr: 'data-wd-close' })}
+    <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(planTitle(w.title))}">
+      ${sheetHead({ title: `${esc(planTitle(w.title))}`, closeAttr: 'data-wd-close' })}
       <div class="modal-body" id="wd-body">${renderWorkoutDetail(w, store.getSettings().units, buildCtx())}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
@@ -762,8 +788,8 @@ function openSportLevels(sport) {
   const level = sportProgress(store.getWorkouts(), sport).level;
   const root = openLayer('levels');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
-    <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(sport)} levels">
-      ${sheetHead({ icon: 'star', title: `Levels`, closeAttr: 'data-wd-close' })}
+    <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(t('main.levelsAria', { sport: (DISCIPLINES[sport] || DISCIPLINES.other).label }))}">
+      ${sheetHead({ icon: 'star', title: t('main.levels'), closeAttr: 'data-wd-close' })}
       <div class="modal-body">${sportLevelCarousel(sport, level)}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
@@ -776,7 +802,7 @@ function openSportLevels(sport) {
 function openLightbox(src, sport) {
   if (!src) return;
   const root = openLayer('lightbox', { reuse: false });
-  root.innerHTML = `<div class="level-lightbox --${sport || 'other'}" role="dialog" aria-label="Level artwork"><img src="${esc(src)}" alt="Level artwork"></div>`;
+  root.innerHTML = `<div class="level-lightbox --${sport || 'other'}" role="dialog" aria-label="${t('main.artwork')}"><img src="${esc(src)}" alt="${t('main.artwork')}"></div>`;
   const box = root.firstElementChild;
   box.addEventListener('click', () => closeLayer(root));
   requestAnimationFrame(() => box.classList.add('show'));
@@ -816,7 +842,7 @@ async function autoStravaSync() {
     const r = await m.syncNow();
     if ((r.insert || 0) + (r.link || 0) + (r.update || 0) > 0) {
       store.commit();
-      toast(`Strava: ${r.link || 0} linked · ${r.insert || 0} imported`, { icon: svg('sync') });
+      toast(t('main.stravaAuto', { link: r.link || 0, insert: r.insert || 0 }), { icon: svg('sync') });
     }
   } catch { /* silent — never interrupt the athlete */ }
 }
@@ -827,29 +853,29 @@ function accountSectionHtml() {
   if (!SYNC_ENABLED) return '';
   const u = auth.currentUser();
   const acct = u
-    ? `<div class="signed-in"><div><b>${svg('cloud')} Signed in</b><br><span class="muted small">${esc(u.email || 'your account')}</span></div>
-         <button class="btn ghost" data-set-do="signout">Sign out</button></div>`
-    : `<button class="btn primary block" data-set-do="signin">${svg('cloud')} Sign in to sync</button>`;
+    ? `<div class="signed-in"><div><b>${svg('cloud')} ${t('main.signedIn')}</b><br><span class="muted small">${esc(u.email || t('main.yourAccount'))}</span></div>
+         <button class="btn ghost" data-set-do="signout">${t('main.signOut')}</button></div>`
+    : `<button class="btn primary block" data-set-do="signin">${svg('cloud')} ${t('main.signInSync')}</button>`;
   const strava = (u && STRAVA_ENABLED)
     ? `<div class="strava-block">
          <div class="row">
-           <button class="btn ghost" data-set-do="strava-connect">${svg('link')} Connect Strava</button>
-           <button class="btn ghost" data-set-do="strava-sync">${svg('sync')} Sync now</button>
-           <button class="btn ghost danger" data-set-do="strava-disconnect">Disconnect</button>
+           <button class="btn ghost" data-set-do="strava-connect">${svg('link')} ${t('main.connectStrava')}</button>
+           <button class="btn ghost" data-set-do="strava-sync">${svg('sync')} ${t('main.syncNow')}</button>
+           <button class="btn ghost danger" data-set-do="strava-disconnect">${t('main.disconnect')}</button>
          </div>
-         <div class="powered-by-strava">Powered by Strava</div>
+         <div class="powered-by-strava">${t('main.poweredByStrava')}</div>
        </div>`
     : '';
-  return `<h3>Account</h3>${acct}${strava}<hr>`;
+  return `<h3>${t('main.account')}</h3>${acct}${strava}<hr>`;
 }
 
 function renderSyncBanner() {
   const el = document.getElementById('sync-banner');
   if (!el) return;
   if (SYNC_ENABLED && !auth.currentUser() && !sessionStorage.getItem('tq-sync-dismissed')) {
-    el.innerHTML = `<div class="sync-prompt">${svg('cloud')}<span>Sign in to sync across your phone &amp; laptop.</span>
-      <button class="link" data-action="open-auth">Sign in</button>
-      <button class="icon-btn tiny" data-action="dismiss-sync" aria-label="Dismiss">${svg('close')}</button></div>`;
+    el.innerHTML = `<div class="sync-prompt">${svg('cloud')}<span>${esc(t('main.syncPrompt'))}</span>
+      <button class="link" data-action="open-auth">${t('main.signIn')}</button>
+      <button class="icon-btn tiny" data-action="dismiss-sync" aria-label="${t('main.dismiss')}">${svg('close')}</button></div>`;
   } else {
     el.innerHTML = '';
   }
@@ -869,9 +895,8 @@ function handleRedirectParams() {
   const strava = url.searchParams.get('strava');
   if (strava) {
     const sr = url.searchParams.get('sr'); // failure reason from the callback fn
-    let msg = { connected: 'Strava connected', denied: 'Strava connection cancelled',
-      error: 'Strava connection failed', auth_failed: 'Connect failed — sign in first' }[strava];
-    if (strava === 'error' && sr) msg += ` — ${decodeURIComponent(sr)}`;
+    let msg = ['connected', 'denied', 'error', 'auth_failed'].includes(strava) ? t(`main.strava.${strava}`) : '';
+    if (strava === 'error' && sr) msg += `: ${decodeURIComponent(sr)}`;
     if (msg) setTimeout(() => toast(msg), 600);
     url.searchParams.delete('strava');
     url.searchParams.delete('sr');
@@ -890,22 +915,22 @@ function maybeOnboard() {
   if (localStorage.getItem('moske-onboarded')) return;
   const root = openLayer('welcome', { swipeBack: false, onClose: () => localStorage.setItem('moske-onboarded', '1') });
   const cards = [
-    { icon: 'coach', img: COACH.full, t: 'Meet your coach', b: 'Sessions complete when Strava verifies them. That is what earns XP, clears daily quests and keeps your streak alive.' },
-    { icon: 'plus', t: 'Make it yours', b: 'Tap the + button to add a session on any day, with intervals, exercises and a packing list.' },
-    { icon: 'install', t: 'Add to Home Screen', b: 'Install MOSKE for a full-screen app that works offline at the gym. Sign in to sync across devices.' },
+    { icon: 'coach', img: COACH.full, k: 'coach' },
+    { icon: 'plus', k: 'plus' },
+    { icon: 'install', k: 'install' },
   ];
   let i = 0;
   const draw = () => {
     const c = cards[i];
     root.innerHTML = `<div class="modal-backdrop"></div>
-      <div class="modal onboard" role="dialog" aria-modal="true" aria-label="Welcome to MOSKE">
+      <div class="modal onboard" role="dialog" aria-modal="true" aria-label="${t('main.welcome.aria')}">
         <div class="modal-body onboard-body">
-          <div class="onboard-icon">${c.img ? `<img class="onboard-coach" src="${esc(c.img)}" alt="Your coach" width="109" height="189">` : svg(c.icon)}</div>
-          <h2>${c.t}</h2><p class="muted">${c.b}</p>
+          <div class="onboard-icon">${c.img ? `<img class="onboard-coach" src="${esc(c.img)}" alt="${t('main.welcome.coachAlt')}" width="109" height="189">` : svg(c.icon)}</div>
+          <h2>${t(`main.welcome.${c.k}T`)}</h2><p class="muted">${t(`main.welcome.${c.k}B`)}</p>
           <div class="onboard-dots">${cards.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
         </div>
-        <footer class="modal-foot"><button class="btn ghost" data-ob="skip">Skip</button><span class="spacer"></span>
-          <button class="btn primary" data-ob="next">${i === cards.length - 1 ? 'Start training' : 'Next'}</button></footer>
+        <footer class="modal-foot"><button class="btn ghost" data-ob="skip">${t('main.welcome.skip')}</button><span class="spacer"></span>
+          <button class="btn primary" data-ob="next">${i === cards.length - 1 ? t('main.welcome.start') : t('main.welcome.next')}</button></footer>
       </div>`;
     const done = () => closeLayer(root);
     root.querySelector('[data-ob="skip"]').addEventListener('click', done);
@@ -920,6 +945,8 @@ async function boot() {
   // ?demo=1 only: a hook so screenshots and clips can show moments on demand
   if (new URLSearchParams(location.search).has('demo')) window.moskeDemo = { levelUp: (sport = 'run', level = 3) => openLevelUp(sport, level) };
   await store.init();
+  syncLang(store.getSettings());
+  applyStatic();
   const today = todayISO();
   appState.journalDate = today;
   // Restore last tab.

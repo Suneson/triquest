@@ -13,6 +13,7 @@ import { SYNC_ENABLED } from './config.js';
 import { isDemo, demoRoom, DEMO_ME } from './demo.js';
 import { checkBody, rateLimited, roomUnread, mergeMessages, clientId } from '../core/room.js';
 import { haptic } from './haptics.js';
+import { t } from '../core/i18n.js';
 
 const PAGE = 40;
 const SEEN = 'moske-room-seen';
@@ -88,7 +89,7 @@ export function startRoom() {
       subscribe(c);
       emit('load');
     } catch (e) {
-      state.error = e?.message || 'Couldn’t load the room';
+      state.error = e?.message || t('room.roomFailed');
       started = null;
       emit('error');
     } finally { state.loading = false; }
@@ -147,13 +148,13 @@ export async function loadOlder() {
 export async function sendRoom(text, { retryOf = null } = {}) {
   const chk = checkBody(text);
   if (chk.error) return chk.error;
-  if (state.offline) return 'You’re offline. Your message will need sending again once you’re back.';
-  if (rateLimited(state.sentAt)) return 'Slow down: at most 10 messages a minute.';
+  if (state.offline) return t('room.offlineSend');
+  if (rateLimited(state.sentAt)) return t('room.slowDown');
   const cid = retryOf || clientId();
   state.messages = state.messages.filter((m) => !(m.pending && m.client_id === cid));
   const bubble = { id: -Date.now(), user_id: state.me, body: chk.body, client_id: cid, created_at: new Date().toISOString(), deleted_at: null, pending: true };
   state.messages.push(bubble);
-  state.sentAt = [...state.sentAt.filter((t) => Date.now() - t < 60000), Date.now()];
+  state.sentAt = [...state.sentAt.filter((at) => Date.now() - at < 60000), Date.now()];
   emit('sending');
   if (isDemo()) {
     setTimeout(() => {
@@ -170,7 +171,7 @@ export async function sendRoom(text, { retryOf = null } = {}) {
     emit('message');
     return '';
   } catch (e) {
-    bubble.failed = true; bubble.error = /Slow down/.test(e?.message || '') ? 'Slow down: at most 10 a minute.' : 'Not sent.';
+    bubble.failed = true; bubble.error = /Slow down/.test(e?.message || '') ? t('room.slowDownShort') : t('room.notSent');
     emit('failed');
     return '';
   }

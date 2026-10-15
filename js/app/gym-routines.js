@@ -6,6 +6,7 @@ import * as store from './store.js';
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { workoutFromRoutine } from '../core/gym-edit.js';
+import { t } from '../core/i18n.js';
 
 export const getRoutines = () => store.getSettings().routines || [];
 
@@ -30,9 +31,9 @@ export function routineRows({ date, withDelete = false } = {}) {
   return `<ul class="rt-list">${list.map((r) => {
     const n = r.exercises?.length || 0;
     return `<li class="rt-row">
-      <span class="rt-txt"><b>${esc(r.name)}</b><small class="muted">${n} exercise${n === 1 ? '' : 's'}</small></span>
-      <button type="button" class="btn tiny secondary" data-action="routine-start" data-rt="${esc(r.id)}" ${date ? `data-date="${esc(date)}"` : ''}>${svg('play')} Start</button>
-      ${withDelete ? `<button type="button" class="icon-btn tiny danger" data-action="routine-delete" data-rt="${esc(r.id)}" aria-label="${esc(`Delete routine ${r.name}`)}">${svg('trash')}</button>` : ''}
+      <span class="rt-txt"><b>${esc(r.name)}</b><small class="muted">${t('rt.exercises', { n })}</small></span>
+      <button type="button" class="btn tiny secondary" data-action="routine-start" data-rt="${esc(r.id)}" ${date ? `data-date="${esc(date)}"` : ''}>${svg('play')} ${t('rt.start')}</button>
+      ${withDelete ? `<button type="button" class="icon-btn tiny danger" data-action="routine-delete" data-rt="${esc(r.id)}" aria-label="${esc(t('rt.delete', { name: r.name }))}">${svg('trash')}</button>` : ''}
     </li>`;
   }).join('')}</ul>`;
 }

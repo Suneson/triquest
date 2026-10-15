@@ -4,6 +4,7 @@
 // the end state appears at once and nothing else changes.
 
 import { prefersReducedMotion } from './effects.js';
+import { fmtNum } from '../core/i18n.js';
 
 const reduced = () => prefersReducedMotion() || document.body.classList.contains('rm');
 
@@ -44,7 +45,7 @@ export function rollNum(value, key, { dp = 0 } = {}) {
   return `<span class="roll" data-roll="${v}" data-roll-key="${key}" data-roll-dp="${dp}">${fmt(v, dp)}</span>`;
 }
 
-const fmt = (v, dp) => (dp ? v.toFixed(dp) : Math.round(v).toLocaleString());
+const fmt = (v, dp) => fmtNum(dp ? v : Math.round(v), { minimumFractionDigits: dp, maximumFractionDigits: dp });
 
 function rollOne(el) {
   const key = el.dataset.rollKey;

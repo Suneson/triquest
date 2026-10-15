@@ -9,16 +9,20 @@ import { shortLabel, weekdayName } from '../core/dates.js';
 import { esc, meter } from './ui.js';
 import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
+import { t, tList, fmtNum } from '../core/i18n.js';
+import { DISCIPLINES } from '../core/disciplines.js';
 
-const DAY_LETTER = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_LETTER = () => tList('date.dayLetters');
 
 function stop(day, i, gateHere) {
-  const icons = day.types.slice(0, 2).map((t) => svg(t, `tint-${t}`)).join('');
+  const icons = day.types.slice(0, 2).map((type) => svg(type, `tint-${type}`)).join('');
   const body = icons || (day.rest ? svg('moon') : '');
   const state = day.flag ? 'verified' : day.isPast && day.types.length ? 'missed' : day.rest ? 'rest' : day.types.length ? 'planned' : 'empty';
-  const label = `${weekdayName(day.date)}: ${day.types.length ? day.types.join(' and ') : day.rest ? 'rest' : 'nothing planned'}${day.flag ? ', verified' : ''}${day.isToday ? ', today' : ''}`;
+  const what = day.types.length ? day.types.map((type) => (DISCIPLINES[type] || DISCIPLINES.other).label.toLowerCase()).join(t('misc.and'))
+    : day.rest ? t('misc.restLow') : t('misc.nothing');
+  const label = `${t('misc.stopLabel', { day: weekdayName(day.date), what })}${day.flag ? t('misc.verified') : ''}${day.isToday ? t('misc.today') : ''}`;
   return `<li class="wk-stop is-${state}${day.isToday ? ' is-today' : ''}${day.isPast ? ' is-past' : ''}${gateHere ? ' has-gate' : ''}" aria-label="${esc(label)}">
-      <span class="wk-day" aria-hidden="true">${DAY_LETTER[i]}</span>
+      <span class="wk-day" aria-hidden="true">${DAY_LETTER()[i]}</span>
       <span class="wk-tile" aria-hidden="true">${body}${day.flag ? '<i class="wk-flag"></i>' : ''}${day.isToday ? '<i class="wk-me"></i>' : ''}</span>
     </li>`;
 }
@@ -31,13 +35,13 @@ export function weekPathCard(ctx) {
   const ev = p.event;
   const gateDay = ev?.inWeek ? p.days.findIndex((d) => d.date === ev.date) : -1;
   const gate = ev && !ev.inWeek
-    ? `<li class="wk-gate" aria-label="${esc(`${ev.title} in ${ev.daysLeft} days`)}"><span class="wk-day" aria-hidden="true">${ev.daysLeft}d</span><span class="wk-tile" aria-hidden="true">${svg('flag')}</span></li>`
+    ? `<li class="wk-gate" aria-label="${esc(t('misc.gateAria', { title: ev.title, n: ev.daysLeft }))}"><span class="wk-day" aria-hidden="true">${t('misc.daysShort', { n: ev.daysLeft })}</span><span class="wk-tile" aria-hidden="true">${svg('flag')}</span></li>`
     : '';
   const evLine = ev
-    ? `<span class="wk-ev">${svg('flag')} ${esc(ev.title)} · ${ev.daysLeft === 0 ? 'today' : `${ev.daysLeft} d`}</span>` : '';
+    ? `<span class="wk-ev">${svg('flag')} ${esc(ev.title)} · ${ev.daysLeft === 0 ? t('misc.todayLow') : t('misc.dShort', { n: ev.daysLeft })}</span>` : '';
   return `<section class="card wk-path" data-action="open-season" role="button" tabindex="0"
-      aria-label="${esc(`Week path: ${flags} of ${planned} days verified${ev ? `, ${ev.title} in ${ev.daysLeft} days` : ''}. Open the season path`)}">
-    <div class="wk-head"><h4>Week path</h4>${evLine}</div>
+      aria-label="${esc(t('misc.weekAria', { flags, planned, ev: ev ? t('misc.weekAriaEv', { title: ev.title, n: ev.daysLeft }) : '' }))}">
+    <div class="wk-head"><h4>${t('misc.week')}</h4>${evLine}</div>
     <ol class="wk-track${gate ? ' has-gate-col' : ''}">${p.days.map((d, i) => stop(d, i, i === gateDay)).join('')}${gate}</ol>
   </section>`;
 }
@@ -52,21 +56,21 @@ export function openSeasonPath(ctx) {
     return `<li class="sp-week ${cls}">
         <span class="sp-node" aria-hidden="true">${w.isEventWeek ? svg('flag') : w.isCurrent ? '<i class="wk-me"></i>' : w.planned && w.done >= w.planned ? svg('check') : ''}</span>
         <div class="sp-body">
-          <div class="sp-top"><b>Week ${i + 1}</b><span>${esc(shortLabel(w.start))}</span>${w.isCurrent ? '<span class="tag today">Now</span>' : ''}</div>
-          ${meter(frac, { segments: 10, cls: w.isEventWeek ? 'good' : '', label: `${w.done} of ${w.planned} sessions verified` })}
-          <small class="sp-meta"><span class="data-num">${w.done}</span> / <span class="data-num">${w.planned}</span> sessions · <span class="data-num">${Math.round(w.minutes / 6) / 10}</span><span class="data-unit"> h planned</span></small>
+          <div class="sp-top"><b>${t('misc.weekN', { n: i + 1 })}</b><span>${esc(shortLabel(w.start))}</span>${w.isCurrent ? `<span class="tag today">${t('misc.now')}</span>` : ''}</div>
+          ${meter(frac, { segments: 10, cls: w.isEventWeek ? 'good' : '', label: t('misc.sessionsVerified', { done: w.done, planned: w.planned }) })}
+          <small class="sp-meta"><span class="data-num">${w.done}</span> / <span class="data-num">${w.planned}</span>${t('misc.sessionsWord')}<span class="data-num">${fmtNum(Math.round(w.minutes / 6) / 10)}</span><span class="data-unit">${t('misc.hPlanned')}</span></small>
         </div>
       </li>`;
   }).join('');
-  const title = s.event ? `${esc(s.event.title)} · ${s.event.daysLeft} d` : 'Next 8 weeks';
+  const title = s.event ? `${esc(s.event.title)} · ${t('misc.dShort', { n: s.event.daysLeft })}` : t('misc.next8');
   root.innerHTML = `
     <div class="modal-backdrop" data-sp-close></div>
-    <div class="modal sp-modal" role="dialog" aria-modal="true" aria-label="Season path">
-      ${sheetHead({ icon: 'route', title: `Season path`, closeAttr: 'data-sp-close' })}
+    <div class="modal sp-modal" role="dialog" aria-modal="true" aria-label="${t('misc.seasonPath')}">
+      ${sheetHead({ icon: 'route', title: t('misc.seasonPath'), closeAttr: 'data-sp-close' })}
       <div class="modal-body">
         <p class="sp-goal">${svg('flag')} ${title}</p>
         <ol class="sp-list">${rows}</ol>
-        ${s.event ? '' : '<p class="muted small">Add a race in Settings and the path runs to its finish gate.</p>'}
+        ${s.event ? '' : `<p class="muted small">${t('misc.addRace')}</p>`}
       </div>
     </div>`;
   const close = () => closeLayer(root);

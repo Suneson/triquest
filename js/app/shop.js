@@ -1,6 +1,7 @@
 // shop.js — Shopify Storefront API client for the ss-26 collection.
 import { esc, dialogue } from './ui.js';
 import { isDemo, demoShop } from './demo.js';
+import { t, fmtNum } from '../core/i18n.js';
 
 const ENDPOINT = 'https://moskeshop.com/api/2026-04/graphql.json';
 const TOKEN = 'f42b47288ec62ce928ff8dccf9e36ffb';
@@ -17,8 +18,8 @@ const QUERY = `query {
 }`;
 
 export function shopShell() {
-  return `<div class="day-header"><h2>Shop</h2></div>
-    <div id="shop-grid" class="shop-grid" aria-busy="true"><span class="sr">Loading products…</span>${skeletonCards()}</div>`;
+  return `<div class="day-header"><h2>${t('misc.shop')}</h2></div>
+    <div id="shop-grid" class="shop-grid" aria-busy="true"><span class="sr">${t('misc.loadingProducts')}</span>${skeletonCards()}</div>`;
 }
 
 // Loading tiles shaped like product cards: square image, title, price.
@@ -44,16 +45,16 @@ export async function loadShop() {
     });
     const json = await res.json();
     const items = (json?.data?.collectionByHandle?.products?.edges || []).map((e) => e.node);
-    grid.innerHTML = items.length ? items.map(card).join('') : dialogue({ who: 'Shop', icon: 'shop', text: 'No products in this drop yet.', cls: 'empty-dlg' });
+    grid.innerHTML = items.length ? items.map(card).join('') : dialogue({ who: t('misc.shop'), icon: 'shop', text: t('misc.noProducts'), cls: 'empty-dlg' });
   } catch (e) {
-    grid.innerHTML = dialogue({ who: 'Shop', icon: 'shop', text: 'Couldn’t load the shop. Check your connection and try again.', cls: 'empty-dlg' });
+    grid.innerHTML = dialogue({ who: t('misc.shop'), icon: 'shop', text: t('misc.shopFailed'), cls: 'empty-dlg' });
   }
   grid.removeAttribute('aria-busy');
 }
 
 function price(p) {
   const m = p?.minVariantPrice;
-  return m ? `${Number(m.amount).toFixed(2)} ${m.currencyCode}` : '';
+  return m ? fmtNum(m.amount, { style: 'currency', currency: m.currencyCode }) : '';
 }
 
 function card(n) {

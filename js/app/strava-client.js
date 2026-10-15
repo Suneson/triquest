@@ -4,11 +4,12 @@
 
 import { client } from './auth.js';
 import { CONFIG, functionsBaseUrl } from './config.js';
+import { t } from '../core/i18n.js';
 
 async function session() {
   const c = await client();
   const { data: { session } } = await c.auth.getSession();
-  if (!session) throw new Error('Sign in first');
+  if (!session) throw new Error(t('misc.signInFirst'));
   return session;
 }
 
@@ -40,7 +41,7 @@ export async function syncNow() {
     method: 'POST',
     headers: { Authorization: `Bearer ${s.access_token}` },
   });
-  if (!res.ok) throw new Error(`Sync failed (${res.status})`);
+  if (!res.ok) throw new Error(t('misc.syncFailed', { status: res.status }));
   return res.json();
 }
 
@@ -48,7 +49,7 @@ export async function syncNow() {
 export async function disconnectStrava() {
   const c = await client();
   const { data: { user } } = await c.auth.getUser();
-  if (!user) throw new Error('Sign in first');
+  if (!user) throw new Error(t('misc.signInFirst'));
   const { error } = await c.from('strava_accounts').delete().eq('user_id', user.id);
   if (error) throw error;
 }

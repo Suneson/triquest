@@ -12,8 +12,9 @@
 
 import { workSets } from './sets.js';
 import { sameExercise } from './gym-log.js';
-import { MUSCLES } from './exercises.js';
+import { MUSCLES, muscleLabel } from './exercises.js';
 import { addDays, diffDays, weekdayMon0 } from './dates.js';
+import { t, fmtNum } from './i18n.js';
 
 export const E1RM_MAX_REPS = 12;
 
@@ -54,7 +55,7 @@ export function exerciseHistory(workouts, key) {
       out.push({
         date: w.date, workoutId: w.id, kind: ex.kind, sets, best,
         e1rm: top || null,
-        volume: Math.round(sets.reduce((t, s) => t + setVolume(s), 0)),
+        volume: Math.round(sets.reduce((sum, s) => sum + setVolume(s), 0)),
       });
     }
   }
@@ -98,11 +99,11 @@ export function detectPRs(workouts, w, i, j) {
   if (!others.length) return [];
   const out = [];
   const max = (f) => Math.max(0, ...others.map(f).filter((v) => v != null));
-  if (s.weight > 0 && s.weight > max((o) => o.weight)) out.push({ type: 'weight', value: s.weight, label: `Heaviest: ${s.weight} kg` });
+  if (s.weight > 0 && s.weight > max((o) => o.weight)) out.push({ type: 'weight', value: s.weight, label: t('stats.heaviest', { v: fmtNum(s.weight) }) });
   const est = e1rm(s.weight, s.reps);
-  if (est && est > max((o) => e1rm(o.weight, o.reps))) out.push({ type: 'e1rm', value: est, label: `Est. 1RM: ${est} kg` });
-  if (!(s.weight > 0) && s.reps > 0 && s.reps > max((o) => (o.weight > 0 ? null : o.reps))) out.push({ type: 'reps', value: s.reps, label: `Most reps: ${s.reps}` });
-  if (s.seconds > 0 && s.seconds > max((o) => o.seconds)) out.push({ type: 'time', value: s.seconds, label: `Longest: ${s.seconds} s` });
+  if (est && est > max((o) => e1rm(o.weight, o.reps))) out.push({ type: 'e1rm', value: est, label: t('stats.e1rm', { v: fmtNum(est) }) });
+  if (!(s.weight > 0) && s.reps > 0 && s.reps > max((o) => (o.weight > 0 ? null : o.reps))) out.push({ type: 'reps', value: s.reps, label: t('stats.mostReps', { v: s.reps }) });
+  if (s.seconds > 0 && s.seconds > max((o) => o.seconds)) out.push({ type: 'time', value: s.seconds, label: t('stats.longest', { v: s.seconds }) });
   return out;
 }
 
@@ -122,10 +123,10 @@ export function recordsShelf(workouts, limit = 8) {
   const rows = [];
   for (const key of seen.values()) {
     const rec = exerciseRecords(exerciseHistory(workouts, key));
-    const pick = rec.e1rm ? { text: `${rec.e1rm.value} kg`, sub: 'est. 1RM', date: rec.e1rm.date }
-      : rec.heaviest ? { text: `${rec.heaviest.weight} kg`, sub: 'heaviest', date: rec.heaviest.date }
-        : rec.time ? { text: `${rec.time.seconds} s`, sub: 'longest', date: rec.time.date }
-          : rec.reps ? { text: `${rec.reps.reps} reps`, sub: 'most reps', date: rec.reps.date } : null;
+    const pick = rec.e1rm ? { text: `${fmtNum(rec.e1rm.value)} kg`, sub: t('stats.subE1rm'), date: rec.e1rm.date }
+      : rec.heaviest ? { text: `${fmtNum(rec.heaviest.weight)} kg`, sub: t('stats.subHeaviest'), date: rec.heaviest.date }
+        : rec.time ? { text: `${rec.time.seconds} s`, sub: t('stats.subLongest'), date: rec.time.date }
+          : rec.reps ? { text: t('stats.repsN', { n: rec.reps.reps }), sub: t('stats.subReps'), date: rec.reps.date } : null;
     if (pick) rows.push({ key, name: key.name, kind: key.kind, headline: pick, date: pick.date });
   }
   return rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.name.localeCompare(b.name))).slice(0, limit);
@@ -185,12 +186,12 @@ export function muscleBalance(workouts, today, days = 28) {
 
 /** A plain description of the balance: what happened, no advice. */
 export function describeBalance(bal) {
-  if (!bal.total) return 'No gym sets logged in the last four weeks.';
+  if (!bal.total) return t('stats.noSets');
   const top = bal.rows[0];
-  const parts = [`${bal.total} working sets in four weeks. ${top.muscle} got the most (${Math.round(top.share * 100)}%).`];
-  if (bal.untrained.length && bal.untrained.length <= 4) parts.push(`None for ${listJoin(bal.untrained)}.`);
-  else if (bal.untrained.length) parts.push(`${bal.untrained.length} muscle groups had no sets.`);
+  const parts = [t('stats.balance', { total: bal.total, muscle: muscleLabel(top.muscle), pct: Math.round(top.share * 100) })];
+  if (bal.untrained.length && bal.untrained.length <= 4) parts.push(t('stats.noneFor', { list: listJoin(bal.untrained.map(muscleLabel)) }));
+  else if (bal.untrained.length) parts.push(t('stats.groupsNoSets', { n: bal.untrained.length }));
   return parts.join(' ');
 }
 
-const listJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} or ${a.at(-1)}`);
+const listJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} ${t('stats.or')} ${a.at(-1)}`);

@@ -8,12 +8,15 @@ import * as store from './store.js';
 import { generateAIWorkoutPlan, stravaSummary } from './ai.js';
 import { toast } from './effects.js';
 import { svg } from '../core/icons.js';
-import { esc } from './ui.js';
+import { esc, mondayOf } from './ui.js';
 import { addDays, todayISO } from '../core/dates.js';
 import { SPLIT_PRESETS, SPLIT_GROUPS, presetSplit, normalizeSplit, splitWarnings, moveGroup } from '../core/gym-split.js';
 import { openLayer, closeLayer } from './nav.js';
+import { t, tList, fmtNum, getLang } from '../core/i18n.js';
+import { muscleLabel } from '../core/exercises.js';
 
 // ---- static choice matrices --------------------------------------------------
+// i18n-ignore-start (English on purpose: the AI reads these names)
 
 const ECOS = [
   { id: 'endurance', name: 'Endurance / Triathlon', sub: 'Swim, bike & run progression' },
@@ -24,9 +27,10 @@ const ECOS = [
 
 const ATHLETES = [
   { id: 'tri', name: 'Triathlete', sub: 'Swim · bike · run', sports: ['Swimming', 'Cycling', 'Running', 'Gym'] },
-  { id: 'run', name: 'Runner', sub: '5k to ultra-marathon', sports: ['Running', 'Gym'] },
-  { id: 'bike', name: 'Cyclist', sub: 'Road, gravel & endurance', sports: ['Cycling', 'Gym'] },
-  { id: 'swim', name: 'Swimmer', sub: 'Pool & open water', sports: ['Swimming', 'Gym'] },
+  // a runner gets runs only (pick Hybrid for running plus the gym)
+  { id: 'run', name: 'Runner', sub: '5k to ultra-marathon', sports: ['Running'] },
+  { id: 'bike', name: 'Cyclist', sub: 'Road, gravel & endurance', sports: ['Cycling'] },
+  { id: 'swim', name: 'Swimmer', sub: 'Pool & open water', sports: ['Swimming'] },
 ];
 
 const GOALS_BY = {
@@ -46,7 +50,7 @@ const GOALS_BY = {
     { id: 'fondo', name: 'Gran Fondo', sub: '100–160k endurance event' },
     { id: 'century', name: 'Century Ride', sub: '160k / 100 miles' },
     { id: 'stage', name: 'Stage Race / Tour', sub: 'Multi-day back-to-back load' },
-    { id: 'ftp', name: 'FTP Builder', sub: 'No race — raise raw power' },
+    { id: 'ftp', name: 'FTP Builder', sub: 'No race, raise raw power' },
   ],
   swim: [
     { id: 'ow15', name: 'Open Water 1.5k', sub: 'First open-water distance' },
@@ -66,22 +70,19 @@ const GYM_GOALS = [
 const HYBRID_SPORTS = ['Gym / Strength', 'Running', 'Cycling', 'Swimming'];
 const HYBRID_MAP = { 'Gym / Strength': 'Gym', Running: 'Running', Cycling: 'Cycling', Swimming: 'Swimming' };
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const GEN_PHASES = [
-  'AI Coach compiling multi-sport macrocycle…',
-  'Balancing periodization curves…',
-  'Calculating intensity distribution…',
-  'Scaling strength & watt targets to your baselines…',
-  'Validating progressive recovery phases…',
-];
+// i18n-ignore-end
+// The names above stay English: they're what the AI reads. On screen every
+// choice shows through ob.<group>.<id> in the active language.
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // sent to the AI
+const GEN_PHASES = () => tList('ob.gen');
 
 // Average weekly volume from the last 4 weeks of completed (Strava-verified) work.
 function analyzeHistory(workouts) {
   const today = todayISO();
   const start = addDays(today, -27);
   const done = workouts.filter((w) => w.completed && w.date >= start && w.date <= today);
-  const minOf = (t) => done.filter((w) => !t || w.type === t).reduce((a, w) => a + (w.durationMin || 0), 0);
-  const kmOf = (t) => done.filter((w) => w.type === t)
+  const minOf = (type) => done.filter((w) => !type || w.type === type).reduce((a, w) => a + (w.durationMin || 0), 0);
+  const kmOf = (type) => done.filter((w) => w.type === type)
     .reduce((a, w) => a + (Number(w.metrics?.distanceKm) || Number(w.actual?.distanceKm) || 0), 0);
   return {
     sessions: done.length,
@@ -123,7 +124,7 @@ export function openOnboarding({ onDone } = {}) {
 
   const sportsOf = () => {
     if (s.eco === 'gym') return ['Gym'];
-    if (s.eco === 'hyrox') return ['Running', 'Gym'];
+    if (s.eco === 'hyrox') return ['Running', 'Gym']; // HYROX is running plus functional stations
     if (s.eco === 'hybrid') {
       const picked = s.hybridSports.map((x) => HYBRID_MAP[x]).filter(Boolean);
       return picked.length ? picked : ['Gym', 'Running'];
@@ -133,95 +134,94 @@ export function openOnboarding({ onDone } = {}) {
 
   const close = () => closeLayer(root);
 
-  const choiceGrid = (items, attr, current) => `<div class="ob-grid">${items.map((it) => `
+  const choiceGrid = (items, attr, current, group = attr) => `<div class="ob-grid">${items.map((it) => `
     <button type="button" class="ob-choice ${current === it.id ? 'on' : ''}" data-${attr}="${it.id}">
-      <b>${it.name}</b><small>${it.sub}</small>
+      <b>${esc(t(`ob.${group}.${it.id}.name`))}</b><small>${esc(t(`ob.${group}.${it.id}.sub`))}</small>
     </button>`).join('')}</div>`;
 
-  const dayChips = (attr, selected) => DAY_LABELS.map((L, i) =>
+  const dayChips = (attr, selected) => tList('date.daysShort').map((L, i) =>
     `<button type="button" class="ob-chip ${selected.includes(i) ? 'on' : ''}" data-${attr}="${i}">${L}</button>`).join('');
 
   const stepHtml = (key) => {
     if (key === 'eco') {
-      return `<h2>Select your primary training ecosystem:</h2>${choiceGrid(ECOS, 'eco', s.eco)}`;
+      return `<h2>${t('ob.qEco')}</h2>${choiceGrid(ECOS, 'eco', s.eco)}`;
     }
     if (key === 'athlete') {
-      return `<h2>What kind of endurance athlete are you?</h2>${choiceGrid(ATHLETES, 'athlete', s.athlete)}`;
+      return `<h2>${t('ob.qAthlete')}</h2>${choiceGrid(ATHLETES, 'athlete', s.athlete)}`;
     }
     if (key === 'goal') {
-      return `<h2>What is your primary distance goal?</h2>${choiceGrid(GOALS_BY[s.athlete] || GOALS_BY.tri, 'goal', s.goal)}`;
+      return `<h2>${t('ob.qGoal')}</h2>${choiceGrid(GOALS_BY[s.athlete] || GOALS_BY.tri, 'goal', s.goal)}`;
     }
     if (key === 'hybrid') {
-      return `<h2>Build your hybrid mix.</h2>
-        <div class="ob-sub">Pick every discipline your week should include</div>
+      return `<h2>${t('ob.qHybrid')}</h2>
+        <div class="ob-sub">${t('ob.hybridSub')}</div>
         <div class="ob-chip-row">${HYBRID_SPORTS.map((sp) =>
-          `<button type="button" class="ob-chip wide ${s.hybridSports.includes(sp) ? 'on' : ''}" data-hyb="${esc(sp)}">${esc(sp)}</button>`).join('')}</div>`;
+          `<button type="button" class="ob-chip wide ${s.hybridSports.includes(sp) ? 'on' : ''}" data-hyb="${esc(sp)}">${esc(t(`ob.hyb.${sp}`))}</button>`).join('')}</div>`;
     }
     if (key === 'gymgoal') {
-      return `<h2>What is your primary weight room goal?</h2>${choiceGrid(GYM_GOALS, 'gymgoal', s.gymGoal)}`;
+      return `<h2>${t('ob.qGymGoal')}</h2>${choiceGrid(GYM_GOALS, 'gymgoal', s.gymGoal)}`;
     }
     if (key === 'split') return splitHtml();
     if (key === 'hyrox') {
-      return `<h2>Your HYROX pacing &amp; functional baselines.</h2>
+      return `<h2>${esc(t('ob.qHyrox'))}</h2>
         <div class="ob-fields">
-          <label class="ob-field"><span>Current run pace (1k repeats)</span><input type="text" data-ob="runPace" placeholder="4:45 min/km" value="${esc(s.runPace)}"></label>
-          <label class="ob-field"><span>Sled push / pull comfort</span><input type="text" data-ob="sled" placeholder="e.g. 125 kg push, steady" value="${esc(s.sled)}"></label>
-          <label class="ob-field"><span>Wall ball threshold (unbroken reps)</span><input type="text" data-ob="wallball" placeholder="e.g. 40 reps @ 6 kg" value="${esc(s.wallball)}"></label>
+          <label class="ob-field"><span>${t('ob.runPace1k')}</span><input type="text" data-ob="runPace" placeholder="${t('ob.runPacePh')}" value="${esc(s.runPace)}"></label>
+          <label class="ob-field"><span>${t('ob.sled')}</span><input type="text" data-ob="sled" placeholder="${t('ob.sledPh')}" value="${esc(s.sled)}"></label>
+          <label class="ob-field"><span>${t('ob.wallball')}</span><input type="text" data-ob="wallball" placeholder="${t('ob.wallballPh')}" value="${esc(s.wallball)}"></label>
         </div>`;
     }
     if (key === 'race') {
-      return `<h2>When is your primary A-Race?</h2>
+      return `<h2>${t('ob.qRace')}</h2>
         <div class="ob-fields">
-          <label class="ob-field"><span>Race date</span><input type="date" data-ob="raceDate" value="${esc(s.raceDate)}"></label>
-          <label class="ob-field"><span>Race name</span><input type="text" data-ob="raceName" placeholder="${s.eco === 'hyrox' ? 'HYROX Stockholm' : 'Ironman 70.3 Marbella'}" value="${esc(s.raceName)}"></label>
+          <label class="ob-field"><span>${t('ob.raceDate')}</span><input type="date" data-ob="raceDate" value="${esc(s.raceDate)}"></label>
+          <label class="ob-field"><span>${t('ob.raceName')}</span><input type="text" data-ob="raceName" placeholder="${s.eco === 'hyrox' ? t('ob.raceNamePhHyrox') : t('ob.raceNamePh')}" value="${esc(s.raceName)}"></label>
         </div>
         <div class="ob-chip-row">
-          <button type="button" class="ob-chip wide ${s.raceMode === 'finish' ? 'on' : ''}" data-mode="finish">Just finish comfortably</button>
-          <button type="button" class="ob-chip wide ${s.raceMode === 'pr' ? 'on' : ''}" data-mode="pr">Execute a PR / time goal</button>
+          <button type="button" class="ob-chip wide ${s.raceMode === 'finish' ? 'on' : ''}" data-mode="finish">${t('ob.finish')}</button>
+          <button type="button" class="ob-chip wide ${s.raceMode === 'pr' ? 'on' : ''}" data-mode="pr">${t('ob.pr')}</button>
         </div>`;
     }
     if (key === 'baselines') {
       const sp = sportsOf();
       const askRun = sp.includes('Running') && s.eco !== 'hyrox'; // hyrox already asked
-      return `<h2>Set your performance baselines.</h2>
+      return `<h2>${t('ob.qBaselines')}</h2>
         <div class="ob-fields">
-          ${sp.includes('Cycling') ? `<label class="ob-field"><span>Cycling FTP (W)</span><input type="number" inputmode="numeric" min="50" max="600" data-ob="ftp" value="${esc(String(s.ftp))}"></label>` : ''}
-          ${askRun ? `<label class="ob-field"><span>Run threshold pace</span><input type="text" data-ob="runPace" placeholder="4:30 min/km" value="${esc(s.runPace)}"></label>` : ''}
-          ${sp.includes('Swimming') ? `<label class="ob-field"><span>Swim 100m pace</span><input type="text" data-ob="swimPace" placeholder="1:45 / 100m" value="${esc(s.swimPace)}"></label>` : ''}
+          ${sp.includes('Cycling') ? `<label class="ob-field"><span>${t('ob.ftp')}</span><input type="number" inputmode="numeric" min="50" max="600" data-ob="ftp" value="${esc(String(s.ftp))}"></label>` : ''}
+          ${askRun ? `<label class="ob-field"><span>${t('ob.runThreshold')}</span><input type="text" data-ob="runPace" placeholder="${t('ob.runThresholdPh')}" value="${esc(s.runPace)}"></label>` : ''}
+          ${sp.includes('Swimming') ? `<label class="ob-field"><span>${t('ob.swimPace')}</span><input type="text" data-ob="swimPace" placeholder="${t('ob.swimPacePh')}" value="${esc(s.swimPace)}"></label>` : ''}
           <div class="ob-half">
-            <label class="ob-field"><span>Resting HR <em>optional</em></span><input type="number" inputmode="numeric" data-ob="rhr" placeholder="—" value="${esc(s.rhr)}"></label>
-            <label class="ob-field"><span>Max HR <em>optional</em></span><input type="number" inputmode="numeric" data-ob="maxhr" placeholder="—" value="${esc(s.maxhr)}"></label>
+            <label class="ob-field"><span>${t('ob.rhr')} <em>${t('ob.optional')}</em></span><input type="number" inputmode="numeric" data-ob="rhr" placeholder="—" value="${esc(s.rhr)}"></label>
+            <label class="ob-field"><span>${t('ob.maxhr')} <em>${t('ob.optional')}</em></span><input type="number" inputmode="numeric" data-ob="maxhr" placeholder="—" value="${esc(s.maxhr)}"></label>
           </div>
         </div>`;
     }
     if (key === 'week') {
-      return `<h2>What does your training week look like?</h2>
-        <div class="ob-sub">Preferred long-session days</div>
+      return `<h2>${t('ob.qWeek')}</h2>
+        <div class="ob-sub">${t('ob.longDays')}</div>
         <div class="ob-chip-row">${dayChips('long', s.longDays)}</div>
-        <div class="ob-sub">Absolute rest days</div>
+        <div class="ob-sub">${t('ob.restDays')}</div>
         <div class="ob-chip-row">${dayChips('rest', s.restDays)}</div>
-        <div class="ob-sub">Weekly training capacity</div>
-        <div class="ob-hours"><b>${s.hours}<small> h / week</small></b>
+        <div class="ob-sub">${t('ob.capacity')}</div>
+        <div class="ob-hours"><b>${s.hours}<small>${t('ob.perWeek')}</small></b>
           <input type="range" min="4" max="20" step="1" value="${s.hours}" data-ob-hours></div>`;
     }
     // 'analysis' — Strava deep-dive
     const gap = hist.weeklyHours > 0 && s.hours > hist.weeklyHours * 1.15;
     const row = (k, v) => `<div class="ob-hist-row"><span>${k}</span><b>${v}</b></div>`;
-    return `<h2>Analyzing your athletic profile with Strava</h2>
+    return `<h2>${t('ob.qAnalysis')}</h2>
       <div class="ob-hist">
-        ${row('Sessions · last 4 weeks', hist.sessions)}
-        ${row('Avg weekly volume', `${hist.weeklyHours} h`)}
-        ${row('Weekly bike', `${hist.weeklyBikeHours} h`)}
-        ${row('Weekly run', `${hist.weeklyRunKm} km`)}
-        ${row('Weekly swim', `${hist.weeklySwimKm} km`)}
-        ${row('Strava-verified', hist.stravaCount)}
+        ${row(t('ob.hSessions'), hist.sessions)}
+        ${row(t('ob.hVolume'), `${fmtNum(hist.weeklyHours)} h`)}
+        ${row(t('ob.hBike'), `${fmtNum(hist.weeklyBikeHours)} h`)}
+        ${row(t('ob.hRun'), `${fmtNum(hist.weeklyRunKm)} km`)}
+        ${row(t('ob.hSwim'), `${fmtNum(hist.weeklySwimKm)} km`)}
+        ${row(t('ob.hVerified'), hist.stravaCount)}
       </div>
       ${gap
-        ? `<p class="ob-note warn">Your target of <b>${s.hours} h/week</b> is well above your recent ~${hist.weeklyHours} h/week.
-             The plan will apply an injury-prevention ramp — volume builds at most 10–15% per week from your real baseline.</p>`
+        ? `<p class="ob-note warn">${t('ob.gap', { target: s.hours, recent: fmtNum(hist.weeklyHours) })}</p>`
         : hist.weeklyHours > 0
-          ? `<p class="ob-note ok">Your target of <b>${s.hours} h/week</b> matches your recent training — the plan builds straight from your baseline.</p>`
-          : `<p class="ob-note">No recent history found — the plan starts from a conservative base and builds gradually.</p>`}`;
+          ? `<p class="ob-note ok">${t('ob.match', { target: s.hours })}</p>`
+          : `<p class="ob-note">${t('ob.noHistory')}</p>`}`;
   };
 
   // ---- split builder: presets, then a chip editor (tap a chip, then tap a
@@ -231,38 +231,38 @@ export function openOnboarding({ onDone } = {}) {
     const warn = splitWarnings(sp, { trainingDays: 7 - s.restDays.length });
     const sel = picked && sp.days[picked.day]?.groups[picked.idx];
     const day = (x, i) => {
-      const chips = x.rest ? '<span class="muted small">Rest day</span>' : x.groups.map((g, j) => {
+      const chips = x.rest ? `<span class="muted small">${t('ob.restDay')}</span>` : x.groups.map((g, j) => {
         const on = picked && picked.day === i && picked.idx === j;
-        return `<button type="button" class="sp-chip ${on ? 'on' : ''}" data-sp-chip="${i}:${j}" aria-pressed="${on}">${esc(g)}</button>`;
+        return `<button type="button" class="sp-chip ${on ? 'on' : ''}" data-sp-chip="${i}:${j}" aria-pressed="${on}">${esc(muscleLabel(g))}</button>`;
       }).join('');
       const free = SPLIT_GROUPS.filter((g) => !x.groups.includes(g));
       return `<section class="sp-day ${x.rest ? 'is-rest' : ''} ${sel && picked.day !== i && !x.rest ? 'is-target' : ''}" data-sp-day="${i}"
-          aria-label="${esc(x.label)}${sel && picked.day !== i && !x.rest ? `: tap to move ${esc(sel)} here` : ''}">
+          aria-label="${esc(x.label)}${sel && picked.day !== i && !x.rest ? esc(t('ob.moveHere', { group: muscleLabel(sel) })) : ''}">
         <div class="sp-day-head">
           <span class="sp-num data-num">${i + 1}</span>
-          <input class="sp-label" type="text" maxlength="24" value="${esc(x.label)}" data-sp-label="${i}" aria-label="Name of day ${i + 1}">
-          <button type="button" class="icon-btn tiny danger" data-sp-del="${i}" aria-label="Remove ${esc(x.label)}">${svg('close')}</button>
+          <input class="sp-label" type="text" maxlength="24" value="${esc(x.label)}" data-sp-label="${i}" aria-label="${t('ob.dayName', { n: i + 1 })}">
+          <button type="button" class="icon-btn tiny danger" data-sp-del="${i}" aria-label="${esc(t('ob.removeDay', { label: x.label }))}">${svg('close')}</button>
         </div>
         <div class="sp-chips">${chips}
-          ${x.rest ? '' : `<label class="sp-add chip gl-chip">${svg('plus')}<select data-sp-add="${i}" aria-label="Add a muscle group to ${esc(x.label)}">
-            <option value="" selected>Add</option>${free.map((g) => `<option value="${esc(g)}">${esc(g)}</option>`).join('')}</select></label>`}
+          ${x.rest ? '' : `<label class="sp-add chip gl-chip">${svg('plus')}<select data-sp-add="${i}" aria-label="${esc(t('ob.addGroup', { label: x.label }))}">
+            <option value="" selected>${t('ob.add')}</option>${free.map((g) => `<option value="${esc(g)}">${esc(muscleLabel(g))}</option>`).join('')}</select></label>`}
         </div>
       </section>`;
     };
-    return `<h2>Build your gym split.</h2>
-      <div class="ob-sub">Start from a preset, then shape it. Tap a muscle, then tap another day to move it, or drag it.</div>
+    return `<h2>${t('ob.qSplit')}</h2>
+      <div class="ob-sub">${t('ob.splitSub')}</div>
       <div class="ob-chip-row sp-presets">${SPLIT_PRESETS.map((p) =>
         `<button type="button" class="ob-chip wide ${sp.preset === p.id ? 'on' : ''}" data-sp-preset="${p.id}">${esc(p.name)}</button>`).join('')}</div>
       <div class="sp-days" data-sp-days>${sp.days.map(day).join('')}</div>
-      ${sel ? `<div class="sp-tools" role="group" aria-label="${esc(sel)} selected">
-          <span class="small"><b>${esc(sel)}</b> selected</span>
-          <button type="button" class="btn tiny secondary" data-sp-arrow="-1" aria-label="Move ${esc(sel)} to the day before"><span class="ic-up">${svg('chevron')}</span></button>
-          <button type="button" class="btn tiny secondary" data-sp-arrow="1" aria-label="Move ${esc(sel)} to the day after"><span class="ic-down">${svg('chevron')}</span></button>
-          <button type="button" class="btn tiny ghost danger" data-sp-remove>Remove</button>
+      ${sel ? `<div class="sp-tools" role="group" aria-label="${esc(t('ob.selectedAria', { group: muscleLabel(sel) }))}">
+          <span class="small">${t('ob.selected', { group: esc(muscleLabel(sel)) })}</span>
+          <button type="button" class="btn tiny secondary" data-sp-arrow="-1" aria-label="${esc(t('ob.moveBefore', { group: muscleLabel(sel) }))}"><span class="ic-up">${svg('chevron')}</span></button>
+          <button type="button" class="btn tiny secondary" data-sp-arrow="1" aria-label="${esc(t('ob.moveAfter', { group: muscleLabel(sel) }))}"><span class="ic-down">${svg('chevron')}</span></button>
+          <button type="button" class="btn tiny ghost danger" data-sp-remove>${t('ob.remove')}</button>
         </div>` : ''}
       <div class="row sp-add-days">
-        <button type="button" class="btn tiny secondary" data-sp-add-day ${sp.days.length >= 7 ? 'disabled' : ''}>${svg('plus')} Training day</button>
-        <button type="button" class="btn tiny ghost" data-sp-add-rest ${sp.days.length >= 7 ? 'disabled' : ''}>${svg('plus')} Rest day</button>
+        <button type="button" class="btn tiny secondary" data-sp-add-day ${sp.days.length >= 7 ? 'disabled' : ''}>${svg('plus')} ${t('ob.trainingDay')}</button>
+        <button type="button" class="btn tiny ghost" data-sp-add-rest ${sp.days.length >= 7 ? 'disabled' : ''}>${svg('plus')} ${t('ob.restDayBtn')}</button>
       </div>
       <div aria-live="polite">${warn.length ? `<ul class="ob-note warn sp-warn">${warn.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}</div>`;
   }
@@ -294,10 +294,10 @@ export function openOnboarding({ onDone } = {}) {
       sp.days[+el.dataset.spAdd].groups.push(el.value); custom(); redrawSplit();
     }));
     root.querySelector('[data-sp-add-day]')?.addEventListener('click', () => {
-      sp.days.push({ label: `Day ${sp.days.length + 1}`, groups: [] }); custom(); redrawSplit();
+      sp.days.push({ label: t('split.dayN', { n: sp.days.length + 1 }), groups: [] }); custom(); redrawSplit();
     });
     root.querySelector('[data-sp-add-rest]')?.addEventListener('click', () => {
-      sp.days.push({ label: 'Rest', groups: [], rest: true }); custom(); redrawSplit();
+      sp.days.push({ label: t('split.rest'), groups: [], rest: true }); custom(); redrawSplit();
     });
     root.querySelector('[data-sp-remove]')?.addEventListener('click', () => {
       sp.days[picked.day].groups.splice(picked.idx, 1); picked = null; custom(); redrawSplit();
@@ -377,15 +377,15 @@ export function openOnboarding({ onDone } = {}) {
     const last = idx === keys.length - 1;
     const pct = Math.round(((idx + 1) / keys.length) * 100);
     root.innerHTML = `
-    <div class="ob-screen" role="dialog" aria-modal="true" aria-label="AI coach setup">
+    <div class="ob-screen" role="dialog" aria-modal="true" aria-label="${t('ob.aria')}">
       <div class="ob-progress"><i style="width:${pct}%"></i></div>
       <div class="ob-head">
-        <button class="fh-back" data-ob-back aria-label="Back">${svg('back')}</button>
-        <small>AI Coach · ${last ? 'Strava analysis' : `Step ${idx + 1} of ${keys.length - 1}`}</small>
+        <button class="fh-back" data-ob-back aria-label="${t('ob.back')}">${svg('back')}</button>
+        <small>${last ? t('ob.stepAnalysis') : t('ob.step', { n: idx + 1, total: keys.length - 1 })}</small>
       </div>
       <div class="ob-card ${dir >= 0 ? 'ob-in-right' : 'ob-in-left'}">${stepHtml(key)}</div>
       <footer class="ob-foot">
-        <button class="btn primary block" data-ob-next>${last ? 'Generate Tailored Plan' : 'Continue'}</button>
+        <button class="btn primary block" data-ob-next>${last ? t('ob.generate') : t('ob.continue')}</button>
       </footer>
     </div>`;
     wire(key);
@@ -393,17 +393,18 @@ export function openOnboarding({ onDone } = {}) {
 
   const generating = () => {
     root.innerHTML = `
-    <div class="ob-screen ob-gen" role="dialog" aria-modal="true" aria-label="Generating plan">
+    <div class="ob-screen ob-gen" role="dialog" aria-modal="true" aria-label="${t('ob.genAria')}">
       <div class="ob-gen-orb"></div>
-      <h2 id="ob-phase">${GEN_PHASES[0]}</h2>
-      <p class="ob-sub" style="text-align:center">This takes a few seconds — your plan is being tailored.</p>
+      <h2 id="ob-phase">${GEN_PHASES()[0]}</h2>
+      <p class="ob-sub" style="text-align:center">${t('ob.genSub')}</p>
     </div>`;
     let i = 0;
     const cycle = setInterval(() => {
       const el = document.getElementById('ob-phase');
       if (!el) { clearInterval(cycle); return; }
-      i = (i + 1) % GEN_PHASES.length;
-      el.textContent = GEN_PHASES[i];
+      const phases = GEN_PHASES();
+      i = (i + 1) % phases.length;
+      el.textContent = phases[i];
     }, 1600);
     return () => clearInterval(cycle);
   };
@@ -417,18 +418,28 @@ export function openOnboarding({ onDone } = {}) {
     const gap = hist.weeklyHours > 0 && s.hours > hist.weeklyHours * 1.15;
     try {
       const events = (s.raceDate && s.eco !== 'gym')
-        ? [{ title: s.raceName || goal?.name || eco.name, date: s.raceDate }] : [];
+        ? [{ title: s.raceName || t(goal ? `ob.goal.${goal.id}.name` : `ob.eco.${eco.id}.name`), date: s.raceDate }] : [];
       if (events.length) store.setSetting('events', events);
       store.setSetting('ftp', s.ftp);
       if (gymInPlay()) store.setSetting('gymSplit', normalizeSplit(s.split));
 
+      // the new plan replaces the old one from this week's Monday on: what is
+      // planned and not yet done goes (the server deletes it as it writes the
+      // new plan); completed and Strava-verified sessions always stay
+      const wipeFrom = mondayOf(todayISO());
+      const replaced = store.getWorkouts()
+        .filter((w) => w.date >= wipeFrom && !w.completed && !w.strava_activity_id).map((w) => w.id);
+
       const r = await generateAIWorkoutPlan({
+        // titles and notes come back in this language; types, intensities and
+        // exercise ids stay English (see supabase/functions/ai-plan)
+        lang: getLang(),
         sports: sportsOf(),
         ecosystem: eco.name,
         athlete_type: athlete?.name || eco.name,
         goal_distance: s.eco === 'endurance' ? (goal?.name || 'Triathlon')
           : s.eco === 'hyrox' ? 'HYROX race'
-          : s.eco === 'gym' ? (gymGoal?.name || 'Strength') : 'Hybrid athlete',
+          : s.eco === 'gym' ? (gymGoal?.name || 'Strength') : 'Hybrid athlete', // i18n-ignore (AI payload)
         gym_goal: gymGoal?.name || null,
         gym_split: gymInPlay() ? normalizeSplit(s.split) : null,
         hyrox_baselines: s.eco === 'hyrox'
@@ -445,7 +456,11 @@ export function openOnboarding({ onDone } = {}) {
         ramp_rule: gap
           ? `athlete's real recent volume is only ${hist.weeklyHours} h/week — start near that baseline and increase total weekly volume by no more than 10-15% per week toward the ${s.hours} h target`
           : null,
-      }, stravaSummary(store.getWorkouts()));
+      }, stravaSummary(store.getWorkouts()), { wipeFrom });
+
+      // drop the replaced sessions here too (the ids were taken before the new
+      // plan existed, so nothing new can be caught), then pull the new plan
+      store.deleteWorkouts(replaced);
 
       // The sessions are written server-side, so pull them in before revealing
       // the calendar — otherwise they only land whenever realtime gets around
@@ -455,7 +470,7 @@ export function openOnboarding({ onDone } = {}) {
       stopCycle();
       store.setSetting('goals', { ...(store.getSettings().goals || {}), hours: s.hours, sessions: 7 - s.restDays.length });
       close();
-      toast(`AI Coach added ${r.inserted} tailored sessions to your calendar`, { icon: svg('spark') });
+      toast(t('ob.added', { n: r.inserted }), { icon: svg('spark') });
       if (onDone) onDone();
     } catch (err) {
       stopCycle();
@@ -463,7 +478,7 @@ export function openOnboarding({ onDone } = {}) {
       draw(-1);
       const msgEl = document.createElement('p');
       msgEl.className = 'ob-note warn';
-      msgEl.textContent = err.message || 'Plan generation failed — try again.';
+      msgEl.textContent = err.message || t('ob.failed');
       root.querySelector('.ob-card')?.appendChild(msgEl);
     }
   };
@@ -475,11 +490,11 @@ export function openOnboarding({ onDone } = {}) {
       idx -= 1; draw(-1);
     });
     root.querySelector('[data-ob-next]').addEventListener('click', () => {
-      if (key === 'eco' && !s.eco) { toast('Pick your training ecosystem first'); return; }
-      if (key === 'athlete' && !s.athlete) { toast('Pick your discipline first'); return; }
-      if (key === 'goal' && !s.goal) { toast('Pick your distance goal first'); return; }
-      if (key === 'hybrid' && !s.hybridSports.length) { toast('Pick at least one discipline'); return; }
-      if (key === 'gymgoal' && !s.gymGoal) { toast('Pick your weight room goal first'); return; }
+      if (key === 'eco' && !s.eco) { toast(t('ob.pickEco')); return; }
+      if (key === 'athlete' && !s.athlete) { toast(t('ob.pickAthlete')); return; }
+      if (key === 'goal' && !s.goal) { toast(t('ob.pickGoal')); return; }
+      if (key === 'hybrid' && !s.hybridSports.length) { toast(t('ob.pickHybrid')); return; }
+      if (key === 'gymgoal' && !s.gymGoal) { toast(t('ob.pickGymGoal')); return; }
       if (idx === stepKeys().length - 1) { generate(); return; }
       idx += 1; draw(1);
     });
@@ -517,7 +532,7 @@ export function openOnboarding({ onDone } = {}) {
     const hrs = root.querySelector('[data-ob-hours]');
     if (hrs) hrs.addEventListener('input', () => {
       s.hours = +hrs.value;
-      root.querySelector('.ob-hours b').innerHTML = `${s.hours}<small> h / week</small>`;
+      root.querySelector('.ob-hours b').innerHTML = `${s.hours}<small>${t('ob.perWeek')}</small>`;
     });
   }
 

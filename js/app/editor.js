@@ -9,7 +9,7 @@ import { todayISO } from '../core/dates.js';
 import { toast, playAccept } from './effects.js';
 import { svg } from '../core/icons.js';
 import { newSet, workSets } from '../core/sets.js';
-import { matchExercise, exerciseById, exerciseArtSrc } from '../core/exercises.js';
+import { matchExercise, exerciseById, exerciseArtSrc, exName } from '../core/exercises.js';
 import { exerciseFromEntry, moveItem, cleanSupersets, supersetInfo } from '../core/gym-edit.js';
 import { openPicker } from './gym-picker.js';
 import { enableDragSort } from './drag-sort.js';
@@ -17,9 +17,11 @@ import { routineRows } from './gym-routines.js';
 import { MOMENT_LINES } from '../core/coach-lines.js';
 import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
+import { t } from '../core/i18n.js';
+import { planTitle, planNotes, planWord } from '../core/plan-i18n.js';
 
-const SEG_KINDS = { warmup: 'Warm-up', work: 'Work', rest: 'Rest / float', cooldown: 'Cool-down' };
-const SEG_INTENSITIES = { easy: 'Easy', moderate: 'Moderate', threshold: 'Threshold', vo2: 'VO₂', steady: 'Steady' };
+const SEG_KINDS = () => Object.fromEntries(['warmup', 'work', 'rest', 'cooldown'].map((k) => [k, t(`ed.segKind.${k}`)]));
+const SEG_INTENSITIES = () => Object.fromEntries(['easy', 'moderate', 'threshold', 'vo2', 'steady'].map((k) => [k, INTENSITIES[k]]));
 
 let draft = null;
 let isNew = false;
@@ -38,6 +40,11 @@ export function openEditor(id = null, defaultDate = null) {
   const existing = id ? workoutById(id) : null;
   isNew = !existing;
   draft = existing ? structuredClone(existing) : blankWorkout(defaultDate);
+  // the seeded plan is stored in English: edit it in the language it's shown in
+  draft.title = planTitle(draft.title);
+  draft.notes = planNotes(draft.notes);
+  draft.segments = (draft.segments || []).map((s) => ({ ...s, label: planWord(s.label) }));
+  draft.packing = (draft.packing || []).map((p) => ({ ...p, item: planWord(p.item) }));
   if (draft.metrics?.distanceKm == null) draft.metrics.distanceKm = '';
   // a fresh sheet on the layer stack (it starts at the top); closing it any
   // way (button, back, swipe, Escape) drops the draft
@@ -66,11 +73,11 @@ function renderModal() {
 
   const segRows = d.segments.map((s, i) => `
     <div class="row seg-row" data-seg="${i}">
-      <input class="grow" type="text" value="${esc(s.label)}" placeholder="Label" data-seg-field="label" data-i="${i}">
-      <select data-seg-field="kind" data-i="${i}">${options(SEG_KINDS, s.kind)}</select>
-      <input class="num" type="number" min="0" step="0.5" value="${esc(s.value)}" placeholder="min" data-seg-field="value" data-i="${i}">
-      <select data-seg-field="intensity" data-i="${i}">${options(SEG_INTENSITIES, s.intensity)}</select>
-      <button type="button" class="icon-btn" data-del-seg="${i}" aria-label="Remove segment">${svg('close')}</button>
+      <input class="grow" type="text" value="${esc(s.label)}" placeholder="${t('ed.label')}" data-seg-field="label" data-i="${i}">
+      <select data-seg-field="kind" data-i="${i}">${options(SEG_KINDS(), s.kind)}</select>
+      <input class="num" type="number" min="0" step="0.5" value="${esc(s.value)}" placeholder="${t('ed.min')}" data-seg-field="value" data-i="${i}">
+      <select data-seg-field="intensity" data-i="${i}">${options(SEG_INTENSITIES(), s.intensity)}</select>
+      <button type="button" class="icon-btn" data-del-seg="${i}" aria-label="${t('ed.removeSegment')}">${svg('close')}</button>
     </div>`).join('');
 
   // one row per exercise: picture, name, sets × reps; reorder with the arrows
@@ -81,74 +88,75 @@ function renderModal() {
     const timed = e.kind === 'time';
     const target = timed ? ws[0]?.seconds : ws[0]?.reps;
     const art = exerciseArtSrc(e.libId);
+    const name = exName(e) || t('ed.exercise');
     return `
     <li class="ed-ex ${ss[i] ? 'in-ss' : ''}" data-ed-item>
       <span class="pk-thumb ${art ? 'ex-art' : ''}" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" width="48" height="48" loading="lazy" decoding="async">` : svg('gym')}</span>
       <span class="ed-ex-main">
-        <b>${esc(e.name || 'Exercise')}</b>${ss[i] ? ` <small class="muted">Superset ${ss[i].letter}</small>` : ''}
+        <b>${esc(name)}</b>${ss[i] ? ` <small class="muted">${esc(t('ed.superset', { letter: ss[i].letter }))}</small>` : ''}
         <span class="ed-ex-nums">
-          <label><input class="num" type="text" inputmode="numeric" value="${ws.length}" aria-label="${esc(`${e.name} sets`)}" data-ex-field="sets" data-i="${i}"> sets</label>
-          <label>× <input class="num" type="text" inputmode="numeric" value="${esc(target ?? '')}" aria-label="${esc(`${e.name} ${timed ? 'seconds' : 'reps'}`)}" data-ex-field="reps" data-i="${i}"> ${timed ? 's' : 'reps'}</label>
+          <label><input class="num" type="text" inputmode="numeric" value="${ws.length}" aria-label="${esc(t('ed.setsAria', { name }))}" data-ex-field="sets" data-i="${i}">${t('ed.sets')}</label>
+          <label>× <input class="num" type="text" inputmode="numeric" value="${esc(target ?? '')}" aria-label="${esc(t(timed ? 'ed.secondsAria' : 'ed.repsAria', { name }))}" data-ex-field="reps" data-i="${i}"> ${timed ? t('ed.s') : t('ed.reps')}</label>
         </span>
       </span>
       <span class="ed-ex-tools">
-        <button type="button" class="icon-btn tiny" data-mv-ex="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="${esc(`Move ${e.name} up`)}"><span class="ic-up">${svg('chevron')}</span></button>
-        <button type="button" class="icon-btn tiny" data-mv-ex="${i}" data-dir="1" ${i === d.exercises.length - 1 ? 'disabled' : ''} aria-label="${esc(`Move ${e.name} down`)}"><span class="ic-down">${svg('chevron')}</span></button>
-        <button type="button" class="icon-btn tiny gl-grip" data-ed-grip aria-label="${esc(`Drag to reorder ${e.name}`)}">${svg('grip')}</button>
-        <button type="button" class="icon-btn tiny danger" data-del-ex="${i}" aria-label="${esc(`Remove ${e.name}`)}">${svg('close')}</button>
+        <button type="button" class="icon-btn tiny" data-mv-ex="${i}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="${esc(t('ed.moveUp', { name }))}"><span class="ic-up">${svg('chevron')}</span></button>
+        <button type="button" class="icon-btn tiny" data-mv-ex="${i}" data-dir="1" ${i === d.exercises.length - 1 ? 'disabled' : ''} aria-label="${esc(t('ed.moveDown', { name }))}"><span class="ic-down">${svg('chevron')}</span></button>
+        <button type="button" class="icon-btn tiny gl-grip" data-ed-grip aria-label="${esc(t('ed.drag', { name }))}">${svg('grip')}</button>
+        <button type="button" class="icon-btn tiny danger" data-del-ex="${i}" aria-label="${esc(t('ed.remove', { name }))}">${svg('close')}</button>
       </span>
     </li>`;
   }).join('');
 
   const packRows = d.packing.map((p, i) => `
     <div class="row pack-row" data-pack="${i}">
-      <input class="grow" type="text" value="${esc(p.item)}" placeholder="Item" data-pack-field="item" data-i="${i}">
-      <button type="button" class="icon-btn" data-del-pack="${i}" aria-label="Remove item">${svg('close')}</button>
+      <input class="grow" type="text" value="${esc(p.item)}" placeholder="${t('ed.item')}" data-pack-field="item" data-i="${i}">
+      <button type="button" class="icon-btn" data-del-pack="${i}" aria-label="${t('ed.removeItem')}">${svg('close')}</button>
     </div>`).join('');
 
   root.classList.add('open');
   root.innerHTML = `
     <div class="modal-backdrop" data-close></div>
-    <div class="modal" role="dialog" aria-modal="true" aria-label="${isNew ? 'New session' : 'Edit session'}">
-      ${sheetHead({ icon: isNew ? 'plus' : 'edit', title: isNew ? 'New session' : 'Edit session', closeAttr: 'data-close' })}
+    <div class="modal" role="dialog" aria-modal="true" aria-label="${isNew ? t('ed.newSession') : t('ed.editSession')}">
+      ${sheetHead({ icon: isNew ? 'plus' : 'edit', title: isNew ? t('ed.newSession') : t('ed.editSession'), closeAttr: 'data-close' })}
       <div class="modal-body">
-        ${isNew && routineRows({ date: d.date }) ? `<fieldset class="sub-list"><legend>Start a routine</legend>${routineRows({ date: d.date })}</fieldset>` : ''}
-        <label class="field"><span>Title</span>
-          <input type="text" id="f-title" value="${esc(d.title)}" placeholder="e.g. Long ride Z2" data-field="title"></label>
+        ${isNew && routineRows({ date: d.date }) ? `<fieldset class="sub-list"><legend>${t('ed.startRoutine')}</legend>${routineRows({ date: d.date })}</fieldset>` : ''}
+        <label class="field"><span>${t('ed.title')}</span>
+          <input type="text" id="f-title" value="${esc(d.title)}" placeholder="${t('ed.titlePh')}" data-field="title"></label>
 
         <div class="field-grid">
-          <label class="field"><span>Type</span><select data-field="type">${options(Object.fromEntries(Object.entries(DISCIPLINES).map(([k, v]) => [k, v.label])), d.type)}</select></label>
-          <label class="field"><span>Intensity</span><select data-field="intensity">${options(INTENSITIES, d.intensity)}</select></label>
-          <label class="field"><span>Date</span><input type="date" value="${esc(d.date)}" data-field="date"></label>
-          <label class="field"><span>Distance (km, optional)</span><input type="number" min="0" step="0.1" value="${esc(d.metrics.distanceKm)}" data-field="distance"></label>
+          <label class="field"><span>${t('ed.type')}</span><select data-field="type">${options(Object.fromEntries(Object.entries(DISCIPLINES).map(([k, v]) => [k, v.label])), d.type)}</select></label>
+          <label class="field"><span>${t('ed.intensity')}</span><select data-field="intensity">${options(INTENSITIES, d.intensity)}</select></label>
+          <label class="field"><span>${t('ed.date')}</span><input type="date" value="${esc(d.date)}" data-field="date"></label>
+          <label class="field"><span>${t('ed.distance')}</span><input type="number" min="0" step="0.1" value="${esc(d.metrics.distanceKm)}" data-field="distance"></label>
         </div>
 
-        <label class="field"><span>Duration — <b id="dur-label">${formatDuration(d.durationMin)}</b></span>
+        <label class="field"><span>${t('ed.duration', { d: `<b id="dur-label">${formatDuration(d.durationMin)}</b>` })}</span>
           <input type="range" id="f-duration" min="0" max="240" step="5" value="${d.durationMin}" data-field="duration"></label>
 
-        <label class="field"><span>Notes / plan</span>
-          <textarea rows="3" data-field="notes" placeholder="Targets, paces, reminders…">${esc(d.notes)}</textarea></label>
+        <label class="field"><span>${t('ed.notes')}</span>
+          <textarea rows="3" data-field="notes" placeholder="${t('ed.notesPh')}">${esc(d.notes)}</textarea></label>
 
-        <fieldset class="sub-list"><legend>Interval structure</legend>
-          ${segRows || '<p class="muted small">No segments. Add work/rest blocks to draw the interval chart.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-seg>${svg('plus')} Add segment</button>
+        <fieldset class="sub-list"><legend>${t('ed.intervals')}</legend>
+          ${segRows || `<p class="muted small">${t('ed.noSegments')}</p>`}
+          <button type="button" class="btn tiny ghost" data-add-seg>${svg('plus')} ${t('ed.addSegment')}</button>
         </fieldset>
 
-        <fieldset class="sub-list"><legend>Gym exercises</legend>
-          ${exRows ? `<ul class="ed-ex-list" data-ed-list>${exRows}</ul>` : '<p class="muted small">No exercises.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-ex>${svg('plus')} Add exercises</button>
+        <fieldset class="sub-list"><legend>${t('ed.gymExercises')}</legend>
+          ${exRows ? `<ul class="ed-ex-list" data-ed-list>${exRows}</ul>` : `<p class="muted small">${t('ed.noExercises')}</p>`}
+          <button type="button" class="btn tiny ghost" data-add-ex>${svg('plus')} ${t('ed.addExercises')}</button>
         </fieldset>
 
-        <fieldset class="sub-list"><legend>Packing list</legend>
-          ${packRows || '<p class="muted small">No items.</p>'}
-          <button type="button" class="btn tiny ghost" data-add-pack>${svg('plus')} Add item</button>
+        <fieldset class="sub-list"><legend>${t('ed.packing')}</legend>
+          ${packRows || `<p class="muted small">${t('ed.noItems')}</p>`}
+          <button type="button" class="btn tiny ghost" data-add-pack>${svg('plus')} ${t('ed.addItem')}</button>
         </fieldset>
       </div>
       <footer class="modal-foot">
-        ${!isNew ? `<button class="btn ghost danger" data-do="delete">${svg('trash')} Delete</button><button class="btn ghost" data-do="duplicate">${svg('copy')} Duplicate</button>` : ''}
+        ${!isNew ? `<button class="btn ghost danger" data-do="delete">${svg('trash')} ${t('ed.delete')}</button><button class="btn ghost" data-do="duplicate">${svg('copy')} ${t('ed.duplicate')}</button>` : ''}
         <span class="spacer"></span>
-        <button class="btn ghost" data-close>Cancel</button>
-        <button class="btn primary" data-do="save">Save</button>
+        <button class="btn ghost" data-close>${t('ed.cancel')}</button>
+        <button class="btn primary" data-do="save">${t('ed.save')}</button>
       </footer>
     </div>`;
 
@@ -206,7 +214,7 @@ function wire(root) {
 
   // add / remove rows (re-render to keep indices clean)
   const re = () => renderModal();
-  root.querySelector('[data-add-seg]')?.addEventListener('click', () => { draft.segments.push({ label: 'Work', kind: 'work', value: 3, intensity: 'threshold' }); re(); });
+  root.querySelector('[data-add-seg]')?.addEventListener('click', () => { draft.segments.push({ label: t('ed.newSeg'), kind: 'work', value: 3, intensity: 'threshold' }); re(); });
   root.querySelector('[data-add-ex]')?.addEventListener('click', () => openPicker({
     onPick: (entries) => {
       entries.forEach((en) => draft?.exercises.push(exerciseFromEntry(en, Date.now())));
@@ -237,9 +245,9 @@ function wire(root) {
 
 function action(kind) {
   if (kind === 'delete') {
-    if (confirm('Delete this session? This cannot be undone.')) {
+    if (confirm(t('ed.deleteConfirm'))) {
       deleteWorkout(draft.id);
-      toast('Session deleted', { icon: svg('trash') });
+      toast(t('ed.deleted'), { icon: svg('trash') });
       closeModal();
     }
     return;
@@ -247,20 +255,20 @@ function action(kind) {
   if (kind === 'duplicate') {
     saveDraft();
     const copy = duplicateWorkout(draft.id);
-    toast('Session duplicated', { icon: svg('copy') });
+    toast(t('ed.duplicated'), { icon: svg('copy') });
     closeModal();
     if (copy) openEditor(copy.id);
     return;
   }
   if (kind === 'save') {
-    if (!draft.title.trim()) draft.title = `${DISCIPLINES[draft.type]?.label || 'Session'}`;
+    if (!draft.title.trim()) draft.title = `${DISCIPLINES[draft.type]?.label || t('ed.session')}`;
     saveDraft();
     if (isNew) {
       // a new session on the calendar is a quest the athlete just took on
-      toast(`<b>Quest accepted</b><br>${MOMENT_LINES.accepted}`, { icon: coachMini() });
+      toast(`<b>${t('ed.questAccepted')}</b><br>${esc(MOMENT_LINES.accepted)}`, { icon: coachMini() });
       playAccept();
     } else {
-      toast('Session saved', { icon: svg('check') });
+      toast(t('ed.saved'), { icon: svg('check') });
     }
     closeModal();
   }

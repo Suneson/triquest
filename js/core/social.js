@@ -1,6 +1,8 @@
 // social.js (core) — the counting behind chat and the bell. Pure; no DOM, no
 // network. The app layer (js/app/social.js) feeds it what Supabase returned.
 
+import { t as tr, fmtDate } from './i18n.js';
+
 /** Group messages (any order) into one thread per accepted friend, newest first. */
 export function groupThreads(messages, meId, friends) {
   const by = new Map();
@@ -36,12 +38,12 @@ export function chatTime(iso, nowMs = Date.now()) {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return '';
   const s = Math.max(0, (nowMs - t) / 1000);
-  if (s < 60) return 'now';
-  if (s < 3600) return `${Math.floor(s / 60)}m`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  if (s < 60) return tr('date.now');
+  if (s < 3600) return tr('date.minAgo', { n: Math.floor(s / 60) });
+  if (s < 86400) return tr('date.hourAgo', { n: Math.floor(s / 3600) });
   const d = new Date(t);
-  if (s < 6 * 86400) return d.toLocaleDateString('en-GB', { weekday: 'short' });
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  if (s < 6 * 86400) return fmtDate(d, { weekday: 'short' });
+  return fmtDate(d, { day: 'numeric', month: 'short' });
 }
 
 /** Username rules (same as the database): 3-20 of a-z, 0-9 and _. */

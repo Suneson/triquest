@@ -12,6 +12,7 @@
 
 import { EXERCISES, MUSCLES, EQUIPMENT, EXERCISE_KINDS, normName } from './exercises.js';
 import { newSet } from './sets.js';
+import { t } from './i18n.js';
 
 // ---- the catalogue ------------------------------------------------------------------------
 
@@ -32,10 +33,10 @@ const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
  */
 export function makeCustomExercise({ name, equipment, muscle, kind } = {}, custom = []) {
   const clean = String(name ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
-  if (!clean) return { error: 'Give it a name.' };
+  if (!clean) return { error: t('pk.errName') };
   const all = catalogue(custom);
   const key = normName(clean);
-  if (all.some((e) => normName(e.name) === key)) return { error: 'That exercise already exists.' };
+  if (all.some((e) => normName(e.name) === key || (e.nameEn && normName(e.nameEn) === key))) return { error: t('pk.errExists') };
   let id = `custom-${slug(clean)}`;
   for (let n = 2; all.some((e) => e.id === id); n++) id = `custom-${slug(clean)}-${n}`;
   return {
@@ -66,7 +67,8 @@ export function searchExercises(list, { q = '', equipment = '', muscle = '' } = 
     if (equipment && e.equipment !== equipment) continue;
     if (muscle && e.muscle !== muscle && !(e.secondary || []).includes(muscle)) continue;
     if (!words.length) { hits.push({ e, score: 0 }); continue; }
-    const score = Math.min(rank(words, e.name, 0), ...(e.aliases || []).map((a) => rank(words, a, 100)));
+    // the name in the active language first, then the English name and the aliases
+    const score = Math.min(rank(words, e.name, 0), e.nameEn ? rank(words, e.nameEn, 50) : Infinity, ...(e.aliases || []).map((a) => rank(words, a, 100)));
     if (score < Infinity) hits.push({ e, score });
   }
   return hits.sort((a, b) => a.score - b.score || a.e.name.localeCompare(b.e.name)).map((h) => h.e);
@@ -76,7 +78,7 @@ function rank(words, text, base) {
   const tw = normName(text).split(' ');
   let first = Infinity;
   for (const w of words) {
-    const at = tw.findIndex((t) => t.startsWith(w));
+    const at = tw.findIndex((x) => x.startsWith(w));
     if (at < 0) return Infinity;
     first = Math.min(first, at);
   }
@@ -120,7 +122,7 @@ export function exerciseFromEntry(entry, now = Date.now(), { sets = 3 } = {}) {
   return {
     id: uid(now),
     libId: entry.id,
-    name: entry.name,
+    name: entry.nameEn || entry.name, // stored in English; shown via exName()
     equipment: entry.equipment || null,
     muscle: entry.muscle || null,
     kind: entry.defaultKind || 'weight_reps',
@@ -224,7 +226,7 @@ export function restAfterTick(list, i) {
 
 /** A routine from a session: its exercises with the numbers kept and every tick cleared. */
 export function routineFromWorkout(w, name, now = Date.now()) {
-  const clean = String(name ?? '').trim().slice(0, 60) || w.title || 'Routine';
+  const clean = String(name ?? '').trim().slice(0, 60) || w.title || t('pk.routine');
   return {
     id: `rt-${now.toString(36)}`,
     name: clean,
@@ -249,7 +251,7 @@ export function workoutFromRoutine(rt, { id, date, now = Date.now() }) {
   });
   return {
     id, date, type: 'gym', title: rt.name, intensity: 'moderate',
-    durationMin: Math.max(20, Math.min(120, exercises.reduce((t, e) => t + e.sets.length * 3, 0))),
+    durationMin: Math.max(20, Math.min(120, exercises.reduce((sum, e) => sum + e.sets.length * 3, 0))),
     completed: false, completedAt: null, metrics: {}, segments: [], exercises, packing: [], notes: '',
     seeded: false, deload: false, isRace: false, source: 'custom', strava_activity_id: null, routineId: rt.id,
   };

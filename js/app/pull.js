@@ -8,6 +8,7 @@
 
 import { svg } from '../core/icons.js';
 import { pullState } from '../core/gesture.js';
+import { t } from '../core/i18n.js';
 
 /**
  * @param {HTMLElement} scroller  the element that scrolls (#view)
@@ -61,8 +62,8 @@ export function enablePull(scroller, { when, onRefresh }) {
     if (!st?.ready) { reset(); return; }
     busy = true;
     sprite.classList.add('is-busy');
-    status.textContent = 'Refreshing…';
-    try { await onRefresh(); status.textContent = 'Up to date'; } catch { status.textContent = 'Couldn’t refresh'; }
+    status.textContent = t('misc.refreshing');
+    try { await onRefresh(); status.textContent = t('misc.upToDate'); } catch { status.textContent = t('misc.refreshFailed'); }
     busy = false;
     reset();
   };

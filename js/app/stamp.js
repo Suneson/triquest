@@ -8,6 +8,7 @@
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
+import { t } from '../core/i18n.js';
 
 const KEY = 'moske-stamped';
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
@@ -33,7 +34,7 @@ export function stampRecord({ name, prs, target }) {
   wrap.className = 'stamp-wrap';
   wrap.setAttribute('aria-hidden', 'true');
   wrap.innerHTML = `<div class="stamp-plaque">
-      <span class="stamp-k">${svg('trophy')} New record</span>
+      <span class="stamp-k">${svg('trophy')} ${t('rt.newRecord')}</span>
       <b>${esc(name)}</b>
       <small>${prs.map((p) => esc(p.label)).join(' · ')}</small>
     </div>${'<i class="stamp-dust"></i>'.repeat(6)}`;

@@ -15,6 +15,7 @@ import { SYNC_ENABLED } from './config.js';
 import { isDemo, demoSocial } from './demo.js';
 import { haptic } from './haptics.js';
 import { groupThreads, unreadOf, bellCountOf, validUsername, cleanUsername } from '../core/social.js';
+import { t } from '../core/i18n.js';
 
 const SEEN_NEWS = 'moske-news-seen'; // app news is shared, so "read" is per device
 
@@ -75,7 +76,7 @@ function demoRpc(name, a) {
     const r = f(a.p_user);
     if (r?.status === 'pending' && r.incoming) { r.status = 'accepted'; return { status: 'friends' }; }
     if (r) return { status: r.status === 'accepted' ? 'friends' : 'pending' };
-    state.friends.push({ friendship_id: Date.now(), user_id: a.p_user, display_name: 'Demo athlete', username: null, avatar: null, status: 'pending', incoming: false, created_at: new Date().toISOString() });
+    state.friends.push({ friendship_id: Date.now(), user_id: a.p_user, display_name: t('misc.demoAthlete'), username: null, avatar: null, status: 'pending', incoming: false, created_at: new Date().toISOString() });
     return { status: 'pending' };
   }
   if (name === 'respond_friend') {
@@ -86,17 +87,20 @@ function demoRpc(name, a) {
   if (name === 'remove_friend') { state.friends = state.friends.filter((x) => x.user_id !== a.p_user); return null; }
   if (name === 'find_user') {
     const uid = a.p_username === 'yusuf_d' ? 'd-12' : a.p_username === 'hannah_s' ? 'd-11' : null;
-    return uid ? [{ user_id: uid, display_name: uid === 'd-12' ? 'Yusuf Demir' : 'Hannah Schäfer', username: a.p_username, avatar: null }] : [];
+    return uid ? [{ user_id: uid, display_name: uid === 'd-12' ? 'Yusuf Demir' : 'Hannah Schäfer', username: a.p_username, avatar: null }] : []; // i18n-ignore (demo names)
   }
   if (name === 'set_username') return a.p_username;
   return null;
 }
 
+// the database's own rule message, in the active language
+const dbError = (m) => (/^Usernames are 3-20/.test(m || '') ? t('chat.usernameRule') : m);
+
 async function rpc(name, args) {
   if (isDemo()) return demoRpc(name, args || {});
   const c = await client();
   const { data, error } = await c.rpc(name, args);
-  if (error) throw new Error(error.message || 'Something went wrong');
+  if (error) throw new Error(dbError(error.message) || t('misc.wentWrong'));
   return data;
 }
 
@@ -194,11 +198,11 @@ export async function requestFriend(uid) {
 
 export async function requestByUsername(name) {
   const clean = cleanUsername(name);
-  if (!validUsername(clean)) throw new Error('Usernames are 3–20 letters, numbers or _');
-  if (clean === state.me?.username) throw new Error('That’s you.');
+  if (!validUsername(clean)) throw new Error(t('chat.usernameRule'));
+  if (clean === state.me?.username) throw new Error(t('misc.thatsYou'));
   const rows = await rpc('find_user', { p_username: clean });
   const hit = rows?.[0];
-  if (!hit) throw new Error(`No athlete is called @${clean}.`);
+  if (!hit) throw new Error(t('misc.noAthlete', { name: clean }));
   const status = await requestFriend(hit.user_id);
   return { status, user: hit };
 }
@@ -250,7 +254,7 @@ export async function sendMessage(uid, body) {
   const c = await client();
   const { data, error } = await c.from('messages')
     .insert({ sender: state.me.id, recipient: uid, body: text }).select().single();
-  if (error) throw new Error(/row-level security/i.test(error.message) ? 'You can only message friends.' : error.message);
+  if (error) throw new Error(/row-level security/i.test(error.message) ? t('misc.friendsOnly') : error.message);
   if (!state.messages.some((x) => x.id === data.id)) state.messages.unshift(data);
   emit('sent');
   return data;

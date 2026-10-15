@@ -12,17 +12,22 @@
 
 import { newSet, workSets } from './sets.js';
 import { normName } from './exercises.js';
+import { t, fmtNum } from './i18n.js';
 
-export const SET_KIND_LABELS = { warmup: 'Warm-up', work: 'Work', drop: 'Drop', failure: 'Failure' };
+/** Set types in the active language (the stored `kind` stays the key). */
+export const SET_KIND_LABELS = Object.defineProperties({}, Object.fromEntries(
+  ['warmup', 'work', 'drop', 'failure'].map((k) => [k, { enumerable: true, get: () => t(`gym.kind.${k}`) }]),
+));
 
-/** Grid labels: warm-ups are W, drop sets D, failure sets F, work sets count 1, 2, 3. */
+/** Grid labels: warm-ups are W, drop sets D, failure sets F, work sets count 1, 2, 3
+ *  (the letters follow the language: C for calentamiento in Spanish). */
 export function setLabels(sets) {
   let n = 0;
   return (sets || []).map((s) => {
-    if (s.kind === 'warmup') return 'W';
+    if (s.kind === 'warmup') return t('gym.letter.warmup');
     n++;
-    if (s.kind === 'drop') return 'D';
-    if (s.kind === 'failure') return 'F';
+    if (s.kind === 'drop') return t('gym.letter.drop');
+    if (s.kind === 'failure') return t('gym.letter.failure');
     return String(n);
   });
 }
@@ -68,7 +73,7 @@ export function previousFor(prev, sets, i) {
   return pool[pos] || null;
 }
 
-const trim = (n) => (Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100));
+const trim = (n) => fmtNum(Math.round(n * 100) / 100, { maximumFractionDigits: 2, useGrouping: false });
 
 /** "100 kg × 8", "+10 kg × 6", "× 12", "45 s". Empty string when there's nothing. */
 export function formatSet(s, kind = 'weight_reps') {
@@ -121,7 +126,7 @@ export function tickSet(ex, i, done, now, fallback = null) {
 /** kg × reps over ticked sets, warm-ups excluded. Bodyweight sets count only added weight. */
 export function exerciseVolume(ex) {
   return workSets(ex).filter((s) => s.done && s.weight > 0 && s.reps > 0)
-    .reduce((t, s) => t + s.weight * s.reps, 0);
+    .reduce((sum, s) => sum + s.weight * s.reps, 0);
 }
 
 /** Summary for the finish screen. */
@@ -132,7 +137,7 @@ export function sessionSummary(w, now) {
   return {
     sets: doneSets.length,
     exercises: ex.filter((e) => workSets(e).some((s) => s.done)).length,
-    volumeKg: Math.round(ex.reduce((t, e) => t + exerciseVolume(e), 0)),
+    volumeKg: Math.round(ex.reduce((sum, e) => sum + exerciseVolume(e), 0)),
     // once logged, the clock stops at the logged duration
     durationSec: w.gymLoggedAt && w.gymDurationSec != null ? w.gymDurationSec
       : started != null && Number.isFinite(started) ? Math.max(0, Math.round((now - started) / 1000)) : null,
@@ -148,7 +153,7 @@ export function fmtClock(sec) {
 }
 
 /** "Rest 2:30", "Rest off". */
-export const restLabel = (sec) => (sec > 0 ? `Rest ${fmtClock(sec)}` : 'Rest off');
+export const restLabel = (sec) => (sec > 0 ? t('gym.rest', { time: fmtClock(sec) }) : t('gym.restOff'));
 
 export const REST_PRESETS = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300];
 

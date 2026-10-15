@@ -7,6 +7,7 @@ import { svg } from '../core/icons.js';
 import { weekPath, seasonPath } from '../core/path.js';
 import { shortLabel, weekdayName } from '../core/dates.js';
 import { esc, meter } from './ui.js';
+import { openLayer, closeLayer } from './nav.js';
 
 const DAY_LETTER = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -43,8 +44,7 @@ export function weekPathCard(ctx) {
 /** The season path sheet: week by week from now to the next event. */
 export function openSeasonPath(ctx) {
   const s = seasonPath(ctx.workouts, ctx.today, ctx.settings?.events);
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('season-path');
   const rows = s.weeks.map((w, i) => {
     const frac = w.planned ? w.done / w.planned : 0;
     const cls = `${w.isCurrent ? 'is-current' : ''} ${w.isEventWeek ? 'is-event' : ''} ${w.planned && w.done >= w.planned ? 'is-cleared' : ''}`;
@@ -68,6 +68,6 @@ export function openSeasonPath(ctx) {
         ${s.event ? '' : '<p class="muted small">Add a race in Settings and the path runs to its finish gate.</p>'}
       </div>
     </div>`;
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const close = () => closeLayer(root);
   root.querySelectorAll('[data-sp-close]').forEach((b) => b.addEventListener('click', close));
 }

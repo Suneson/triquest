@@ -12,11 +12,19 @@ const reduced = () => prefersReducedMotion() || document.body.classList.contains
 // the swap. CSS (::view-transition-*(view)) draws the wipe; this only picks the
 // direction so the wipe travels the way the tab bar moved.
 
-const TAB_ORDER = ['home', 'journal', 'shop', 'leaderboards', 'chat', 'progress'];
+// The tab bar, left to right. The calendar ('journal') isn't on the bar any
+// more: it opens from Home, so it sits at Home's position as a level deeper.
+const TAB_ORDER = ['home', 'shop', 'leaderboards', 'chat', 'progress'];
+
+/** 'fwd' (the wipe travels left, like moving right along the bar) or 'back'. */
+export function tabDirection(from, to) {
+  const pos = (t) => (t === 'journal' ? TAB_ORDER.indexOf('home') + 0.5 : TAB_ORDER.indexOf(t));
+  return pos(to) < pos(from) ? 'back' : 'fwd';
+}
 
 export function withTabTransition(from, to, update) {
   if (!document.startViewTransition || reduced() || from === to) { update(); return; }
-  const dir = TAB_ORDER.indexOf(to) < TAB_ORDER.indexOf(from) ? 'back' : 'fwd';
+  const dir = tabDirection(from, to);
   document.documentElement.dataset.vtDir = dir;
   const t = document.startViewTransition(update);
   t.finished.finally(() => { delete document.documentElement.dataset.vtDir; });

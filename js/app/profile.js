@@ -6,6 +6,7 @@ import { esc, fmtKm } from './ui.js';
 import { svg } from '../core/icons.js';
 
 import { todayISO } from '../core/dates.js';
+import { openLayer, closeLayer } from './nav.js';
 
 export async function fetchPublicUserProfile(targetUserId) {
   const { isDemo, demoPublicProfile } = await import('./demo.js');
@@ -26,10 +27,9 @@ const MILESTONES = [
 ];
 
 export function openPublicProfile({ uid, name, rank, xp }) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('profile-preview', { reuse: false });
   const level = levelFromTotalXp(Number(xp) || 0).level;
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const close = () => closeLayer(root);
   root.innerHTML = `
     <div class="modal-backdrop" data-pp-close></div>
     <div class="modal pp-modal" role="dialog" aria-modal="true" aria-label="Profile">

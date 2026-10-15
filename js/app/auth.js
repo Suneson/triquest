@@ -10,6 +10,7 @@ import { SYNC_ENABLED } from './config.js';
 import { toast } from './effects.js';
 import { svg } from '../core/icons.js';
 import { busy } from './motion.js';
+import { openLayer, closeLayer, topLayerName } from './nav.js';
 
 let _client = null;
 let _user = null;
@@ -106,9 +107,8 @@ export async function resetPassword(email) {
 
 // Shown after the user follows the password-reset email link (PASSWORD_RECOVERY).
 function openSetPassword() {
-  const root = document.getElementById('modal-root');
-  if (root.querySelector('[data-set-pw]')) return; // already showing
-  root.classList.add('open');
+  if (topLayerName() === 'set-password') return; // already showing
+  const root = openLayer('set-password', { swipeBack: false });
   root.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Set a new password">
@@ -133,7 +133,7 @@ function openSetPassword() {
       const c = await client();
       const { error } = await c.auth.updateUser({ password });
       if (error) throw error;
-      root.innerHTML = ''; root.classList.remove('open');
+      closeLayer(root);
       const { data: { user } } = await c.auth.getUser();
       if (user && !_user) { await activateUser(user, { silent: true }); if (_onChange) _onChange(_user); }
       toast('Password updated. You’re signed in.', { icon: svg('lock') });
@@ -156,8 +156,7 @@ export async function signOut() {
 // ---- sign-in modal ---------------------------------------------------------
 
 export function openAuthModal() {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('auth');
   root.innerHTML = `
     <div class="modal-backdrop" data-auth-close></div>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Sign in">
@@ -181,7 +180,7 @@ export function openAuthModal() {
       <p class="auth-msg" role="status" hidden></p>
     </div>`;
 
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const close = () => closeLayer(root);
   const msg = (text, ok = false) => {
     const el = root.querySelector('.auth-msg');
     el.hidden = false; el.textContent = text; el.classList.toggle('ok', ok);

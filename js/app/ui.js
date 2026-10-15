@@ -393,8 +393,8 @@ function homeDateHeader(ctx) {
   const d = parseISO(ctx.today);
   const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
   const label = `${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
-  return `<div class="home-date"><div><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2></div>
-    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="Open your journal">${svg('journal')} Journal</button></div>`;
+  return `<div class="home-date"><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2>
+    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="Open your calendar">${svg('calendar')}<span class="jr-label">Calendar</span></button></div>`;
 }
 
 // A scaled-down one-line preview of tomorrow — never more than today + tomorrow.
@@ -522,7 +522,7 @@ function focusCard(ctx) {
       </div>
       <div class="focus-sub">${esc(INTENSITIES[focus.intensity] || '')}${focus.notes && /\[Main Set\]/i.test(focus.notes) ? ' · structured session — tap for the full set' : ' · tap for details'}</div>
     </section>`
-    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today. See Journal.</p>` : '');
+    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today. See Calendar.</p>` : '');
 }
 
 // ---- JOURNAL (Mon–Fri chronological list, today spot-lit) ---------------------
@@ -549,7 +549,7 @@ export function renderJournal(ctx, selectedIso) {
   }).join('');
 
   return `
-    <div class="jr-head"><h2>Journal</h2><span class="jr-month">${esc(monthLabel)}</span></div>
+    <div class="jr-head"><h2>Calendar</h2><span class="jr-month">${esc(monthLabel)}</span></div>
     <div class="jr-strip">
       <button class="jr-week-nav prev" data-action="jr-week" data-dir="-1" aria-label="Previous week">${svg('chevron')}</button>
       <span class="jr-range">${esc(shortLabel(ws))} – ${esc(shortLabel(addDays(ws, 6)))}</span>

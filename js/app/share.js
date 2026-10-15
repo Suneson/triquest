@@ -10,6 +10,7 @@
 import { svg } from '../core/icons.js';
 import { sceneFor, cornerPolygon } from '../core/scenes.js';
 import { sportProgress, xpForWorkout } from '../core/scoring.js';
+import { openLayer, closeLayer } from './nav.js';
 import { DISCIPLINES } from '../core/disciplines.js';
 import { shortLabel } from '../core/dates.js';
 import { esc } from './ui.js';
@@ -190,12 +191,11 @@ const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'imag
 
 /** Open the share sheet for a completed session. */
 export async function openShareSheet(w, workouts) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
-  const close = () => {
-    root.querySelectorAll('img[data-url]').forEach((i) => URL.revokeObjectURL(i.dataset.url));
-    root.innerHTML = ''; root.classList.remove('open');
-  };
+  const root = openLayer('share', {
+    reuse: false,
+    onClose: () => root.querySelectorAll('img[data-url]').forEach((i) => URL.revokeObjectURL(i.dataset.url)),
+  });
+  const close = () => closeLayer(root);
   root.innerHTML = `<div class="modal-backdrop" data-sh-close></div>
     <div class="modal sh-modal" role="dialog" aria-modal="true" aria-label="Share card">
       <header class="modal-head"><h2>${svg('upload')} Share card</h2><button class="icon-btn" data-sh-close aria-label="Close">${svg('close')}</button></header>

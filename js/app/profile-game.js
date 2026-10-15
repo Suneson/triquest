@@ -20,6 +20,7 @@ import { PAD, snap, wavePath, stepBand, telemetryGrid, square, blockBars } from 
 import { recordsShelfHtml, wireRecords, gymCardHtml, wireGymCard } from './gym-history.js';
 import { friendButton, wireFriendButton } from './chat.js';
 import { onSwipe, nextSport } from './swipe.js';
+import { openLayer, closeLayer } from './nav.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -415,8 +416,7 @@ function accountBlock() {
 
 /** Activity history drill-down: trend graph + recent sessions (Strava-badged). */
 export function openActivityDetail(ctx) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('activity', { reuse: false });
   const recent = ctx.workouts.filter((w) => w.completed)
     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25);
   const rows = recent.map((w) => {
@@ -442,7 +442,7 @@ export function openActivityDetail(ctx) {
       <div class="ah-list">${rows}</div>
     </section>
   </div>`;
-  root.querySelector('[data-fh-hub]').addEventListener('click', () => openFitnessHub(ctx));
+  root.querySelector('[data-fh-hub]').addEventListener('click', () => closeLayer(root));
   // the inner trend card is not a drill-down here
   root.querySelector('[data-fh-activity]')?.removeAttribute('data-fh-activity');
 }
@@ -458,11 +458,6 @@ function statRow(ctx) {
   </div>`;
 }
 
-function closeHub() {
-  const root = document.getElementById('modal-root');
-  root.innerHTML = '';
-  root.classList.remove('open');
-}
 
 // Photo upload: pick → centre-crop to 192px JPEG → persist in settings
 // (synced to Supabase profiles.settings when signed in).
@@ -493,8 +488,7 @@ function wireAvatarUpload(root) {
 
 /** Layer A — the full-bleed Fitness Hub (replaces the old profile modal). */
 export function openFitnessHub(ctx) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('fitness');
   const name = athleteName();
 
   root.innerHTML = `
@@ -515,7 +509,7 @@ export function openFitnessHub(ctx) {
     ${trophyCabinet(ctx)}
   </div>`;
 
-  root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+  root.querySelector('[data-fh-close]').addEventListener('click', () => closeLayer(root));
   wireTrophies(root, ctx);
   wireRecords(root);
   wireGymCard(root, ctx);
@@ -528,8 +522,7 @@ export function openFitnessHub(ctx) {
  *  leaderboard athlete's aggregated public data (per-day counts + minutes).
  *  The back arrow returns to the leaderboard underneath. */
 export async function openPublicFitness({ uid, name, avatar, xp }) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('athlete', { reuse: false });
   const avatarHtml = avatar
     ? `<img src="${esc(avatar)}" alt="">`
     : esc((name || 'A').trim().charAt(0).toUpperCase());
@@ -544,7 +537,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     ${body}
   </div>`;
   const wireBack = () => {
-    root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+    root.querySelector('[data-fh-close]').addEventListener('click', () => closeLayer(root));
     wireFriendButton(root);
   };
   // loading tiles in the shape of the stats, calendar and charts below
@@ -612,8 +605,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
 /** Layer B — Cardio Load drill-down: acute-load line inside the safe-zone band,
  *  per-day status dots, and a Status Breakdown table (days · bar · %). */
 export function openCardioDetail(ctx) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('cardio', { reuse: false });
   const cs = cardioState(ctx);
   const N = 30;
   const W = 320;
@@ -673,5 +665,5 @@ export function openCardioDetail(ctx) {
     </section>
   </div>`;
 
-  root.querySelector('[data-fh-hub]').addEventListener('click', () => openFitnessHub(ctx));
+  root.querySelector('[data-fh-hub]').addEventListener('click', () => closeLayer(root));
 }

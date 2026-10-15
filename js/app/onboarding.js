@@ -11,6 +11,7 @@ import { svg } from '../core/icons.js';
 import { esc } from './ui.js';
 import { addDays, todayISO } from '../core/dates.js';
 import { SPLIT_PRESETS, SPLIT_GROUPS, presetSplit, normalizeSplit, splitWarnings, moveGroup } from '../core/gym-split.js';
+import { openLayer, closeLayer } from './nav.js';
 
 // ---- static choice matrices --------------------------------------------------
 
@@ -93,8 +94,7 @@ function analyzeHistory(workouts) {
 }
 
 export function openOnboarding({ onDone } = {}) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('ai-wizard', { reuse: false });
 
   const s = {
     eco: null, athlete: null, goal: null, hybridSports: [], gymGoal: null,
@@ -131,7 +131,7 @@ export function openOnboarding({ onDone } = {}) {
     return (ATHLETES.find((a) => a.id === s.athlete)?.sports) || ATHLETES[0].sports;
   };
 
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const close = () => closeLayer(root);
 
   const choiceGrid = (items, attr, current) => `<div class="ob-grid">${items.map((it) => `
     <button type="button" class="ob-choice ${current === it.id ? 'on' : ''}" data-${attr}="${it.id}">

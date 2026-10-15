@@ -8,6 +8,7 @@ import { svg } from '../core/icons.js';
 import { chatTime, cleanUsername, validUsername } from '../core/social.js';
 import { toast } from './effects.js';
 import { currentUser } from './auth.js';
+import { openLayer, closeLayer, topLayerName, openRoute, leaveRoute } from './nav.js';
 import {
   socialState, socialEnabled, startSocial, onSocial, threads, incoming, outgoing, relationTo, friendRow,
   requestFriend, requestByUsername, respondFriend, removeFriend, setUsername, loadThread, threadWith,
@@ -66,17 +67,11 @@ export function drawChat() {
   const out = outgoing();
   const ts = threads();
   root.innerHTML = `
-    <div class="day-header"><h2>Chat</h2>
-      <button class="btn tiny secondary" data-ch="edit-name" aria-label="Edit your username">${me?.username ? `@${esc(me.username)}` : 'Set username'}</button></div>
-    <form class="card ch-add" data-ch-form="add" autocomplete="off">
-      <label class="ch-add-lbl" for="ch-add-in">${svg('friend')} Add a friend</label>
-      <div class="ch-add-row">
-        <input id="ch-add-in" class="ch-in" type="text" name="u" inputmode="text" autocapitalize="none" spellcheck="false"
-          placeholder="@username" maxlength="21" aria-describedby="ch-add-hint">
-        <button class="btn primary tiny" type="submit">Add</button>
-      </div>
-      <small id="ch-add-hint" class="muted">Type their exact username, or tap an athlete on Ranks.</small>
-    </form>
+    <div class="day-header ch-header">
+      <div class="ch-title"><h2>Chat</h2>
+        <button class="link ch-me" data-ch="edit-name" aria-label="Your username: ${esc(me?.username || 'not set')}. Edit">${me?.username ? `@${esc(me.username)}` : 'Set your username'} ${svg('edit')}</button></div>
+      <button class="btn tiny primary ch-add-btn" data-ch="add-friend">${svg('friend')} Add friend</button>
+    </div>
     ${inc.length ? `<h3 class="sec-title">${svg('friend')} Requests <span class="ch-count data-num">${inc.length}</span></h3>
       <ul class="ch-list">${inc.map((f) => `<li class="ch-row">
         ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">${esc(handle(f))} wants to be friends</small></span>
@@ -96,7 +91,7 @@ export function drawChat() {
           ${t.unread ? `<span class="ch-badge data-num">${t.unread}</span>` : ''}</span>
       </button></li>`;
   }).join('')}</ul>`
-    : dialogue({ who: 'Chat', icon: 'chat', text: 'No friends yet. Add someone by username above, or open an athlete on Ranks and tap Add friend.', cls: 'empty-dlg' })}
+    : dialogue({ who: 'Chat', icon: 'chat', text: 'No friends yet. Tap Add friend and type their username, or open an athlete on Ranks.', cls: 'empty-dlg' })}
     ${out.length ? `<h3 class="sec-title">${svg('clock')} Sent</h3>
       <ul class="ch-list">${out.map((f) => `<li class="ch-row">
         ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">Waiting for ${esc(handle(f) || 'them')} to accept</small></span>
@@ -174,8 +169,56 @@ function refreshThread() {
 
 export function openThread(uid) {
   ui.open = uid;
+  // a thread is a route inside the Chat tab: back, Escape and the edge swipe
+  // return to the list (and leaving the tab closes it)
+  openRoute('chat-thread', { area: document.getElementById('view'), onClose: closeThread });
   drawChat();
   loadThread(uid).then(() => refreshThread()).catch(() => {});
+}
+
+/**
+ * Add a friend by username: a small sheet, not a permanent field. The field
+ * isn't focused for you (no keyboard until you tap it); paste and the
+ * keyboard's suggestions work as usual.
+ */
+function openAddFriend() {
+  const root = openLayer('add-friend');
+  root.innerHTML = `
+    <div class="modal-backdrop" data-af-close></div>
+    <div class="modal pk-modal pk-small" role="dialog" aria-modal="true" aria-labelledby="af-title">
+      <header class="modal-head"><h2 id="af-title">${svg('friend')} Add friend</h2>
+        <button class="icon-btn" data-af-close aria-label="Close">${svg('close')}</button></header>
+      <form class="modal-body ch-add-sheet" data-af-form novalidate>
+        <label class="field"><span>Their username</span>
+          <input class="ch-in" type="text" name="u" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false"
+            placeholder="@username" maxlength="21" aria-describedby="af-hint"></label>
+        <p class="af-msg" role="status" hidden></p>
+        <button class="btn primary block" type="submit">Add</button>
+        <small id="af-hint" class="muted">Type their exact username, or tap an athlete on Ranks and add them from their profile.</small>
+      </form>
+    </div>`;
+  const msg = root.querySelector('.af-msg');
+  root.onclick = (e) => { if (e.target.closest('[data-af-close]')) closeLayer(root); };
+  root.querySelector('[data-af-form]').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const v = form.u.value;
+    const btn = form.querySelector('[type="submit"]');
+    const fail = (text) => { msg.hidden = false; msg.textContent = text; };
+    if (!validUsername(v)) { fail('Usernames are 3–20 letters, numbers or _'); return; }
+    btn.setAttribute('aria-busy', 'true'); btn.disabled = true;
+    try {
+      const r = await requestByUsername(v);
+      closeLayer(root);
+      toast(r.status === 'friends' ? `You and ${esc(r.user.display_name)} are friends` : `Request sent to @${esc(cleanUsername(v))}`, { icon: svg('friend') });
+    } catch (err) { fail(err.message); } finally { btn.removeAttribute('aria-busy'); btn.disabled = false; }
+  });
+}
+
+function closeThread() {
+  if (!ui.open) return;
+  ui.open = null;
+  drawChat();
 }
 
 function wireChat(root) {
@@ -185,11 +228,12 @@ function wireChat(root) {
     const act = b.dataset.ch;
     try {
       if (act === 'open') openThread(b.dataset.uid);
-      else if (act === 'back') { ui.open = null; drawChat(); }
+      else if (act === 'back') { ui.open = null; leaveRoute('chat-thread'); drawChat(); }
       else if (act === 'accept') { b.setAttribute('aria-busy', 'true'); await respondFriend(Number(b.dataset.fid), true); toast('Friend added', { icon: svg('friend') }); }
       else if (act === 'decline') { await respondFriend(Number(b.dataset.fid), false); }
       else if (act === 'cancel') { await removeFriend(b.dataset.uid); }
       else if (act === 'edit-name') editUsername();
+      else if (act === 'add-friend') openAddFriend(b);
       else if (act === 'profile') openProfile(friendRow(ui.open));
     } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
   };
@@ -197,26 +241,14 @@ function wireChat(root) {
     const form = e.target.closest('[data-ch-form]');
     if (!form) return;
     e.preventDefault();
-    const btn = form.querySelector('[type="submit"]');
-    if (form.dataset.chForm === 'add') {
-      const v = form.u.value;
-      if (!validUsername(v)) { toast('Usernames are 3–20 letters, numbers or _', { icon: svg('warn') }); return; }
-      btn.setAttribute('aria-busy', 'true'); btn.disabled = true;
-      try {
-        const r = await requestByUsername(v);
-        form.reset();
-        toast(r.status === 'friends' ? `You and ${esc(r.user.display_name)} are friends` : `Request sent to @${esc(cleanUsername(v))}`, { icon: svg('friend') });
-      } catch (err) { toast(esc(err.message), { icon: svg('warn') }); } finally { btn.removeAttribute('aria-busy'); btn.disabled = false; }
-    } else {
-      const ta = form.body;
-      const text = ta.value.trim();
-      if (!text || !ui.open) return;
-      ta.value = ''; ui.draft.delete(ui.open);
-      try { await sendMessage(ui.open, text); refreshThread(); scrollToEnd(); } catch (err) {
-        ta.value = text; toast(esc(err.message), { icon: svg('warn') });
-      }
-      ta.focus();
+    const ta = form.body;
+    const text = ta.value.trim();
+    if (!text || !ui.open) return;
+    ta.value = ''; ui.draft.delete(ui.open);
+    try { await sendMessage(ui.open, text); refreshThread(); scrollToEnd(); } catch (err) {
+      ta.value = text; toast(esc(err.message), { icon: svg('warn') });
     }
+    ta.focus();
   };
   root.oninput = (e) => {
     if (e.target.matches('.ch-compose textarea') && ui.open) {
@@ -236,7 +268,7 @@ function wireChat(root) {
     const v = e.target.value; e.target.value = '';
     const f = friendRow(ui.open);
     if (v === 'remove' && f && confirm(`Remove ${f.display_name} from your friends? You won’t be able to message each other.`)) {
-      await removeFriend(f.user_id); ui.open = null; drawChat();
+      await removeFriend(f.user_id); ui.open = null; leaveRoute('chat-thread'); drawChat();
     } else if (v === 'profile') openProfile(f);
   };
 }
@@ -315,8 +347,9 @@ export function paintBell(ring = false) {
 // ---- the bell's sheet ---------------------------------------------------------------------------
 
 export function openBell() {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  if (topLayerName() === 'bell') return;
+  let off = () => {};
+  const root = openLayer('bell', { reuse: false, onClose: () => off() });
   const draw = () => {
     const inc = incoming();
     const notes = socialState().notifications;
@@ -349,16 +382,16 @@ export function openBell() {
       </div>`;
   };
   draw();
-  const off = onSocial(() => { if (root.querySelector('[aria-label="Notifications"]')) draw(); else off(); });
+  off = onSocial(() => { if (root.isConnected) draw(); else off(); });
   root.onclick = async (e) => {
-    if (e.target.closest('[data-bell-close]')) { root.innerHTML = ''; root.classList.remove('open'); root.onclick = null; off(); return; }
+    if (e.target.closest('[data-bell-close]')) { closeLayer(root); return; }
     const b = e.target.closest('[data-bell]');
     if (!b) return;
     try {
       if (b.dataset.bell === 'accept') { await respondFriend(Number(b.dataset.fid), true); toast('Friend added', { icon: svg('friend') }); }
       else if (b.dataset.bell === 'decline') await respondFriend(Number(b.dataset.fid), false);
       else if (b.dataset.bell === 'chat') {
-        root.innerHTML = ''; root.classList.remove('open'); root.onclick = null; off();
+        closeLayer(root);
         document.dispatchEvent(new CustomEvent('moske:open-chat', { detail: b.dataset.uid }));
       }
     } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }

@@ -72,8 +72,7 @@ export function openExerciseHistory(key) {
       <span class="gh-sets">${h.sets.map((s) => esc(formatSet(s, h.kind) || '–')).join('<span class="muted"> · </span>')}</span>
     </li>`).join('');
 
-  const root = layer();
-  root.classList.add('open');
+  const root = layer('exercise-history');
   root.innerHTML = `
     <div class="modal-backdrop" data-pk-close></div>
     <div class="modal pk-modal" role="dialog" aria-modal="true" aria-label="${esc(name)} history">
@@ -93,8 +92,6 @@ export function openExerciseHistory(key) {
       </div>
     </div>`;
   root.onclick = (e) => { if (e.target.closest('[data-pk-close]')) closeLayer(); };
-  root.oninput = null; root.onchange = null; root.onsubmit = null;
-  root.onkeydown = (e) => { if (e.key === 'Escape') closeLayer(); };
   return kind;
 }
 

@@ -129,7 +129,7 @@ img { image-rendering: pixelated; }
 .ob-choice, .ob-note, .ob-hist-row, .btn, .icon-btn, .fab, .tabs, .chip, .tag, .zone, .lvl-chip, .ob-chip, .cap,
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
-.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .sp-day, .sp-chip, .sp-label, .ch-add, .ch-in, .ch-msg, .bl-ico, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
+.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .sp-day, .sp-chip, .sp-label, .ch-in, .ch-msg, .bl-ico, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
 .signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
@@ -329,6 +329,11 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
 /* ---- modal sheet --------------------------------------------------------------------------------------- */
 .modal-root { position: fixed; inset: 0; z-index: 10000; display: none; }
 .modal-root.open { display: block; }
+/* layers (js/app/nav.js): a dialog takes focus when it opens; that programmatic
+   focus doesn't draw a ring, keyboard focus inside it still does */
+.layer [role="dialog"][tabindex="-1"]:focus, .layer[tabindex="-1"]:focus { outline: none; }
+/* edge swipe back: a scrim over the screen beneath, lifting as the layer leaves */
+.nav-scrim { position: absolute; inset: 0; background: var(--shade); opacity: .5; pointer-events: none; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(5, 9, 18, .78); }
 .modal {
   --b: var(--line); --eo: 4px;
@@ -430,11 +435,18 @@ input[type=checkbox]:checked::after {
 @keyframes seg-in { from { background: var(--bg-4); } }
 
 /* ---- HOME ---------------------------------------------------------------------------------------------------- */
-.home-date { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 2px; }
-.home-date > div { display: grid; gap: 4px; min-width: 0; }
-/* the Journal moved off the tab bar: a green button beside today's date */
-.btn.jr-btn { --b: var(--good); --e: #2E8A55; background: var(--good); color: var(--shade); flex: none; margin: 2px 2px 6px; }
+/* the weekday runs the full width; the date and the Calendar button share the row below */
+.home-date { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; row-gap: 4px; padding: 0 2px; }
+.home-date small { grid-column: 1 / -1; }
+.home-date h2 { min-width: 0; }
+/* the calendar (route id 'journal') lives off the tab bar: a green button beside today's date */
+.btn.jr-btn { --b: var(--good); --e: #2E8A55; background: var(--good); color: var(--shade); flex: none; margin: 2px 2px 6px; padding-inline: 8px; gap: 6px; }
 .btn.jr-btn .ic { width: 16px; height: 16px; }
+/* narrow phones: the button keeps its name for screen readers, shows the icon only */
+@media (max-width: 360px) {
+  .btn.jr-btn { padding-inline: 0; width: 48px; justify-content: center; }
+  .btn.jr-btn .jr-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 .home-date small { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--muted); text-transform: uppercase; }
 .home-date h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d2); text-transform: uppercase; line-height: 1.1; }
 
@@ -684,7 +696,6 @@ span.gl-prev { cursor: default; }
 .drop-after { box-shadow: 0 4px 0 0 var(--accent) !important; }
 
 /* ---- exercise picker (js/app/gym-picker.js), in its own layer over the workout sheet ---------- */
-.sheet-root { z-index: 10001; }
 .pk-modal { display: flex; flex-direction: column; }
 .pk-modal:focus { outline: none; }
 .pk-small { max-height: none; }
@@ -813,13 +824,15 @@ span.gl-prev { cursor: default; }
    still keeps the composer at the bottom of the screen */
 body.chat-mode .view { padding-bottom: 0; }
 body.chat-mode .view > .chat { flex: 1 0 auto; }
-.ch-add { --b: var(--line); display: grid; gap: 8px; padding: var(--sp-panel); }
-.ch-add-lbl { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; }
-.ch-add-lbl .ic { width: 16px; height: 16px; color: var(--accent); }
-.ch-add-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+/* Chat header: the title with your @username under it, one action on the right */
+.ch-title { display: grid; gap: 2px; min-width: 0; }
+.ch-me { justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: -8px 0; padding: 0; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--fs-small); text-decoration: none; }
+.ch-me .ic { width: 16px; height: 16px; flex: none; }
+.ch-add-btn { flex: none; white-space: nowrap; margin: 2px 2px 6px; }
+.ch-add-sheet .af-msg { margin: 0; color: var(--danger); font-size: var(--fs-small); }
 .ch-in { --b: var(--line); --eo: 4px; margin: 2px; padding: 10px 12px; background: var(--bg-4); color: var(--fg); border: 0; font-size: 16px; min-width: 0; width: calc(100% - 4px); }
 .ch-in:focus { outline: none; --b: var(--accent); }
-.ch-add .btn { margin: 2px 2px 6px; }
 .ch-count { color: var(--accent); }
 .ch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .ch-row {
@@ -1019,7 +1032,7 @@ body.chat-mode .fab { display: none; }
   display: flex; flex-direction: column; overflow: hidden;
   padding: calc(10px + var(--safe-t)) 16px calc(16px + var(--safe-b));
 }
-.ob-progress { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--shade); }
+.ob-progress { position: absolute; top: var(--safe-t); left: 0; right: 0; height: 6px; background: var(--shade); }
 .ob-progress i { display: block; height: 100%; background: var(--accent); transition: width var(--t-ui); }
 .ob-head { display: flex; align-items: center; gap: 12px; padding: 12px 0 4px; }
 .ob-head small { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; color: var(--muted); }
@@ -1069,14 +1082,21 @@ body.chat-mode .fab { display: none; }
 /* ---- FITNESS HUB (full-screen) --------------------------------------------------------------------------------------- */
 .fh-screen {
   position: fixed; inset: 0; height: 100%; overflow-y: auto; background: var(--bg);
-  padding: calc(14px + var(--safe-t)) 16px calc(var(--safe-b) + 32px);
+  padding: 0 0 calc(var(--safe-b) + 32px);
   display: block; animation: fh-in var(--t-enter);
   -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
 }
-.fh-screen > * { margin: 0 0 var(--sp-section); }
+.fh-screen > * { margin: 0 16px var(--sp-section); } /* the gutter lives on the children, so a full-bleed child just sets margin-inline 0 */
 @keyframes fh-in { from { transform: translateY(16px); opacity: 0; } }
 .fh-block { padding: var(--sp-panel); }
 .fh-head { display: flex; align-items: center; gap: 12px; }
+/* the screen header stays put and owns the status-bar band: content scrolls
+   under a solid header, never under the clock */
+.fh-screen > .fh-head {
+  position: sticky; top: 0; z-index: 6; margin: 0 0 var(--sp-section);
+  padding: calc(10px + var(--safe-t)) 16px 10px; background: var(--bg);
+  border-bottom: var(--px) solid var(--line-soft);
+}
 .fh-back { --b: var(--line); width: 44px; height: 44px; flex: none; background: var(--bg-3); color: var(--fg); margin: 2px 2px 6px; display: grid; place-items: center; padding: 0; transition: transform var(--t-press); }
 .fh-title { flex: 1; display: grid; gap: 4px; min-width: 0; }
 .fh-title small { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--muted); text-transform: uppercase; }
@@ -1335,7 +1355,7 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .pg-screen[data-pg-swipe] { touch-action: pan-y; }
 
 /* another athlete's profile: their scene + levels as a card above the stats */
-.fh-screen > .ap-scene { margin: 0 -16px var(--sp-group); }
+.fh-screen > .ap-scene { margin: 0 0 var(--sp-group); } /* full bleed by structure, not by a margin that must match the gutter */
 .pg-screen.pg-embed {
   position: relative; inset: auto; z-index: 0; overflow: hidden;
   display: grid; grid-template-rows: auto auto auto; gap: 10px; padding: 10px 0 12px;
@@ -1345,7 +1365,18 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .pg-embed .pg-hud { position: relative; left: auto; right: auto; bottom: auto; grid-row: 3; margin: 0 14px; min-height: 0; }
 .pg-embed .pg-stage-wrap { inset: 0; }
 .pg-embed .pg-stage { width: 100%; height: 100%; }
-.pg-embed .pg-world { width: 100%; }
+/* the layered (Cycling) world covers its box like the full-screen one: a touch
+   wider than the card, so it always overflows on both axes and crops instead
+   of leaving a gap (its height follows the 572/1024 aspect, always taller) */
+.pg-embed .pg-world { width: 104%; }
+.pg-embed .pg-scene { background: var(--bd-top, #070a12); }
+/* in the card, the sport switch moves the art inside its box (2%, within the
+   overscan) and fades it in; the box itself never moves, so no band shows */
+.pg-embed .pg-scene.pg-slide-left, .pg-embed .pg-scene.pg-slide-right { animation: none; }
+.pg-embed .pg-slide-left > * { animation: pg-art-l 280ms steps(6, end); }
+.pg-embed .pg-slide-right > * { animation: pg-art-r 280ms steps(6, end); }
+@keyframes pg-art-l { from { translate: 2% 0; opacity: 0; } }
+@keyframes pg-art-r { from { translate: -2% 0; opacity: 0; } }
 .pg-embed .lvl-chip { cursor: default; }
 .ap-hint { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 0; font-size: var(--fs-small); }
 .ap-hint .ic { width: 14px; height: 14px; }

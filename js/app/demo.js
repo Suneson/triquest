@@ -69,6 +69,8 @@ export function demoPublicProfile(uid) {
     total_min: total,
     dates: days.map((d) => d.date),
     days,
+    // per-sport XP, so each demo athlete has a different best sport
+    sport_xp: { bike: 900 + seed * 410, run: 700 + ((seed * 530) % 3900), swim: 200 + ((seed * 290) % 1700), gym: (seed * 370) % 2600 },
   };
 }
 

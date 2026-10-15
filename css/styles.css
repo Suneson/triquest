@@ -845,6 +845,10 @@ body.chat-mode .view > .chat { flex: 1 0 auto; }
   padding: 8px 0; background: var(--bg); border-bottom: var(--px) solid var(--line-soft);
 }
 .ch-head .lb-avatar { width: 40px; height: 40px; }
+.ch-who { grid-column: 2 / 4; display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 10px; min-width: 0; min-height: 44px;
+  padding: 0; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; transition: transform var(--t-press); }
+.ch-who:active { transform: translateY(1px); }
+.ch-who:focus-visible { outline: var(--px) solid var(--accent); outline-offset: 2px; }
 .ch-msgs { list-style: none; margin: 0; padding: 4px 0 8px; display: grid; gap: 6px; align-content: end; flex: 1 0 auto; }
 .ch-msg { --eo: 4px; max-width: 82%; padding: 8px 12px 6px; margin: 2px; display: grid; gap: 2px; }
 .ch-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
@@ -1319,6 +1323,32 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .pg-sport-name { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); text-transform: uppercase; }
 .pg-xptext { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--muted); }
 .pg-artnote { font-size: var(--fs-tiny); color: var(--muted); margin-top: -4px; }
+
+/* sport switch: the scene slides in from the side you swiped/tapped toward */
+.pg-scene { position: absolute; inset: 0; }
+.pg-slide-left { animation: pg-slide-l 280ms steps(6, end); }
+.pg-slide-right { animation: pg-slide-r 280ms steps(6, end); }
+@keyframes pg-slide-l { from { transform: translateX(14%); opacity: 0; } }
+@keyframes pg-slide-r { from { transform: translateX(-14%); opacity: 0; } }
+.pg-screen[data-pg-swipe] { touch-action: pan-y; }
+
+/* another athlete's profile: their scene + levels as a card above the stats */
+.fh-screen > .ap-scene { margin: 0 -16px var(--sp-group); }
+.pg-screen.pg-embed {
+  position: relative; inset: auto; z-index: 0; overflow: hidden;
+  display: grid; grid-template-rows: auto auto auto; gap: 10px; padding: 10px 0 12px;
+}
+.pg-embed .pg-scene { position: relative; inset: auto; grid-row: 2; height: min(100vw, 460px); overflow: hidden; }
+.pg-embed .pg-topbar { position: relative; top: auto; grid-row: 1; }
+.pg-embed .pg-hud { position: relative; left: auto; right: auto; bottom: auto; grid-row: 3; margin: 0 14px; min-height: 0; }
+.pg-embed .pg-stage-wrap { inset: 0; }
+.pg-embed .pg-stage { width: 100%; height: 100%; }
+.pg-embed .pg-world { width: 100%; }
+.pg-embed .lvl-chip { cursor: default; }
+.ap-hint { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 0; font-size: var(--fs-small); }
+.ap-hint .ic { width: 14px; height: 14px; }
+.ap-hint .ic.flip { transform: scaleX(-1); }
+@media (hover: hover) and (pointer: fine) { .ap-hint { display: none; } }
 
 /* ---- XP pop + level-up sheet ------------------------------------------------------------------------------------------ */
 .xp-pop { position: fixed; z-index: 9600; pointer-events: none; font-family: var(--font-display); font-size: var(--fs-d2); color: var(--accent);

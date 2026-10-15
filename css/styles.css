@@ -152,6 +152,8 @@ img { image-rendering: pixelated; }
 }
 .race-banner b { color: var(--fg); }
 .race-banner .ic { color: var(--accent); }
+.race-banner.is-today { --b: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.race-banner.is-today b, .race-banner.is-today .ic { color: var(--on-accent); }
 .sync-prompt { margin: 10px 18px 4px; padding: 8px 10px; background: var(--bg-2); --b: var(--line);
   display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); }
 .sync-prompt span { flex: 1; }

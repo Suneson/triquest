@@ -13,7 +13,7 @@ import { mainSetIsExercises } from '../core/gym-split.js';
 import { rollNum } from './motion.js';
 import { weekPathCard } from './game.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
-import { sessionLine, dayLine } from '../core/coach-lines.js';
+import { sessionLine, dayLine, raceOn } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
 
 export { DISCIPLINES, INTENSITIES };
@@ -341,6 +341,7 @@ export function eventBanner(ctx) {
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!evs.length) return '';
   // one text span, so the flex row doesn't split the sentence into columns
+  if (evs[0].date === ctx.today) return `<div class="race-banner is-today">${svg('flag')}<span>Race day: <b>${esc(evs[0].title)}</b>. Go get it.</span></div>`;
   return `<div class="race-banner">${svg('flag')}<span>Next event: <b>${esc(evs[0].title)}</b> · ${shortLabel(evs[0].date)}</span></div>`;
 }
 
@@ -366,7 +367,13 @@ export function questsPanel(ctx) {
   const done = qs.filter((q) => q.done).length;
   const verifiedToday = ctx.workouts.filter((w) => w.date === ctx.today && earnsXp(w)).length;
   const planned = ctx.workouts.filter((w) => w.date === ctx.today && w.source !== 'strava').length;
-  const line = dayLine({ planned, verified: verifiedToday, questsDone: done, questsTotal: qs.length, streak: ctx.streaks?.current || 0 });
+  const events = ctx.settings?.events || [];
+  const line = dayLine({
+    planned, verified: verifiedToday, questsDone: done, questsTotal: qs.length, streak: ctx.streaks?.current || 0,
+    today: ctx.today,
+    race: raceOn(ctx.workouts, events, ctx.today),
+    raceTomorrow: raceOn(ctx.workouts, events, addDays(ctx.today, 1)),
+  });
   const rows = qs.length
     ? `<ul class="q-list">${qs.map((q) => `<li class="q-row ${q.done ? 'done' : ''} ${ctx.freshQuests?.has(q.id) ? 'just-done' : ''}" data-quest="${esc(q.id)}">
         <span class="q-box" aria-hidden="true">${q.done ? svg('check') : ''}</span>

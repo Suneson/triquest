@@ -40,6 +40,54 @@ function clip(s, n = 90) {
   return s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s;
 }
 
+// ---- race day ---------------------------------------------------------------
+
+const RACE_CUE = {
+  run: 'Start slower than feels right, settle by the second third, then empty the tank in the last.',
+  bike: 'Ride your own numbers, not anyone else’s wheel. Eat early, drink often.',
+  swim: 'Find clear water, long strokes, sight every six. Calm is fast.',
+  brick: 'Swim calm, ride smart, run proud. Eat early on the bike, it pays you back on the run.',
+  gym: 'Warm up properly, open with a lift you know you own, then go for it.',
+  other: 'Pace the first third, fuel early, finish strong.',
+};
+
+const RACE_OPENERS = [
+  (t) => `Race day: ${t}.`,
+  (t) => `It’s here. ${t}.`,
+  (t) => `${t}. This is what you trained for.`,
+];
+
+const RACE_CLOSERS = [
+  'Every session you logged is in your legs today.',
+  'Nothing new today: same breakfast, same kit, same you.',
+  'Smile at the hard parts. You earned the right to be here.',
+];
+
+// deterministic pick so the line doesn't change on every redraw
+const pick = (list, seed) => list[[...String(seed)].reduce((a, c) => a + c.charCodeAt(0), 0) % list.length];
+
+/**
+ * The athlete's race on `iso`, if any: a planned session marked as a race, or
+ * an event saved in settings (onboarding's race date). Returns {title, type} or null.
+ */
+export function raceOn(workouts = [], events = [], iso) {
+  const w = workouts.find((x) => x.date === iso && x.isRace);
+  if (w) return { title: cleanRaceTitle(w.title) || 'Race', type: w.type || 'other', done: !!w.completed };
+  const e = events.find((x) => x?.date === iso);
+  return e ? { title: cleanRaceTitle(e.title) || 'Race', type: e.type || 'other', done: false } : null;
+}
+
+const cleanRaceTitle = (t) => String(t || '').replace(/\s*[—–-]\s*race day\s*$/i, '').trim();
+
+/** The coach's line for race day (or the eve of it). */
+export function raceLine(race, { eve = false, done = false, seed = '' } = {}) {
+  if (!race) return '';
+  const t = race.title || 'Race';
+  if (done) return `${t}: done. Whatever the clock says, you showed up and finished. Proud of you.`;
+  if (eve) return `${t} is tomorrow. Lay out your kit, eat what you know, sleep early. The hard work is already done.`;
+  return `${pick(RACE_OPENERS, seed + t)(t)} ${RACE_CUE[race.type] || RACE_CUE.other} ${pick(RACE_CLOSERS, t + seed)}`;
+}
+
 /** Guidance for one session, shown at the top of its detail sheet. */
 export function sessionLine(w) {
   if (!w) return '';
@@ -48,6 +96,7 @@ export function sessionLine(w) {
       ? 'Verified on Strava. That one counts. Recover well.'
       : 'Marked done. Link it on Strava to make it count.';
   }
+  if (w.isRace) return raceLine({ title: cleanRaceTitle(w.title) || 'Race', type: w.type }, { seed: w.date });
   const opener = TYPE_OPENER[w.type] || TYPE_OPENER.other;
   const main = mainSet(w.notes).replace(/[.;,\s]+$/, '');
   if (main) return `${opener} Main set: ${clip(main)}.`;
@@ -58,9 +107,13 @@ export function sessionLine(w) {
 
 /**
  * One line for the day, shown in the Home quests panel.
- * @param {{planned: number, verified: number, questsDone: number, questsTotal: number, streak: number}} s
+ * @param {{planned: number, verified: number, questsDone: number, questsTotal: number, streak: number,
+ *          race?: object|null, raceTomorrow?: object|null, today?: string}} s
  */
 export function dayLine(s) {
+  // race day beats everything else the coach could say
+  if (s.race) return raceLine(s.race, { done: s.race.done || s.verified > 0, seed: s.today });
+  if (s.raceTomorrow) return raceLine(s.raceTomorrow, { eve: true });
   if (s.questsTotal > 0 && s.questsDone === s.questsTotal) return 'All quests cleared. Rest up, same time tomorrow.';
   if (s.verified > 0 && s.streak > 1) return `${s.streak} days in a row. Keep stacking them.`;
   if (s.verified > 0) return 'Session verified. Check what is left on the board.';

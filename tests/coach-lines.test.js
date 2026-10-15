@@ -33,3 +33,25 @@ test('moment lines fill in their values', () => {
   assert.match(MOMENT_LINES.questDone('Train 45+ minutes today'), /Train 45\+ minutes today/);
   assert.match(MOMENT_LINES.sportLevel('Gym', 4), /Gym level 4/);
 });
+
+test('race day: the coach talks about the race, by sport', async () => {
+  const { raceOn, raceLine } = await import('../js/core/coach-lines.js');
+  const ws = [{ date: '2026-10-19', isRace: true, type: 'brick', title: 'IRONMAN 70.3 — RACE DAY', completed: false }];
+  const race = raceOn(ws, [], '2026-10-19');
+  assert.deepEqual(race, { title: 'IRONMAN 70.3', type: 'brick', done: false });
+  const line = dayLine({ planned: 1, verified: 0, questsDone: 0, questsTotal: 3, streak: 2, race, today: '2026-10-19' });
+  assert.match(line, /IRONMAN 70\.3/);
+  assert.match(line, /run proud/);
+  assert.equal(line, dayLine({ planned: 1, verified: 0, questsDone: 0, questsTotal: 3, streak: 2, race, today: '2026-10-19' }));
+  assert.match(dayLine({ planned: 1, verified: 1, questsDone: 3, questsTotal: 3, streak: 2, race, today: '2026-10-19' }), /done\. .*Proud of you/);
+  assert.match(sessionLine(ws[0]), /IRONMAN 70\.3/);
+  assert.match(raceLine(race, { eve: true }), /tomorrow/);
+});
+
+test('race from saved events, and none on an ordinary day', async () => {
+  const { raceOn } = await import('../js/core/coach-lines.js');
+  const ev = [{ title: 'Berlin Marathon', date: '2026-09-27' }];
+  assert.equal(raceOn([], ev, '2026-09-27').title, 'Berlin Marathon');
+  assert.equal(raceOn([], ev, '2026-09-26'), null);
+  assert.match(dayLine({ planned: 1, verified: 0, questsDone: 0, questsTotal: 3, streak: 0, raceTomorrow: raceOn([], ev, '2026-09-27') }), /Berlin Marathon is tomorrow/);
+});

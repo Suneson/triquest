@@ -22,6 +22,8 @@ import { friendButton, wireFriendButton } from './chat.js';
 import { onSwipe, nextSport } from './swipe.js';
 import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
+import { langToggle } from './lang-toggle.js';
+import { t, tList, fmtDate, fmtNum } from '../core/i18n.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -31,7 +33,7 @@ function avatarInner(ctx, initial) {
 
 function athleteName() {
   const u = currentUser?.();
-  return (u?.user_metadata?.display_name || u?.email?.split('@')[0] || 'Athlete').trim();
+  return (u?.user_metadata?.display_name || u?.email?.split('@')[0] || t('pg.athlete')).trim();
 }
 
 // ---- scene overlays (code-driven motion on top of the art) --------------------
@@ -99,9 +101,9 @@ function stillStage(scene, tod) {
   return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--bands:${backdropCss(e.backdrop)}">
     <div class="pg-art">
       ${e.plate && e.char
-        ? `<img class="pg-still-img" src="${esc(e.plate)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">
+        ? `<img class="pg-still-img" src="${esc(e.plate)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(t('pg.sceneAlt', { sport: scene.label, n: scene.artLevel }))}">
       <img class="pg-still-img pg-still-char" src="${esc(e.char)}" width="${e.w}" height="${e.h}" alt="" aria-hidden="true">`
-        : `<img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(scene.label)} level ${scene.artLevel} scene">`}
+        : `<img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(t('pg.sceneAlt', { sport: scene.label, n: scene.artLevel }))}">`}
       <div class="pg-tod" aria-hidden="true"></div>
       <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx, tod)}</div>
       ${corners}
@@ -114,7 +116,7 @@ function layeredWorld(scene, tod) {
   return `<div class="pg-world">
       <img class="pg-layer pg-bg" src="${esc(e.bg)}" alt="" aria-hidden="true">
       <img class="pg-layer pg-platform" src="${esc(e.platform)}" alt="" aria-hidden="true">
-      <img class="pg-char" src="${esc(e.char)}" alt="${esc(scene.label)} level ${scene.artLevel} character">
+      <img class="pg-char" src="${esc(e.char)}" alt="${esc(t('pg.charAlt', { sport: scene.label, n: scene.artLevel }))}">
       <div class="pg-tod" aria-hidden="true"></div>
       ${tod === 'night' ? `<div class="pg-fx" aria-hidden="true">${starsFx({ x: 4, y: 3, w: 92, h: 22 })}</div>` : ''}
     </div>`;
@@ -129,7 +131,8 @@ function edgeColor(bd, which) {
   return `#${which === 0 ? cols[0] : cols[cols.length - 1]}`;
 }
 
-export const SWITCH = [['bike', 'Cycling'], ['swim', 'Swim'], ['run', 'Run'], ['gym', 'Gym']];
+// [sport, label key under sport.*]
+export const SWITCH = [['bike', 'cycling'], ['swim', 'swim'], ['run', 'run'], ['gym', 'gym']];
 export const SPORT_ORDER = SWITCH.map(([s]) => s);
 
 /**
@@ -146,7 +149,8 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
   const bd = still ? `--bd-top:${edgeColor(scene.entry.backdrop, 0)};--bd-bot:${edgeColor(scene.entry.backdrop, -1)}` : '';
   const key = embed ? `ap-${scene.sport}` : scene.sport;
 
-  const sportBtn = ([s, label]) => {
+  const sportBtn = ([s, key]) => {
+    const label = t(`sport.${key}`);
     const on = s === scene.sport;
     return `<button class="pg-sport ${on ? 'active' : ''}" data-action="${action}" data-sport="${s}"${on ? ' aria-current="true"' : ''}>
        ${svg(s)}<span>${label}</span></button>`;
@@ -158,7 +162,7 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
     <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod) : layeredWorld(scene, tod)}</div>
 
     <div class="pg-topbar">
-      <div class="pg-sports" role="group" aria-label="Sport">${SWITCH.map(sportBtn).join('')}</div>
+      <div class="pg-sports" role="group" aria-label="${t('pg.sportGroup')}">${SWITCH.map(sportBtn).join('')}</div>
       ${avatarBtn}
     </div>
 
@@ -166,11 +170,11 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
       <div class="pg-hud-top">
         <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
         ${embed
-          ? `<span class="lvl-chip" aria-label="Level ${p.level}">${lvl}</span>`
-          : `<button class="lvl-chip is-hero" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">${lvl}</button>`}
+          ? `<span class="lvl-chip" aria-label="${t('pg.levelN', { n: p.level })}">${lvl}</span>`
+          : `<button class="lvl-chip is-hero" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="${t('pg.levelSeeAll', { n: p.level })}">${lvl}</button>`}
       </div>
-      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}`, key: `hud-${key}` })}
-      <div class="pg-xptext">${rollNum(p.into, `into-${key}`)} / ${p.span.toLocaleString()} XP · ${rollNum(p.toNext, `next-${key}`)} to LVL ${p.level + 1}</div>
+      ${meter(p.progress, { segments: 20, label: t('pg.toLevel', { pct: Math.round(p.progress * 100), n: p.level + 1 }), key: `hud-${key}` })}
+      <div class="pg-xptext">${t('pg.xpLine', { into: rollNum(p.into, `into-${key}`), span: fmtNum(p.span), toNext: rollNum(p.toNext, `next-${key}`), next: p.level + 1 })}</div>
     </div>
   </section>`;
 }
@@ -182,7 +186,7 @@ export function renderProfileGame(ctx, sport = 'bike', slide = '') {
     p: sportProgress(ctx.workouts, sport),
     action: 'pg-sport',
     slide,
-    avatarBtn: `<button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${avatarInner(ctx, initial)}</button>`,
+    avatarBtn: `<button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`,
   });
 }
 
@@ -191,13 +195,13 @@ export function renderProfileGame(ctx, sport = 'bike', slide = '') {
 function accountAge(ctx) {
   const u = currentUser?.();
   const dates = [u?.created_at, ...ctx.workouts.map((w) => w.date)].filter(Boolean).sort();
-  if (!dates.length) return 'New';
+  if (!dates.length) return t('pg.ageNew');
   const start = new Date(dates[0]);
   const days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
-  if (days < 1) return 'New';
-  if (days < 31) return `${days} d`;
-  if (days < 365) return `${Math.round(days / 30)} mo`;
-  return `${(days / 365).toFixed(1)} y`;
+  if (days < 1) return t('pg.ageNew');
+  if (days < 31) return t('pg.ageDays', { n: days });
+  if (days < 365) return t('pg.ageMonths', { n: Math.round(days / 30) });
+  return t('pg.ageYears', { n: fmtNum(days / 365, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
 }
 
 // ---- full-screen Fitness & Cardio performance hub ---------------------------
@@ -222,11 +226,11 @@ function lastDays(ctx, n) {
 // distinct blue stroke ring + corner dot.
 function monthMatrix(counts, today, year, month /* 0-based */) {
   const first = new Date(Date.UTC(year, month, 1));
-  const label = first.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const label = fmtDate(first, { month: 'short', year: 'numeric', timeZone: 'UTC' });
   const startDow = (first.getUTCDay() + 6) % 7;                       // Mon = 0
   const daysIn = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   const weeks = Math.ceil((startDow + daysIn) / 7);
-  const head = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((L) => `<i class="cal-head">${L}</i>`).join('');
+  const head = tList('date.dayLetters').map((L) => `<i class="cal-head">${L}</i>`).join('');
   let cells = '';
   for (let i = 0; i < weeks * 7; i++) {
     const dayNum = i - startDow + 1;
@@ -236,7 +240,7 @@ function monthMatrix(counts, today, year, month /* 0-based */) {
     const future = iso > today;
     const cls = future ? 'future' : n >= 3 ? 'hi' : n === 2 ? 'mid' : n === 1 ? 'lo' : '';
     cells += `<i class="cal-chip ${cls} ${iso === today ? 'is-today' : ''}"
-      title="${esc(iso)} · ${n} session${n === 1 ? '' : 's'}"></i>`;
+      title="${esc(t('pg.calTitle', { date: shortLabel(iso), n }))}"></i>`;
   }
   return `<div class="cal-month"><h5>${esc(label)}</h5><div class="cal-grid">${head}${cells}</div></div>`;
 }
@@ -254,14 +258,14 @@ function calendarGrid(ctx) {
       ${monthMatrix(counts, ctx.today, y, m)}
     </div>
     <div class="cal-legend">
-      <span><i class="cal-chip lo"></i> 1 activity</span>
-      <span><i class="cal-chip mid"></i> 2 activities</span>
-      <span><i class="cal-chip hi"></i> 3+ activities</span>
+      <span><i class="cal-chip lo"></i> ${t('pg.act1')}</span>
+      <span><i class="cal-chip mid"></i> ${t('pg.act2')}</span>
+      <span><i class="cal-chip hi"></i> ${t('pg.act3')}</span>
     </div>
   </section>`;
 }
 
-const STRAVA_ICO = `<svg class="strava-ico" viewBox="0 0 24 24" aria-label="Imported from Strava">
+const STRAVA_ICO = () => `<svg class="strava-ico" viewBox="0 0 24 24" aria-label="${t('pg.fromStrava')}">
   <path fill="#FC4C02" d="M10.463 0L3.463 13.828h4.169l2.836-5.598 2.83 5.598h4.164L10.463 0zm4.924 13.828l-2.089 4.116-2.095-4.116H8.138L13.298 24l5.15-10.172h-3.061z"/></svg>`;
 
 // Activity Summary: big hours total + orange dotted cumulative trend line.
@@ -276,7 +280,7 @@ function trendGraph(ctx) {
   const h = Math.floor(acc / 60);
   const m = Math.round(acc % 60);
   return `<section class="card fh-block fh-tap" data-fh-activity role="button" tabindex="0">
-    <h4>Activity summary <span class="fh-arrow">${svg('chevron')}</span></h4>
+    <h4>${t('pg.activitySummary')} <span class="fh-arrow">${svg('chevron')}</span></h4>
     <div class="fh-big data-num">${h}<small class="data-unit">h</small> ${m}<small class="data-unit">m</small></div>
     <div class="fh-range">${esc(shortLabel(days[0].iso))} – ${esc(shortLabel(ctx.today))}</div>
     <svg class="fh-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
@@ -294,10 +298,10 @@ function strainWave(ctx) {
   const loads = days.map((d) => d.load);
   const cs = cardioState(ctx);
   const pct = cs.zone === 'unknown' ? null : Math.round((cs.ratio - 1) * 100);
-  const [label, color] = pct == null ? ['Calibrating', 'var(--muted)']
-    : pct < -10 ? ['Below target', 'var(--acc-peri)']
-    : pct > 10 ? ['Above target', 'var(--acc-orange)']
-    : ['On target', 'var(--acc-green)'];
+  const [label, color] = pct == null ? [t('pg.strainCalibrating'), 'var(--muted)']
+    : pct < -10 ? [t('pg.strainBelow'), 'var(--acc-peri)']
+    : pct > 10 ? [t('pg.strainAbove'), 'var(--acc-orange)']
+    : [t('pg.strainOn'), 'var(--acc-green)'];
   const W = 210;
   const H = 96;
   const avg = loads.reduce((a, b) => a + b, 0) / Math.max(1, loads.length);
@@ -308,7 +312,7 @@ function strainWave(ctx) {
   // one block per day: inside the ±25% band green, above orange, below violet
   const bars = blockBars(loads, W, H, max, (i, v) => (!v ? 'zero' : v > avg * 1.25 ? 'over' : v < avg * 0.75 ? 'under' : 'in'));
   return `<section class="card fh-block">
-    <h4>Strain Performance</h4>
+    <h4>${t('pg.strain')}</h4>
     <div class="fh-strain">
       <div class="fh-strain-stat">
         <div class="fh-big" style="color:${color}">${pct == null ? '—' : `${pct > 0 ? '+' : ''}${pct}%`}</div>
@@ -333,13 +337,13 @@ function trophyCabinet(ctx) {
   const cup = (b) => {
     const on = earned.has(b.id);
     return `<button class="tc-cup ${on ? 'is-on' : 'is-off'}" data-tc="${esc(b.id)}" aria-pressed="false"
-        aria-label="${esc(`${b.name}: ${on ? 'earned' : 'locked'}`)}">
+        aria-label="${esc(t(on ? 'pg.cupAria.earned' : 'pg.cupAria.locked', { name: b.name }))}">
         <span class="tc-ico">${svg(b.icon)}</span><span class="tc-plinth" aria-hidden="true"></span></button>`;
   };
   return `<section class="card fh-block tc">
-    <h4>Trophy cabinet <span class="tc-count"><span class="data-num">${earned.size}</span> / ${BADGES.length}</span></h4>
+    <h4>${t('pg.trophies')} <span class="tc-count"><span class="data-num">${earned.size}</span> / ${BADGES.length}</span></h4>
     ${shelves.map((row) => `<div class="tc-shelf">${row.map(cup).join('')}</div>`).join('')}
-    <p class="tc-info" aria-live="polite">Tap a trophy to see how to earn it.</p>
+    <p class="tc-info" aria-live="polite">${t('pg.trophyTap')}</p>
     ${recordsShelfHtml(ctx.workouts)}
   </section>`;
 }
@@ -352,7 +356,7 @@ function wireTrophies(root, ctx) {
     const b = BADGES.find((x) => x.id === btn.dataset.tc);
     if (!b) return;
     root.querySelectorAll('[data-tc]').forEach((o) => o.setAttribute('aria-pressed', String(o === btn)));
-    info.innerHTML = `<b>${esc(b.name)}</b> ${earned.has(b.id) ? `<span class="tag good">Earned</span>` : `<span class="tag">Locked</span>`}<br>${esc(b.desc)}.`;
+    info.innerHTML = `<b>${esc(b.name)}</b> ${earned.has(b.id) ? `<span class="tag good">${t('pg.earned')}</span>` : `<span class="tag">${t('pg.locked')}</span>`}<br>${esc(b.desc)}.`;
   }));
 }
 
@@ -383,9 +387,9 @@ function cardioCard(ctx) {
   const bars = blockBars(hrs, W, H, Math.max(1, ...hrs), (i, v) => (i === hrs.length - 1 ? 'now' : v ? 'wk' : 'zero'));
   return `<button class="card fh-block fh-cardio" data-fh-cardio>
     <div class="fh-cardio-body">
-      <small>Cardio Load</small>
+      <small>${t('pg.cardioLoad')}</small>
       <b class="fh-big">${cs.acute}</b>
-      <span class="fh-status" style="color:${STATUS_COLOR[cs.status]}">${esc(cs.status)}</span>
+      <span class="fh-status" style="color:${STATUS_COLOR[cs.status]}">${esc(t(`pg.status.${cs.status}`))}</span>
     </div>
     <svg class="fh-cardio-mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
       <g style="--now:${STATUS_COLOR[cs.status]}">${bars}</g>
@@ -398,20 +402,21 @@ function cardioCard(ctx) {
 function accountBlock() {
   const u = currentUser?.();
   return `<section class="card fh-block">
-    <h4>Account &amp; Sync</h4>
+    <h4>${esc(t('pg.accountSync'))}</h4>
     ${u
       ? `<div class="fh-acct">
-           <div class="fh-acct-id"><b>${esc(u.email || 'Signed in')}</b><small>${svg('cloud')} Syncing across devices</small></div>
-           <button class="btn tiny ghost danger" data-action="hub-signout">Sign out</button>
+           <div class="fh-acct-id"><b>${esc(u.email || t('pg.signedIn'))}</b><small>${svg('cloud')} ${t('pg.syncing')}</small></div>
+           <button class="btn tiny ghost danger" data-action="hub-signout">${t('main.signOut')}</button>
          </div>
          <div class="fh-strava-row">
-           <button class="btn tiny ghost" data-action="hub-strava-connect">${svg('link')} Connect Strava</button>
-           <button class="btn tiny ghost" data-action="hub-strava-sync">${svg('sync')} Sync now</button>
-           <button class="btn tiny ghost danger" data-action="hub-strava-disconnect">Disconnect</button>
+           <button class="btn tiny ghost" data-action="hub-strava-connect">${svg('link')} ${t('main.connectStrava')}</button>
+           <button class="btn tiny ghost" data-action="hub-strava-sync">${svg('sync')} ${t('main.syncNow')}</button>
+           <button class="btn tiny ghost danger" data-action="hub-strava-disconnect">${t('main.disconnect')}</button>
          </div>
-         <div class="powered-by-strava">Powered by Strava</div>`
-      : `<button class="btn primary block" data-action="open-auth">${svg('cloud')} Sign in to sync</button>`}
-    <button class="btn ghost block fh-settings" data-action="open-settings">${svg('gear')} All settings</button>
+         <div class="powered-by-strava">${t('main.poweredByStrava')}</div>`
+      : `<button class="btn primary block" data-action="open-auth">${svg('cloud')} ${t('main.signInSync')}</button>`}
+    ${langToggle()}
+    <button class="btn ghost block fh-settings" data-action="open-settings">${svg('gear')} ${t('pg.allSettings')}</button>
   </section>`;
 }
 
@@ -422,21 +427,21 @@ export function openActivityDetail(ctx) {
     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25);
   const rows = recent.map((w) => {
     const km = Number(w.metrics?.distanceKm) || Number(w.actual?.distanceKm) || 0;
-    const meta = [shortLabel(w.date), `${w.durationMin || 0} min`, km ? `${km % 1 ? km.toFixed(1) : km} km` : '']
+    const meta = [shortLabel(w.date), `${w.durationMin || 0} min`, km ? `${fmtNum(km, { maximumFractionDigits: 1 })} km` : '']
       .filter(Boolean).join(' · ');
     return `<div class="ah-row" data-action="open-workout" data-id="${esc(w.id)}" role="button" tabindex="0">
       <span class="sport-dot type-${esc(w.type)}"></span>
       <div class="ah-body"><b>${esc(w.title || w.type)}</b><small>${esc(meta)}</small></div>
-      ${w.strava_activity_id || w.source === 'strava' ? STRAVA_ICO : ''}
+      ${w.strava_activity_id || w.source === 'strava' ? STRAVA_ICO() : ''}
     </div>`;
-  }).join('') || '<p class="fh-foot">No completed sessions yet.</p>';
+  }).join('') || `<p class="fh-foot">${t('pg.noCompleted')}</p>`;
 
   root.innerHTML = `
-  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Activity history">
-    ${sheetHead({ lead: 'back', label: 'Back to fitness', title: 'Activity', closeAttr: 'data-fh-hub' })}
+  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="${t('pg.activityHistory')}">
+    ${sheetHead({ lead: 'back', label: t('pg.backToFitness'), title: t('pg.activity'), closeAttr: 'data-fh-hub' })}
     ${trendGraph(ctx)}
     <section class="card fh-block">
-      <h4>History</h4>
+      <h4>${t('pg.history')}</h4>
       <div class="ah-list">${rows}</div>
     </section>
   </div>`;
@@ -449,10 +454,10 @@ function statRow(ctx) {
   const stat = (value, label, cls = '') => `<div class="pc-stat ${cls}"><b>${esc(String(value))}</b><small>${esc(label)}</small></div>`;
   const acct = ctx.acct;
   return `<div class="pc-stats fh-stats">
-    ${stat(acct ? `LVL ${acct.level}` : `LVL ${ctx.stats?.level ?? 1}`, acct ? `${acct.questXp.toLocaleString()} quest XP` : 'Level', 'acct')}
-    ${stat((ctx.stats?.completedCount ?? 0).toLocaleString(), 'Workouts')}
-    ${stat(`${ctx.streaks?.current ?? 0} d`, 'Streak')}
-    ${stat(accountAge(ctx), 'Account age')}
+    ${stat(acct ? `LVL ${acct.level}` : `LVL ${ctx.stats?.level ?? 1}`, acct ? t('pg.questXp', { xp: fmtNum(acct.questXp) }) : t('pg.level'), 'acct')}
+    ${stat(fmtNum(ctx.stats?.completedCount ?? 0), t('pg.workouts'))}
+    ${stat(t('pg.ageDays', { n: ctx.streaks?.current ?? 0 }), t('pg.streak'))}
+    ${stat(accountAge(ctx), t('pg.accountAge'))}
   </div>`;
 }
 
@@ -490,9 +495,9 @@ export function openFitnessHub(ctx) {
   const name = athleteName();
 
   root.innerHTML = `
-  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Fitness dashboard">
-    ${sheetHead({ lead: 'back', title: 'Fitness', closeAttr: 'data-fh-close',
-    action: `<button class="fh-avatar" data-pc-photo aria-label="Change profile photo">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
+  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="${t('pg.fitnessDash')}">
+    ${sheetHead({ lead: 'back', title: t('pg.fitness'), closeAttr: 'data-fh-close',
+    action: `<button class="fh-avatar" data-pc-photo aria-label="${t('pg.changePhoto')}">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
       <input type="file" accept="image/*" data-pc-file hidden>` })}
     ${accountBlock()}
     ${statRow(ctx)}
@@ -522,8 +527,8 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     ? `<img src="${esc(avatar)}" alt="">`
     : esc((name || 'A').trim().charAt(0).toUpperCase());
   const shell = (body) => `
-  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Athlete profile">
-    ${sheetHead({ lead: 'back', title: esc(name || 'Athlete'), closeAttr: 'data-fh-close',
+  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="${t('pg.athleteProfile')}">
+    ${sheetHead({ lead: 'back', title: esc(name || t('pg.athlete')), closeAttr: 'data-fh-close',
     before: `<span class="sh-avatar" data-vt="athlete-avatar" aria-hidden="true">${avatarHtml}</span>`,
     after: xp == null ? '' : `<span class="lvl-chip sh-lvl" data-vt="athlete-level">LVL ${levelFromTotalXp(Number(xp) || 0).level}</span>`,
     action: friendButton(uid, { icon: true }) })}
@@ -535,7 +540,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
   };
   // loading tiles in the shape of the stats, calendar and charts below
   const skStat = (i) => `<div class="pc-stat is-sk" style="--sk-i:${i}"><b><i class="sk-line" style="width:3ch"></i></b><small><i class="sk-line" style="width:60%"></i></small></div>`;
-  root.innerHTML = shell(`<span class="sr">Loading athlete data…</span>
+  root.innerHTML = shell(`<span class="sr">${t('pg.loadingAthlete')}</span>
     <div class="pc-stats fh-stats" aria-hidden="true">${[0, 1, 2, 3].map(skStat).join('')}</div>
     <div class="fh-sk-block sk-tile" aria-hidden="true" style="--sk-i:4"></div>
     <div class="fh-sk-block short sk-tile" aria-hidden="true" style="--sk-i:5"></div>`);
@@ -569,13 +574,13 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
       sport, p: levelFromTotalXp(Number(sx[sport]) || 0), action: 'ap-sport', embed: true, slide,
     });
     root.innerHTML = shell(`
-      ${sx ? `<div class="ap-scene" role="group" aria-label="Their levels by sport" aria-describedby="ap-hint">${scene()}</div>
+      ${sx ? `<div class="ap-scene" role="group" aria-label="${t('pg.theirLevels')}" aria-describedby="ap-hint">${scene()}</div>
       ${swipeHint()}` : ''}
       <div class="pc-stats fh-stats">
-        ${stat(Number(p.completed || 0).toLocaleString(), 'Workouts')}
-        ${stat(`${streaks.current} d`, 'Streak')}
-        ${stat(((Number(p.total_min) || 0) / 60).toFixed(1), 'Hours')}
-        ${stat(xp == null ? '–' : level, 'Overall level')}
+        ${stat(fmtNum(p.completed || 0), t('pg.workouts'))}
+        ${stat(t('pg.ageDays', { n: streaks.current }), t('pg.streak'))}
+        ${stat(fmtNum((Number(p.total_min) || 0) / 60, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), t('pg.hours'))}
+        ${stat(xp == null ? '–' : level, t('pg.overallLevel'))}
       </div>
       ${calendarGrid(ctx)}
       ${trendGraph(ctx)}
@@ -604,7 +609,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
       });
     }
   } catch (e) {
-    root.innerHTML = shell('<p class="fh-foot">Couldn’t load this athlete — check your connection.</p>');
+    root.innerHTML = shell(`<p class="fh-foot">${t('pg.athleteFailed')}</p>`);
     wireBack();
   }
 }
@@ -616,7 +621,7 @@ const HINT_KEY = 'moske-ap-hint-seen';
 function swipeHint() {
   let seen = 0;
   try { seen = Number(localStorage.getItem(HINT_KEY)) || 0; localStorage.setItem(HINT_KEY, String(seen + 1)); } catch { /* private mode */ }
-  return `<p class="ap-hint muted${seen >= 3 ? ' is-retired' : ''}" id="ap-hint">${svg('back')}<span>Swipe or use the arrow keys for their other sports</span>${svg('back', 'flip')}</p>`;
+  return `<p class="ap-hint muted${seen >= 3 ? ' is-retired' : ''}" id="ap-hint">${svg('back')}<span>${t('pg.swipeHint')}</span>${svg('back', 'flip')}</p>`;
 }
 
 /** Layer B — Cardio Load drill-down: acute-load line inside the safe-zone band,
@@ -650,20 +655,20 @@ export function openCardioDetail(ctx) {
     const n = counts[label] || 0;
     const pct = Math.round((n / N) * 100);
     return `<div class="cs-row ${label === cs.status ? 'on' : ''}">
-      <b style="color:${label === cs.status ? '#fff' : 'inherit'}">${esc(label)}</b>
-      <span class="cs-days">${n}d</span>
+      <b style="color:${label === cs.status ? '#fff' : 'inherit'}">${esc(t(`pg.status.${label}`))}</b>
+      <span class="cs-days">${t('pg.daysN', { n })}</span>
       <span class="cs-bar"><i class="cs-fill" style="width:${pct}%;background:${STATUS_COLOR[label]}"></i></span>
       <span class="cs-pct">${pct}%</span>
     </div>`;
   }).join('');
 
   root.innerHTML = `
-  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Cardio load">
-    ${sheetHead({ lead: 'back', label: 'Back to fitness', title: 'Cardio load', closeAttr: 'data-fh-hub' })}
+  <div class="fh-screen" role="dialog" aria-modal="true" aria-label="${t('pg.cardioLoad')}">
+    ${sheetHead({ lead: 'back', label: t('pg.backToFitness'), title: t('pg.cardioLoad'), closeAttr: 'data-fh-hub' })}
     <section class="card fh-block">
       <div class="fh-cardio-body" style="margin-bottom:10px">
         <b class="fh-big">${cs.acute}</b>
-        <span class="fh-status" style="color:${STATUS_COLOR[cs.status]}">${esc(cs.status)}</span>
+        <span class="fh-status" style="color:${STATUS_COLOR[cs.status]}">${esc(t(`pg.status.${cs.status}`))}</span>
       </div>
       <svg class="fh-svg" viewBox="0 0 ${W} ${H}" aria-hidden="true">
         ${telemetryGrid(W, H)}
@@ -671,10 +676,10 @@ export function openCardioDetail(ctx) {
         <path class="fh-line" d="${d}" stroke="var(--acc-peri)"/>
         ${dots}
       </svg>
-      <p class="fh-foot">${esc(shortLabel(series[0].iso))} – ${esc(shortLabel(ctx.today))} · band = your safe-load zone</p>
+      <p class="fh-foot">${esc(t('pg.cardioFoot', { from: shortLabel(series[0].iso), to: shortLabel(ctx.today) }))}</p>
     </section>
     <section class="card fh-block">
-      <h4>Cardio Status Breakdown</h4>
+      <h4>${t('pg.cardioBreakdown')}</h4>
       <div class="cs-list">${rows}</div>
     </section>
   </div>`;

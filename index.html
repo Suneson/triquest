@@ -29,9 +29,9 @@
       <div class="brand">
         <strong>MOSKE</strong>
         <div class="header-actions">
-          <button id="bell-btn" class="icon-btn bell-btn" data-action="open-bell" aria-label="Notifications" hidden><span data-icon="bell"></span></button>
-          <button id="acct-chip" class="lvl-chip" data-action="pg-profile" aria-label="Account level" hidden></button>
-          <button id="header-avatar" class="avatar-btn" data-action="pg-profile" aria-label="Open profile">A</button>
+          <button id="bell-btn" class="icon-btn bell-btn" data-action="open-bell" aria-label="Notifications" data-i18n-aria="nav.notifications" hidden><span data-icon="bell"></span></button>
+          <button id="acct-chip" class="lvl-chip" data-action="pg-profile" aria-label="Account level" data-i18n-aria="nav.accountLevel" hidden></button>
+          <button id="header-avatar" class="avatar-btn" data-action="pg-profile" aria-label="Open profile" data-i18n-aria="nav.openProfile">A</button>
         </div>
       </div>
     </header>
@@ -41,17 +41,17 @@
 
     <main id="view" class="view"></main>
 
-    <nav class="tabs" aria-label="Views">
-      <button class="tab active" data-action="tab" data-tab="home"><span class="tab-ico" data-icon="home"></span><span class="tab-lbl">Home</span></button>
-      <button class="tab" data-action="tab" data-tab="shop"><span class="tab-ico" data-icon="shop"></span><span class="tab-lbl">Shop</span></button>
-      <button class="tab" data-action="tab" data-tab="leaderboards"><span class="tab-ico" data-icon="trophy"></span><span class="tab-lbl">Ranks</span></button>
-      <button class="tab" data-action="tab" data-tab="chat"><span class="tab-ico" data-icon="chat"></span><span class="tab-lbl">Chat</span></button>
-      <button class="tab" data-action="tab" data-tab="progress"><span class="tab-ico" data-icon="user"></span><span class="tab-lbl">Profile</span></button>
+    <nav class="tabs" aria-label="Views" data-i18n-aria="nav.views">
+      <button class="tab active" data-action="tab" data-tab="home"><span class="tab-ico" data-icon="home"></span><span class="tab-lbl" data-i18n="nav.home">Home</span></button>
+      <button class="tab" data-action="tab" data-tab="shop"><span class="tab-ico" data-icon="shop"></span><span class="tab-lbl" data-i18n="nav.shop">Shop</span></button>
+      <button class="tab" data-action="tab" data-tab="leaderboards"><span class="tab-ico" data-icon="trophy"></span><span class="tab-lbl" data-i18n="nav.ranks">Ranks</span></button>
+      <button class="tab" data-action="tab" data-tab="chat"><span class="tab-ico" data-icon="chat"></span><span class="tab-lbl" data-i18n="nav.chat">Chat</span></button>
+      <button class="tab" data-action="tab" data-tab="progress"><span class="tab-ico" data-icon="user"></span><span class="tab-lbl" data-i18n="nav.profile">Profile</span></button>
     </nav>
 
   </div>
 
-  <button id="fab" class="fab" aria-label="Add a session"><span data-icon="plus"></span></button>
+  <button id="fab" class="fab" aria-label="Add a session" data-i18n-aria="nav.addSession"><span data-icon="plus"></span></button>
 
   <div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
 

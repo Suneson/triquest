@@ -12,6 +12,7 @@
 import { addDays, diffDays } from './dates.js';
 import { isPlanned, isRestDay } from './rest.js';
 import { levelFromTotalXp, xpForWorkout, earnsXp } from './scoring.js';
+import { t } from './i18n.js';
 
 /** First day quests exist. Days before it earn no quest XP. */
 export const QUESTS_SINCE = '2026-10-05';
@@ -29,44 +30,37 @@ const DISTANCE_TYPES = new Set(['run', 'bike', 'swim', 'brick']);
 export const QUEST_POOL = [
   {
     id: 'plan-done', kind: 'training', xp: 40, since: QUESTS_SINCE,
-    text: "Finish today's planned session",
     eligible: (d) => d.planned.length > 0,
     done: (d) => d.planned.some(isVerified),
   },
   {
     id: 'min-45', kind: 'training', xp: 30, since: QUESTS_SINCE,
-    text: 'Train 45+ minutes today',
     // from REST_SINCE it no longer asks you to train on a planned rest day
     eligible: (d) => !(d.date >= REST_SINCE && d.isRestDay),
     done: (d) => d.verified.reduce((a, w) => a + minutesOf(w), 0) >= 45,
   },
   {
     id: 'two-disc', kind: 'training', xp: 50, since: QUESTS_SINCE,
-    text: 'Two disciplines in one day',
     eligible: (d) => new Set(d.planned.map((w) => w.type)).size >= 2,
     done: (d) => new Set(d.verified.map((w) => w.type)).size >= 2,
   },
   {
     id: 'streak', kind: 'training', xp: 30, since: QUESTS_SINCE,
-    text: 'Keep the streak alive',
     eligible: (d) => d.yesterdayVerified.length > 0,
     done: (d) => d.verified.length > 0,
   },
   {
     id: 'km-10', kind: 'training', xp: 30, since: QUESTS_SINCE,
-    text: 'Cover 10 km today',
     eligible: (d) => d.planned.some((w) => DISTANCE_TYPES.has(w.type)),
     done: (d) => d.verified.reduce((a, w) => a + kmOf(w), 0) >= 10,
   },
   {
     id: 'brick', kind: 'training', xp: 50, since: QUESTS_SINCE,
-    text: 'Nail the brick session',
     eligible: (d) => d.planned.some((w) => w.type === 'brick'),
     done: (d) => d.verified.some((w) => w.type === 'brick'),
   },
   {
     id: 'pack-bag', kind: 'app', xp: 10, since: QUESTS_SINCE,
-    text: "Pack tomorrow's bag",
     eligible: (d) => d.tomorrowPackable.length > 0,
     done: (d) => d.tomorrowPackable.length > 0 && d.tomorrowPackable.every(({ w, preset }) => {
       const packed = new Set(w.packed || []);
@@ -75,7 +69,6 @@ export const QUEST_POOL = [
   },
   {
     id: 'rest-day', kind: 'training', xp: 20, since: REST_SINCE,
-    text: 'Rest day: take it, it counts',
     eligible: (d) => d.isRestDay,
     // done while nothing has been logged; claimed only once the day is over
     done: (d) => d.isRestDay && !d.all.some((w) => w.completed),
@@ -99,10 +92,10 @@ export function seededRandom(seed) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    let x = a;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
   };
 }
 
@@ -163,7 +156,7 @@ export function questsFor(date, workouts, settings, byDate = indexByDate(workout
     if (out.length >= QUESTS_PER_DAY) break;
     if (!q.eligible(d)) continue;
     if (q.kind === 'app') { if (apps >= 1) continue; apps++; }
-    out.push({ id: q.id, kind: q.kind, text: q.text, xp: q.xp, done: !!q.done(d) });
+    out.push({ id: q.id, kind: q.kind, text: t(`quest.${q.id}`), xp: q.xp, done: !!q.done(d) });
   }
   return out;
 }

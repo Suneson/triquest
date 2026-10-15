@@ -10,8 +10,14 @@
 // by tools/slice-exercise-art.mjs). Until an entry has art, the app falls back
 // to the line drawing from poses.js.
 //
+// Names and cues are written here in English and translated in the locales
+// (ex.<id>.name / ex.<id>.cues): `name` and `cues` read the active language,
+// `nameEn` stays English for matching and for the AI. The id never changes.
+//
 // Covers the 52 exercises on the sheets (docs/gym/sheets, mapping in
 // docs/gym/sheets.json), which include every exercise the built-in plan uses.
+
+import { t, tList, has, valueAt } from './i18n.js';
 
 export const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Traps',
   'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Adductors', 'Abs', 'Full body', 'Cardio'];
@@ -21,8 +27,15 @@ export const EQUIPMENT = ['Barbell', 'Dumbbell', 'Kettlebell', 'Machine', 'Cable
 
 export const EXERCISE_KINDS = ['weight_reps', 'bodyweight', 'time', 'distance'];
 
-const ex = (id, name, equipment, muscle, secondary, defaultKind, defaultRestSec, cues, aliases = []) =>
-  ({ id, name, equipment, muscle, secondary, defaultKind, defaultRestSec, cues, aliases });
+const ex = (id, nameEn, equipment, muscle, secondary, defaultKind, defaultRestSec, cuesEn, aliases = []) => ({
+  id, nameEn, equipment, muscle, secondary, defaultKind, defaultRestSec, cuesEn, aliases,
+  get name() { return has(`ex.${id}.name`) ? t(`ex.${id}.name`) : nameEn; },
+  get cues() { return has(`ex.${id}.cues`) ? tList(`ex.${id}.cues`) : cuesEn; },
+});
+
+/** A muscle group / piece of equipment in the active language (the stored value stays English). */
+export const muscleLabel = (m) => (has(`muscle.${m}`) ? t(`muscle.${m}`) : m);
+export const equipLabel = (e) => (has(`equip.${e}`) ? t(`equip.${e}`) : e);
 
 export const EXERCISES = [
   ex('back-squat', 'Back Squat', 'Barbell', 'Quads', ['Glutes', 'Hamstrings', 'Abs'], 'weight_reps', 180,
@@ -200,6 +213,7 @@ export const exerciseById = (id) => BY_ID.get(id) || null;
 /** Normalise free text for matching: lowercase, no punctuation, "db" → dumbbell. */
 export function normName(s) {
   return String(s ?? '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // "búlgara" matches "bulgara"
     .replace(/[’'`]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .replace(/\bdb\b/g, 'dumbbell')
@@ -210,9 +224,11 @@ export function normName(s) {
 }
 
 // every name and alias, normalised, longest first (so "bulgarian split squat"
-// beats "split squat", and "romanian deadlift" beats "deadlift")
+// beats "split squat", and "romanian deadlift" beats "deadlift"); the Spanish
+// names count too, so "sentadilla búlgara" finds the same exercise
 const NAMES = EXERCISES
-  .flatMap((e) => [e.name, e.id.replace(/-/g, ' '), ...e.aliases].map((n) => [normName(n), e.id]))
+  .flatMap((e) => [e.nameEn, valueAt('es', `ex.${e.id}.name`), e.id.replace(/-/g, ' '), ...e.aliases]
+    .filter(Boolean).map((n) => [normName(n), e.id]))
   .sort((a, b) => b[0].length - a[0].length);
 
 /**
@@ -221,16 +237,20 @@ const NAMES = EXERCISES
  * longest name or alias that appears as whole words inside the text.
  */
 export function matchExercise(freeText) {
-  const t = normName(freeText);
-  if (!t) return null;
-  for (const [n, id] of NAMES) if (n === t) return id;
-  const padded = ` ${t} `;
+  const q = normName(freeText);
+  if (!q) return null;
+  for (const [n, id] of NAMES) if (n === q) return id;
+  const padded = ` ${q} `;
   for (const [n, id] of NAMES) if (n && padded.includes(` ${n} `)) return id;
   // plurals: "pull ups" vs "pull up", "calf raises" vs "calf raise"
-  const singular = t.replace(/s\b/g, '');
+  const singular = q.replace(/s\b/g, '');
   for (const [n, id] of NAMES) if (n.replace(/s\b/g, '') === singular) return id;
   return null;
 }
+
+/** A logged exercise's name in the active language: the library's name when
+ *  it came from the library, otherwise what the athlete typed. */
+export const exName = (x) => (x?.libId && exerciseById(x.libId)?.name) || x?.name || '';
 
 /** Coaching cues for a library id, or null when it has none. */
 export const cuesForId = (id) => exerciseById(id)?.cues || null;

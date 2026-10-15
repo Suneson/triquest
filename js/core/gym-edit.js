@@ -120,7 +120,7 @@ export function exerciseFromEntry(entry, now = Date.now(), { sets = 3 } = {}) {
   return {
     id: uid(now),
     libId: entry.id,
-    name: entry.name,
+    name: entry.nameEn || entry.name, // stored in English; shown via exName()
     equipment: entry.equipment || null,
     muscle: entry.muscle || null,
     kind: entry.defaultKind || 'weight_reps',

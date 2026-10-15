@@ -1,20 +1,24 @@
 // disciplines.js — shared, DOM-free discipline + intensity metadata and the
 // planned pace/zone hints surfaced inline on cards.
 
+import { t } from './i18n.js';
+
+// labels are getters, so every DISCIPLINES[type].label and INTENSITIES[key]
+// reads the active language without the call sites changing
+const disc = (key, icon, color) => ({ get label() { return t(`sport.${key}`); }, icon, color });
 export const DISCIPLINES = {
-  run: { label: 'Run', icon: '🏃', color: 'var(--c-run)' },
-  bike: { label: 'Bike', icon: '🚴', color: 'var(--c-bike)' },
-  swim: { label: 'Swim', icon: '🏊', color: 'var(--c-swim)' },
-  gym: { label: 'Gym', icon: '🏋️', color: 'var(--c-gym)' },
-  brick: { label: 'Brick', icon: '🧱', color: 'var(--c-brick)' },
-  mobility: { label: 'Mobility', icon: '🧘', color: 'var(--c-mobility)' },
-  other: { label: 'Other', icon: '✨', color: 'var(--c-other)' },
+  run: disc('run', '🏃', 'var(--c-run)'),
+  bike: disc('bike', '🚴', 'var(--c-bike)'),
+  swim: disc('swim', '🏊', 'var(--c-swim)'),
+  gym: disc('gym', '🏋️', 'var(--c-gym)'),
+  brick: disc('brick', '🧱', 'var(--c-brick)'),
+  mobility: disc('mobility', '🧘', 'var(--c-mobility)'),
+  other: disc('other', '✨', 'var(--c-other)'),
 };
 
-export const INTENSITIES = {
-  easy: 'Easy', steady: 'Steady', moderate: 'Moderate',
-  threshold: 'Threshold', vo2: 'VO₂', quality: 'Quality', race: 'Race',
-};
+export const INTENSITIES = Object.defineProperties({}, Object.fromEntries(
+  ['easy', 'steady', 'moderate', 'threshold', 'vo2', 'quality', 'race'].map((k) => [k, { enumerable: true, get: () => t(`intensity.${k}`) }]),
+));
 
 // Planned pace / zone target by discipline + intensity (from the plan's
 // reference card). Returns a short string, or '' when not applicable.

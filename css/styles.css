@@ -1798,3 +1798,12 @@ body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 /* ---- utilities ---- */
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .shop-grid > .dlg, .shop-grid > p { grid-column: 1 / -1; }
+
+/* ---- language switch (lang-toggle.js): EN | ES, two pixel cells ---------------------------------------- */
+.lang-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; }
+.lang-label { font-weight: 600; }
+.lang-tg { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; background: var(--bg-2); box-shadow: inset 0 0 0 var(--px) var(--line-soft); }
+.lang-tg-btn { min-width: 52px; min-height: 40px; background: none; border: 0; color: var(--muted); cursor: pointer;
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); }
+.lang-tg-btn.on { background: var(--bg-4); color: var(--fg); box-shadow: inset 0 calc(-1 * var(--px)) 0 var(--fg); }
+.lang-tg-btn:focus-visible { outline: var(--px) solid var(--fg); outline-offset: -4px; }

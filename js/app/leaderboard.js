@@ -94,9 +94,11 @@ export async function loadLeaderboard(view, today) {
 
 const xp = (n) => fmtNum(n);
 
-// ✓ and the share of the athlete's XP that Strava verified (nothing when none)
+// the Strava logo and the share of the athlete's XP that Strava verified, on
+// its own line under the XP (nothing when none)
+const STRAVA_LOGO = '<svg class="strava-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FC4C02" d="M10.463 0L3.463 13.828h4.169l2.836-5.598 2.83 5.598h4.164L10.463 0zm4.924 13.828l-2.089 4.116-2.095-4.116H8.138L13.298 24l5.15-10.172h-3.061z"/></svg>';
 const proofChip = (r) => (r.verified_pct > 0
-  ? ` <span class="lb-proof" aria-label="${esc(t('xp.lbAria', { pct: r.verified_pct }))}" title="${esc(t('xp.lbAria', { pct: r.verified_pct }))}">${svg('check')}${t('xp.lbChip', { pct: r.verified_pct })}</span>` : '');
+  ? `<span class="lb-proof" aria-label="${esc(t('xp.lbAria', { pct: r.verified_pct }))}" title="${esc(t('xp.lbAria', { pct: r.verified_pct }))}">${STRAVA_LOGO}${t('xp.lbChip', { pct: r.verified_pct })}</span>` : '');
 
 // Last-loaded athletes by id — lets the profile view reuse avatar/xp/rank
 // without stuffing large base64 photos into data attributes.
@@ -153,7 +155,7 @@ function podiumBlock(rows, me) {
       ${r.rank === 1 ? `<span class="pod-crown" aria-hidden="true">${svg('trophy')}</span>` : ''}
       ${avatar(r)}
       <b class="pod-name">${esc((r.display_name || '').split(' ')[0])}</b>
-      <small class="pod-xp">${xp(r.xp)} XP${proofChip(r)}</small>
+      <small class="pod-xp">${xp(r.xp)} XP</small>${proofChip(r)}
       <span class="pod-block" aria-hidden="true">${r.rank}</span>
     </button>`).join('')}</div>`;
 }
@@ -187,7 +189,7 @@ function list(rows, me, delta) {
       ${avatar(r)}
       <span class="lb-id">
         <b class="lb-name">${esc(r.display_name)}${r.user_id === me ? ` ${deltaBadge(delta)}` : ''}</b>
-        <small class="lb-meta">LVL ${r.level} · ${xp(r.xp)} XP${proofChip(r)}</small>
+        <small class="lb-meta">LVL ${r.level} · ${xp(r.xp)} XP</small>${proofChip(r)}
       </span>
       ${sportDots(r.sports)}
     </li>`).join('')}</ul>`;

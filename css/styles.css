@@ -1105,12 +1105,12 @@ body.chat-mode .fab { display: none; }
 .pod-crown { color: var(--accent); line-height: 0; }
 .pod-crown .ic { width: 24px; height: 24px; }
 .pod-block {
-  --eo: 4px; --b: var(--line); width: calc(100% - 4px); margin: 4px 2px 2px; display: grid; place-items: start center; padding-top: 6px;
-  font-family: var(--font-display); font-size: var(--fs-d2); line-height: 1; background: var(--bg-3); color: var(--fg);
+  --eo: 4px; --b: var(--line); width: calc(100% - 4px); margin: 4px 2px 2px; display: grid; place-items: start center; padding-top: 4px;
+  font-family: var(--font-display); font-size: var(--fs-d3); line-height: 1; background: var(--bg-3); color: var(--fg);
 }
-.pod-r1 .pod-block { height: 72px; --b: var(--accent); --e: var(--accent-lo); --eo: 8px; background: var(--accent); color: var(--on-accent); }
-.pod-r2 .pod-block { height: 52px; --b: #D3DAE6; color: #D3DAE6; }
-.pod-r3 .pod-block { height: 40px; --b: #D9925A; color: #D9925A; }
+.pod-r1 .pod-block { height: 44px; --b: var(--accent); --e: var(--accent-lo); --eo: 8px; background: var(--accent); color: var(--on-accent); }
+.pod-r2 .pod-block { height: 32px; --b: #D3DAE6; color: #D3DAE6; }
+.pod-r3 .pod-block { height: 24px; --b: #D9925A; color: #D9925A; }
 .pod:active { transform: translateY(2px); }
 
 /* rival row: pinned under the podium */
@@ -1821,8 +1821,10 @@ body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 .xp-line.is-off { color: var(--danger); }
 .xp-line.is-cap { color: var(--accent); }
 .xp-line.is-ok { color: var(--strava); }
-.lb-proof { display: inline-flex; align-items: center; gap: 2px; color: var(--strava); white-space: nowrap; }
-.lb-proof .ic { width: 12px; height: 12px; }
+.lb-proof { display: inline-flex; align-items: center; gap: 4px; color: var(--strava); white-space: nowrap;
+  font-family: var(--font-display); font-size: var(--fs-d3); }
+.lb-proof .strava-ico { width: 12px; height: 12px; }
+.lb-id .lb-proof { display: flex; margin-top: 2px; }
 .lb-legend { margin: 8px 0 12px; }
 
 /* Settings: a row that opens a sheet (the gym check-in) */

@@ -1889,7 +1889,7 @@ en.xp = {
   "savedNot": "Saved. This session didn’t earn XP:",
   "lbChip": "{pct}%",
   "lbAria": "{pct}% of their XP is verified by Strava",
-  "lbLegend": "✓ is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules."
+  "lbLegend": "The Strava % is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules."
 };
 
 en.checkin = {

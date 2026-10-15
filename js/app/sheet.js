@@ -16,16 +16,17 @@ import { svg } from '../core/icons.js';
  * @param {string} [o.label]    accessible name of the leading button
  * @param {string} [o.closeAttr] extra attribute for the leading button (legacy close hooks)
  * @param {string} [o.before]   HTML before the title text (an avatar)
+ * @param {string} [o.after]    HTML after the title text (a level chip)
  * @param {string} [o.action]   one action on the right (HTML)
  * @param {string} [o.id]       id for the title, so the dialog can be labelled by it
  * @param {boolean} [o.noLead]  no way back here (a step that must be finished)
  */
-export function sheetHead({ title, icon = '', lead = 'close', label, closeAttr = '', before = '', action = '', id = '', noLead = false }) {
+export function sheetHead({ title, icon = '', lead = 'close', label, closeAttr = '', before = '', after = '', action = '', id = '', noLead = false }) {
   const name = label || (lead === 'back' ? 'Back' : 'Close');
   return `<header class="sh-head sh-head--${lead}">
     ${noLead ? '<span class="sh-lead-gap" aria-hidden="true"></span>'
       : `<button type="button" class="sh-lead" data-layer-close ${closeAttr} aria-label="${name}">${svg(lead === 'back' ? 'back' : 'close')}</button>`}
-    <h2 class="sh-title"${id ? ` id="${id}"` : ''}>${before}${icon ? svg(icon) : ''}<span class="sh-title-text">${title}</span></h2>
+    <h2 class="sh-title"${id ? ` id="${id}"` : ''}>${before}${icon ? svg(icon) : ''}<span class="sh-title-text">${title}</span>${after}</h2>
     <div class="sh-act">${action}</div>
   </header>`;
 }

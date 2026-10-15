@@ -30,8 +30,11 @@ button beside today's date on Home (Home stays lit while it's open).
   `supabase_realtime` publication; RLS decides who receives what.
 
 ## App
-- `js/app/social.js`: state, loading, realtime, actions (buzzes on new
-  requests/notifications/messages).
+- `js/app/social.js`: state, loading, realtime, actions. New requests,
+  notifications and messages light the bell and buzz through
+  `js/app/haptics.js`: **Android only**. iOS Safari, iOS browsers and
+  installed iOS web apps have no Vibration API, so on iPhone the bell lights
+  but doesn't vibrate.
 - `js/core/social.js`: pure counting (threads, unread, bell count), tested.
 - `js/app/chat.js`: Chat tab (username, add by username, requests, threads,
   conversation with a sticky composer), the bell sheet, the Add friend /

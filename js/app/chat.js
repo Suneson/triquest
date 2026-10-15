@@ -290,7 +290,8 @@ function wireChat(root) {
 
 function openProfile(f) {
   if (!f) return;
-  document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: f.user_id, name: f.display_name, avatar: f.avatar } }));
+  const from = document.querySelector('.ch-head .lb-avatar'); // carried into the profile header
+  document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: f.user_id, name: f.display_name, avatar: f.avatar, from } }));
 }
 
 function editUsername() {

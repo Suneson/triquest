@@ -13,6 +13,7 @@
 import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { isDemo, demoSocial } from './demo.js';
+import { haptic } from './haptics.js';
 import { groupThreads, unreadOf, bellCountOf, validUsername, cleanUsername } from '../core/social.js';
 
 const SEEN_NEWS = 'moske-news-seen'; // app news is shared, so "read" is per device
@@ -36,9 +37,8 @@ export const socialEnabled = () => isDemo() || (SYNC_ENABLED && !!currentUser())
 const readSeen = () => { try { return Number(localStorage.getItem(SEEN_NEWS)) || 0; } catch { return 0; } };
 const writeSeen = (id) => { try { localStorage.setItem(SEEN_NEWS, String(id)); } catch { /* private mode */ } };
 
-function buzz(pattern = [60, 40, 60]) {
-  try { navigator.vibrate?.(pattern); } catch { /* not supported */ }
-}
+// a buzz on Android when something arrives (see haptics.js: iOS has no vibration)
+const buzz = (name = 'request') => haptic(name);
 
 // ---- derived --------------------------------------------------------------------------------
 
@@ -165,7 +165,7 @@ async function subscribe(uid) {
       if (!p.new?.id) return;
       const isNew = p.eventType === 'INSERT';
       upsertMsg(p.new);
-      if (isNew) buzz([40]);
+      if (isNew) buzz('message');
       emit(isNew ? 'message' : 'read');
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `sender=eq.${uid}` }, (p) => {

@@ -104,7 +104,8 @@ export function recordsShelfHtml(workouts) {
   return `<div class="rc"><h5 class="rc-h">Records</h5>
     <ul class="rc-shelf">${rows.map((r) => {
     const art = exerciseArtSrc(r.key.libId);
-    return `<li><button class="rc-plaque" data-rec-lib="${esc(r.key.libId || '')}" data-rec-name="${esc(r.name)}" aria-label="${esc(`${r.name}: ${r.headline.text} ${r.headline.sub}. Open history`)}">
+    const sk = `${r.name}|${r.headline.text}`;
+    return `<li><button class="rc-plaque${shelfSeen().includes(sk) ? '' : ' is-new'}" data-rec-key="${esc(sk)}" data-rec-lib="${esc(r.key.libId || '')}" data-rec-name="${esc(r.name)}" aria-label="${esc(`${r.name}: ${r.headline.text} ${r.headline.sub}. Open history`)}">
         <span class="pk-thumb ${art ? 'ex-art' : ''}" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" width="48" height="48" loading="lazy">` : svg('gym')}</span>
         <span class="rc-txt"><b>${esc(r.name)}</b><small class="muted">${esc(r.headline.sub)} · ${esc(shortLabel(r.date))}</small></span>
         <b class="rc-val data-num">${esc(r.headline.text)}</b>
@@ -112,7 +113,13 @@ export function recordsShelfHtml(workouts) {
   }).join('')}</ul></div>`;
 }
 
+// a record new to the shelf lands on it once (CSS .is-new), then it's just there
+const SHELF_KEY = 'moske-shelf-seen';
+function shelfSeen() { try { return JSON.parse(localStorage.getItem(SHELF_KEY)) || []; } catch { return []; } }
+
 export function wireRecords(root) {
+  const fresh = [...(root?.querySelectorAll('.rc-plaque.is-new') || [])].map((b) => b.dataset.recKey);
+  if (fresh.length) { try { localStorage.setItem(SHELF_KEY, JSON.stringify([...shelfSeen(), ...fresh].slice(-100))); } catch { /* private mode */ } }
   root?.querySelectorAll('[data-rec-name]').forEach((b) => b.addEventListener('click', () =>
     openExerciseHistory({ libId: b.dataset.recLib || null, name: b.dataset.recName })));
 }

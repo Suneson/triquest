@@ -32,6 +32,10 @@ import { syncQuestClaims } from './quest-sync.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName } from './nav.js';
+import { haptic } from './haptics.js';
+import { enablePull } from './pull.js';
+import { morph } from './vt.js';
+import { stampRecord, firstStamp } from './stamp.js';
 import { sheetHead } from './sheet.js';
 
 
@@ -192,6 +196,7 @@ function render() {
     chip.setAttribute('aria-label', `Account level ${ctx.acct.level}, ${ctx.acct.toNext} XP to the next level`);
   }
 
+  paintTabCursor();
   document.querySelectorAll('.tab').forEach((t) => {
     // the calendar (route id 'journal') opens from Home, so Home stays lit while it's showing
     const on = t.dataset.tab === appState.tab || (appState.tab === 'journal' && t.dataset.tab === 'home');
@@ -228,6 +233,26 @@ function render() {
   animateIn(document);
 }
 
+// ---- tab bar: the gold cell slides to the new tab in four steps -----------------
+// One cursor element behind the five tabs; its index is a CSS variable, so the
+// move is a stepped transform. The tab you enter gives its icon a 2px hop.
+let _tabIdx = -1;
+function paintTabCursor() {
+  const bar = document.querySelector('.tabs');
+  if (!bar) return;
+  let cur = bar.querySelector('.tab-cursor');
+  if (!cur) { cur = document.createElement('span'); cur.className = 'tab-cursor'; cur.setAttribute('aria-hidden', 'true'); bar.prepend(cur); bar.classList.add('has-cursor'); }
+  const tabs = [...bar.querySelectorAll('.tab')];
+  const lit = appState.tab === 'journal' ? 'home' : appState.tab;
+  const i = Math.max(0, tabs.findIndex((t) => t.dataset.tab === lit));
+  bar.style.setProperty('--i', String(i));
+  if (_tabIdx >= 0 && i !== _tabIdx) {
+    const ico = tabs[i]?.querySelector('.tab-ico');
+    if (ico) { ico.classList.remove('hop'); void ico.offsetWidth; ico.classList.add('hop'); }
+  }
+  _tabIdx = i;
+}
+
 // ---- Profile scene lifecycle --------------------------------------------------
 // Switch sport from the buttons or a swipe; the new scene slides in from the
 // side you're heading to (no slide under reduced motion: CSS drops it).
@@ -243,10 +268,10 @@ function setPgSport(sport) {
 // Scene motion is pure CSS; this only pauses it while the page is hidden.
 function startScene(view) {
   const screen = view.querySelector('.pg-screen');
-  if (screen) screen.classList.toggle('paused', document.hidden);
+  if (screen) screen.classList.toggle('paused', document.hidden || !!appState.sceneHold);
 }
 document.addEventListener('visibilitychange', () => {
-  document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden);
+  document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden || !!appState.sceneHold);
 });
 
 // Level-up sheet: the previous level's art wipes away to reveal the new one.
@@ -257,25 +282,31 @@ function openLevelUp(sport, level) {
   const art = (s) => (s.kind === 'still' ? s.entry.src : s.entry.char);
   const ar = after.kind === 'still' ? `${after.entry.w} / ${after.entry.h}` : '768 / 624';
   const fresh = before && art(before) !== art(after);
-  const root = openLayer('level-up', { reuse: false });
+  // the Profile scene underneath holds still until this moment is over
+  appState.sceneHold = true;
+  document.querySelector('.pg-screen')?.classList.add('paused');
+  const root = openLayer('level-up', {
+    reuse: false,
+    onClose: () => { appState.sceneHold = false; document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden); },
+  });
   root.innerHTML = `<div class="modal-backdrop" data-lu-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Level up">
       ${sheetHead({ icon: 'star', title: `Level up`, closeAttr: 'data-lu-close' })}
       <div class="modal-body lvlup">
-        <div class="lvlup-art" style="--ar:${ar}">
-          <img src="${esc(art(after))}" alt="${esc(after.label)} level ${level}">
-          ${fresh ? `<img src="${esc(art(before))}" alt="" class="pg-wipe" style="background:none">` : ''}
+        <div class="lvlup-art${fresh ? ' has-curtain' : ''}" style="--ar:${ar}">
+          <img class="lvlup-new" src="${esc(art(after))}" alt="${esc(after.label)} level ${level}">
+          ${fresh ? `<img src="${esc(art(before))}" alt="" class="lvlup-curtain is-l"><img src="${esc(art(before))}" alt="" class="lvlup-curtain is-r">` : ''}
           ${after.kind === 'still' ? stillCorners(after.entry) : ''}
         </div>
-        <h2>LVL ${level}</h2>
-        ${dialogue({ text: `${MOMENT_LINES.sportLevel(after.label, level)}${after.level > after.maxArt ? ' New scenery is on its way.' : ''}`, portrait: COACH.cheer || COACH.portrait, type: true })}
+        <h2 aria-label="Level ${level}">LVL <span class="lvl-roll" aria-hidden="true"><i>${level - 1}</i><i>${level}</i></span></h2>
+        ${dialogue({ text: `${MOMENT_LINES.sportLevel(after.label, level)}${after.level > after.maxArt ? ' New scenery is on its way.' : ''}`, portrait: COACH.cheer || COACH.portrait })}
         <button class="btn primary" data-lu-close>Continue</button>
       </div>
     </div>`;
   root.querySelectorAll('[data-lu-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
   typeLines(root);
   playLevelUp();
-  if (!prefersReducedMotion()) confetti(window.innerWidth / 2, window.innerHeight / 3, 120);
+  haptic('levelUp');
   if (appState.tab === 'progress') { appState.pgSport = sport; render(); }
 }
 
@@ -342,12 +373,16 @@ function onClick(e) {
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
     case 'view-athlete-profile': {
       const a = athleteByUid(el.dataset.uid);
-      openPublicFitness({
+      // the row's avatar and level travel into the profile header
+      morph([
+        { name: 'athlete-avatar', from: el.querySelector('.lb-avatar'), to: '[data-vt="athlete-avatar"]' },
+        { name: 'athlete-level', from: el.querySelector('.lb-meta'), to: '[data-vt="athlete-level"]' },
+      ], () => openPublicFitness({
         uid: el.dataset.uid,
         name: a?.display_name || el.dataset.name,
         avatar: a?.avatar || null,
         xp: a?.xp ?? el.dataset.xp,
-      });
+      }));
       break;
     }
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
@@ -370,7 +405,10 @@ function onClick(e) {
         .then(() => toast('Strava disconnected')).catch((e) => toast(e.message || 'Disconnect failed')));
       break;
     case 'pg-sport': setPgSport(el.dataset.sport); break;
-    case 'open-workout': openWorkoutDetail(id); break;
+    case 'open-workout':
+      // the card's title carries into the session sheet's header
+      morph([{ name: 'session-title', from: el.querySelector('h3'), to: '.wd-modal .sh-title-text' }], () => openWorkoutDetail(id));
+      break;
     case 'open-bell': openBell(); break;
     case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
     case 'routine-delete': {
@@ -671,10 +709,14 @@ const gymDeps = {
   refresh: (id) => refreshDetail(id),
   close: () => closeLayer('workout'),
   toast: (msg, icon = 'warn') => toast(msg, { icon: svg(icon) }),
-  onRecord: ({ name, prs, x, y }) => {
-    if (!prefersReducedMotion()) confetti(x ?? window.innerWidth / 2, y ?? 160, 70);
+  onRecord: ({ name, prs, key, target }) => {
+    if (key && !firstStamp(key)) return; // this record was celebrated already
     playBadge();
-    toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
+    haptic('record');
+    const text = `New record · ${name}: ${prs.map((p) => p.label).join(' · ')}`;
+    // the plaque stamps down and settles into the set; with reduced motion, a toast says it
+    if (stampRecord({ name, prs, target })) announce(text);
+    else toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
   },
   showFinish: (id) => {
     const body = document.getElementById('wd-body');
@@ -683,9 +725,17 @@ const gymDeps = {
     playComplete();
   },
 };
+// a polite screen-reader line for moments that are drawn, not written
+function announce(text) {
+  let live = document.getElementById('sr-live');
+  if (!live) { live = document.createElement('div'); live.id = 'sr-live'; live.className = 'sr'; live.setAttribute('role', 'status'); document.body.appendChild(live); }
+  live.textContent = '';
+  setTimeout(() => { live.textContent = text; }, 50);
+}
+
 function onRestDone() {
   playRestDone();
-  try { navigator.vibrate?.([120, 80, 120]); } catch { /* not supported */ }
+  haptic('restOver');
 }
 
 let _detailId = null;
@@ -866,6 +916,8 @@ function maybeOnboard() {
 // ---- boot -------------------------------------------------------------------
 
 async function boot() {
+  // ?demo=1 only: a hook so screenshots and clips can show moments on demand
+  if (new URLSearchParams(location.search).has('demo')) window.moskeDemo = { levelUp: (sport = 'run', level = 3) => openLevelUp(sport, level) };
   await store.init();
   const today = todayISO();
   appState.journalDate = today;
@@ -918,9 +970,20 @@ async function boot() {
   });
   document.addEventListener('moske:open-athlete', (e) => {
     const a = athleteByUid(e.detail.uid); // the leaderboard's numbers when it has them
-    openPublicFitness({ uid: e.detail.uid, name: e.detail.name, avatar: e.detail.avatar || a?.avatar || null, xp: a?.xp ?? null });
+    morph([{ name: 'athlete-avatar', from: e.detail.from || null, to: '[data-vt="athlete-avatar"]' }],
+      () => openPublicFitness({ uid: e.detail.uid, name: e.detail.name, avatar: e.detail.avatar || a?.avatar || null, xp: a?.xp ?? null }));
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSocial(); });
+  // Home, Ranks and Chat: pull down from the top to refresh
+  enablePull(document.getElementById('view'), {
+    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers(),
+    onRefresh: async () => {
+      if (appState.tab === 'leaderboards') { await loadLeaderboard(appState.lbView, todayISO()); return; }
+      if (appState.tab === 'chat') { await refreshSocial(); return; }
+      await Promise.all([store.refresh(), auth.currentUser() ? autoStravaSync() : null]);
+      render();
+    },
+  });
   // Profile tab: swipe left / right to change sport, as well as the four buttons
   onSwipe(document.getElementById('view'), (dir) => setPgSport(nextSport(SPORT_ORDER, appState.pgSport, dir)), {
     when: () => appState.tab === 'progress' && !hasLayers(),

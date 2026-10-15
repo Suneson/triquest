@@ -87,7 +87,7 @@ ticking a blank set fills it from last time. Below ~300px of panel width
 (a 320 phone) LAST folds into a "Last …" line under each set. Timers are end
 timestamps in localStorage (`moske-rest`, `moske-stopwatch`); the ticker keeps
 running while a rest does, beeps (`playRestDone`, only with sound on) and
-vibrates; a rest that ran out while the app was shut is cleared quietly.
+vibrates (Android only: iOS has no Vibration API); a rest that ran out while the app was shut is cleared quietly.
 Finish writes `gymLoggedAt` + `gymDurationSec` (synced through `extra`), never
 `completed`, and shows "Logged. Sync with Strava to earn XP." with time, sets
 and volume (warm-ups excluded). Screens: `docs/gym/after/phase-2/`.

@@ -40,3 +40,12 @@ test('progress, parallax and scrim move together', () => {
   assert.equal(scrimOpacity(0), 0.5);
   assert.equal(scrimOpacity(1), 0);
 });
+
+test('pull to refresh: damped, capped, armed past the line', async () => {
+  const { pullState, PULL_READY, PULL_MAX } = await import('../js/core/gesture.js');
+  assert.deepEqual(pullState(-20), { offset: 0, frac: 0, ready: false });
+  assert.equal(pullState(64).frac, 0.5);
+  assert.equal(pullState(PULL_READY * 2).ready, true);
+  assert.equal(pullState(PULL_READY * 2 - 2).ready, false);
+  assert.equal(pullState(1000).offset, PULL_MAX);
+});

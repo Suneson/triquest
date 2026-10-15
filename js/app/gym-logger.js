@@ -16,9 +16,11 @@ import { svg } from '../core/icons.js';
 import { exerciseArtSrc, cuesForId, exerciseById } from '../core/exercises.js';
 import { cuesFor, poseSvgFor } from '../core/poses.js';
 import { openPicker, openNameSheet } from './gym-picker.js';
+import { haptic } from './haptics.js';
 import { xpForWorkout } from '../core/scoring.js';
 import { enableDragSort } from './drag-sort.js';
 import { openExerciseHistory } from './gym-history.js';
+import { morph } from './vt.js';
 import { detectPRs } from '../core/gym-stats.js';
 import {
   exerciseFromEntry, replaceExercise, moveItem, linkWithNext, unlinkSuperset, cleanSupersets,
@@ -54,10 +56,9 @@ export function sessionBar(w, now = Date.now()) {
   const logged = w.gymLoggedAt
     ? `<span class="tag gl-logged">${svg('check')} Logged</span>` : '';
   const restRow = left > 0 ? `
-    <div class="gl-rest" role="timer" aria-label="Rest ${fmtClock(left)} left">
+    <div class="gl-rest${left <= 3 ? ' is-ending' : ''}" role="timer" aria-label="Rest ${fmtClock(left)} left">
+      <span class="gl-ring">${restRing(left, rest.totalSec)}<b class="data-num gl-rest-left">${fmtClock(left)}</b></span>
       <span class="gl-k">Rest</span>
-      <b class="data-num gl-rest-left">${fmtClock(left)}</b>
-      <span class="gl-rest-bar" aria-hidden="true">${restSegments(left, rest.totalSec)}</span>
       <span class="gl-rest-btns">
         <button class="btn tiny secondary" data-action="gym-rest-adjust" data-by="-15" data-id="${esc(w.id)}" aria-label="15 seconds less">${svg('minus')}15</button>
         <button class="btn tiny secondary" data-action="gym-rest-adjust" data-by="15" data-id="${esc(w.id)}" aria-label="15 seconds more">${svg('plus')}15</button>
@@ -77,10 +78,18 @@ export function sessionBar(w, now = Date.now()) {
     </div>${restRow}`;
 }
 
-function restSegments(left, total) {
-  const n = 10;
+// The rest drains as a ring of twelve pixel blocks around the countdown, one
+// block at a time, clockwise from the top. The last three seconds pulse (CSS).
+function restRing(left, total) {
+  const n = 12;
   const on = Math.max(0, Math.min(n, Math.ceil((left / Math.max(1, total)) * n)));
-  return Array.from({ length: n }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('');
+  const cells = Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const x = Math.round(29 + 23 * Math.cos(a) - 3);
+    const y = Math.round(29 + 23 * Math.sin(a) - 3);
+    return `<rect x="${x}" y="${y}" width="6" height="6" class="${i < on ? 'on' : ''}"/>`;
+  }).join('');
+  return `<svg class="gl-ring-svg" viewBox="0 0 58 58" width="58" height="58" shape-rendering="crispEdges" aria-hidden="true">${cells}</svg>`;
 }
 
 // ---- guided workout: the set to do next ------------------------------------------------------
@@ -248,12 +257,12 @@ export function finishView(w) {
   const sum = sessionSummary(w, Date.parse(w.gymLoggedAt) || Date.now());
   const dur = w.gymDurationSec != null ? w.gymDurationSec : sum.durationSec;
   return `
-    <div role="status">${dialogue({ text: `Saved. +${xpForWorkout(w)} XP for this session.`, cls: 'coach-say gl-done' })}</div>
-    <div class="gl-sum">
-      <div class="gl-sum-cell"><span class="gl-k">Time</span><b class="data-num">${dur != null ? fmtClock(dur) : '–'}</b></div>
-      <div class="gl-sum-cell"><span class="gl-k">Sets</span><b class="data-num">${sum.sets}</b></div>
-      <div class="gl-sum-cell"><span class="gl-k">Volume</span><b class="data-num">${sum.volumeKg.toLocaleString()}<span class="data-unit"> kg</span></b></div>
+    <div class="gl-sum gl-sum-reveal">
+      <div class="gl-sum-cell" style="--d:0"><span class="gl-k">Sets</span><b class="data-num">${sum.sets}</b></div>
+      <div class="gl-sum-cell" style="--d:1"><span class="gl-k">Volume</span><b class="data-num">${sum.volumeKg.toLocaleString()}<span class="data-unit"> kg</span></b></div>
+      <div class="gl-sum-cell" style="--d:2"><span class="gl-k">Time</span><b class="data-num">${dur != null ? fmtClock(dur) : '–'}</b></div>
     </div>
+    <div role="status">${dialogue({ text: 'Saved. This session earned', body: `<span class="xp-land">+${xpForWorkout(w)} XP</span>`, cls: 'coach-say gl-done' })}</div>
     <button class="btn primary" data-action="gym-done" data-id="${esc(w.id)}">Done</button>
     <button class="btn ghost" data-action="gym-back" data-id="${esc(w.id)}">Back to the log</button>`;
 }
@@ -320,7 +329,7 @@ export function handleGymAction(action, el, deps, kind) {
         if (rest) writeJSON(REST_KEY, rest);
       }
       save(); refresh(id);
-      if (s.done) celebrate(deps, w, i, j, el);
+      if (s.done) { tickFeedback(i, j); celebrate(deps, w, i, j, el); }
       // no rest to wait for (rest off, or mid-superset): go straight to the next set
       if (s.done && !getRest()) scrollToNext();
       break;
@@ -332,7 +341,9 @@ export function handleGymAction(action, el, deps, kind) {
       scrollToNext(); // past the warm-up text, to the first set
       break;
     case 'gym-history':
-      if (ex) openExerciseHistory({ libId: ex.libId, name: ex.name });
+      // the exercise's picture carries into its history
+      if (ex) morph([{ name: 'exercise-art', from: el.closest('.gl-ex')?.querySelector('.ex-img'), to: '.gl-ex-head .ex-img' }],
+        () => openExerciseHistory({ libId: ex.libId, name: ex.name }));
       break;
     case 'gym-add-ex':
       openPicker({
@@ -418,12 +429,47 @@ export function handleGymAction(action, el, deps, kind) {
   return true;
 }
 
+// A ticked set: the row fills gold in four steps, the phone gives a short tick
+// (Android) and a small chip flies from the tick to Finish, where the
+// session's XP is paid. Reduced motion: just the done state.
+function tickFeedback(i, j) {
+  haptic('tick');
+  const row = document.querySelector(`[data-gl-row="${i}:${j}"]`);
+  if (!row || reducedMotion()) return;
+  row.classList.add('just-ticked');
+  setTimeout(() => row.classList.remove('just-ticked'), 600);
+  const from = row.querySelector('.gl-tick')?.getBoundingClientRect();
+  const to = document.querySelector('.gl-finish')?.getBoundingClientRect();
+  if (!from || !to || !document.body.animate) return;
+  const chip = document.createElement('span');
+  chip.className = 'fly-chip';
+  chip.textContent = '+1 set';
+  chip.setAttribute('aria-hidden', 'true');
+  chip.style.left = `${from.left + from.width / 2}px`;
+  chip.style.top = `${from.top}px`;
+  document.body.appendChild(chip);
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top - from.top;
+  chip.animate([
+    { transform: 'translate(-50%, 0)', opacity: 1 },
+    { transform: `translate(calc(-50% + ${dx * 0.5}px), ${dy * 0.5 - 24}px)`, opacity: 1, offset: 0.5 },
+    { transform: `translate(calc(-50% + ${dx}px), ${dy}px)`, opacity: 0 },
+  ], { duration: 480, easing: 'steps(6, end)' }).finished.finally(() => chip.remove());
+}
+
+const reducedMotion = () => document.body.classList.contains('rm') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // a ticked set that beats your best: confetti from the tick, a sound, a toast
 function celebrate(deps, w, i, j, el) {
   const prs = detectPRs(deps.store.getWorkouts(), w, i, j);
   if (!prs.length) return;
-  const r = el?.getBoundingClientRect?.();
-  deps.onRecord?.({ name: w.exercises[i].name, prs, x: r ? r.left + r.width / 2 : null, y: r ? r.top : null });
+  const tick = document.querySelector(`[data-gl-row="${i}:${j}"] .gl-tick`) || el;
+  const r = tick?.getBoundingClientRect?.();
+  deps.onRecord?.({
+    name: w.exercises[i].name, prs, target: tick,
+    key: `${w.id}:${w.exercises[i].id || i}:${j}:${prs.map((p) => p.label).join('|')}`, // one stamp per record
+    x: r ? r.left + r.width / 2 : null, y: r ? r.top : null,
+  });
 }
 
 function exerciseMenuAction(pick, w, i, deps) {
@@ -500,6 +546,7 @@ export function startTicker(getWorkout, onRestDone) {
       _onRestDone?.();
       paintBars();
       paintCursor(); // the next set lights up
+      document.querySelector('.gl-row.is-next')?.classList.add('lit-in');
       scrollToNext();
       return;
     }

@@ -130,7 +130,7 @@ img { image-rendering: pixelated; }
 .ob-choice, .ob-note, .ob-hist-row, .btn, .icon-btn, .fab, .tabs, .chip, .tag, .zone, .lvl-chip, .ob-chip, .cap,
 .lb-toggle, .field input, .field select, .field textarea, .row input, .row select, .ex-log input, .pack-add input,
 .auth-form input, .ob-field input, .metric-log input, .wz-input, .wz-date, .notes, .avp, .move-pill, .struct-row,
-.gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .sp-day, .sp-chip, .sp-label, .ch-in, .ch-msg, .bl-ico, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
+.stamp-plaque, .gl-ex, .gl-in, .gl-set, .gl-tick, .gl-note, .gl-sum-cell, .pk-search, .pk-thumb, .ed-ex, .ed-ex .num, .gh-tile, .rc-plaque, .sp-day, .sp-chip, .sp-label, .ch-in, .ch-msg, .bl-ico, .cs-row, .fh-back, .jr-week-nav, .pg-sport, .pg-hud, .meter, .q-box, .pc-stat, .pwr, .seg-bar,
 .signed-in, .fh-acct, .ah-row, .ex-img, .lvl-frame-art, .level-lightbox img, .lvlup-art, .wk-tile, .sp-node, .fs-lvl, .pod-block, .lb-rival, .sh-preview {
   --b: var(--line-soft); --e: var(--shade); --eo: 8px;
   border: 0; border-radius: 0;
@@ -327,6 +327,19 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
   --b: var(--accent); --eo: 4px; color: var(--on-accent); background: var(--accent);
   box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b);
 }
+/* the gold cell is one cursor behind the tabs that slides in four steps
+   (main.js paintTabCursor sets --i); the active tab itself goes clear */
+.tab-cursor {
+  --b: var(--accent); position: absolute; z-index: 0; top: 6px; left: 8px; height: 52px;
+  width: calc((100% - 16px - 16px) / 5); background: var(--accent);
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b);
+  transform: translateX(calc(var(--i, 0) * (100% + 4px)));
+  transition: transform 200ms steps(4, end);
+}
+.tabs.has-cursor .tab { position: relative; z-index: 1; }
+.tabs.has-cursor .tab.active { background: none; box-shadow: none; }
+.tab-ico.hop { animation: tab-hop 200ms steps(2, end) 200ms; }
+@keyframes tab-hop { 50% { transform: translateY(-2px); } }
 .tab:focus { outline: none; }
 .tab:focus-visible { outline: var(--px) solid var(--fg); outline-offset: -4px; }
 
@@ -384,6 +397,8 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
 .fh-screen > .sh-head { position: sticky; top: 0; z-index: 6; margin: 0 0 var(--sp-section);
   padding: calc(6px + var(--safe-t)) 12px 6px; background: var(--bg); }
 .fh-screen > .sh-head .sh-title { font-size: var(--fs-d2); }
+/* a person's header (avatar + name + level) gives the name the room */
+.fh-screen > .sh-head .sh-title:has(.sh-avatar) { font-size: var(--fs-d3); gap: 8px; }
 .sh-avatar { width: 36px; height: 36px; flex: none; border-radius: 50%; border: var(--px) solid var(--accent); background: var(--bg-3); color: var(--fg);
   display: grid; place-items: center; overflow: hidden; font-family: var(--font-display); font-size: var(--fs-d3); }
 .sh-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
@@ -656,11 +671,17 @@ input[type=checkbox]:checked::after {
 .gl-k { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; color: var(--muted); line-height: 1; }
 .gl-logged { --b: var(--good); color: var(--good); }
 .gl-logged .ic { width: 16px; height: 16px; }
-.gl-rest { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 4px 10px; }
-.gl-rest-bar { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 2px; height: 12px; padding: 2px; background: var(--shade); }
-.gl-rest-bar i { background: var(--bg-4); }
-.gl-rest-bar i.on { background: var(--info); }
-.gl-rest-btns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.gl-rest { display: grid; grid-template-columns: 58px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 2px 12px; }
+/* the rest ring: twelve pixel blocks around the countdown, draining one by one */
+.gl-ring { grid-row: 1 / 3; position: relative; width: 58px; height: 58px; display: grid; place-items: center; }
+.gl-ring-svg { position: absolute; inset: 0; }
+.gl-ring-svg rect { fill: var(--bg-4); }
+.gl-ring-svg rect.on { fill: var(--info); }
+.gl-ring .gl-rest-left { position: relative; font-size: 14px; }
+.gl-rest.is-ending .gl-ring-svg rect.on { fill: var(--accent); }
+.gl-rest.is-ending .gl-ring { animation: ring-pulse 500ms steps(2, end) 2; }
+@keyframes ring-pulse { 50% { transform: scale(1.08); } }
+.gl-rest-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .gl-rest-btns .btn { margin: 2px 2px 6px; gap: 4px; }
 .gl-rest-btns .ic { width: 16px; height: 16px; }
 
@@ -720,6 +741,18 @@ span.gl-prev { cursor: default; }
 /* guided workout: the set to do next is outlined in gold; during a rest it is
    marked as up next with a dashed outline */
 .gl-row { scroll-margin-top: 160px; }
+/* a ticked set: gold sweeps across the row in four steps, then settles to done */
+.gl-row.just-ticked { position: relative; isolation: isolate; }
+.gl-row.just-ticked::before { content: ''; position: absolute; inset: -4px; z-index: -1; background: var(--accent); opacity: .35;
+  animation: row-fill 240ms steps(4, end) both, row-settle 200ms steps(2, end) 320ms both; }
+@keyframes row-fill { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes row-settle { to { opacity: 0; } }
+/* the rest ran out: the set to do now blinks on, twice */
+.gl-row.lit-in { animation: row-lit 360ms steps(2, end) 2; }
+@keyframes row-lit { 50% { outline-color: transparent; } }
+/* "+1 set" flies from the tick to Finish */
+.fly-chip { position: fixed; z-index: 10500; pointer-events: none; padding: 3px 6px; background: var(--accent); color: var(--on-accent);
+  font-family: var(--font-display); font-size: 12px; line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .gl-row.is-next { outline: var(--px) solid var(--accent); outline-offset: 4px; }
 .gl-row.is-next .gl-set { --b: var(--accent); background: var(--accent); color: var(--on-accent); }
 .gl-row.is-upnext { outline: var(--px) dashed var(--line); outline-offset: 4px; }
@@ -745,6 +778,12 @@ span.gl-prev { cursor: default; }
 .gl-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 12px; }
 .gl-sum-cell { --eo: 4px; background: var(--bg-3); padding: 10px; margin: 2px; display: grid; gap: 6px; }
 .gl-sum-cell b { font-size: 20px; }
+/* finishing: sets, then volume, then time step in; the XP chip lands last */
+.gl-sum-reveal .gl-sum-cell { animation: step-in 180ms steps(3, end) both; animation-delay: calc(var(--d, 0) * 220ms); }
+@keyframes step-in { from { opacity: 0; translate: 0 8px; } }
+.xp-land { display: inline-block; margin-top: 6px; padding: 4px 8px; background: var(--accent); color: var(--on-accent);
+  font-family: var(--font-display); font-size: var(--fs-d3); animation: xp-land 320ms steps(4, end) both 760ms; }
+@keyframes xp-land { 0% { opacity: 0; translate: 0 -24px; } 75% { opacity: 1; translate: 0 2px; } 100% { translate: 0 0; } }
 
 /* ---- logger editing, supersets ----------------------------------------------------------- */
 .gl-list { display: grid; gap: var(--sp-group); }
@@ -844,6 +883,8 @@ span.gl-prev { cursor: default; }
   display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 10px; color: var(--fg); text-align: left; cursor: pointer;
 }
 .rc-plaque:active { transform: translateY(2px); }
+.rc-plaque.is-new { animation: shelf-land 360ms steps(4, end) both 200ms; }
+@keyframes shelf-land { 0% { opacity: 0; translate: 0 -16px; } 60% { opacity: 1; translate: 0 2px; scale: 1.04 .92; } 100% { translate: 0 0; scale: 1; } }
 .rc-txt { display: grid; min-width: 0; }
 .rc-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-txt small { font-size: var(--fs-tiny); }
@@ -922,8 +963,8 @@ body.chat-mode .view > .chat { flex: 1 0 auto; }
 .ch-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; background: var(--danger); color: var(--shade); font-size: 12px; } /* same red as the tab badge */
 .ch-acts { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 360px) {
-  .ch-row:has(.ch-acts) { grid-template-columns: 44px minmax(0, 1fr); }
-  .ch-acts { grid-column: 2 / -1; }
+  .ch-row:has(.ch-acts .btn) { grid-template-columns: 44px minmax(0, 1fr); }
+  .ch-row:has(.ch-acts .btn) .ch-acts { grid-column: 2 / -1; }
 }
 .ch-acts .btn, .ch-row > .btn { margin: 2px 2px 6px; }
 .ch-head { position: sticky; top: calc(-1 * var(--sp-group)); z-index: 2; background: var(--bg); }
@@ -1451,13 +1492,54 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .lvlup-art { position: relative; width: min(100%, 360px); aspect-ratio: var(--ar, 1); overflow: hidden; }
 .lvlup-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .lvlup h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d1); color: var(--accent); text-transform: uppercase; line-height: 1; }
+/* level up: the old scene leaves on a stepped curtain (two halves part from
+   the middle), the new level's art arrives behind it, then the number rolls */
+.lvlup-art.has-curtain .lvlup-new { animation: lvl-arrive 640ms steps(4, end) both; }
+@keyframes lvl-arrive { from { scale: 1.08; opacity: .35; } }
+.lvlup-curtain.is-l { clip-path: inset(0 50% 0 0); animation: curtain-l 640ms steps(8, end) 200ms forwards; }
+.lvlup-curtain.is-r { clip-path: inset(0 0 0 50%); animation: curtain-r 640ms steps(8, end) 200ms forwards; }
+@keyframes curtain-l { to { translate: -51% 0; } }
+@keyframes curtain-r { to { translate: 51% 0; } }
+.lvl-roll { display: inline-grid; height: 1em; overflow: hidden; vertical-align: top; }
+.lvl-roll i { font-style: normal; height: 1em; line-height: 1; animation: lvl-roll 300ms steps(3, end) 860ms both; }
+@keyframes lvl-roll { from { translate: 0 0; } to { translate: 0 -100%; } }
+
+/* ---- record stamp (js/app/stamp.js) -------------------------------------------------------------------- */
+.stamp-wrap { position: fixed; inset: 0; z-index: 10600; display: grid; place-items: center; pointer-events: none; }
+.stamp-plaque { --b: var(--accent); --e: var(--accent-lo); --eo: 8px; display: grid; gap: 4px; justify-items: center; text-align: center;
+  min-width: 200px; max-width: calc(100vw - 48px); padding: 14px 18px; background: var(--bg-2); transform-origin: 50% 100%; }
+.stamp-k { display: flex; align-items: center; gap: 6px; font-family: var(--font-display); font-size: var(--fs-d3); color: var(--accent); text-transform: uppercase; }
+.stamp-plaque b { font-size: 18px; }
+.stamp-plaque small { color: var(--muted); font-size: var(--fs-small); }
+.stamp-dust { position: absolute; width: 6px; height: 6px; background: var(--muted); top: calc(50% + 36px); left: calc(50% - 3px); opacity: 0; }
+
+/* ---- pull to refresh (js/app/pull.js) ------------------------------------------------------------------ */
+/* The sprite drops in under the header as you pull, turns one 45° notch per
+   step (--wind) and fills a four-cell meter; armed, it goes gold; released,
+   it spins in steps until the refresh is done. */
+.pull-sprite { --pull: 0px; position: fixed; left: 50%; z-index: 4; display: none; justify-items: center; gap: 4px;
+  transform: translate(-50%, calc(var(--pull) - 40px)); pointer-events: none; }
+.pull-sprite.is-pulling, .pull-sprite.is-busy { display: grid; }
+.pull-ico { --b: var(--line); --eo: 4px; width: 36px; height: 36px; display: grid; place-items: center; background: var(--bg-3); color: var(--muted); }
+.pull-ico .ic { width: 24px; height: 24px; transform: rotate(calc(var(--wind, 0) * 45deg)); }
+.pull-sprite.is-ready .pull-ico { --b: var(--accent); color: var(--accent); }
+.pull-sprite.is-busy { transform: translate(-50%, 24px); }
+.pull-sprite.is-busy .pull-ico .ic { animation: pull-spin 640ms steps(8, end) infinite; }
+.pull-sprite.is-busy .pull-meter { visibility: hidden; }
+@keyframes pull-spin { to { transform: rotate(360deg); } }
+.pull-meter { display: flex; gap: 2px; }
+.pull-meter i { width: 6px; height: 4px; background: var(--bg-4); }
+.pull-meter i.on { background: var(--accent); }
 
 /* ---- reduced motion: one switch ---------------------------------------------------------------------------------------- */
 body.rm *, body.rm *::before, body.rm *::after { animation: none !important; transition: none !important; }
 body.rm .pg-fx { display: none; }
+/* moments drawn with motion: show their end state at once */
+body.rm .lvlup-curtain, body.rm .lvl-roll i:first-child, body.rm .stamp-wrap, body.rm .fly-chip { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .pg-fx { display: none; }
+  .lvlup-curtain, .lvl-roll i:first-child, .stamp-wrap, .fly-chip { display: none; }
 }
 
 /* ---- legacy panels still rendered by the (unwired) progress view --------------------------------------------------------- */
@@ -1624,6 +1706,15 @@ html[data-vt-dir="back"]::view-transition-new(view) { animation-name: vt-wipe-ba
 /* forward (to a tab on the right): the new view enters from the right edge */
 @keyframes vt-wipe { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
 @keyframes vt-wipe-back { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* shared elements (js/app/vt.js): an avatar, a level, a picture or a title
+   travels from where you tapped into the layer that opens. The view keeps
+   still meanwhile (no wipe); the travel is stepped like everything else. */
+html.vt-shared .view { view-transition-name: none; }
+html.vt-shared::view-transition-group(*) { animation-duration: 300ms; animation-timing-function: steps(6, end); }
+html.vt-shared::view-transition-old(*), html.vt-shared::view-transition-new(*) { animation-timing-function: steps(3, end); }
+.sh-lvl { margin: 0 0 0 4px; font-size: 12px; padding: 4px 6px; flex: none; }
+@media (max-width: 359px) { .sh-lvl { display: none; } } /* narrow: the name wins; the level is in the stats below */
 
 /* B2 a rolling number keeps its width so the line doesn't jitter */
 .roll { font-variant-numeric: tabular-nums; }

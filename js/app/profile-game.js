@@ -525,6 +525,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Athlete profile">
     ${sheetHead({ lead: 'back', title: esc(name || 'Athlete'), closeAttr: 'data-fh-close',
     before: `<span class="sh-avatar" data-vt="athlete-avatar" aria-hidden="true">${avatarHtml}</span>`,
+    after: xp == null ? '' : `<span class="lvl-chip sh-lvl" data-vt="athlete-level">LVL ${levelFromTotalXp(Number(xp) || 0).level}</span>`,
     action: friendButton(uid, { icon: true }) })}
     ${body}
   </div>`;
@@ -540,9 +541,14 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     <div class="fh-sk-block short sk-tile" aria-hidden="true" style="--sk-i:5"></div>`);
   wireBack();
 
+  // the screen slides in first; the heavy render waits until it has landed,
+  // so a fast answer (demo, cache) can't stall the slide halfway
+  const landed = new Promise((r) => setTimeout(r, 260));
   try {
     const { fetchPublicUserProfile } = await import('./profile.js');
     const p = await fetchPublicUserProfile(uid);
+    await landed;
+    if (!root.isConnected) return; // closed while loading
     const today = todayISO();
     // Expand per-day aggregates into pseudo-workouts the chart helpers understand.
     const workouts = (p.days || []).flatMap((d) => {

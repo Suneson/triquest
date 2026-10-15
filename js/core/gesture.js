@@ -53,3 +53,15 @@ export const beneathOffset = (p, width) => -PARALLAX * width * (1 - p);
 
 /** Scrim opacity over the layer beneath: dark at rest, clear when the top layer has gone. */
 export const scrimOpacity = (p, max = 0.5) => max * (1 - p);
+
+// ---- pull to refresh -------------------------------------------------------------------
+
+export const PULL_READY = 64;   // px of (damped) pull that arms a refresh
+export const PULL_MAX = 96;     // the sprite never travels further than this
+
+/** Finger travel → where the sprite sits, how wound up it is (0..1), and whether letting go refreshes. */
+export function pullState(dy) {
+  const d = Math.max(0, dy) * 0.5; // a heavy rope: half the finger's travel
+  const offset = Math.min(PULL_MAX, d);
+  return { offset, frac: Math.min(1, d / PULL_READY), ready: d >= PULL_READY };
+}

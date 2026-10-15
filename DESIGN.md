@@ -319,9 +319,10 @@ for the emoji scrub: `gear`, `cloud`, `sound`, `motion`, `download`, `upload`,
 
 ### Tab bar
 Pinned to the bottom of the shell (see 2.3b), never floating. A docked panel (no floating pill, no blur) with five equal cells: Home,
-Journal, Ranks, Shop, Profile. Each cell is a 24px pixel icon over a small body
-label. The active cell is a gold fill with `--on-accent` icon and label, and
-carries `aria-current="page"`.
+Shop, Ranks, Chat, Profile (the Calendar opens from Home). Each cell is a 24px pixel icon over a small body
+label. The gold cell is one cursor behind the five cells that slides to the
+new tab in four steps; the tab you enter gives its icon a single 2px hop. The
+active tab carries `aria-current="page"`.
 
 ### FAB
 56×56, gold primary button, square with small stepped corners, a 32px display
@@ -338,10 +339,35 @@ FAB lifts while a toast is up.
 Focus: border turns `--accent`. Checkbox: a 20×20 `--shade` square with a
 `--line` border; checked fills `--good` and shows the pixel `check` icon.
 
-### Modal sheet
-Slides up from the bottom (`--t-enter`). Panel with large stepped top corners,
-title in the display font at 24px, close button as a secondary icon button
-with the pixel `close` icon.
+### Navigation: the layer stack (`js/app/nav.js`)
+Tabs are roots; everything that opens over them is a **layer** on one stack:
+sheets, full screens, the workout sheet and gym logger, pickers, the bell.
+- One way back, four ways in: the header's back/close button, Android or
+  browser back (one history entry guards the whole stack), Escape, and the
+  **edge swipe**: a drag from the left 24px follows the finger, the screen
+  beneath sits 20% behind under a dark scrim and slides in as the layer
+  leaves; past 40% or a 0.5 px/ms flick it pops, otherwise it springs back in
+  four steps. Reduced motion: no follow, the swipe still pops.
+- Focus moves into a new layer (the dialog, never a text field) and returns
+  to what opened it; everything beneath is `inert`.
+- A chat thread is a **route**: no layer is drawn, but back, Escape and the
+  swipe return to the list.
+- Swiping on a root tab does nothing; each tab remembers its scroll.
+
+### Sheet and screen header (`js/app/sheet.js`)
+One component, one row at `--sh-h` (60px): the way back on the left (an
+arrow on a full screen, a cross on a partial sheet), the title, and **at most
+one** action on the right. No eyebrow rows above it. A person's header adds
+their avatar before the name and their level chip after it, and the action is
+an icon button. On full screens the header is sticky and owns the status-bar
+band (`--safe-t`), so nothing scrolls under the clock.
+
+### Sheet
+Full height (`.fh-screen`) or partial (`.modal`), the same header and the
+same entry and exit: in from the right in six steps (`--t-enter`), out to the
+right in four, which is also the direction the edge swipe sends it. Full
+screens put their gutter on their children, so a card can go full bleed
+without a matching negative margin.
 
 ### Profile scenes
 - **Cycling** keeps its layered world (background, platform, animated
@@ -428,6 +454,34 @@ screen (the Coach for training, Ranks for the leaderboard, Shop for the shop)
 saying what happened and what to do next.
 
 ---
+
+### Gold
+Gold fill means **act here** (the one primary button, the FAB, the active tab
+cursor, an invitation like Accept) or **you earned this on its own stage** (the
+level chip on the Profile scene, the #1 podium block, XP fill, the XP chip
+that lands at the end of a session). A level, a count or a tag shown as
+status is quiet: `--bg-3` with gold digits, or an outline. One gold element
+competes for the eye per screen. `tools/gap-audit.mjs` counts gold fills above
+the fold on every tab.
+
+### Motion vocabulary
+Stepped, `transform`/`opacity`/`clip-path` only, off under reduced motion
+(the end state shows at once). Each moment answers "what does this tell
+you?" and no screen has more than two things moving on its own.
+| Moment | Motion | Tells you |
+|---|---|---|
+| Layer in / out | from/to the right, 6 / 4 steps | where back is |
+| Edge swipe | follows the finger; beneath at 20% under a scrim | you're going back |
+| Shared element | avatar, level, exercise picture or session title travels into the new header, 6 steps (View Transitions) | it's the same thing, closer |
+| Tab change | view wipes 4 steps; gold cursor slides 4 steps; icon hops 2px | which way you moved |
+| Set ticked | row fills gold in 4 steps; "+1 set" chip flies to Finish | it counted |
+| Rest | ring of 12 pixel blocks drains; last 3 s pulse gold; next set blinks on twice at zero | when to lift |
+| Finish | sets, volume, time step in; the XP chip lands last | what the session earned |
+| Record | plaque drops, two-frame squash, dust puff, settles into the set; once per record | a new best |
+| Level up | old scene parts on a stepped curtain, new art behind, number rolls; the scene's own motion waits | you moved up |
+| Pull to refresh | sprite winds one notch per step, meter fills; spins while loading | how far to pull |
+Haptics (`js/app/haptics.js`): named patterns (tick, restOver, record,
+levelUp, request, message). Android only: iOS has no Vibration API.
 
 ## 4. Layout and responsive rules
 

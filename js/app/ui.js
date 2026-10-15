@@ -345,20 +345,19 @@ export function eventBanner(ctx) {
   return `<div class="race-banner">${svg('flag')}<span>Next event: <b>${esc(evs[0].title)}</b> · ${shortLabel(evs[0].date)}</span></div>`;
 }
 
+// Home, loudest first: today's session is the one primary thing. The week's
+// goals sit in one compact strip (tap to open), quests fold to one line once
+// they're cleared, and the AI coach offer is a quiet row at the end.
 export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
   return homeDateHeader(ctx)
-    + weekPathCard(ctx)
-    + heroCard(ctx, ws)
-    + questsPanel(ctx)
-    + `<h3 class="sec-title">${svg('target')} Today's target</h3>`
     + focusCard(ctx)
+    + weekStrip(ctx, ws, !!ctx.ui?.weekOpen)
+    + questsPanel(ctx)
+    + weekPathCard(ctx)
     + tomorrowGlance(ctx)
-    + dialogue({
-      who: 'AI coach', icon: 'spark', cls: 'ai-card',
-      text: 'Want a plan built around your races and your week?',
-      body: '<button class="btn primary" data-action="ai-onboard">Build my plan</button>',
-    });
+    + `<section class="ai-row">${coachMini()}<p>Want a plan built around your races and your week?</p>
+        <button class="btn tiny secondary" data-action="ai-onboard">${svg('spark')} Build my plan</button></section>`;
 }
 
 /** Daily quests: three per day, reset at local midnight. */
@@ -374,6 +373,14 @@ export function questsPanel(ctx) {
     race: raceOn(ctx.workouts, events, ctx.today),
     raceTomorrow: raceOn(ctx.workouts, events, addDays(ctx.today, 1)),
   });
+  // all cleared: the panel folds to one line (tap to see them again)
+  if (qs.length && done === qs.length && !ctx.ui?.questsOpen) {
+    const xp = qs.reduce((n, q) => n + (Number(q.xp) || 0), 0);
+    return `<button class="dlg quests-panel q-folded" data-action="toggle-quests" aria-expanded="false">
+      <span class="q-box" aria-hidden="true">${svg('check')}</span>
+      <span class="q-fold-text"><b>Quests cleared</b><small>+${xp} XP today · new ones in ${formatCountdown(msUntilReset())}</small></span>
+      <span class="wk-sum-chev" aria-hidden="true">${svg('chevron')}</span></button>`;
+  }
   const rows = qs.length
     ? `<ul class="q-list">${qs.map((q) => `<li class="q-row ${q.done ? 'done' : ''} ${ctx.freshQuests?.has(q.id) ? 'just-done' : ''}" data-quest="${esc(q.id)}">
         <span class="q-box" aria-hidden="true">${q.done ? svg('check') : ''}</span>
@@ -393,8 +400,8 @@ function homeDateHeader(ctx) {
   const d = parseISO(ctx.today);
   const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
   const label = `${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
-  return `<div class="home-date"><div><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2></div>
-    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="Open your journal">${svg('journal')} Journal</button></div>`;
+  return `<div class="home-date"><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2>
+    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="Open your calendar">${svg('calendar')}<span class="jr-label">Calendar</span></button></div>`;
 }
 
 // A scaled-down one-line preview of tomorrow — never more than today + tomorrow.
@@ -444,22 +451,28 @@ function goalMeter(frac, label, targetHtml, cls = '') {
   </div>`;
 }
 
-// "This week": Plan / Volume / Intensity meters with the coaching line under them.
-function heroCard(ctx, weekStartIso) {
+// "This week": one compact strip (Plan / Volume / Intensity as small meters).
+// Tap it to open the full meters, the coaching line and Edit goals.
+function weekStrip(ctx, weekStartIso, open) {
   const s = weekGoalState(ctx, weekStartIso);
   const a = acwr(ctx.workouts, ctx.today);
   const intensityFrac = Math.max(0, Math.min(1.5, a.ratio || 0));
   const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
-  const opener = doneToday ? 'Nice work staying active today!' : 'Fresh day, fresh legs.';
-  return `<section class="card hero-card">
-    <div class="hero-head"><h4>This week</h4><button class="btn tiny ghost rings-edit" data-action="edit-goals">${svg('edit')} Edit</button></div>
-    ${goalMeter(s.fracs.sessions, 'Plan', `${rollNum(s.sessions, 'goal-sessions')} / ${esc(s.g.sessions)}`)}
-    ${goalMeter(s.fracs.hours, 'Volume', `${rollNum(s.hours, 'goal-hours', { dp: 1 })} / ${esc(s.g.hours)} H`, 'info')}
-    ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${rollNum(a.ratio, 'goal-ratio', { dp: 2 })}× base` : 'calibrating', 'good')}
-    <div class="coach-inline">
-      <h4>Coaching</h4>
-      <p>${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
-    </div>
+  const opener = doneToday ? 'Nice work staying active today.' : 'Fresh day, fresh legs.';
+  const mini = (label, frac, cls) => `<span class="wk-mini"><small>${label}</small>${meter(frac, { segments: 5, cls, label: `${label} ${Math.round(Math.min(1, frac) * 100)}%` })}</span>`;
+  return `<section class="card wk-sum${open ? ' is-open' : ''}">
+    <button class="wk-sum-row" data-action="toggle-week" aria-expanded="${open}" aria-controls="wk-detail">
+      <span class="wk-sum-title">This week</span>
+      ${mini('Plan', s.fracs.sessions)}${mini('Vol', s.fracs.hours, 'info')}${mini('Int', intensityFrac / 1.3, 'good')}
+      <span class="wk-sum-chev" aria-hidden="true">${svg('chevron')}</span>
+    </button>
+    ${open ? `<div class="wk-detail" id="wk-detail">
+      ${goalMeter(s.fracs.sessions, 'Plan', `${rollNum(s.sessions, 'goal-sessions')} / ${esc(s.g.sessions)}`)}
+      ${goalMeter(s.fracs.hours, 'Volume', `${rollNum(s.hours, 'goal-hours', { dp: 1 })} / ${esc(s.g.hours)} H`, 'info')}
+      ${goalMeter(intensityFrac / 1.3, 'Intensity', a.ratio ? `${rollNum(a.ratio, 'goal-ratio', { dp: 2 })}× base` : 'calibrating', 'good')}
+      <p class="wk-coach">${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
+      <button class="btn tiny ghost rings-edit" data-action="edit-goals">${svg('edit')} Edit goals</button>
+    </div>` : ''}
   </section>`;
 }
 
@@ -522,7 +535,7 @@ function focusCard(ctx) {
       </div>
       <div class="focus-sub">${esc(INTENSITIES[focus.intensity] || '')}${focus.notes && /\[Main Set\]/i.test(focus.notes) ? ' · structured session — tap for the full set' : ' · tap for details'}</div>
     </section>`
-    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today. See Journal.</p>` : '');
+    + (others ? `<p class="focus-more">+ ${others} more session${others === 1 ? '' : 's'} today. See Calendar.</p>` : '');
 }
 
 // ---- JOURNAL (Mon–Fri chronological list, today spot-lit) ---------------------
@@ -549,7 +562,7 @@ export function renderJournal(ctx, selectedIso) {
   }).join('');
 
   return `
-    <div class="jr-head"><h2>Journal</h2><span class="jr-month">${esc(monthLabel)}</span></div>
+    <div class="jr-head"><h2>Calendar</h2><span class="jr-month">${esc(monthLabel)}</span></div>
     <div class="jr-strip">
       <button class="jr-week-nav prev" data-action="jr-week" data-dir="-1" aria-label="Previous week">${svg('chevron')}</button>
       <span class="jr-range">${esc(shortLabel(ws))} – ${esc(shortLabel(addDays(ws, 6)))}</span>

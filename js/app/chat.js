@@ -8,11 +8,15 @@ import { svg } from '../core/icons.js';
 import { chatTime, cleanUsername, validUsername } from '../core/social.js';
 import { toast } from './effects.js';
 import { currentUser } from './auth.js';
+import { openLayer, closeLayer, topLayerName, openRoute, leaveRoute } from './nav.js';
 import {
   socialState, socialEnabled, startSocial, onSocial, threads, incoming, outgoing, relationTo, friendRow,
   requestFriend, requestByUsername, respondFriend, removeFriend, setUsername, loadThread, threadWith,
   sendMessage, markThreadRead, unreadNotifications, markNotificationsRead, bellCount, unreadMessages,
 } from './social.js';
+import { sheetHead } from './sheet.js';
+import { onRoom, unreadRoom } from './room.js';
+import { mountRoom, unmountRoom } from './room-view.js';
 
 const ui = { open: null, view: null, draft: new Map() }; // open = friend user_id in the thread view
 
@@ -55,6 +59,36 @@ function skeleton() {
     <ul class="ch-list" aria-hidden="true">${[0, 1, 2].map(row).join('')}</ul>`;
 }
 
+// ---- General | Direct --------------------------------------------------------------------
+// Two places to talk: General (everyone) and Direct (your friends). The choice
+// is remembered; each side shows its own unread count, and the tab badge adds
+// them up.
+const MODE_KEY = 'moske-chat-mode';
+export function chatMode() {
+  try { return localStorage.getItem(MODE_KEY) === 'direct' ? 'direct' : 'general'; } catch { return 'general'; }
+}
+function setChatMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch { /* private mode */ } }
+
+function segHtml(mode) {
+  const n = { general: unreadRoom(), direct: socialState().ready ? unreadMessages() : 0 };
+  const opt = (id, label) => `<button class="ch-seg-btn${mode === id ? ' on' : ''}" role="tab" aria-selected="${mode === id}" data-ch="mode" data-mode="${id}">
+      ${label}${n[id] ? ` <span class="ch-seg-n data-num" aria-label="${n[id]} unread">${n[id] > 9 ? '9+' : n[id]}</span>` : ''}</button>`;
+  return `<div class="ch-seg" role="tablist" aria-label="Chat">${opt('general', 'General')}${opt('direct', 'Direct')}</div>`;
+}
+function paintSeg() {
+  const seg = document.querySelector('#chat-root .ch-seg');
+  if (seg) seg.outerHTML = segHtml(chatMode());
+}
+
+// a row's quieter actions live behind ⋮ (a native menu: keyboard and screen readers for free)
+function rowMenu(label, items, attrs) {
+  return `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
+    <select data-ch-row ${attrs} aria-label="${esc(label)}">
+      <option value="" selected disabled hidden>More</option>
+      ${items.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}
+    </select></label>`;
+}
+
 export function drawChat() {
   const root = document.getElementById('chat-root');
   if (!root) return;
@@ -65,27 +99,34 @@ export function drawChat() {
   const inc = incoming();
   const out = outgoing();
   const ts = threads();
-  root.innerHTML = `
-    <div class="day-header"><h2>Chat</h2>
-      <button class="btn tiny secondary" data-ch="edit-name" aria-label="Edit your username">${me?.username ? `@${esc(me.username)}` : 'Set username'}</button></div>
-    <form class="card ch-add" data-ch-form="add" autocomplete="off">
-      <label class="ch-add-lbl" for="ch-add-in">${svg('friend')} Add a friend</label>
-      <div class="ch-add-row">
-        <input id="ch-add-in" class="ch-in" type="text" name="u" inputmode="text" autocapitalize="none" spellcheck="false"
-          placeholder="@username" maxlength="21" aria-describedby="ch-add-hint">
-        <button class="btn primary tiny" type="submit">Add</button>
-      </div>
-      <small id="ch-add-hint" class="muted">Type their exact username, or tap an athlete on Ranks.</small>
-    </form>
-    ${inc.length ? `<h3 class="sec-title">${svg('friend')} Requests <span class="ch-count data-num">${inc.length}</span></h3>
-      <ul class="ch-list">${inc.map((f) => `<li class="ch-row">
-        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">${esc(handle(f))} wants to be friends</small></span>
+  const mode = chatMode();
+  const head = `
+    <div class="day-header ch-header">
+      <div class="ch-title"><h2>Chat</h2>
+        <button class="link ch-me" data-ch="edit-name" aria-label="Your username: ${esc(me?.username || 'not set')}. Edit">${me?.username ? `@${esc(me.username)}` : 'Set your username'} ${svg('edit')}</button></div>
+      ${mode === 'direct' ? `<button class="btn tiny secondary ch-add-btn" data-ch="add-friend">${svg('friend')} Add friend</button>` : ''}
+    </div>
+    ${segHtml(mode)}`;
+  if (mode === 'general') {
+    // General keeps itself live (room-view.js); a redraw here would cost the
+    // scroll position and the composer's focus, so only the switch repaints
+    if (root.querySelector('#room-root')) { paintSeg(); return; }
+    unmountRoom();
+    root.innerHTML = `${head}<div class="rm" id="room-root"></div>`;
+    wireChat(root);
+    mountRoom(root.querySelector('#room-root'), ui.view || document.getElementById('view'));
+    return;
+  }
+  unmountRoom();
+  root.innerHTML = `${head}
+    ${inc.length || ts.length || out.length ? `<ul class="ch-list">
+      ${inc.map((f) => `<li class="ch-row is-pending">
+        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted"><span class="ch-chip">Request</span>${esc(handle(f))} wants to be friends</small></span>
         <span class="ch-acts">
           <button class="btn tiny primary" data-ch="accept" data-fid="${f.friendship_id}">Accept</button>
-          <button class="icon-btn tiny" data-ch="decline" data-fid="${f.friendship_id}" aria-label="Decline ${esc(f.display_name)}">${svg('close')}</button>
-        </span></li>`).join('')}</ul>` : ''}
-    <h3 class="sec-title">${svg('chat')} Messages</h3>
-    ${ts.length ? `<ul class="ch-list">${ts.map((t) => {
+          ${rowMenu(`More for ${f.display_name}`, [['decline', 'Decline request']], `data-fid="${f.friendship_id}"`)}
+        </span></li>`).join('')}
+      ${ts.map((t) => {
     const f = t.friend; const l = t.last;
     const preview = l ? `${l.sender === me?.id ? 'You: ' : ''}${l.body}` : 'Say hello';
     return `<li><button class="ch-row ch-thread ${t.unread ? 'is-unread' : ''}" data-ch="open" data-uid="${esc(f.user_id)}"
@@ -95,12 +136,12 @@ export function drawChat() {
         <span class="ch-meta">${l ? `<small class="muted">${esc(chatTime(l.created_at))}</small>` : ''}
           ${t.unread ? `<span class="ch-badge data-num">${t.unread}</span>` : ''}</span>
       </button></li>`;
-  }).join('')}</ul>`
-    : dialogue({ who: 'Chat', icon: 'chat', text: 'No friends yet. Add someone by username above, or open an athlete on Ranks and tap Add friend.', cls: 'empty-dlg' })}
-    ${out.length ? `<h3 class="sec-title">${svg('clock')} Sent</h3>
-      <ul class="ch-list">${out.map((f) => `<li class="ch-row">
-        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">Waiting for ${esc(handle(f) || 'them')} to accept</small></span>
-        <button class="btn tiny ghost" data-ch="cancel" data-uid="${esc(f.user_id)}">Cancel</button></li>`).join('')}</ul>` : ''}`;
+  }).join('')}
+      ${out.map((f) => `<li class="ch-row is-pending">
+        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted"><span class="ch-chip is-quiet">Requested</span>Waiting for ${esc(handle(f) || 'them')}</small></span>
+        <span class="ch-acts">${rowMenu(`More for ${f.display_name}`, [['cancel', 'Cancel request']], `data-uid="${esc(f.user_id)}"`)}</span></li>`).join('')}
+    </ul>`
+    : dialogue({ who: 'Chat', icon: 'chat', text: 'No friends yet. Tap Add friend and type their username, or open an athlete on Ranks.', cls: 'empty-dlg' })}`;
   wireChat(root);
 }
 
@@ -133,19 +174,17 @@ function drawThread(root, uid) {
   const f = friendRow(uid);
   const draft = ui.draft.get(uid) || '';
   root.innerHTML = `
-    <div class="ch-head">
-      <button class="fh-back" data-ch="back" aria-label="Back to chats">${svg('back')}</button>
-      <button class="ch-who" data-ch="profile" aria-label="View ${esc(f?.display_name || 'friend')}’s profile">
-        ${avatar(f)}
-        <span class="ch-txt"><b>${esc(f?.display_name || 'Friend')}</b><small class="muted">${esc(handle(f))}</small></span>
-      </button>
-      <label class="icon-btn tiny gl-more" title="More">${svg('more')}
+    <div class="ch-head">${sheetHead({
+      lead: 'back', label: 'Back to chats', closeAttr: 'data-ch="back"',
+      title: `<button class="ch-who" data-ch="profile" aria-label="View ${esc(f?.display_name || 'friend')}’s profile">
+        ${avatar(f)}<span class="ch-txt"><b>${esc(f?.display_name || 'Friend')}</b><small class="muted">${esc(handle(f))}</small></span></button>`,
+      action: `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
         <select data-ch-menu aria-label="More options">
           <option value="" selected disabled hidden>More</option>
           <option value="profile">View profile</option>
           <option value="remove">Remove friend</option>
-        </select></label>
-    </div>
+        </select></label>`,
+    })}</div>
     <ol class="ch-msgs" id="ch-msgs" aria-live="polite">${bubbles(uid)}</ol>
     <form class="ch-compose" data-ch-form="send" autocomplete="off">
       <textarea class="ch-in" name="body" rows="1" maxlength="1000" placeholder="Message ${esc(f?.display_name || '')}" aria-label="Message">${esc(draft)}</textarea>
@@ -174,8 +213,55 @@ function refreshThread() {
 
 export function openThread(uid) {
   ui.open = uid;
+  // a thread is a route inside the Chat tab: back, Escape and the edge swipe
+  // return to the list (and leaving the tab closes it)
+  openRoute('chat-thread', { area: document.getElementById('view'), onClose: closeThread });
   drawChat();
   loadThread(uid).then(() => refreshThread()).catch(() => {});
+}
+
+/**
+ * Add a friend by username: a small sheet, not a permanent field. The field
+ * isn't focused for you (no keyboard until you tap it); paste and the
+ * keyboard's suggestions work as usual.
+ */
+function openAddFriend() {
+  const root = openLayer('add-friend');
+  root.innerHTML = `
+    <div class="modal-backdrop" data-af-close></div>
+    <div class="modal pk-modal pk-small" role="dialog" aria-modal="true" aria-labelledby="af-title">
+      ${sheetHead({ icon: 'friend', title: 'Add friend', id: 'af-title', closeAttr: 'data-af-close' })}
+      <form class="modal-body ch-add-sheet" data-af-form novalidate>
+        <label class="field"><span>Their username</span>
+          <input class="ch-in" type="text" name="u" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false"
+            placeholder="@username" maxlength="21" aria-describedby="af-hint"></label>
+        <p class="af-msg" role="status" hidden></p>
+        <button class="btn primary block" type="submit">Add</button>
+        <small id="af-hint" class="muted">Type their exact username, or tap an athlete on Ranks and add them from their profile.</small>
+      </form>
+    </div>`;
+  const msg = root.querySelector('.af-msg');
+  root.onclick = (e) => { if (e.target.closest('[data-af-close]')) closeLayer(root); };
+  root.querySelector('[data-af-form]').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const v = form.u.value;
+    const btn = form.querySelector('[type="submit"]');
+    const fail = (text) => { msg.hidden = false; msg.textContent = text; };
+    if (!validUsername(v)) { fail('Usernames are 3–20 letters, numbers or _'); return; }
+    btn.setAttribute('aria-busy', 'true'); btn.disabled = true;
+    try {
+      const r = await requestByUsername(v);
+      closeLayer(root);
+      toast(r.status === 'friends' ? `You and ${esc(r.user.display_name)} are friends` : `Request sent to @${esc(cleanUsername(v))}`, { icon: svg('friend') });
+    } catch (err) { fail(err.message); } finally { btn.removeAttribute('aria-busy'); btn.disabled = false; }
+  });
+}
+
+function closeThread() {
+  if (!ui.open) return;
+  ui.open = null;
+  drawChat();
 }
 
 function wireChat(root) {
@@ -185,11 +271,13 @@ function wireChat(root) {
     const act = b.dataset.ch;
     try {
       if (act === 'open') openThread(b.dataset.uid);
-      else if (act === 'back') { ui.open = null; drawChat(); }
+      else if (act === 'back') { ui.open = null; leaveRoute('chat-thread'); drawChat(); }
       else if (act === 'accept') { b.setAttribute('aria-busy', 'true'); await respondFriend(Number(b.dataset.fid), true); toast('Friend added', { icon: svg('friend') }); }
       else if (act === 'decline') { await respondFriend(Number(b.dataset.fid), false); }
       else if (act === 'cancel') { await removeFriend(b.dataset.uid); }
       else if (act === 'edit-name') editUsername();
+      else if (act === 'add-friend') openAddFriend(b);
+      else if (act === 'mode' && b.dataset.mode !== chatMode()) { setChatMode(b.dataset.mode); drawChat(); }
       else if (act === 'profile') openProfile(friendRow(ui.open));
     } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
   };
@@ -197,26 +285,14 @@ function wireChat(root) {
     const form = e.target.closest('[data-ch-form]');
     if (!form) return;
     e.preventDefault();
-    const btn = form.querySelector('[type="submit"]');
-    if (form.dataset.chForm === 'add') {
-      const v = form.u.value;
-      if (!validUsername(v)) { toast('Usernames are 3–20 letters, numbers or _', { icon: svg('warn') }); return; }
-      btn.setAttribute('aria-busy', 'true'); btn.disabled = true;
-      try {
-        const r = await requestByUsername(v);
-        form.reset();
-        toast(r.status === 'friends' ? `You and ${esc(r.user.display_name)} are friends` : `Request sent to @${esc(cleanUsername(v))}`, { icon: svg('friend') });
-      } catch (err) { toast(esc(err.message), { icon: svg('warn') }); } finally { btn.removeAttribute('aria-busy'); btn.disabled = false; }
-    } else {
-      const ta = form.body;
-      const text = ta.value.trim();
-      if (!text || !ui.open) return;
-      ta.value = ''; ui.draft.delete(ui.open);
-      try { await sendMessage(ui.open, text); refreshThread(); scrollToEnd(); } catch (err) {
-        ta.value = text; toast(esc(err.message), { icon: svg('warn') });
-      }
-      ta.focus();
+    const ta = form.body;
+    const text = ta.value.trim();
+    if (!text || !ui.open) return;
+    ta.value = ''; ui.draft.delete(ui.open);
+    try { await sendMessage(ui.open, text); refreshThread(); scrollToEnd(); } catch (err) {
+      ta.value = text; toast(esc(err.message), { icon: svg('warn') });
     }
+    ta.focus();
   };
   root.oninput = (e) => {
     if (e.target.matches('.ch-compose textarea') && ui.open) {
@@ -232,18 +308,28 @@ function wireChat(root) {
     }
   };
   root.onchange = async (e) => {
+    const rowSel = e.target.closest('[data-ch-row]');
+    if (rowSel) {
+      const v = rowSel.value; rowSel.value = '';
+      try {
+        if (v === 'decline') await respondFriend(Number(rowSel.dataset.fid), false);
+        else if (v === 'cancel') await removeFriend(rowSel.dataset.uid);
+      } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
+      return;
+    }
     if (!e.target.matches('[data-ch-menu]')) return;
     const v = e.target.value; e.target.value = '';
     const f = friendRow(ui.open);
     if (v === 'remove' && f && confirm(`Remove ${f.display_name} from your friends? You won’t be able to message each other.`)) {
-      await removeFriend(f.user_id); ui.open = null; drawChat();
+      await removeFriend(f.user_id); ui.open = null; leaveRoute('chat-thread'); drawChat();
     } else if (v === 'profile') openProfile(f);
   };
 }
 
 function openProfile(f) {
   if (!f) return;
-  document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: f.user_id, name: f.display_name, avatar: f.avatar } }));
+  const from = document.querySelector('.ch-head .lb-avatar'); // carried into the profile header
+  document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: f.user_id, name: f.display_name, avatar: f.avatar, from } }));
 }
 
 function editUsername() {
@@ -267,6 +353,7 @@ export function wireSocialUi({ getTab }) {
     paintBell(reason === 'notification' || (reason === 'refresh' && bellCount() > lastBell));
     lastBell = bellCount();
     paintChatBadge();
+    paintSeg();
     if (getTab() !== 'chat') {
       if (reason === 'message') {
         const t = threads().find((x) => x.unread && x.last && x.last.sender !== socialState().me?.id);
@@ -280,14 +367,17 @@ export function wireSocialUi({ getTab }) {
       return;
     }
     if (ui.open && (reason === 'message' || reason === 'read' || reason === 'sent')) refreshThread();
-    else if (!ui.open || reason === 'refresh' || reason === 'load') drawChat();
+    else if (chatMode() === 'direct' && (!ui.open || reason === 'refresh' || reason === 'load')) drawChat();
   });
 }
+
+// General's updates light the badge and the switch too
+onRoom(() => { paintChatBadge(); paintSeg(); });
 
 function paintChatBadge() {
   const tab = document.querySelector('.tab[data-tab="chat"]');
   if (!tab) return;
-  const n = socialState().ready ? unreadMessages() : 0;
+  const n = (socialState().ready ? unreadMessages() : 0) + unreadRoom();
   let b = tab.querySelector('.tab-badge');
   if (!n) { b?.remove(); tab.setAttribute('aria-label', 'Chat'); return; }
   if (!b) { b = document.createElement('span'); b.className = 'tab-badge data-num'; tab.appendChild(b); }
@@ -315,8 +405,9 @@ export function paintBell(ring = false) {
 // ---- the bell's sheet ---------------------------------------------------------------------------
 
 export function openBell() {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  if (topLayerName() === 'bell') return;
+  let off = () => {};
+  const root = openLayer('bell', { reuse: false, onClose: () => off() });
   const draw = () => {
     const inc = incoming();
     const notes = socialState().notifications;
@@ -335,7 +426,7 @@ export function openBell() {
     };
     root.innerHTML = `<div class="modal-backdrop" data-bell-close></div>
       <div class="modal" role="dialog" aria-modal="true" aria-label="Notifications">
-        <header class="modal-head"><h2>${svg('bell')} Notifications</h2><button class="icon-btn" data-bell-close aria-label="Close">${svg('close')}</button></header>
+        ${sheetHead({ icon: 'bell', title: `Notifications`, closeAttr: 'data-bell-close' })}
         <div class="modal-body">
           ${inc.length ? `<h3>Friend requests</h3><ul class="ch-list">${inc.map((f) => `<li class="ch-row">
             ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">${esc(handle(f))}</small></span>
@@ -349,16 +440,16 @@ export function openBell() {
       </div>`;
   };
   draw();
-  const off = onSocial(() => { if (root.querySelector('[aria-label="Notifications"]')) draw(); else off(); });
+  off = onSocial(() => { if (root.isConnected) draw(); else off(); });
   root.onclick = async (e) => {
-    if (e.target.closest('[data-bell-close]')) { root.innerHTML = ''; root.classList.remove('open'); root.onclick = null; off(); return; }
+    if (e.target.closest('[data-bell-close]')) { closeLayer(root); return; }
     const b = e.target.closest('[data-bell]');
     if (!b) return;
     try {
       if (b.dataset.bell === 'accept') { await respondFriend(Number(b.dataset.fid), true); toast('Friend added', { icon: svg('friend') }); }
       else if (b.dataset.bell === 'decline') await respondFriend(Number(b.dataset.fid), false);
       else if (b.dataset.bell === 'chat') {
-        root.innerHTML = ''; root.classList.remove('open'); root.onclick = null; off();
+        closeLayer(root);
         document.dispatchEvent(new CustomEvent('moske:open-chat', { detail: b.dataset.uid }));
       }
     } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
@@ -370,11 +461,18 @@ export function openBell() {
 // ---- Add friend (athlete profile from Ranks) -------------------------------------------------
 
 /** The friend button for another athlete's profile, or '' for yourself / signed out. */
-export function friendButton(uid) {
+export function friendButton(uid, { icon = false } = {}) {
   if (!socialEnabled() || !uid || uid === currentUser()?.id) return '';
   const rel = relationTo(uid);
-  const label = { friends: `${svg('chat')} Message`, incoming: `${svg('friend')} Accept request`, outgoing: `${svg('clock')} Requested`, none: `${svg('friend')} Add friend` }[rel];
-  return `<button class="btn tiny ${rel === 'none' || rel === 'incoming' ? 'primary' : 'secondary'} fh-friend" data-friend-btn="${esc(uid)}" data-rel="${rel}" ${rel === 'outgoing' ? 'disabled' : ''}>${label}</button>`;
+  const ic = { friends: 'chat', incoming: 'friend', outgoing: 'clock', none: 'friend' }[rel];
+  const text = { friends: 'Message', incoming: 'Accept request', outgoing: 'Requested', none: 'Add friend' }[rel];
+  const gold = rel === 'none' || rel === 'incoming'; // an invitation to act; Message and Requested stay quiet
+  if (icon) {
+    // the screen header's one action: an icon button with the full name for screen readers
+    return `<button class="icon-btn sh-friend ${gold ? 'is-primary' : ''}" data-friend-btn="${esc(uid)}" data-rel="${rel}" data-icon="1"
+      aria-label="${text}" title="${text}" ${rel === 'outgoing' ? 'disabled' : ''}>${svg(ic)}</button>`;
+  }
+  return `<button class="btn tiny ${gold ? 'primary' : 'secondary'} fh-friend" data-friend-btn="${esc(uid)}" data-rel="${rel}" ${rel === 'outgoing' ? 'disabled' : ''}>${svg(ic)} ${text}</button>`;
 }
 
 export function wireFriendButton(root) {
@@ -387,7 +485,7 @@ export function wireFriendButton(root) {
       if (rel === 'incoming') await respondFriend(friendRow(uid).friendship_id, true);
       else await requestFriend(uid);
       toast(relationTo(uid) === 'friends' ? 'You’re now friends' : 'Friend request sent', { icon: svg('friend') });
-      b.outerHTML = friendButton(uid);
+      b.outerHTML = friendButton(uid, { icon: b.dataset.icon === '1' });
       wireFriendButton(root);
     } catch (err) {
       b.removeAttribute('aria-busy'); b.disabled = false;

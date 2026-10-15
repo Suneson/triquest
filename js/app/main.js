@@ -23,7 +23,8 @@ import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logger.js';
 import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
-import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi } from './chat.js';
+import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi, chatMode } from './chat.js';
+import { startRoom, stopRoom } from './room.js';
 import { startSocial, stopSocial, refreshSocial } from './social.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -31,13 +32,23 @@ import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { openSeasonPath } from './game.js';
+import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName } from './nav.js';
+import { haptic } from './haptics.js';
+import { enablePull } from './pull.js';
+import { morph } from './vt.js';
+import { stampRecord, firstStamp } from './stamp.js';
+import { sheetHead } from './sheet.js';
 
 
-// ?safe=34 fakes a bottom safe-area inset (home indicator) so the tab bar can be
-// checked in a desktop browser or headless screenshots.
+// ?safe=34 fakes an iPhone's safe areas in a desktop browser or headless
+// screenshots: 34px for the home indicator at the bottom and the status bar at
+// the top (59px, Dynamic Island; ?safet= sets the top on its own).
 {
-  const fake = Number(new URLSearchParams(location.search).get('safe'));
+  const q = new URLSearchParams(location.search);
+  const fake = Number(q.get('safe'));
+  const top = Number(q.get('safet')) || (fake > 0 ? 59 : 0);
   if (Number.isFinite(fake) && fake > 0) document.documentElement.style.setProperty('--safe-b', `${Math.min(80, fake)}px`);
+  if (top > 0) document.documentElement.style.setProperty('--safe-t', `${Math.min(80, top)}px`);
 }
 
 const appState = {
@@ -46,6 +57,8 @@ const appState = {
   journalDate: null, // ISO date selected in the Journal strip (null = today)
   pgSport: 'bike',   // which sport the Profile scene shows
   pgSlide: '',       // 'left' / 'right': the next scene slides in from that side
+  weekOpen: localStorage.getItem('moske-week-open') === '1', // Home's week strip, opened
+  questsOpen: false, // cleared quests unfolded (this session only)
   lastLevel: null,
   booted: false,
   // previous-render snapshots for feedback moments (null until first render)
@@ -70,6 +83,7 @@ function buildCtx() {
     unlockedBadges: store.getState().unlockedBadges,
     quests: questsFor(today, workouts, settings),
     acct: accountProgress(workouts, settings, today),
+    ui: { weekOpen: appState.weekOpen, questsOpen: appState.questsOpen },
   };
 }
 
@@ -183,8 +197,9 @@ function render() {
     chip.setAttribute('aria-label', `Account level ${ctx.acct.level}, ${ctx.acct.toNext} XP to the next level`);
   }
 
+  paintTabCursor();
   document.querySelectorAll('.tab').forEach((t) => {
-    // the journal opens from Home, so Home stays lit while it's showing
+    // the calendar (route id 'journal') opens from Home, so Home stays lit while it's showing
     const on = t.dataset.tab === appState.tab || (appState.tab === 'journal' && t.dataset.tab === 'home');
     t.classList.toggle('active', on);
     if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
@@ -219,6 +234,26 @@ function render() {
   animateIn(document);
 }
 
+// ---- tab bar: the gold cell slides to the new tab in four steps -----------------
+// One cursor element behind the five tabs; its index is a CSS variable, so the
+// move is a stepped transform. The tab you enter gives its icon a 2px hop.
+let _tabIdx = -1;
+function paintTabCursor() {
+  const bar = document.querySelector('.tabs');
+  if (!bar) return;
+  let cur = bar.querySelector('.tab-cursor');
+  if (!cur) { cur = document.createElement('span'); cur.className = 'tab-cursor'; cur.setAttribute('aria-hidden', 'true'); bar.prepend(cur); bar.classList.add('has-cursor'); }
+  const tabs = [...bar.querySelectorAll('.tab')];
+  const lit = appState.tab === 'journal' ? 'home' : appState.tab;
+  const i = Math.max(0, tabs.findIndex((t) => t.dataset.tab === lit));
+  bar.style.setProperty('--i', String(i));
+  if (_tabIdx >= 0 && i !== _tabIdx) {
+    const ico = tabs[i]?.querySelector('.tab-ico');
+    if (ico) { ico.classList.remove('hop'); void ico.offsetWidth; ico.classList.add('hop'); }
+  }
+  _tabIdx = i;
+}
+
 // ---- Profile scene lifecycle --------------------------------------------------
 // Switch sport from the buttons or a swipe; the new scene slides in from the
 // side you're heading to (no slide under reduced motion: CSS drops it).
@@ -234,10 +269,10 @@ function setPgSport(sport) {
 // Scene motion is pure CSS; this only pauses it while the page is hidden.
 function startScene(view) {
   const screen = view.querySelector('.pg-screen');
-  if (screen) screen.classList.toggle('paused', document.hidden);
+  if (screen) screen.classList.toggle('paused', document.hidden || !!appState.sceneHold);
 }
 document.addEventListener('visibilitychange', () => {
-  document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden);
+  document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden || !!appState.sceneHold);
 });
 
 // Level-up sheet: the previous level's art wipes away to reveal the new one.
@@ -248,26 +283,31 @@ function openLevelUp(sport, level) {
   const art = (s) => (s.kind === 'still' ? s.entry.src : s.entry.char);
   const ar = after.kind === 'still' ? `${after.entry.w} / ${after.entry.h}` : '768 / 624';
   const fresh = before && art(before) !== art(after);
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  // the Profile scene underneath holds still until this moment is over
+  appState.sceneHold = true;
+  document.querySelector('.pg-screen')?.classList.add('paused');
+  const root = openLayer('level-up', {
+    reuse: false,
+    onClose: () => { appState.sceneHold = false; document.querySelector('.pg-screen')?.classList.toggle('paused', document.hidden); },
+  });
   root.innerHTML = `<div class="modal-backdrop" data-lu-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Level up">
-      <header class="modal-head"><h2>${svg('star')} Level up</h2><button class="icon-btn" data-lu-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'star', title: `Level up`, closeAttr: 'data-lu-close' })}
       <div class="modal-body lvlup">
-        <div class="lvlup-art" style="--ar:${ar}">
-          <img src="${esc(art(after))}" alt="${esc(after.label)} level ${level}">
-          ${fresh ? `<img src="${esc(art(before))}" alt="" class="pg-wipe" style="background:none">` : ''}
+        <div class="lvlup-art${fresh ? ' has-curtain' : ''}" style="--ar:${ar}">
+          <img class="lvlup-new" src="${esc(art(after))}" alt="${esc(after.label)} level ${level}">
+          ${fresh ? `<img src="${esc(art(before))}" alt="" class="lvlup-curtain is-l"><img src="${esc(art(before))}" alt="" class="lvlup-curtain is-r">` : ''}
           ${after.kind === 'still' ? stillCorners(after.entry) : ''}
         </div>
-        <h2>LVL ${level}</h2>
-        ${dialogue({ text: `${MOMENT_LINES.sportLevel(after.label, level)}${after.level > after.maxArt ? ' New scenery is on its way.' : ''}`, portrait: COACH.cheer || COACH.portrait, type: true })}
+        <h2 aria-label="Level ${level}">LVL <span class="lvl-roll" aria-hidden="true"><i>${level - 1}</i><i>${level}</i></span></h2>
+        ${dialogue({ text: `${MOMENT_LINES.sportLevel(after.label, level)}${after.level > after.maxArt ? ' New scenery is on its way.' : ''}`, portrait: COACH.cheer || COACH.portrait })}
         <button class="btn primary" data-lu-close>Continue</button>
       </div>
     </div>`;
-  root.querySelectorAll('[data-lu-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
+  root.querySelectorAll('[data-lu-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
   typeLines(root);
   playLevelUp();
-  if (!prefersReducedMotion()) confetti(window.innerWidth / 2, window.innerHeight / 3, 120);
+  haptic('levelUp');
   if (appState.tab === 'progress') { appState.pgSport = sport; render(); }
 }
 
@@ -292,11 +332,15 @@ function clearPrescribed(from, message) {
   const n = store.deleteWorkouts(prescribedSessions(from).map((w) => w.id));
   toast(`${message} · ${n} session${n === 1 ? '' : 's'} removed`, { icon: svg('trash') });
   // Both buttons live in Settings — redraw it so its session counts aren't stale.
-  if (document.getElementById('modal-root').querySelector('[data-set-do="ai-plan"]')) openSettings();
+  if (topLayerName() === 'settings') openSettings();
   return n;
 }
 
 // ---- event handlers ---------------------------------------------------------
+
+// scroll position per tab, so switching away and back lands where you were
+// (tapping the tab you're already on goes to the top, as tab bars do)
+const tabScroll = new Map();
 
 function onClick(e) {
   const el = e.target.closest('[data-action]');
@@ -306,17 +350,19 @@ function onClick(e) {
 
   switch (action) {
     case 'tab': {
-      closeModalRoot(); // full-screen overlays (fitness hub) must never trap navigation
+      closeAllLayers(); // a tab is the root: nothing stays open over it
       const from = appState.tab;
+      const view = document.getElementById('view'); // #view is the scroller
+      tabScroll.set(from, view.scrollTop);
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
       if (appState.tab === 'progress') autoStravaSync(); // silent background pull
       withTabTransition(from, appState.tab, () => {
         render();
-        document.getElementById('view').scrollTo(0, 0); // #view is the scroller now
-        // Journal opens on today's row rather than Monday
+        // each tab comes back where you left it; the calendar opens on today's row
         if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
+        else if (appState.tab !== 'chat') view.scrollTo(0, from === appState.tab ? 0 : tabScroll.get(appState.tab) || 0);
       });
       break;
     }
@@ -328,12 +374,16 @@ function onClick(e) {
     case 'open-profile': openPublicProfile({ uid: el.dataset.uid, name: el.dataset.name, rank: el.dataset.rank, xp: el.dataset.xp }); break;
     case 'view-athlete-profile': {
       const a = athleteByUid(el.dataset.uid);
-      openPublicFitness({
+      // the row's avatar and level travel into the profile header
+      morph([
+        { name: 'athlete-avatar', from: el.querySelector('.lb-avatar'), to: '[data-vt="athlete-avatar"]' },
+        { name: 'athlete-level', from: el.querySelector('.lb-meta'), to: '[data-vt="athlete-level"]' },
+      ], () => openPublicFitness({
         uid: el.dataset.uid,
         name: a?.display_name || el.dataset.name,
         avatar: a?.avatar || null,
         xp: a?.xp ?? el.dataset.xp,
-      });
+      }));
       break;
     }
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
@@ -341,7 +391,7 @@ function onClick(e) {
     case 'pg-profile': openFitnessHub(buildCtx()); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
-      if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); closeModalRoot(); }
+      if (confirm('Sign out? Your data stays in the cloud and on this device.')) { auth.signOut(); closeAllLayers(); }
       break;
     case 'hub-strava-connect':
       import('./strava-client.js').then((m) => m.connectStrava().catch((e) => toast(e.message || 'Strava connect failed')));
@@ -356,7 +406,10 @@ function onClick(e) {
         .then(() => toast('Strava disconnected')).catch((e) => toast(e.message || 'Disconnect failed')));
       break;
     case 'pg-sport': setPgSport(el.dataset.sport); break;
-    case 'open-workout': openWorkoutDetail(id); break;
+    case 'open-workout':
+      // the card's title carries into the session sheet's header
+      morph([{ name: 'session-title', from: el.querySelector('h3'), to: '.wd-modal .sh-title-text' }], () => openWorkoutDetail(id));
+      break;
     case 'open-bell': openBell(); break;
     case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
     case 'routine-delete': {
@@ -368,6 +421,16 @@ function onClick(e) {
       break;
     }
     case 'edit-goals': openGoalEditor(); break;
+    case 'toggle-week':
+      appState.weekOpen = !appState.weekOpen;
+      try { localStorage.setItem('moske-week-open', appState.weekOpen ? '1' : '0'); } catch { /* private mode */ }
+      render();
+      document.querySelector('[data-action="toggle-week"]')?.focus({ preventScroll: true });
+      break;
+    case 'toggle-quests':
+      appState.questsOpen = !appState.questsOpen;
+      render();
+      break;
     case 'open-season': openSeasonPath(buildCtx()); break;
     case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
     case 'clear-future': {
@@ -389,7 +452,7 @@ function onClick(e) {
     case 'edit': openEditor(id); break;
     case 'duplicate': store.duplicateWorkout(id); toast('Session duplicated'); break;
     case 'delete':
-      if (confirm('Delete this session?')) { store.deleteWorkout(id); if (_detailId === id) closeModalRoot(); toast('Session deleted'); }
+      if (confirm('Delete this session?')) { store.deleteWorkout(id); if (_detailId === id) closeLayer('workout'); toast('Session deleted'); }
       break;
     case 'open-editor-new': openEditor(null, el.dataset.date); break;
     case 'remove-pack': {
@@ -495,12 +558,11 @@ function openSettings() {
   const s = store.getSettings();
   const planned = prescribedSessions().length;
   const upcoming = prescribedSessions(todayISO()).length;
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('settings');
   root.innerHTML = `
     <div class="modal-backdrop" data-set-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Settings">
-      <header class="modal-head"><h2>${svg('gear')} Settings</h2><button class="icon-btn" data-set-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'gear', title: `Settings`, closeAttr: 'data-set-close' })}
       <div class="modal-body">
         ${accountSectionHtml()}
         <label class="toggle"><span>${svg('sound')} Sound effects</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
@@ -516,7 +578,7 @@ function openSettings() {
         <div class="row">
           <button class="btn ghost" data-set-do="export">${svg('download')} Export</button>
           <button class="btn ghost" data-set-do="import">${svg('upload')} Import</button>
-          <button class="btn ghost" data-set-do="export-ics">${svg('calendar')} Calendar</button>
+          <button class="btn ghost" data-set-do="export-ics">${svg('calendar')} Calendar file</button>
         </div>
         <input type="file" id="import-file" accept="application/json" hidden>
 
@@ -549,7 +611,7 @@ function openSettings() {
       <footer class="modal-foot"><span class="spacer"></span><button class="btn primary" data-set-close>Done</button></footer>
     </div>`;
 
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const close = () => closeLayer(root);
   root.querySelectorAll('[data-set-close]').forEach((b) => b.addEventListener('click', close));
   root.querySelectorAll('[data-set]').forEach((el) => el.addEventListener('change', () => {
     const key = el.dataset.set;
@@ -615,12 +677,11 @@ function doExportICS() {
 
 function openGoalEditor() {
   const g = store.getSettings().goals || { sessions: 5, km: 50, hours: 8 };
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('goals');
   root.innerHTML = `
     <div class="modal-backdrop" data-goal-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Edit weekly goals">
-      <header class="modal-head"><h2>${svg('target')} Weekly goals</h2><button class="icon-btn" data-goal-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'target', title: `Weekly goals`, closeAttr: 'data-goal-close' })}
       <div class="modal-body">
         <form data-goal-form>
           <label class="field"><span>Planned sessions</span><input type="number" name="sessions" min="0" step="1" value="${g.sessions}" required></label>
@@ -630,7 +691,7 @@ function openGoalEditor() {
         </form>
       </div>
     </div>`;
-  const close = () => { root.innerHTML = ''; root.classList.remove('open'); };
+  const close = () => closeLayer(root);
   root.querySelectorAll('[data-goal-close]').forEach((b) => b.addEventListener('click', close));
   root.querySelector('[data-goal-form]').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -647,12 +708,16 @@ function openGoalEditor() {
 const gymDeps = {
   store,
   refresh: (id) => refreshDetail(id),
-  close: () => closeModalRoot(),
+  close: () => closeLayer('workout'),
   toast: (msg, icon = 'warn') => toast(msg, { icon: svg(icon) }),
-  onRecord: ({ name, prs, x, y }) => {
-    if (!prefersReducedMotion()) confetti(x ?? window.innerWidth / 2, y ?? 160, 70);
+  onRecord: ({ name, prs, key, target }) => {
+    if (key && !firstStamp(key)) return; // this record was celebrated already
     playBadge();
-    toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
+    haptic('record');
+    const text = `New record · ${name}: ${prs.map((p) => p.label).join(' · ')}`;
+    // the plaque stamps down and settles into the set; with reduced motion, a toast says it
+    if (stampRecord({ name, prs, target })) announce(text);
+    else toast(`<b>New record · ${esc(name)}</b><br>${prs.map((p) => esc(p.label)).join(' · ')}`, { icon: svg('trophy') });
   },
   showFinish: (id) => {
     const body = document.getElementById('wd-body');
@@ -661,9 +726,17 @@ const gymDeps = {
     playComplete();
   },
 };
+// a polite screen-reader line for moments that are drawn, not written
+function announce(text) {
+  let live = document.getElementById('sr-live');
+  if (!live) { live = document.createElement('div'); live.id = 'sr-live'; live.className = 'sr'; live.setAttribute('role', 'status'); document.body.appendChild(live); }
+  live.textContent = '';
+  setTimeout(() => { live.textContent = text; }, 50);
+}
+
 function onRestDone() {
   playRestDone();
-  try { navigator.vibrate?.([120, 80, 120]); } catch { /* not supported */ }
+  haptic('restOver');
 }
 
 let _detailId = null;
@@ -671,14 +744,15 @@ function openWorkoutDetail(id) {
   const w = store.workoutById(id);
   if (!w) return;
   _detailId = id;
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  // the session sheet and the gym logger inside it; closing it any way forgets
+  // the open session (the gym ticker stops once no logger is open)
+  const root = openLayer('workout', { reuse: false, onClose: () => { if (_detailId === id) _detailId = null; } });
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(w.title)}">
-      <header class="modal-head"><h2>${esc(w.title)}</h2><button class="icon-btn" data-wd-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ title: `${esc(w.title)}`, closeAttr: 'data-wd-close' })}
       <div class="modal-body" id="wd-body">${renderWorkoutDetail(w, store.getSettings().units, buildCtx())}</div>
     </div>`;
-  root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
+  root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
   typeLines(root);
   wireLogger(root, gymDeps);
   if (root.querySelector('[data-gl-bar]')) startTicker((wid) => store.workoutById(wid), onRestDone);
@@ -686,14 +760,13 @@ function openWorkoutDetail(id) {
 function openSportLevels(sport) {
   if (!sport) return;
   const level = sportProgress(store.getWorkouts(), sport).level;
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('levels');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(sport)} levels">
-      <header class="modal-head"><h2>${svg('star')} Levels</h2><button class="icon-btn" data-wd-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'star', title: `Levels`, closeAttr: 'data-wd-close' })}
       <div class="modal-body">${sportLevelCarousel(sport, level)}</div>
     </div>`;
-  root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', closeModalRoot));
+  root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
   // Centre the current-level frame in the swipeable strip.
   const cur = root.querySelector('.lvl-frame.is-current');
   if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -702,12 +775,10 @@ function openSportLevels(sport) {
 // Fullscreen immersive lightbox for a single level frame. Tapping anywhere fades it out.
 function openLightbox(src, sport) {
   if (!src) return;
-  const box = document.createElement('div');
-  box.className = `level-lightbox --${sport || 'other'}`;
-  box.innerHTML = `<img src="${esc(src)}" alt="Level artwork">`;
-  const dismiss = () => { box.classList.remove('show'); setTimeout(() => box.remove(), 200); };
-  box.addEventListener('click', dismiss);
-  document.body.appendChild(box);
+  const root = openLayer('lightbox', { reuse: false });
+  root.innerHTML = `<div class="level-lightbox --${sport || 'other'}" role="dialog" aria-label="Level artwork"><img src="${esc(src)}" alt="Level artwork"></div>`;
+  const box = root.firstElementChild;
+  box.addEventListener('click', () => closeLayer(root));
   requestAnimationFrame(() => box.classList.add('show'));
 }
 function refreshDetail(id) {
@@ -719,11 +790,6 @@ function refreshDetail(id) {
   body.innerHTML = renderWorkoutDetail(w, store.getSettings().units, buildCtx());
   body.scrollTop = top;
   wireLogger(body, gymDeps);
-}
-function closeModalRoot() {
-  _detailId = null; // the gym ticker stops itself once no logger is open and no rest is running
-  const root = document.getElementById('modal-root');
-  root.innerHTML = ''; root.classList.remove('open');
 }
 
 // The single entry point to the AI coach — the multi-step onboarding wizard,
@@ -792,11 +858,10 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) startSocial(); else stopSocial();
+  if (user) { startSocial(); startRoom(); } else { stopSocial(); stopRoom(); }
   paintBell();
   render();
-  const root = document.getElementById('modal-root');
-  if (root && root.querySelector('[aria-label="Settings"]')) openSettings();
+  if (topLayerName() === 'settings') openSettings();
 }
 
 function handleRedirectParams() {
@@ -823,8 +888,7 @@ function handleRedirectParams() {
 
 function maybeOnboard() {
   if (localStorage.getItem('moske-onboarded')) return;
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('welcome', { swipeBack: false, onClose: () => localStorage.setItem('moske-onboarded', '1') });
   const cards = [
     { icon: 'coach', img: COACH.full, t: 'Meet your coach', b: 'Sessions complete when Strava verifies them. That is what earns XP, clears daily quests and keeps your streak alive.' },
     { icon: 'plus', t: 'Make it yours', b: 'Tap the + button to add a session on any day, with intervals, exercises and a packing list.' },
@@ -843,7 +907,7 @@ function maybeOnboard() {
         <footer class="modal-foot"><button class="btn ghost" data-ob="skip">Skip</button><span class="spacer"></span>
           <button class="btn primary" data-ob="next">${i === cards.length - 1 ? 'Start training' : 'Next'}</button></footer>
       </div>`;
-    const done = () => { localStorage.setItem('moske-onboarded', '1'); root.innerHTML = ''; root.classList.remove('open'); };
+    const done = () => closeLayer(root);
     root.querySelector('[data-ob="skip"]').addEventListener('click', done);
     root.querySelector('[data-ob="next"]').addEventListener('click', () => { if (i === cards.length - 1) done(); else { i++; draw(); } });
   };
@@ -853,6 +917,8 @@ function maybeOnboard() {
 // ---- boot -------------------------------------------------------------------
 
 async function boot() {
+  // ?demo=1 only: a hook so screenshots and clips can show moments on demand
+  if (new URLSearchParams(location.search).has('demo')) window.moskeDemo = { levelUp: (sport = 'run', level = 3) => openLevelUp(sport, level) };
   await store.init();
   const today = todayISO();
   appState.journalDate = today;
@@ -878,7 +944,7 @@ async function boot() {
     el.click();
   });
   startTicker((wid) => store.workoutById(wid), onRestDone); // a rest started before a reload still beeps
-  document.addEventListener('moske:open-workout', (e) => { closeModalRoot(); render(); openWorkoutDetail(e.detail); });
+  document.addEventListener('moske:open-workout', (e) => { closeAllLayers(); render(); openWorkoutDetail(e.detail); });
   document.addEventListener('click', onClick);
   document.addEventListener('change', onChange);
   document.addEventListener('input', onInput);
@@ -897,7 +963,7 @@ async function boot() {
   // friends, chat and the bell: live once signed in
   wireSocialUi({ getTab: () => appState.tab });
   document.addEventListener('moske:open-chat', (e) => {
-    closeModalRoot();
+    closeAllLayers();
     const from = appState.tab;
     appState.tab = 'chat';
     localStorage.setItem('moske-tab', 'chat');
@@ -905,16 +971,28 @@ async function boot() {
   });
   document.addEventListener('moske:open-athlete', (e) => {
     const a = athleteByUid(e.detail.uid); // the leaderboard's numbers when it has them
-    openPublicFitness({ uid: e.detail.uid, name: e.detail.name, avatar: e.detail.avatar || a?.avatar || null, xp: a?.xp ?? null });
+    morph([{ name: 'athlete-avatar', from: e.detail.from || null, to: '[data-vt="athlete-avatar"]' }],
+      () => openPublicFitness({ uid: e.detail.uid, name: e.detail.name, avatar: e.detail.avatar || a?.avatar || null, xp: a?.xp ?? null }));
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSocial(); });
+  // Home, Ranks and Chat: pull down from the top to refresh
+  enablePull(document.getElementById('view'), {
+    // (in General, scrolling to the top loads earlier messages instead)
+    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers() && !(appState.tab === 'chat' && chatMode() === 'general'),
+    onRefresh: async () => {
+      if (appState.tab === 'leaderboards') { await loadLeaderboard(appState.lbView, todayISO()); return; }
+      if (appState.tab === 'chat') { await refreshSocial(); return; }
+      await Promise.all([store.refresh(), auth.currentUser() ? autoStravaSync() : null]);
+      render();
+    },
+  });
   // Profile tab: swipe left / right to change sport, as well as the four buttons
   onSwipe(document.getElementById('view'), (dir) => setPgSport(nextSport(SPORT_ORDER, appState.pgSport, dir)), {
-    when: () => appState.tab === 'progress' && !document.getElementById('modal-root')?.classList.contains('open'),
+    when: () => appState.tab === 'progress' && !hasLayers(),
   });
 
-  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); });
-  else startSocial().then(() => paintBell()); // demo mode
+  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); startRoom(); });
+  else { startSocial().then(() => paintBell()); startRoom(); } // demo mode
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

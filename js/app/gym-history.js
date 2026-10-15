@@ -16,6 +16,7 @@ import {
 } from '../core/gym-stats.js';
 import { layer, closeLayer } from './gym-picker.js';
 import { PAD, wavePath, telemetryGrid, square, blockBars } from './pixel-chart.js';
+import { sheetHead } from './sheet.js';
 
 const kg = (v) => `${Number.isInteger(v) ? v : v.toFixed(1)}<span class="data-unit"> kg</span>`;
 
@@ -72,12 +73,11 @@ export function openExerciseHistory(key) {
       <span class="gh-sets">${h.sets.map((s) => esc(formatSet(s, h.kind) || '–')).join('<span class="muted"> · </span>')}</span>
     </li>`).join('');
 
-  const root = layer();
-  root.classList.add('open');
+  const root = layer('exercise-history');
   root.innerHTML = `
     <div class="modal-backdrop" data-pk-close></div>
     <div class="modal pk-modal" role="dialog" aria-modal="true" aria-label="${esc(name)} history">
-      <header class="modal-head"><h2>${svg('trophy')} History</h2><button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'trophy', title: `History`, closeAttr: 'data-pk-close' })}
       <div class="modal-body">
         <div class="gl-ex-head">
           <div class="ex-img ${art ? 'ex-art' : ''}">${art ? `<img src="${esc(art)}" alt="" width="64" height="64" loading="lazy">` : svg('gym')}</div>
@@ -93,8 +93,6 @@ export function openExerciseHistory(key) {
       </div>
     </div>`;
   root.onclick = (e) => { if (e.target.closest('[data-pk-close]')) closeLayer(); };
-  root.oninput = null; root.onchange = null; root.onsubmit = null;
-  root.onkeydown = (e) => { if (e.key === 'Escape') closeLayer(); };
   return kind;
 }
 
@@ -106,7 +104,8 @@ export function recordsShelfHtml(workouts) {
   return `<div class="rc"><h5 class="rc-h">Records</h5>
     <ul class="rc-shelf">${rows.map((r) => {
     const art = exerciseArtSrc(r.key.libId);
-    return `<li><button class="rc-plaque" data-rec-lib="${esc(r.key.libId || '')}" data-rec-name="${esc(r.name)}" aria-label="${esc(`${r.name}: ${r.headline.text} ${r.headline.sub}. Open history`)}">
+    const sk = `${r.name}|${r.headline.text}`;
+    return `<li><button class="rc-plaque${shelfSeen().includes(sk) ? '' : ' is-new'}" data-rec-key="${esc(sk)}" data-rec-lib="${esc(r.key.libId || '')}" data-rec-name="${esc(r.name)}" aria-label="${esc(`${r.name}: ${r.headline.text} ${r.headline.sub}. Open history`)}">
         <span class="pk-thumb ${art ? 'ex-art' : ''}" aria-hidden="true">${art ? `<img src="${esc(art)}" alt="" width="48" height="48" loading="lazy">` : svg('gym')}</span>
         <span class="rc-txt"><b>${esc(r.name)}</b><small class="muted">${esc(r.headline.sub)} · ${esc(shortLabel(r.date))}</small></span>
         <b class="rc-val data-num">${esc(r.headline.text)}</b>
@@ -114,7 +113,13 @@ export function recordsShelfHtml(workouts) {
   }).join('')}</ul></div>`;
 }
 
+// a record new to the shelf lands on it once (CSS .is-new), then it's just there
+const SHELF_KEY = 'moske-shelf-seen';
+function shelfSeen() { try { return JSON.parse(localStorage.getItem(SHELF_KEY)) || []; } catch { return []; } }
+
 export function wireRecords(root) {
+  const fresh = [...(root?.querySelectorAll('.rc-plaque.is-new') || [])].map((b) => b.dataset.recKey);
+  if (fresh.length) { try { localStorage.setItem(SHELF_KEY, JSON.stringify([...shelfSeen(), ...fresh].slice(-100))); } catch { /* private mode */ } }
   root?.querySelectorAll('[data-rec-name]').forEach((b) => b.addEventListener('click', () =>
     openExerciseHistory({ libId: b.dataset.recLib || null, name: b.dataset.recName })));
 }

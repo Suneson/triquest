@@ -138,7 +138,7 @@ for (const [tab, name] of [['home', '01-home'], ['journal', '02-journal'], ['lea
     await shot(page, name);
     await page.evaluate(() => document.querySelector('.modal-body')?.scrollTo(0, 9999));
     await shot(page, `${name}-scrolled`);
-    await page.evaluate(() => { const r = document.getElementById('modal-root'); r.innerHTML = ''; r.classList.remove('open'); });
+    await page.evaluate(() => { for (let i = 0; i < 6; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
   };
   await openType('bike', '10-modal-workout-bike');
   await openType('run', '11-modal-workout-run');
@@ -146,11 +146,11 @@ for (const [tab, name] of [['home', '01-home'], ['journal', '02-journal'], ['lea
 
   await page.click('#fab');
   await shot(page, '13-modal-editor-new');
-  await page.evaluate(() => { const r = document.getElementById('modal-root'); r.innerHTML = ''; r.classList.remove('open'); });
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
   await page.click('[data-action="edit-goals"]');
   await shot(page, '14-modal-goals');
-  await page.evaluate(() => { const r = document.getElementById('modal-root'); r.innerHTML = ''; r.classList.remove('open'); });
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
   await page.click('#header-avatar');
   await shot(page, '15-fitness-hub');
@@ -166,15 +166,15 @@ for (const [tab, name] of [['home', '01-home'], ['journal', '02-journal'], ['lea
   await shot(page, '18-settings');
   await page.evaluate(() => document.querySelector('.modal-body')?.scrollTo(0, 9999));
   await shot(page, '18b-settings-scrolled');
-  await page.evaluate(() => { const r = document.getElementById('modal-root'); r.innerHTML = ''; r.classList.remove('open'); });
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
   await call(page, './js/app/auth.js', 'openAuthModal');
   await shot(page, '19-auth');
-  await page.evaluate(() => { const r = document.getElementById('modal-root'); r.innerHTML = ''; r.classList.remove('open'); });
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
   await call(page, './js/app/onboarding.js', 'openOnboarding', {});
   await shot(page, '20-ai-onboarding-step1');
-  await page.evaluate(() => { const r = document.getElementById('modal-root'); r.innerHTML = ''; r.classList.remove('open'); });
+  await page.evaluate(() => { for (let i = 0; i < 6; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
 
   await page.evaluate(async () => {
     const { toast } = await import('./js/app/effects.js');

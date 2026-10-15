@@ -31,8 +31,9 @@ await page.goto(`http://localhost:8744/${QUERY}`);
 await page.waitForTimeout(800);
 
 let total = 0;
-for (const tab of ['home', 'journal', 'leaderboards', 'shop']) {
-  await page.click(`.tab[data-tab="${tab}"]`);
+for (const tab of ['home', 'journal', 'leaderboards', 'shop', 'chat']) {
+  // the calendar ('journal') opens from Home's button, the rest from the tab bar
+  await page.click(tab === 'journal' ? '.jr-btn' : `.tab[data-tab="${tab}"]`);
   await page.waitForTimeout(700);
   const found = await page.evaluate(({ sel, min }) => {
     const view = document.getElementById('view');
@@ -61,7 +62,21 @@ for (const tab of ['home', 'journal', 'leaderboards', 'shop']) {
     return [...new Set(out)];
   }, { sel: FRAMED, min: MIN });
   total += found.length;
-  console.log(`${tab}: ${found.length ? `${found.length} too close` : 'ok'}`);
+  // gold is the action colour: count gold fills in the first screenful (header + view)
+  const gold = await page.evaluate(() => {
+    const isGold = (c) => /rgb\(242, 193, 78\)/.test(c);
+    const seen = [];
+    document.querySelectorAll('.app *').forEach((e) => {
+      const r = e.getBoundingClientRect();
+      if (!r.width || r.bottom < 0 || r.top > innerHeight || e.closest('.tabs')) return;
+      const cs = getComputedStyle(e);
+      if (isGold(cs.backgroundColor) && !isGold(getComputedStyle(e.parentElement).backgroundColor)) {
+        seen.push(`${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join('.')}`);
+      }
+    });
+    return seen;
+  });
+  console.log(`${tab}: ${found.length ? `${found.length} too close` : 'ok'} · gold fills above the fold: ${gold.length}${gold.length ? ` (${gold.join(', ')})` : ''}`);
   found.slice(0, 12).forEach((f) => console.log(`   ${f}`));
 }
 await browser.close();

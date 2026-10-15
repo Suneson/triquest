@@ -15,6 +15,8 @@ import { openPicker } from './gym-picker.js';
 import { enableDragSort } from './drag-sort.js';
 import { routineRows } from './gym-routines.js';
 import { MOMENT_LINES } from '../core/coach-lines.js';
+import { openLayer, closeLayer } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 const SEG_KINDS = { warmup: 'Warm-up', work: 'Work', rest: 'Rest / float', cooldown: 'Cool-down' };
 const SEG_INTENSITIES = { easy: 'Easy', moderate: 'Moderate', threshold: 'Threshold', vo2: 'VO₂', steady: 'Steady' };
@@ -37,18 +39,17 @@ export function openEditor(id = null, defaultDate = null) {
   isNew = !existing;
   draft = existing ? structuredClone(existing) : blankWorkout(defaultDate);
   if (draft.metrics?.distanceKm == null) draft.metrics.distanceKm = '';
-  const root = document.getElementById('modal-root');
-  delete root.dataset.edFocused;
-  root.innerHTML = ''; // a fresh sheet starts at the top
+  // a fresh sheet on the layer stack (it starts at the top); closing it any
+  // way (button, back, swipe, Escape) drops the draft
+  const root = openLayer('editor', { reuse: false, onClose: () => { if (editorRoot === root) { editorRoot = null; draft = null; } } });
+  editorRoot = root;
   renderModal();
 }
 
+let editorRoot = null;
+
 function closeModal() {
-  const root = document.getElementById('modal-root');
-  delete root.dataset.edFocused;
-  root.innerHTML = '';
-  root.classList.remove('open');
-  draft = null;
+  if (editorRoot) closeLayer(editorRoot);
 }
 
 function options(map, selected) {
@@ -57,7 +58,8 @@ function options(map, selected) {
 }
 
 function renderModal() {
-  const root = document.getElementById('modal-root');
+  const root = editorRoot;
+  if (!root) return;
   const d = draft;
   // adding or removing a row redraws the sheet: keep the scroll where it was
   const prevTop = root.querySelector('.modal-body')?.scrollTop ?? 0;
@@ -108,10 +110,7 @@ function renderModal() {
   root.innerHTML = `
     <div class="modal-backdrop" data-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="${isNew ? 'New session' : 'Edit session'}">
-      <header class="modal-head">
-        <h2>${svg(isNew ? 'plus' : 'edit')} ${isNew ? 'New session' : 'Edit session'}</h2>
-        <button class="icon-btn" data-close aria-label="Close">${svg('close')}</button>
-      </header>
+      ${sheetHead({ icon: isNew ? 'plus' : 'edit', title: isNew ? 'New session' : 'Edit session', closeAttr: 'data-close' })}
       <div class="modal-body">
         ${isNew && routineRows({ date: d.date }) ? `<fieldset class="sub-list"><legend>Start a routine</legend>${routineRows({ date: d.date })}</fieldset>` : ''}
         <label class="field"><span>Title</span>
@@ -234,8 +233,6 @@ function wire(root) {
   // focus the title once, when a new session opens (not on every redraw)
   if (isNew && !root.dataset.edFocused) { root.dataset.edFocused = '1'; root.querySelector('#f-title')?.focus({ preventScroll: true }); }
 
-  // esc to close
-  root.querySelector('.modal')?.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 }
 
 function action(kind) {

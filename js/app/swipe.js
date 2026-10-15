@@ -2,14 +2,17 @@
 // sport on the Profile tab and on another athlete's profile. Vertical scrolls,
 // pinches and drags on sliders/inputs are left alone.
 
+import { inEdge } from '../core/gesture.js';
+
 const IGNORE = 'input, textarea, select, [contenteditable], .no-swipe';
 
 /** Call `onSwipe('left' | 'right')` for a quick horizontal flick on `el`. Returns an unbind function. */
 export function onSwipe(el, onSwipe, { min = 48, ratio = 1.4, maxMs = 700, when = () => true } = {}) {
   let start = null;
   const down = (e) => {
-    if (e.touches.length !== 1 || !when() || e.target.closest(IGNORE)) { start = null; return; }
     const t = e.touches[0];
+    // the left edge of an open layer belongs to "back" (nav.js), never to a sport swipe
+    if (e.touches.length !== 1 || !when() || e.target.closest(IGNORE) || (inEdge(t.clientX) && e.target.closest('.layer'))) { start = null; return; }
     start = { x: t.clientX, y: t.clientY, at: Date.now() };
   };
   const up = (e) => {

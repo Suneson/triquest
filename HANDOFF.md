@@ -179,6 +179,15 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - Scenes: `timeOfDay()` tints Profile; stills may carry `plate` + `char` (animated athlete). Fitness hub: trophy cabinet + stepped telemetry charts.
 - `?demo=1` makes you `d-07` in Ranks (rival row + movement badge show).
 
+## Navigation: the layer stack (`js/app/nav.js`, polish pass)
+- **Everything that opens over the tabs is a layer**: sheets, full-screen screens (fitness hub, athlete profile, drill-downs), the workout sheet and gym logger, pickers, the bell, auth, the AI wizard. Open one with `openLayer(name, { onClose, swipeBack, reuse })` → render into the element it returns; close with `closeLayer(el | name)` or `closeAllLayers()`. Never create your own overlay root (`#modal-root` and `#sheet-root` are gone).
+- **History**: one guard entry while anything is open; popstate (Android back, browser back) closes the top layer. Escape closes the top layer. Focus moves into a new layer (the dialog, never a text field) and returns to the trigger; everything beneath is `inert`.
+- **Edge swipe back**: a drag from the left 24px of the top layer follows the finger, the screen beneath slides in from 20% behind under a scrim; past 40% or a 0.5 px/ms flick pops, else it springs back (four steps). Reduced motion: no follow, the swipe still pops. Maths in `js/core/gesture.js` (tested). The sport swipe in `swipe.js` ignores touches that start in a layer's edge.
+- **Routes**: a chat thread is a *route* inside the Chat tab (`openRoute` / `leaveRoute`): back, Escape and the edge swipe return to the list; nothing is drawn as a layer.
+- **Tabs are not layers**: the edge does nothing on a root tab. Switching tabs closes every layer; each tab remembers its scroll position (tapping the current tab goes to the top; the calendar always opens on today).
+- **The calendar's route id is still `journal`** (`data-tab="journal"`, `appState.tab === 'journal'`, `renderJournal`, `.jr-*` classes). Only the visible labels say "Calendar"; keep the id so saved tabs and selectors keep working.
+- `?safe=34` now fakes both iPhone insets (top 59px, bottom 34px); `?safet=N` sets the top on its own.
+
 ## Pass 2 shell + debug switches
 - `.app` is a fixed inset-0 grid; the tab bar is its last row. Floating things use `--tabs-h` (DESIGN.md §2.3b). Never use `100vh`/`100dvh`.
 - `?safe=34` fakes the iPhone home-indicator inset. `?demo=1` fills Ranks, Shop and public profiles from `js/app/demo.js` with no network.

@@ -20,6 +20,8 @@ import { PAD, snap, wavePath, stepBand, telemetryGrid, square, blockBars } from 
 import { recordsShelfHtml, wireRecords, gymCardHtml, wireGymCard } from './gym-history.js';
 import { friendButton, wireFriendButton } from './chat.js';
 import { onSwipe, nextSport } from './swipe.js';
+import { openLayer, closeLayer } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -165,7 +167,7 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
         <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
         ${embed
           ? `<span class="lvl-chip" aria-label="Level ${p.level}">${lvl}</span>`
-          : `<button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">${lvl}</button>`}
+          : `<button class="lvl-chip is-hero" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">${lvl}</button>`}
       </div>
       ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}`, key: `hud-${key}` })}
       <div class="pg-xptext">${rollNum(p.into, `into-${key}`)} / ${p.span.toLocaleString()} XP · ${rollNum(p.toNext, `next-${key}`)} to LVL ${p.level + 1}</div>
@@ -415,8 +417,7 @@ function accountBlock() {
 
 /** Activity history drill-down: trend graph + recent sessions (Strava-badged). */
 export function openActivityDetail(ctx) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('activity', { reuse: false });
   const recent = ctx.workouts.filter((w) => w.completed)
     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25);
   const rows = recent.map((w) => {
@@ -432,17 +433,14 @@ export function openActivityDetail(ctx) {
 
   root.innerHTML = `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Activity history">
-    <div class="fh-head">
-      <button class="fh-back" data-fh-hub aria-label="Back to fitness">${svg('back')}</button>
-      <div class="fh-title"><small>Last 30 days</small><h2>Activity</h2></div>
-    </div>
+    ${sheetHead({ lead: 'back', label: 'Back to fitness', title: 'Activity', closeAttr: 'data-fh-hub' })}
     ${trendGraph(ctx)}
     <section class="card fh-block">
       <h4>History</h4>
       <div class="ah-list">${rows}</div>
     </section>
   </div>`;
-  root.querySelector('[data-fh-hub]').addEventListener('click', () => openFitnessHub(ctx));
+  root.querySelector('[data-fh-hub]').addEventListener('click', () => closeLayer(root));
   // the inner trend card is not a drill-down here
   root.querySelector('[data-fh-activity]')?.removeAttribute('data-fh-activity');
 }
@@ -458,11 +456,6 @@ function statRow(ctx) {
   </div>`;
 }
 
-function closeHub() {
-  const root = document.getElementById('modal-root');
-  root.innerHTML = '';
-  root.classList.remove('open');
-}
 
 // Photo upload: pick → centre-crop to 192px JPEG → persist in settings
 // (synced to Supabase profiles.settings when signed in).
@@ -493,18 +486,14 @@ function wireAvatarUpload(root) {
 
 /** Layer A — the full-bleed Fitness Hub (replaces the old profile modal). */
 export function openFitnessHub(ctx) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('fitness');
   const name = athleteName();
 
   root.innerHTML = `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Fitness dashboard">
-    <div class="fh-head">
-      <button class="fh-back" data-fh-close aria-label="Back">${svg('back')}</button>
-      <div class="fh-title"><small>Last 30 days</small><h2>Fitness</h2></div>
-      <button class="fh-avatar" data-pc-photo aria-label="Change profile photo">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
-      <input type="file" accept="image/*" data-pc-file hidden>
-    </div>
+    ${sheetHead({ lead: 'back', title: 'Fitness', closeAttr: 'data-fh-close',
+    action: `<button class="fh-avatar" data-pc-photo aria-label="Change profile photo">${avatarInner(ctx, esc((name || 'A').charAt(0).toUpperCase()))}</button>
+      <input type="file" accept="image/*" data-pc-file hidden>` })}
     ${accountBlock()}
     ${statRow(ctx)}
     ${calendarGrid(ctx)}
@@ -515,7 +504,7 @@ export function openFitnessHub(ctx) {
     ${trophyCabinet(ctx)}
   </div>`;
 
-  root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+  root.querySelector('[data-fh-close]').addEventListener('click', () => closeLayer(root));
   wireTrophies(root, ctx);
   wireRecords(root);
   wireGymCard(root, ctx);
@@ -528,23 +517,20 @@ export function openFitnessHub(ctx) {
  *  leaderboard athlete's aggregated public data (per-day counts + minutes).
  *  The back arrow returns to the leaderboard underneath. */
 export async function openPublicFitness({ uid, name, avatar, xp }) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('athlete', { reuse: false });
   const avatarHtml = avatar
     ? `<img src="${esc(avatar)}" alt="">`
     : esc((name || 'A').trim().charAt(0).toUpperCase());
   const shell = (body) => `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Athlete profile">
-    <div class="fh-head">
-      <button class="fh-back" data-fh-close aria-label="Back">${svg('back')}</button>
-      <div class="fh-title"><small>Athlete</small><h2>${esc(name || 'Athlete')}</h2></div>
-      <span class="fh-avatar" aria-hidden="true">${avatarHtml}</span>
-    </div>
-    ${friendButton(uid) ? `<div class="fh-friend-row">${friendButton(uid)}</div>` : ''}
+    ${sheetHead({ lead: 'back', title: esc(name || 'Athlete'), closeAttr: 'data-fh-close',
+    before: `<span class="sh-avatar" data-vt="athlete-avatar" aria-hidden="true">${avatarHtml}</span>`,
+    after: xp == null ? '' : `<span class="lvl-chip sh-lvl" data-vt="athlete-level">LVL ${levelFromTotalXp(Number(xp) || 0).level}</span>`,
+    action: friendButton(uid, { icon: true }) })}
     ${body}
   </div>`;
   const wireBack = () => {
-    root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+    root.querySelector('[data-fh-close]').addEventListener('click', () => closeLayer(root));
     wireFriendButton(root);
   };
   // loading tiles in the shape of the stats, calendar and charts below
@@ -555,9 +541,14 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     <div class="fh-sk-block short sk-tile" aria-hidden="true" style="--sk-i:5"></div>`);
   wireBack();
 
+  // the screen slides in first; the heavy render waits until it has landed,
+  // so a fast answer (demo, cache) can't stall the slide halfway
+  const landed = new Promise((r) => setTimeout(r, 260));
   try {
     const { fetchPublicUserProfile } = await import('./profile.js');
     const p = await fetchPublicUserProfile(uid);
+    await landed;
+    if (!root.isConnected) return; // closed while loading
     const today = todayISO();
     // Expand per-day aggregates into pseudo-workouts the chart helpers understand.
     const workouts = (p.days || []).flatMap((d) => {
@@ -578,8 +569,8 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
       sport, p: levelFromTotalXp(Number(sx[sport]) || 0), action: 'ap-sport', embed: true, slide,
     });
     root.innerHTML = shell(`
-      ${sx ? `<div class="ap-scene">${scene()}</div>
-      <p class="ap-hint muted">${svg('back')} Swipe for their other sports ${svg('back', 'flip')}</p>` : ''}
+      ${sx ? `<div class="ap-scene" role="group" aria-label="Their levels by sport" aria-describedby="ap-hint">${scene()}</div>
+      ${swipeHint()}` : ''}
       <div class="pc-stats fh-stats">
         ${stat(Number(p.completed || 0).toLocaleString(), 'Workouts')}
         ${stat(`${streaks.current} d`, 'Streak')}
@@ -602,6 +593,15 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
       };
       box.addEventListener('click', (e) => show(e.target.closest('[data-action="ap-sport"]')?.dataset.sport));
       onSwipe(box, (dir) => show(nextSport(SPORT_ORDER, sport, dir)));
+      // keyboard: the arrow keys do what a swipe does, focus stays on the sport buttons
+      box.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const next = nextSport(SPORT_ORDER, sport, e.key === 'ArrowRight' ? 'left' : 'right');
+        if (!next) return;
+        e.preventDefault();
+        show(next);
+        box.querySelector(`[data-sport="${next}"]`)?.focus();
+      });
     }
   } catch (e) {
     root.innerHTML = shell('<p class="fh-foot">Couldn’t load this athlete — check your connection.</p>');
@@ -609,11 +609,20 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
   }
 }
 
+// "Swipe for their other sports": shown for your first three athlete
+// profiles, then retired. Screen readers always get it (it describes the
+// sport group), and keyboard users see it while focus is inside the scene.
+const HINT_KEY = 'moske-ap-hint-seen';
+function swipeHint() {
+  let seen = 0;
+  try { seen = Number(localStorage.getItem(HINT_KEY)) || 0; localStorage.setItem(HINT_KEY, String(seen + 1)); } catch { /* private mode */ }
+  return `<p class="ap-hint muted${seen >= 3 ? ' is-retired' : ''}" id="ap-hint">${svg('back')}<span>Swipe or use the arrow keys for their other sports</span>${svg('back', 'flip')}</p>`;
+}
+
 /** Layer B — Cardio Load drill-down: acute-load line inside the safe-zone band,
  *  per-day status dots, and a Status Breakdown table (days · bar · %). */
 export function openCardioDetail(ctx) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
+  const root = openLayer('cardio', { reuse: false });
   const cs = cardioState(ctx);
   const N = 30;
   const W = 320;
@@ -650,10 +659,7 @@ export function openCardioDetail(ctx) {
 
   root.innerHTML = `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Cardio load">
-    <div class="fh-head">
-      <button class="fh-back" data-fh-hub aria-label="Back to fitness">${svg('back')}</button>
-      <div class="fh-title"><small>Last 30 days</small><h2>Cardio Load</h2></div>
-    </div>
+    ${sheetHead({ lead: 'back', label: 'Back to fitness', title: 'Cardio load', closeAttr: 'data-fh-hub' })}
     <section class="card fh-block">
       <div class="fh-cardio-body" style="margin-bottom:10px">
         <b class="fh-big">${cs.acute}</b>
@@ -673,5 +679,5 @@ export function openCardioDetail(ctx) {
     </section>
   </div>`;
 
-  root.querySelector('[data-fh-hub]').addEventListener('click', () => openFitnessHub(ctx));
+  root.querySelector('[data-fh-hub]').addEventListener('click', () => closeLayer(root));
 }

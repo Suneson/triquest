@@ -1,5 +1,5 @@
 // gym-picker.js — the exercise picker, and the small sheets that sit on top
-// of the workout sheet (save routine). Opens in its own layer (#sheet-root)
+// of the workout sheet (save routine). Each opens as its own layer on the nav stack
 // so the sheet underneath keeps its state and scroll.
 //
 // Search by name or alias, filter by equipment and muscle, recents first,
@@ -8,27 +8,31 @@
 // saves a custom one into settings.customExercises.
 
 import * as store from './store.js';
+import { openLayer, closeLayer as navClose } from './nav.js';
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { MUSCLES, EQUIPMENT, exerciseArtSrc } from '../core/exercises.js';
 import { catalogue, searchExercises, recentIds, groupByMuscle, makeCustomExercise, entryById } from '../core/gym-edit.js';
+import { sheetHead } from './sheet.js';
 
 const KIND_OPTIONS = { weight_reps: 'Weight and reps', bodyweight: 'Bodyweight reps', time: 'Time' };
 
-export function layer() {
-  let root = document.getElementById('sheet-root');
-  if (!root) {
-    root = document.createElement('div');
-    root.id = 'sheet-root';
-    root.className = 'modal-root sheet-root';
-    document.body.appendChild(root);
-  }
-  return root;
+// Sheets that sit on top of the workout sheet are layers on the nav stack, so
+// back, the edge swipe and Escape close them like everything else.
+const sheets = [];
+export function layer(name = 'sheet') {
+  const el = openLayer(name, {
+    reuse: false, className: 'sheet-root',
+    onClose: () => { const i = sheets.indexOf(el); if (i >= 0) sheets.splice(i, 1); },
+  });
+  sheets.push(el);
+  return el;
 }
 
-export function closeLayer() {
-  const root = document.getElementById('sheet-root');
-  if (root) { root.innerHTML = ''; root.classList.remove('open'); }
+/** Close a sheet (default: the newest one this module opened). */
+export function closeLayer(el) {
+  const target = el || sheets[sheets.length - 1];
+  if (target) navClose(target);
 }
 
 const opts = (list, sel, all) => `${all ? `<option value="">${all}</option>` : ''}${list.map((v) =>
@@ -47,8 +51,7 @@ function thumb(e) {
  */
 export function openPicker({ title = 'Add exercises', multi = true, onPick } = {}) {
   const st = { q: '', equipment: '', muscle: '', picked: [], mode: 'list', error: '' };
-  const root = layer();
-  root.classList.add('open');
+  const root = layer('picker');
   const custom = () => store.getSettings().customExercises || [];
 
   const rowHtml = (e) => {
@@ -103,8 +106,7 @@ export function openPicker({ title = 'Add exercises', multi = true, onPick } = {
     root.innerHTML = `
       <div class="modal-backdrop" data-pk-close></div>
       <div class="modal pk-modal" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(st.mode === 'create' ? 'Create exercise' : title)}">
-        <header class="modal-head"><h2>${svg(st.mode === 'create' ? 'plus' : 'gym')} ${esc(st.mode === 'create' ? 'Create exercise' : title)}</h2>
-          <button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
+        ${sheetHead({ icon: st.mode === 'create' ? 'plus' : 'gym', title: esc(st.mode === 'create' ? 'Create exercise' : title), closeAttr: 'data-pk-close' })}
         ${st.mode === 'create' ? `<div class="modal-body">${createHtml()}</div>` : `
         <div class="pk-tools">
           <label class="pk-search">${svg('search')}<input type="search" placeholder="Search exercise" value="${esc(st.q)}" data-pk-q aria-label="Search exercise" autocomplete="off"></label>
@@ -166,7 +168,6 @@ export function openPicker({ title = 'Add exercises', multi = true, onPick } = {
     st.mode = 'list'; st.q = ''; st.equipment = ''; st.muscle = '';
     draw();
   };
-  root.onkeydown = (e) => { if (e.key === 'Escape') closeLayer(); };
   draw();
   // focus the sheet, not the search box: the full list shows first and the
   // phone keyboard stays down until you tap Search yourself
@@ -175,20 +176,17 @@ export function openPicker({ title = 'Add exercises', multi = true, onPick } = {
 
 /** A one-field sheet on top of the workout sheet: "Save as routine" and the like. */
 export function openNameSheet({ title, label, value = '', submit = 'Save', onSave }) {
-  const root = layer();
-  root.classList.add('open');
+  const root = layer('name-sheet');
   root.innerHTML = `
     <div class="modal-backdrop" data-pk-close></div>
     <div class="modal pk-modal pk-small" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ title: `${esc(title)}`, closeAttr: 'data-pk-close' })}
       <form class="modal-body" data-name-form>
         <label class="field"><span>${esc(label)}</span><input type="text" name="v" maxlength="60" required value="${esc(value)}" autocomplete="off"></label>
         <button type="submit" class="btn primary">${esc(submit)}</button>
       </form>
     </div>`;
   root.onclick = (e) => { if (e.target.closest('[data-pk-close]')) closeLayer(); };
-  root.oninput = null; root.onchange = null;
-  root.onkeydown = (e) => { if (e.key === 'Escape') closeLayer(); };
   root.onsubmit = (e) => {
     e.preventDefault();
     const v = String(new FormData(e.target).get('v') || '').trim();

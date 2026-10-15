@@ -10,10 +10,12 @@
 import { svg } from '../core/icons.js';
 import { sceneFor, cornerPolygon } from '../core/scenes.js';
 import { sportProgress, xpForWorkout } from '../core/scoring.js';
+import { openLayer, closeLayer } from './nav.js';
 import { DISCIPLINES } from '../core/disciplines.js';
 import { shortLabel } from '../core/dates.js';
 import { esc } from './ui.js';
 import { toast } from './effects.js';
+import { sheetHead } from './sheet.js';
 
 const C = {
   bg: '#0B1222', bg2: '#121C33', bg3: '#1A2744', line: '#5372B5', shade: '#050912',
@@ -190,15 +192,14 @@ const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'imag
 
 /** Open the share sheet for a completed session. */
 export async function openShareSheet(w, workouts) {
-  const root = document.getElementById('modal-root');
-  root.classList.add('open');
-  const close = () => {
-    root.querySelectorAll('img[data-url]').forEach((i) => URL.revokeObjectURL(i.dataset.url));
-    root.innerHTML = ''; root.classList.remove('open');
-  };
+  const root = openLayer('share', {
+    reuse: false,
+    onClose: () => root.querySelectorAll('img[data-url]').forEach((i) => URL.revokeObjectURL(i.dataset.url)),
+  });
+  const close = () => closeLayer(root);
   root.innerHTML = `<div class="modal-backdrop" data-sh-close></div>
     <div class="modal sh-modal" role="dialog" aria-modal="true" aria-label="Share card">
-      <header class="modal-head"><h2>${svg('upload')} Share card</h2><button class="icon-btn" data-sh-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'upload', title: `Share card`, closeAttr: 'data-sh-close' })}
       <div class="modal-body" id="sh-body" aria-busy="true">
         <span class="sr">Drawing your card…</span>
         <div class="sh-preview is-sk"><div class="sk-tile"></div></div>

@@ -30,10 +30,40 @@ button beside today's date on Home (Home stays lit while it's open).
   `supabase_realtime` publication; RLS decides who receives what.
 
 ## App
-- `js/app/social.js`: state, loading, realtime, actions (buzzes on new
-  requests/notifications/messages).
+- `js/app/social.js`: state, loading, realtime, actions. New requests,
+  notifications and messages light the bell and buzz through
+  `js/app/haptics.js`: **Android only**. iOS Safari, iOS browsers and
+  installed iOS web apps have no Vibration API, so on iPhone the bell lights
+  but doesn't vibrate.
 - `js/core/social.js`: pure counting (threads, unread, bell count), tested.
 - `js/app/chat.js`: Chat tab (username, add by username, requests, threads,
   conversation with a sticky composer), the bell sheet, the Add friend /
   Message button on an athlete's profile (from Ranks).
 - `?demo=1` fills friends and chats with sample data (no network).
+
+## General (phase 5 of the polish pass)
+One public room for everyone signed in, next to Direct messages. The Chat
+tab opens on a two-way switch, **General | Direct**, which remembers the last
+choice; each side shows its own unread count and the tab badge adds them up.
+
+**Database** (`supabase/migrations/0012_general_chat.sql`):
+- `room_messages (id, user_id, body, client_id, created_at, deleted_at)`.
+  Anyone signed in reads and posts as themselves. 1–500 characters. A
+  trigger caps posts at **10 a minute** per account and stamps the server's
+  time. Index on `created_at` for paging. In the realtime publication.
+- Removal is soft: `remove_room_message(id)` (the author, or an app admin)
+  sets `deleted_at` and blanks the text; the row stays as "Message removed".
+- `user_blocks`: your own list (`block_user` / `unblock_user`, soft like
+  friendships). Blocked authors' messages fold to "Message hidden" for you.
+- `room_reports`: "Report message" files a row (one per person per message).
+  `owner_room_reports()` / `resolve_room_report()` are for the owner.
+- `app_admins`: who may remove anyone's message and read reports. The
+  migration adds the owner's account.
+- `room_authors()`: name, @username, avatar and XP of everyone who has
+  posted, for the level chip.
+
+**Client**: `js/core/room.js` (rules: length, rate, unread, block/remove
+display, optimistic reconcile; tested), `js/app/room.js` (data, realtime,
+paging back, optimistic send with retry/discard, offline state, actions),
+`js/app/room-view.js` (drawing). Unread in General is per device
+(localStorage), like app news.

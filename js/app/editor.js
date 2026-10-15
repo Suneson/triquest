@@ -16,6 +16,7 @@ import { enableDragSort } from './drag-sort.js';
 import { routineRows } from './gym-routines.js';
 import { MOMENT_LINES } from '../core/coach-lines.js';
 import { openLayer, closeLayer } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 const SEG_KINDS = { warmup: 'Warm-up', work: 'Work', rest: 'Rest / float', cooldown: 'Cool-down' };
 const SEG_INTENSITIES = { easy: 'Easy', moderate: 'Moderate', threshold: 'Threshold', vo2: 'VO₂', steady: 'Steady' };
@@ -109,10 +110,7 @@ function renderModal() {
   root.innerHTML = `
     <div class="modal-backdrop" data-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="${isNew ? 'New session' : 'Edit session'}">
-      <header class="modal-head">
-        <h2>${svg(isNew ? 'plus' : 'edit')} ${isNew ? 'New session' : 'Edit session'}</h2>
-        <button class="icon-btn" data-close aria-label="Close">${svg('close')}</button>
-      </header>
+      ${sheetHead({ icon: isNew ? 'plus' : 'edit', title: isNew ? 'New session' : 'Edit session', closeAttr: 'data-close' })}
       <div class="modal-body">
         ${isNew && routineRows({ date: d.date }) ? `<fieldset class="sub-list"><legend>Start a routine</legend>${routineRows({ date: d.date })}</fieldset>` : ''}
         <label class="field"><span>Title</span>

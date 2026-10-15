@@ -75,6 +75,7 @@
   --t-press: 80ms steps(2, end);
   --t-ui: 160ms steps(4, end);
   --t-enter: 240ms steps(6, end);
+  --sh-h: 60px;      /* the one header row (sheet.js) */
   --t-fill: 600ms steps(12, end);
 
   /* legacy aliases still read by inline styles */
@@ -176,12 +177,15 @@ img { image-rendering: pixelated; }
 
 /* level chip (gold) — account level in the header, sport levels in HUDs */
 .lvl-chip {
-  --b: var(--accent); --e: var(--accent-lo); --eo: 6px;
+  --b: var(--line-soft); --e: var(--shade); --eo: 6px;
   display: inline-flex; align-items: center; gap: 4px; margin: 2px 2px 4px;
-  background: var(--accent); color: var(--on-accent);
+  background: var(--bg-3); color: var(--accent);
   font-family: var(--font-display); font-size: var(--fs-d3); line-height: 1; padding: 5px 8px; white-space: nowrap;
 }
 .lvl-chip.big { font-size: var(--fs-d2); padding: 6px 10px; }
+/* Gold fill is for the one thing to act on (or the level on its own scene):
+   a level shown as status is a quiet chip with gold digits. */
+.lvl-chip.is-hero { --b: var(--accent); --e: var(--accent-lo); background: var(--accent); color: var(--on-accent); }
 
 /* ---- view ---------------------------------------------------------------------------- */
 .view {
@@ -251,7 +255,7 @@ img { image-rendering: pixelated; }
 .tag, .zone { font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; padding: 3px 6px; background: transparent; }
 .tag.next { --b: var(--good); color: var(--good); }
 .tag.race { --b: var(--c-vo2); color: var(--c-vo2); }
-.tag.deload { --b: var(--accent); color: var(--accent); }
+.tag.deload { --b: var(--line); color: var(--muted); }
 .tag.optional { color: var(--muted); }
 .tag.strava { --b: var(--strava); color: var(--strava); }
 .tag.today { --b: var(--accent); color: var(--accent); }
@@ -340,9 +344,51 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
   position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
   width: min(640px, calc(100% - 4px)); display: flex; flex-direction: column;
   max-height: calc(100% - max(24px, var(--safe-t)) - 12px);
-  background: var(--bg-2); animation: sheet-up var(--t-enter);
+  background: var(--bg-2);
 }
-@keyframes sheet-up { from { transform: translate(-50%, 48px); } to { transform: translate(-50%, 0); } }
+
+/* ---- one sheet: every layer enters and leaves the same way ---------------------------------------- */
+/* Full screens and partial sheets slide in from the right in four steps and
+   leave the way they came, which is also the way the edge swipe sends them.
+   `translate` (not transform) so it composes with a sheet's centring. */
+.layer > .modal, .layer > .fh-screen, .layer > .ob-screen { animation: layer-in var(--t-enter); }
+.layer > .modal-backdrop { animation: scrim-in var(--t-enter); }
+.layer.is-leaving { pointer-events: none; }
+.layer.is-leaving > .modal, .layer.is-leaving > .fh-screen, .layer.is-leaving > .ob-screen,
+.layer.is-leaving > .level-lightbox { animation: layer-out 160ms steps(4, end) forwards; }
+.layer.is-leaving > .modal-backdrop { animation: scrim-out 160ms steps(4, end) forwards; }
+@keyframes layer-in { from { translate: 14% 0; opacity: 0; } }
+@keyframes layer-out { to { translate: 14% 0; opacity: 0; } }
+@keyframes scrim-in { from { opacity: 0; } }
+@keyframes scrim-out { to { opacity: 0; } }
+
+/* the one header (js/app/sheet.js): way back · title · one action, one row */
+.sh-head {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  min-height: var(--sh-h); padding: 6px 12px; border-bottom: var(--px) solid var(--line-soft);
+}
+.sh-lead { --b: var(--line); width: 44px; height: 44px; padding: 0; margin: 2px 2px 6px; display: grid; place-items: center;
+  background: var(--bg-3); color: var(--fg); transition: transform var(--t-press); }
+.sh-lead:active { transform: translateY(2px); }
+.sh-lead-gap { width: 0; }
+.sh-title { display: flex; align-items: center; gap: 10px; min-width: 0; margin: 0;
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); line-height: 1.2; text-transform: uppercase; }
+.sh-title > .ic { flex: none; color: var(--accent); }
+.sh-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sh-act { display: flex; align-items: center; gap: 8px; }
+.sh-act .icon-btn, .sh-act .btn { margin: 2px 2px 6px; }
+/* a workout's title is a sentence, not a label: the reading font */
+.wd-modal .sh-title { font-family: var(--font-body); font-size: 18px; text-transform: none; line-height: 1.25; }
+.wd-modal .sh-title-text { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* full screens: a bigger title, and the header owns the status-bar band */
+.fh-screen > .sh-head { position: sticky; top: 0; z-index: 6; margin: 0 0 var(--sp-section);
+  padding: calc(6px + var(--safe-t)) 12px 6px; background: var(--bg); }
+.fh-screen > .sh-head .sh-title { font-size: var(--fs-d2); }
+.sh-avatar { width: 36px; height: 36px; flex: none; border-radius: 50%; border: var(--px) solid var(--accent); background: var(--bg-3); color: var(--fg);
+  display: grid; place-items: center; overflow: hidden; font-family: var(--font-display); font-size: var(--fs-d3); }
+.sh-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+/* the athlete header's one action; gold only when it invites you to act (add / accept) */
+.icon-btn.sh-friend.is-primary { --b: var(--accent); --e: var(--accent-lo); background: var(--accent); color: var(--on-accent); }
 .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 10px; border-bottom: var(--px) solid var(--line-soft); }
 .modal-head h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); line-height: 1.3; text-transform: uppercase;
   display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -450,10 +496,20 @@ input[type=checkbox]:checked::after {
 .home-date small { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--muted); text-transform: uppercase; }
 .home-date h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d2); text-transform: uppercase; line-height: 1.1; }
 
-/* this week: three goal meters + the coaching line */
-.hero-card { padding: var(--sp-panel); display: grid; gap: 16px; }
-.hero-head { display: flex; align-items: center; justify-content: space-between; }
-.hero-head h4 { margin: 0; color: var(--fg); }
+/* this week: one compact strip of three small meters; tap to open the detail */
+.wk-sum { padding: 0; }
+.wk-sum-row { width: 100%; display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)) 24px; align-items: center; gap: 12px;
+  min-height: 60px; padding: 10px 14px 10px var(--sp-panel); background: none; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.wk-sum-title { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); text-transform: uppercase; white-space: nowrap; }
+.wk-mini { display: grid; gap: 4px; min-width: 0; }
+.wk-mini small { font-family: var(--font-display); font-size: 12px; line-height: 1; color: var(--muted); text-transform: uppercase; }
+.wk-mini .meter { height: 10px; }
+.wk-sum-chev { justify-self: end; color: var(--muted); transform: rotate(90deg); transition: transform var(--t-ui); }
+.wk-sum.is-open .wk-sum-chev, [aria-expanded="true"] > .wk-sum-chev { transform: rotate(-90deg); }
+.wk-detail { display: grid; gap: 16px; padding: 4px var(--sp-panel) var(--sp-panel); border-top: var(--px) solid var(--line-soft); padding-top: 16px; }
+.wk-coach { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.wk-detail .rings-edit { justify-self: start; }
+@media (max-width: 359px) { .wk-sum-row { gap: 8px; padding-left: 14px; } .wk-sum-title { font-size: 12px; } }
 .rings-edit { --b: var(--line); }
 .goal-row { display: grid; gap: 6px; }
 .goal-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; }
@@ -505,8 +561,19 @@ input[type=checkbox]:checked::after {
 .tg-min { font-size: 16px; white-space: nowrap; }
 .tg-rest { color: var(--muted); font-weight: 400; }
 
-/* ai coach entry */
-.ai-card { display: grid; gap: 10px; }
+/* ai coach entry: a quiet row at the end of Home, not a second gold button */
+.ai-row { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 8px 12px; align-items: center; padding: 0 2px; }
+.ai-row p { margin: 0; font-size: var(--fs-small); color: var(--muted); line-height: 1.4; }
+.ai-row .btn { grid-column: 2; justify-self: start; margin: 2px 2px 6px; }
+
+/* quests, all cleared: one line */
+.quests-panel.q-folded { width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1fr) 24px; gap: 12px; align-items: center;
+  padding: 14px var(--sp-panel); color: inherit; text-align: left; cursor: pointer; }
+.q-folded .q-box { --b: var(--good); background: var(--good); }
+.q-folded .q-box .ic { width: 12px; height: 12px; }
+.q-fold-text { display: grid; gap: 2px; min-width: 0; }
+.q-fold-text b { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); text-transform: uppercase; }
+.q-fold-text small { color: var(--muted); font-size: var(--fs-small); }
 
 /* compact session card (Journal) — discipline edge on the left */
 .card.bento { padding: 16px 16px 16px 26px; }
@@ -805,7 +872,7 @@ span.gl-prev { cursor: default; }
 /* ---- notification bell (header) -------------------------------------------------------------- */
 .bell-btn { position: relative; width: 40px; height: 40px; margin: 0; color: var(--muted); }
 .bell-btn .ic { width: 24px; height: 24px; }
-.bell-btn.is-lit { --b: var(--accent); --e: var(--accent-lo); background: var(--accent); color: var(--on-accent); }
+.bell-btn.is-lit { color: var(--accent); } /* lit = a gold bell and the red count; the fill stays quiet */
 .bell-n {
   position: absolute; top: -8px; right: -8px; min-width: 20px; height: 20px; padding: 0 4px; display: grid; place-items: center;
   background: var(--danger); color: var(--shade); font-size: 12px; box-shadow: 0 0 0 2px var(--bg);
@@ -833,7 +900,11 @@ body.chat-mode .view > .chat { flex: 1 0 auto; }
 .ch-add-sheet .af-msg { margin: 0; color: var(--danger); font-size: var(--fs-small); }
 .ch-in { --b: var(--line); --eo: 4px; margin: 2px; padding: 10px 12px; background: var(--bg-4); color: var(--fg); border: 0; font-size: 16px; min-width: 0; width: calc(100% - 4px); }
 .ch-in:focus { outline: none; --b: var(--accent); }
-.ch-count { color: var(--accent); }
+/* a pending request's status sits on the row as a chip, not as a section */
+.ch-chip { display: inline-block; vertical-align: 1px; margin-right: 6px; padding: 2px 6px; font-family: var(--font-display); font-size: 12px; line-height: 1.2;
+  text-transform: uppercase; color: var(--fg); background: var(--bg-4); }
+.ch-chip.is-quiet { color: var(--muted); background: transparent; box-shadow: inset 0 0 0 var(--px) var(--line-soft); }
+.ch-acts .gl-more { flex: none; }
 .ch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .ch-row {
   width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px;
@@ -842,25 +913,25 @@ body.chat-mode .view > .chat { flex: 1 0 auto; }
 .ch-row .lb-avatar { width: 44px; height: 44px; }
 .ch-thread { cursor: pointer; }
 .ch-thread:active { background: var(--bg-3); }
-.ch-thread.is-unread b { color: var(--accent); }
+.ch-thread.is-unread b { color: var(--fg); font-weight: 700; }
 .ch-thread.is-unread small:not(.muted) { color: var(--fg); }
 .ch-txt { display: grid; gap: 2px; min-width: 0; }
 .ch-txt b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-txt small { font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-meta { display: grid; justify-items: end; gap: 4px; }
-.ch-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-size: 12px; }
+.ch-badge { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; background: var(--danger); color: var(--shade); font-size: 12px; } /* same red as the tab badge */
 .ch-acts { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 360px) {
   .ch-row:has(.ch-acts) { grid-template-columns: 44px minmax(0, 1fr); }
   .ch-acts { grid-column: 2 / -1; }
 }
 .ch-acts .btn, .ch-row > .btn { margin: 2px 2px 6px; }
-.ch-head {
-  position: sticky; top: calc(-1 * var(--sp-group)); z-index: 2; display: grid; grid-template-columns: auto 40px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  padding: 8px 0; background: var(--bg); border-bottom: var(--px) solid var(--line-soft);
-}
+.ch-head { position: sticky; top: calc(-1 * var(--sp-group)); z-index: 2; background: var(--bg); }
+.ch-head > .sh-head { padding-inline: 0; }
+/* a person's name is a name, not a label: the reading font */
+.ch-head .sh-title { font-family: var(--font-body); font-weight: 400; text-transform: none; font-size: inherit; }
 .ch-head .lb-avatar { width: 40px; height: 40px; }
-.ch-who { grid-column: 2 / 4; display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 10px; min-width: 0; min-height: 44px;
+.ch-who { width: 100%; display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 10px; min-width: 0; min-height: 44px;
   padding: 0; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; transition: transform var(--t-press); }
 .ch-who:active { transform: translateY(1px); }
 .ch-who:focus-visible { outline: var(--px) solid var(--accent); outline-offset: 2px; }
@@ -888,8 +959,6 @@ body.chat-mode .view > .chat { flex: 1 0 auto; }
 .bl-ico { --eo: 4px; width: 32px; height: 32px; margin: 2px; display: grid; place-items: center; background: var(--bg-3); color: var(--accent); }
 .bl-ico .ic { width: 16px; height: 16px; }
 body.chat-mode .fab { display: none; }
-.fh-friend-row { display: flex; justify-content: flex-end; padding: 0 16px; margin-top: -4px; }
-.fh-friend-row .btn { margin: 2px 2px 6px; }
 
 /* ---- routines ------------------------------------------------------------------------------------ */
 .rt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -922,7 +991,7 @@ body.chat-mode .fab { display: none; }
 .lb-banner b { font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d3); color: var(--accent); text-transform: uppercase; display: block; }
 .lb-toggle { --b: var(--line-soft); --eo: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--shade); padding: 4px; margin: 2px; }
 .lb-tab { background: none; border: 0; color: var(--muted); padding: 10px; min-height: 44px; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); text-transform: uppercase; transition: background var(--t-ui), color var(--t-ui); }
-.lb-tab.on { background: var(--accent); color: var(--on-accent); }
+.lb-tab.on { background: var(--bg-4); color: var(--fg); box-shadow: inset 0 calc(-1 * var(--px)) 0 var(--fg); } /* a segmented control is not the action */
 .lb-countdown { --eo: 4px; background: var(--bg-2); padding: 10px 12px; margin: 2px; color: var(--muted); font-size: var(--fs-small); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .lb-countdown b { font-family: var(--font-display); font-weight: 400; color: var(--fg); font-size: var(--fs-d2); line-height: 1; }
 .lb-loading { text-align: center; padding: 20px; }
@@ -1083,24 +1152,12 @@ body.chat-mode .fab { display: none; }
 .fh-screen {
   position: fixed; inset: 0; height: 100%; overflow-y: auto; background: var(--bg);
   padding: 0 0 calc(var(--safe-b) + 32px);
-  display: block; animation: fh-in var(--t-enter);
+  display: block;
   -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
 }
 .fh-screen > * { margin: 0 16px var(--sp-section); } /* the gutter lives on the children, so a full-bleed child just sets margin-inline 0 */
-@keyframes fh-in { from { transform: translateY(16px); opacity: 0; } }
 .fh-block { padding: var(--sp-panel); }
-.fh-head { display: flex; align-items: center; gap: 12px; }
-/* the screen header stays put and owns the status-bar band: content scrolls
-   under a solid header, never under the clock */
-.fh-screen > .fh-head {
-  position: sticky; top: 0; z-index: 6; margin: 0 0 var(--sp-section);
-  padding: calc(10px + var(--safe-t)) 16px 10px; background: var(--bg);
-  border-bottom: var(--px) solid var(--line-soft);
-}
 .fh-back { --b: var(--line); width: 44px; height: 44px; flex: none; background: var(--bg-3); color: var(--fg); margin: 2px 2px 6px; display: grid; place-items: center; padding: 0; transition: transform var(--t-press); }
-.fh-title { flex: 1; display: grid; gap: 4px; min-width: 0; }
-.fh-title small { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--muted); text-transform: uppercase; }
-.fh-title h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d2); text-transform: uppercase; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fh-avatar { width: 44px; height: 44px; border-radius: 50%; border: var(--px) solid var(--accent); flex: none; background: var(--bg-3); color: var(--fg);
   font-family: var(--font-display); display: grid; place-items: center; overflow: hidden; padding: 0; cursor: pointer; }
 .pc-stats.fh-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-group); text-align: left; }
@@ -1326,7 +1383,7 @@ body.pg-mode .view { padding: 0; max-width: none; }
   transition: transform var(--t-press);
 }
 .pg-sport .ic { width: 24px; height: 24px; }
-.pg-sport.active { --b: var(--accent); --e: var(--accent-lo); background: var(--accent); color: var(--on-accent); }
+.pg-sport.active { --b: var(--fg); --e: var(--shade); background: var(--bg-4); color: var(--fg); }
 .pg-avatar {
   width: 48px; height: 48px; border-radius: 50%; border: var(--px) solid var(--accent); flex: none; margin-top: 2px;
   background: var(--bg-2); color: var(--fg); font-family: var(--font-display); font-size: var(--fs-d3);
@@ -1381,7 +1438,10 @@ body.pg-mode .view { padding: 0; max-width: none; }
 .ap-hint { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 0; font-size: var(--fs-small); }
 .ap-hint .ic { width: 14px; height: 14px; }
 .ap-hint .ic.flip { transform: scaleX(-1); }
-@media (hover: hover) and (pointer: fine) { .ap-hint { display: none; } }
+/* retired after three visits: still read out (aria-describedby), and shown
+   again while the keyboard is inside the scene */
+.ap-hint.is-retired { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: 0; }
+.ap-scene:has(:focus-visible) + .ap-hint.is-retired { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; margin: 0 16px var(--sp-section); }
 
 /* ---- XP pop + level-up sheet ------------------------------------------------------------------------------------------ */
 .xp-pop { position: fixed; z-index: 9600; pointer-events: none; font-family: var(--font-display); font-size: var(--fs-d2); color: var(--accent);
@@ -1454,7 +1514,7 @@ body.rm .pg-fx { display: none; }
 .fs-world img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fs-world .fs-plat { transform: scale(.87); }
 .fs-world .fs-char { inset: auto; left: 30%; top: 49%; width: 40%; height: auto; transform: translateY(-50%); }
-.fs-lvl { position: absolute; right: 10px; bottom: 8px; --b: var(--accent); --e: var(--accent-lo); --eo: 6px; background: var(--accent); color: var(--on-accent);
+.fs-lvl { position: absolute; right: 10px; bottom: 8px; --b: var(--line-soft); --e: var(--shade); --eo: 6px; background: var(--bg-2); color: var(--accent);
   font-family: var(--font-display); font-size: var(--fs-d3); line-height: 1; padding: 4px 6px; }
 /* the strip sits under the card's notched frame; a hard 2px rule separates it from the text */
 .focus-strip::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--shade); }

@@ -8,6 +8,7 @@ import { weekPath, seasonPath } from '../core/path.js';
 import { shortLabel, weekdayName } from '../core/dates.js';
 import { esc, meter } from './ui.js';
 import { openLayer, closeLayer } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 const DAY_LETTER = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -61,7 +62,7 @@ export function openSeasonPath(ctx) {
   root.innerHTML = `
     <div class="modal-backdrop" data-sp-close></div>
     <div class="modal sp-modal" role="dialog" aria-modal="true" aria-label="Season path">
-      <header class="modal-head"><h2>${svg('route')} Season path</h2><button class="icon-btn" data-sp-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'route', title: `Season path`, closeAttr: 'data-sp-close' })}
       <div class="modal-body">
         <p class="sp-goal">${svg('flag')} ${title}</p>
         <ol class="sp-list">${rows}</ol>

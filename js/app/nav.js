@@ -66,6 +66,8 @@ function openOver(name, { onClose, swipeBack, className }) {
   if (beneath) { beneath.inert = true; beneath.setAttribute('aria-hidden', 'true'); }
   stack.push(layer);
   document.body.appendChild(el);
+  // every sheet header's way back (sheet.js) carries data-layer-close
+  el.addEventListener('click', (e) => { if (e.target.closest('[data-layer-close]')) closeLayer(el); });
   if (!history.state?.navGuard) history.pushState(GUARD, '');
   // focus moves into the new layer once the caller has rendered into it; the
   // dialog itself takes focus (not a text field: no keyboard popping up)
@@ -99,11 +101,20 @@ export function leaveRoute(name) {
   closeLayer(idx);
 }
 
-// take the top layer off the stack and out of the page (no history work)
-function removeTop() {
+// take the top layer off the stack and out of the page (no history work).
+// `animate`: the sheet leaves the way it came (four steps to the right) and
+// is removed after; the stack is already updated, so nothing waits on it.
+function removeTop(animate = false) {
   const layer = stack.pop();
   if (!layer) return;
-  layer.el?.remove();
+  if (layer.el) {
+    const el = layer.el;
+    if (animate && !reduced()) {
+      el.classList.add('is-leaving');
+      el.inert = true;
+      setTimeout(() => el.remove(), 170);
+    } else el.remove();
+  }
   const b = layer.beneath;
   if (b) {
     b.inert = layer.beneathInert;
@@ -129,12 +140,13 @@ function dropGuard() {
 }
 
 /** Close a layer (default: the top one) and everything above it. */
-export function closeLayer(target) {
+export function closeLayer(target, { animate = true } = {}) {
   const el = target?.el || target;
   const idx = typeof target === 'number' ? target
     : el ? stack.findIndex((l) => l.el === el || l.name === el) : stack.length - 1;
   if (idx < 0) return;
-  while (stack.length > idx) removeTop();
+  // only the layer you see animates out; anything under it goes at once
+  while (stack.length > idx) removeTop(animate && stack.length - 1 === idx);
   dropGuard();
 }
 
@@ -150,7 +162,7 @@ export function closeAllLayers() {
 window.addEventListener('popstate', () => {
   if (ignorePops > 0) { ignorePops--; return; }
   if (stack.length) {
-    removeTop();
+    removeTop(true);
     if (stack.length) history.pushState(GUARD, ''); // still layers: re-arm back
     return;
   }
@@ -239,7 +251,7 @@ function onEnd() {
   drag = null;
   if (d.state !== 'back') return;
   const done = shouldComplete(d.dx, d.width, velocity(d.samples));
-  if (d.reduced) { if (done) closeLayer(stack.indexOf(d.layer)); return; }
+  if (d.reduced) { if (done) closeLayer(stack.indexOf(d.layer), { animate: false }); return; }
   settle(d, done);
 }
 
@@ -265,7 +277,7 @@ function settle(d, done) {
     if (b) b.style.translate = done ? '0px 0' : `${beneathOffset(0, d.width)}px 0`;
   });
   setTimeout(() => {
-    if (done) { closeLayer(stack.indexOf(d.layer)); return; }
+    if (done) { closeLayer(stack.indexOf(d.layer), { animate: false }); return; }
     d.panel.style.transition = ''; d.panel.style.translate = ''; d.panel.style.willChange = '';
     d.scrim?.remove();
     if (d.backdrop) { d.backdrop.style.transition = ''; d.backdrop.style.opacity = ''; }

@@ -14,6 +14,7 @@ import {
   requestFriend, requestByUsername, respondFriend, removeFriend, setUsername, loadThread, threadWith,
   sendMessage, markThreadRead, unreadNotifications, markNotificationsRead, bellCount, unreadMessages,
 } from './social.js';
+import { sheetHead } from './sheet.js';
 
 const ui = { open: null, view: null, draft: new Map() }; // open = friend user_id in the thread view
 
@@ -56,6 +57,15 @@ function skeleton() {
     <ul class="ch-list" aria-hidden="true">${[0, 1, 2].map(row).join('')}</ul>`;
 }
 
+// a row's quieter actions live behind ⋮ (a native menu: keyboard and screen readers for free)
+function rowMenu(label, items, attrs) {
+  return `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
+    <select data-ch-row ${attrs} aria-label="${esc(label)}">
+      <option value="" selected disabled hidden>More</option>
+      ${items.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}
+    </select></label>`;
+}
+
 export function drawChat() {
   const root = document.getElementById('chat-root');
   if (!root) return;
@@ -70,17 +80,16 @@ export function drawChat() {
     <div class="day-header ch-header">
       <div class="ch-title"><h2>Chat</h2>
         <button class="link ch-me" data-ch="edit-name" aria-label="Your username: ${esc(me?.username || 'not set')}. Edit">${me?.username ? `@${esc(me.username)}` : 'Set your username'} ${svg('edit')}</button></div>
-      <button class="btn tiny primary ch-add-btn" data-ch="add-friend">${svg('friend')} Add friend</button>
+      <button class="btn tiny secondary ch-add-btn" data-ch="add-friend">${svg('friend')} Add friend</button>
     </div>
-    ${inc.length ? `<h3 class="sec-title">${svg('friend')} Requests <span class="ch-count data-num">${inc.length}</span></h3>
-      <ul class="ch-list">${inc.map((f) => `<li class="ch-row">
-        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">${esc(handle(f))} wants to be friends</small></span>
+    ${inc.length || ts.length || out.length ? `<ul class="ch-list">
+      ${inc.map((f) => `<li class="ch-row is-pending">
+        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted"><span class="ch-chip">Request</span>${esc(handle(f))} wants to be friends</small></span>
         <span class="ch-acts">
           <button class="btn tiny primary" data-ch="accept" data-fid="${f.friendship_id}">Accept</button>
-          <button class="icon-btn tiny" data-ch="decline" data-fid="${f.friendship_id}" aria-label="Decline ${esc(f.display_name)}">${svg('close')}</button>
-        </span></li>`).join('')}</ul>` : ''}
-    <h3 class="sec-title">${svg('chat')} Messages</h3>
-    ${ts.length ? `<ul class="ch-list">${ts.map((t) => {
+          ${rowMenu(`More for ${f.display_name}`, [['decline', 'Decline request']], `data-fid="${f.friendship_id}"`)}
+        </span></li>`).join('')}
+      ${ts.map((t) => {
     const f = t.friend; const l = t.last;
     const preview = l ? `${l.sender === me?.id ? 'You: ' : ''}${l.body}` : 'Say hello';
     return `<li><button class="ch-row ch-thread ${t.unread ? 'is-unread' : ''}" data-ch="open" data-uid="${esc(f.user_id)}"
@@ -90,12 +99,12 @@ export function drawChat() {
         <span class="ch-meta">${l ? `<small class="muted">${esc(chatTime(l.created_at))}</small>` : ''}
           ${t.unread ? `<span class="ch-badge data-num">${t.unread}</span>` : ''}</span>
       </button></li>`;
-  }).join('')}</ul>`
-    : dialogue({ who: 'Chat', icon: 'chat', text: 'No friends yet. Tap Add friend and type their username, or open an athlete on Ranks.', cls: 'empty-dlg' })}
-    ${out.length ? `<h3 class="sec-title">${svg('clock')} Sent</h3>
-      <ul class="ch-list">${out.map((f) => `<li class="ch-row">
-        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">Waiting for ${esc(handle(f) || 'them')} to accept</small></span>
-        <button class="btn tiny ghost" data-ch="cancel" data-uid="${esc(f.user_id)}">Cancel</button></li>`).join('')}</ul>` : ''}`;
+  }).join('')}
+      ${out.map((f) => `<li class="ch-row is-pending">
+        ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted"><span class="ch-chip is-quiet">Requested</span>Waiting for ${esc(handle(f) || 'them')}</small></span>
+        <span class="ch-acts">${rowMenu(`More for ${f.display_name}`, [['cancel', 'Cancel request']], `data-uid="${esc(f.user_id)}"`)}</span></li>`).join('')}
+    </ul>`
+    : dialogue({ who: 'Chat', icon: 'chat', text: 'No friends yet. Tap Add friend and type their username, or open an athlete on Ranks.', cls: 'empty-dlg' })}`;
   wireChat(root);
 }
 
@@ -128,19 +137,17 @@ function drawThread(root, uid) {
   const f = friendRow(uid);
   const draft = ui.draft.get(uid) || '';
   root.innerHTML = `
-    <div class="ch-head">
-      <button class="fh-back" data-ch="back" aria-label="Back to chats">${svg('back')}</button>
-      <button class="ch-who" data-ch="profile" aria-label="View ${esc(f?.display_name || 'friend')}’s profile">
-        ${avatar(f)}
-        <span class="ch-txt"><b>${esc(f?.display_name || 'Friend')}</b><small class="muted">${esc(handle(f))}</small></span>
-      </button>
-      <label class="icon-btn tiny gl-more" title="More">${svg('more')}
+    <div class="ch-head">${sheetHead({
+      lead: 'back', label: 'Back to chats', closeAttr: 'data-ch="back"',
+      title: `<button class="ch-who" data-ch="profile" aria-label="View ${esc(f?.display_name || 'friend')}’s profile">
+        ${avatar(f)}<span class="ch-txt"><b>${esc(f?.display_name || 'Friend')}</b><small class="muted">${esc(handle(f))}</small></span></button>`,
+      action: `<label class="icon-btn tiny gl-more" title="More">${svg('more')}
         <select data-ch-menu aria-label="More options">
           <option value="" selected disabled hidden>More</option>
           <option value="profile">View profile</option>
           <option value="remove">Remove friend</option>
-        </select></label>
-    </div>
+        </select></label>`,
+    })}</div>
     <ol class="ch-msgs" id="ch-msgs" aria-live="polite">${bubbles(uid)}</ol>
     <form class="ch-compose" data-ch-form="send" autocomplete="off">
       <textarea class="ch-in" name="body" rows="1" maxlength="1000" placeholder="Message ${esc(f?.display_name || '')}" aria-label="Message">${esc(draft)}</textarea>
@@ -186,8 +193,7 @@ function openAddFriend() {
   root.innerHTML = `
     <div class="modal-backdrop" data-af-close></div>
     <div class="modal pk-modal pk-small" role="dialog" aria-modal="true" aria-labelledby="af-title">
-      <header class="modal-head"><h2 id="af-title">${svg('friend')} Add friend</h2>
-        <button class="icon-btn" data-af-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'friend', title: 'Add friend', id: 'af-title', closeAttr: 'data-af-close' })}
       <form class="modal-body ch-add-sheet" data-af-form novalidate>
         <label class="field"><span>Their username</span>
           <input class="ch-in" type="text" name="u" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false"
@@ -264,6 +270,15 @@ function wireChat(root) {
     }
   };
   root.onchange = async (e) => {
+    const rowSel = e.target.closest('[data-ch-row]');
+    if (rowSel) {
+      const v = rowSel.value; rowSel.value = '';
+      try {
+        if (v === 'decline') await respondFriend(Number(rowSel.dataset.fid), false);
+        else if (v === 'cancel') await removeFriend(rowSel.dataset.uid);
+      } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
+      return;
+    }
     if (!e.target.matches('[data-ch-menu]')) return;
     const v = e.target.value; e.target.value = '';
     const f = friendRow(ui.open);
@@ -368,7 +383,7 @@ export function openBell() {
     };
     root.innerHTML = `<div class="modal-backdrop" data-bell-close></div>
       <div class="modal" role="dialog" aria-modal="true" aria-label="Notifications">
-        <header class="modal-head"><h2>${svg('bell')} Notifications</h2><button class="icon-btn" data-bell-close aria-label="Close">${svg('close')}</button></header>
+        ${sheetHead({ icon: 'bell', title: `Notifications`, closeAttr: 'data-bell-close' })}
         <div class="modal-body">
           ${inc.length ? `<h3>Friend requests</h3><ul class="ch-list">${inc.map((f) => `<li class="ch-row">
             ${avatar(f)}<span class="ch-txt"><b>${esc(f.display_name)}</b><small class="muted">${esc(handle(f))}</small></span>
@@ -403,11 +418,18 @@ export function openBell() {
 // ---- Add friend (athlete profile from Ranks) -------------------------------------------------
 
 /** The friend button for another athlete's profile, or '' for yourself / signed out. */
-export function friendButton(uid) {
+export function friendButton(uid, { icon = false } = {}) {
   if (!socialEnabled() || !uid || uid === currentUser()?.id) return '';
   const rel = relationTo(uid);
-  const label = { friends: `${svg('chat')} Message`, incoming: `${svg('friend')} Accept request`, outgoing: `${svg('clock')} Requested`, none: `${svg('friend')} Add friend` }[rel];
-  return `<button class="btn tiny ${rel === 'none' || rel === 'incoming' ? 'primary' : 'secondary'} fh-friend" data-friend-btn="${esc(uid)}" data-rel="${rel}" ${rel === 'outgoing' ? 'disabled' : ''}>${label}</button>`;
+  const ic = { friends: 'chat', incoming: 'friend', outgoing: 'clock', none: 'friend' }[rel];
+  const text = { friends: 'Message', incoming: 'Accept request', outgoing: 'Requested', none: 'Add friend' }[rel];
+  const gold = rel === 'none' || rel === 'incoming'; // an invitation to act; Message and Requested stay quiet
+  if (icon) {
+    // the screen header's one action: an icon button with the full name for screen readers
+    return `<button class="icon-btn sh-friend ${gold ? 'is-primary' : ''}" data-friend-btn="${esc(uid)}" data-rel="${rel}" data-icon="1"
+      aria-label="${text}" title="${text}" ${rel === 'outgoing' ? 'disabled' : ''}>${svg(ic)}</button>`;
+  }
+  return `<button class="btn tiny ${gold ? 'primary' : 'secondary'} fh-friend" data-friend-btn="${esc(uid)}" data-rel="${rel}" ${rel === 'outgoing' ? 'disabled' : ''}>${svg(ic)} ${text}</button>`;
 }
 
 export function wireFriendButton(root) {
@@ -420,7 +442,7 @@ export function wireFriendButton(root) {
       if (rel === 'incoming') await respondFriend(friendRow(uid).friendship_id, true);
       else await requestFriend(uid);
       toast(relationTo(uid) === 'friends' ? 'You’re now friends' : 'Friend request sent', { icon: svg('friend') });
-      b.outerHTML = friendButton(uid);
+      b.outerHTML = friendButton(uid, { icon: b.dataset.icon === '1' });
       wireFriendButton(root);
     } catch (err) {
       b.removeAttribute('aria-busy'); b.disabled = false;

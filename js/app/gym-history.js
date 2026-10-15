@@ -16,6 +16,7 @@ import {
 } from '../core/gym-stats.js';
 import { layer, closeLayer } from './gym-picker.js';
 import { PAD, wavePath, telemetryGrid, square, blockBars } from './pixel-chart.js';
+import { sheetHead } from './sheet.js';
 
 const kg = (v) => `${Number.isInteger(v) ? v : v.toFixed(1)}<span class="data-unit"> kg</span>`;
 
@@ -76,7 +77,7 @@ export function openExerciseHistory(key) {
   root.innerHTML = `
     <div class="modal-backdrop" data-pk-close></div>
     <div class="modal pk-modal" role="dialog" aria-modal="true" aria-label="${esc(name)} history">
-      <header class="modal-head"><h2>${svg('trophy')} History</h2><button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'trophy', title: `History`, closeAttr: 'data-pk-close' })}
       <div class="modal-body">
         <div class="gl-ex-head">
           <div class="ex-img ${art ? 'ex-art' : ''}">${art ? `<img src="${esc(art)}" alt="" width="64" height="64" loading="lazy">` : svg('gym')}</div>

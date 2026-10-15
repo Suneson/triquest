@@ -7,6 +7,7 @@ import { svg } from '../core/icons.js';
 
 import { todayISO } from '../core/dates.js';
 import { openLayer, closeLayer } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 export async function fetchPublicUserProfile(targetUserId) {
   const { isDemo, demoPublicProfile } = await import('./demo.js');
@@ -33,7 +34,7 @@ export function openPublicProfile({ uid, name, rank, xp }) {
   root.innerHTML = `
     <div class="modal-backdrop" data-pp-close></div>
     <div class="modal pp-modal" role="dialog" aria-modal="true" aria-label="Profile">
-      <header class="modal-head"><h2>${svg('user')} Profile</h2><button class="icon-btn" data-pp-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'user', title: `Profile`, closeAttr: 'data-pp-close' })}
       <div class="modal-body">
         <div class="pp-header">
           <div class="pp-avatar">${esc((name || 'A').trim().charAt(0).toUpperCase())}</div>

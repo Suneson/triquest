@@ -11,6 +11,7 @@ import { toast } from './effects.js';
 import { svg } from '../core/icons.js';
 import { busy } from './motion.js';
 import { openLayer, closeLayer, topLayerName } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 let _client = null;
 let _user = null;
@@ -112,7 +113,7 @@ function openSetPassword() {
   root.innerHTML = `
     <div class="modal-backdrop"></div>
     <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="Set a new password">
-      <header class="modal-head"><h2>${svg('lock')} Set a new password</h2></header>
+      ${sheetHead({ icon: 'lock', title: 'Set a new password', noLead: true })}
       <div class="modal-body">
         <form data-set-pw>
           <label class="field"><span>New password</span>

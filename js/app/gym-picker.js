@@ -13,6 +13,7 @@ import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { MUSCLES, EQUIPMENT, exerciseArtSrc } from '../core/exercises.js';
 import { catalogue, searchExercises, recentIds, groupByMuscle, makeCustomExercise, entryById } from '../core/gym-edit.js';
+import { sheetHead } from './sheet.js';
 
 const KIND_OPTIONS = { weight_reps: 'Weight and reps', bodyweight: 'Bodyweight reps', time: 'Time' };
 
@@ -105,8 +106,7 @@ export function openPicker({ title = 'Add exercises', multi = true, onPick } = {
     root.innerHTML = `
       <div class="modal-backdrop" data-pk-close></div>
       <div class="modal pk-modal" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(st.mode === 'create' ? 'Create exercise' : title)}">
-        <header class="modal-head"><h2>${svg(st.mode === 'create' ? 'plus' : 'gym')} ${esc(st.mode === 'create' ? 'Create exercise' : title)}</h2>
-          <button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
+        ${sheetHead({ icon: st.mode === 'create' ? 'plus' : 'gym', title: esc(st.mode === 'create' ? 'Create exercise' : title), closeAttr: 'data-pk-close' })}
         ${st.mode === 'create' ? `<div class="modal-body">${createHtml()}</div>` : `
         <div class="pk-tools">
           <label class="pk-search">${svg('search')}<input type="search" placeholder="Search exercise" value="${esc(st.q)}" data-pk-q aria-label="Search exercise" autocomplete="off"></label>
@@ -180,7 +180,7 @@ export function openNameSheet({ title, label, value = '', submit = 'Save', onSav
   root.innerHTML = `
     <div class="modal-backdrop" data-pk-close></div>
     <div class="modal pk-modal pk-small" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-pk-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ title: `${esc(title)}`, closeAttr: 'data-pk-close' })}
       <form class="modal-body" data-name-form>
         <label class="field"><span>${esc(label)}</span><input type="text" name="v" maxlength="60" required value="${esc(value)}" autocomplete="off"></label>
         <button type="submit" class="btn primary">${esc(submit)}</button>

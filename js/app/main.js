@@ -32,6 +32,7 @@ import { syncQuestClaims } from './quest-sync.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName } from './nav.js';
+import { sheetHead } from './sheet.js';
 
 
 // ?safe=34 fakes an iPhone's safe areas in a desktop browser or headless
@@ -51,6 +52,8 @@ const appState = {
   journalDate: null, // ISO date selected in the Journal strip (null = today)
   pgSport: 'bike',   // which sport the Profile scene shows
   pgSlide: '',       // 'left' / 'right': the next scene slides in from that side
+  weekOpen: localStorage.getItem('moske-week-open') === '1', // Home's week strip, opened
+  questsOpen: false, // cleared quests unfolded (this session only)
   lastLevel: null,
   booted: false,
   // previous-render snapshots for feedback moments (null until first render)
@@ -75,6 +78,7 @@ function buildCtx() {
     unlockedBadges: store.getState().unlockedBadges,
     quests: questsFor(today, workouts, settings),
     acct: accountProgress(workouts, settings, today),
+    ui: { weekOpen: appState.weekOpen, questsOpen: appState.questsOpen },
   };
 }
 
@@ -256,7 +260,7 @@ function openLevelUp(sport, level) {
   const root = openLayer('level-up', { reuse: false });
   root.innerHTML = `<div class="modal-backdrop" data-lu-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Level up">
-      <header class="modal-head"><h2>${svg('star')} Level up</h2><button class="icon-btn" data-lu-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'star', title: `Level up`, closeAttr: 'data-lu-close' })}
       <div class="modal-body lvlup">
         <div class="lvlup-art" style="--ar:${ar}">
           <img src="${esc(art(after))}" alt="${esc(after.label)} level ${level}">
@@ -378,6 +382,16 @@ function onClick(e) {
       break;
     }
     case 'edit-goals': openGoalEditor(); break;
+    case 'toggle-week':
+      appState.weekOpen = !appState.weekOpen;
+      try { localStorage.setItem('moske-week-open', appState.weekOpen ? '1' : '0'); } catch { /* private mode */ }
+      render();
+      document.querySelector('[data-action="toggle-week"]')?.focus({ preventScroll: true });
+      break;
+    case 'toggle-quests':
+      appState.questsOpen = !appState.questsOpen;
+      render();
+      break;
     case 'open-season': openSeasonPath(buildCtx()); break;
     case 'share-card': { const w = store.workoutById(id); if (w) import('./share.js').then((m) => m.openShareSheet(w, store.getWorkouts())); break; }
     case 'clear-future': {
@@ -509,7 +523,7 @@ function openSettings() {
   root.innerHTML = `
     <div class="modal-backdrop" data-set-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Settings">
-      <header class="modal-head"><h2>${svg('gear')} Settings</h2><button class="icon-btn" data-set-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'gear', title: `Settings`, closeAttr: 'data-set-close' })}
       <div class="modal-body">
         ${accountSectionHtml()}
         <label class="toggle"><span>${svg('sound')} Sound effects</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
@@ -628,7 +642,7 @@ function openGoalEditor() {
   root.innerHTML = `
     <div class="modal-backdrop" data-goal-close></div>
     <div class="modal" role="dialog" aria-modal="true" aria-label="Edit weekly goals">
-      <header class="modal-head"><h2>${svg('target')} Weekly goals</h2><button class="icon-btn" data-goal-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'target', title: `Weekly goals`, closeAttr: 'data-goal-close' })}
       <div class="modal-body">
         <form data-goal-form>
           <label class="field"><span>Planned sessions</span><input type="number" name="sessions" min="0" step="1" value="${g.sessions}" required></label>
@@ -684,7 +698,7 @@ function openWorkoutDetail(id) {
   const root = openLayer('workout', { reuse: false, onClose: () => { if (_detailId === id) _detailId = null; } });
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal" role="dialog" aria-modal="true" aria-label="${esc(w.title)}">
-      <header class="modal-head"><h2>${esc(w.title)}</h2><button class="icon-btn" data-wd-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ title: `${esc(w.title)}`, closeAttr: 'data-wd-close' })}
       <div class="modal-body" id="wd-body">${renderWorkoutDetail(w, store.getSettings().units, buildCtx())}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
@@ -698,7 +712,7 @@ function openSportLevels(sport) {
   const root = openLayer('levels');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(sport)} levels">
-      <header class="modal-head"><h2>${svg('star')} Levels</h2><button class="icon-btn" data-wd-close aria-label="Close">${svg('close')}</button></header>
+      ${sheetHead({ icon: 'star', title: `Levels`, closeAttr: 'data-wd-close' })}
       <div class="modal-body">${sportLevelCarousel(sport, level)}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));

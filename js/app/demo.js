@@ -71,3 +71,34 @@ export function demoPublicProfile(uid) {
     days,
   };
 }
+
+/** Friends, chats and notifications for the Chat tab and the bell (same shapes as Supabase). */
+export function demoSocial(now = Date.now()) {
+  const ago = (min) => new Date(now - min * 60000).toISOString();
+  const f = (id, name, username, status, incoming, min) => ({
+    friendship_id: Number(id.slice(2)), user_id: id, display_name: name, username, avatar: null, status, incoming, created_at: ago(min),
+  });
+  const friends = [
+    f('d-01', 'Marta Eklund', 'marta_e', 'accepted', false, 9000),
+    f('d-05', 'Amara Okafor', 'amara_runs', 'accepted', true, 7000),
+    f('d-08', 'Kenji Watanabe', 'kenji_w', 'accepted', false, 5000),
+    f('d-03', 'Saanvi Raman', 'saanvi', 'pending', true, 30),
+    f('d-10', 'Rafael Costa', 'rafa_c', 'pending', false, 600),
+  ];
+  let id = 100;
+  const m = (from, to, body, min, read = true) => ({ id: id++, sender: from, recipient: to, body, created_at: ago(min), read_at: read ? ago(min - 1) : null });
+  const messages = [
+    m('d-01', DEMO_ME, 'Brick session tomorrow? 60 min bike, 20 min run.', 2900),
+    m(DEMO_ME, 'd-01', 'In. 7am at the usual spot?', 2880),
+    m('d-01', DEMO_ME, 'Perfect. Bring a spare tube this time 😄', 2870),
+    m('d-05', DEMO_ME, 'New PR on the squat today!', 95, false),
+    m('d-05', DEMO_ME, '105 kg × 5, it moved fast', 94, false),
+    m(DEMO_ME, 'd-08', 'How was the long swim?', 3000),
+  ].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const notifications = [
+    { id: 3, user_id: DEMO_ME, kind: 'friend_request', title: 'Saanvi Raman wants to be friends', body: null, data: { user_id: 'd-03', friendship_id: 3 }, created_at: ago(30), read_at: null },
+    { id: 2, user_id: DEMO_ME, kind: 'friend_accepted', title: 'Kenji Watanabe accepted your friend request', body: null, data: { user_id: 'd-08' }, created_at: ago(4000), read_at: null },
+    { id: 1, user_id: null, kind: 'app_update', title: 'New: chat with your friends', body: 'Add friends from Ranks or by username in the Chat tab, then message them. Gym sessions you log now earn XP without Strava.', data: {}, created_at: ago(60), read_at: null },
+  ];
+  return { me: { id: DEMO_ME, username: 'lucia_f' }, friends, messages, notifications };
+}

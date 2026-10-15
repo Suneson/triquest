@@ -24,6 +24,15 @@ export const INTENSITY_FACTOR = {
 };
 
 /** XP earned for a single session (whether or not it is completed). */
+/**
+ * Does this session earn XP? It must be completed, and either carry Strava
+ * proof or be a gym session logged in the app (Finish/Save). Every other sport
+ * needs Strava. The leaderboard and quest server use the same rule
+ * (supabase/migrations/0008_xp_rule.sql earns_xp).
+ */
+export const earnsXp = (w) => !!(w && w.completed
+  && (w.strava_activity_id || w.source === 'strava' || (w.type === 'gym' && w.gymLoggedAt)));
+
 export function xpForWorkout(w) {
   const dur = Math.max(0, Number(w.durationMin) || 0);
   const tf = TYPE_FACTOR[w.type] ?? 1.0;
@@ -75,7 +84,7 @@ export function levelFromTotalXp(totalXp) {
 export function sportProgress(workouts, type) {
   let xp = 0;
   for (const w of workouts) {
-    if (w.completed && w.type === type) xp += xpForWorkout(w);
+    if (earnsXp(w) && w.type === type) xp += xpForWorkout(w);
   }
   return levelFromTotalXp(xp);
 }
@@ -87,10 +96,10 @@ export function levelForType(workouts, type) {
 
 /**
  * Aggregate stats over the workout list.
- * Only *completed* sessions contribute to XP, volume and counts.
+ * Only sessions that earn XP (see earnsXp) count toward XP, volume and counts.
  */
 export function computeStats(workouts) {
-  const completed = workouts.filter((w) => w.completed);
+  const completed = workouts.filter(earnsXp);
   let totalXp = 0;
   let totalMinutes = 0;
   let totalKm = 0;

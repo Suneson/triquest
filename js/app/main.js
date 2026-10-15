@@ -1,7 +1,7 @@
 // main.js — bootstrap, derived state, rendering orchestration and event wiring.
 
 import * as store from './store.js';
-import { computeStats, sportProgress, xpForWorkout } from '../core/scoring.js';
+import { computeStats, sportProgress, xpForWorkout, earnsXp } from '../core/scoring.js';
 import { computeStreaks } from '../core/streaks.js';
 import { evaluateBadges, BADGES } from '../core/badges.js';
 import { questsFor, accountProgress, msUntilReset, formatCountdown } from '../core/quests.js';
@@ -22,6 +22,8 @@ import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
 import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logger.js';
 import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
+import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi } from './chat.js';
+import { startSocial, stopSocial, refreshSocial } from './social.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
@@ -105,7 +107,7 @@ function syncProgress(ctx) {
 // when the whole data set was swapped (sign-in / import).
 
 const SPORTS = ['bike', 'run', 'swim', 'gym'];
-const isVerifiedW = (w) => w.completed && (w.strava_activity_id || w.source === 'strava');
+const isVerifiedW = (w) => earnsXp(w); // Strava proof, or a gym session logged in the app
 
 function snapshot(ctx) {
   return {
@@ -180,13 +182,15 @@ function render() {
   }
 
   document.querySelectorAll('.tab').forEach((t) => {
-    const on = t.dataset.tab === appState.tab;
+    // the journal opens from Home, so Home stays lit while it's showing
+    const on = t.dataset.tab === appState.tab || (appState.tab === 'journal' && t.dataset.tab === 'home');
     t.classList.toggle('active', on);
     if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
   });
 
   // Profile tab is a sealed full-screen game viewport: hide app chrome, lock scroll.
   document.body.classList.toggle('pg-mode', appState.tab === 'progress');
+  document.body.classList.toggle('chat-mode', appState.tab === 'chat'); // the + button would cover the composer
 
   const view = document.getElementById('view');
   if (appState.tab === 'leaderboards') {
@@ -200,6 +204,10 @@ function render() {
     startScene(view);
   } else if (appState.tab === 'journal') {
     view.innerHTML = renderJournal(ctx, appState.journalDate || ctx.today);
+  } else if (appState.tab === 'chat') {
+    // the chat view keeps itself live; a re-render for training data mustn't wipe a draft
+    if (!view.querySelector('#chat-root')) view.innerHTML = chatShell();
+    mountChat(view);
   } else {
     view.innerHTML = renderHome(ctx);
   }
@@ -339,6 +347,7 @@ function onClick(e) {
       render();
       break;
     case 'open-workout': openWorkoutDetail(id); break;
+    case 'open-bell': openBell(); break;
     case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
     case 'routine-delete': {
       const rt = getRoutines().find((r) => r.id === el.dataset.rt);
@@ -773,6 +782,8 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
+  if (user) startSocial(); else stopSocial();
+  paintBell();
   render();
   const root = document.getElementById('modal-root');
   if (root && root.querySelector('[aria-label="Settings"]')) openSettings();
@@ -837,7 +848,7 @@ async function boot() {
   appState.journalDate = today;
   // Restore last tab.
   const savedTab = localStorage.getItem('moske-tab');
-  if (['home', 'journal', 'leaderboards', 'shop', 'progress'].includes(savedTab)) appState.tab = savedTab;
+  if (['home', 'journal', 'leaderboards', 'shop', 'chat', 'progress'].includes(savedTab)) appState.tab = savedTab;
 
   // pixel icons for the static chrome (tab bar, FAB)
   document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = svg(el.dataset.icon); });
@@ -873,7 +884,23 @@ async function boot() {
 
   maybeOnboard();
   handleRedirectParams();
-  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => autoStravaSync());
+  // friends, chat and the bell: live once signed in
+  wireSocialUi({ getTab: () => appState.tab });
+  document.addEventListener('moske:open-chat', (e) => {
+    closeModalRoot();
+    const from = appState.tab;
+    appState.tab = 'chat';
+    localStorage.setItem('moske-tab', 'chat');
+    withTabTransition(from, 'chat', () => { render(); openThread(e.detail); });
+  });
+  document.addEventListener('moske:open-athlete', (e) => {
+    const a = athleteByUid(e.detail.uid); // the leaderboard's numbers when it has them
+    openPublicFitness({ uid: e.detail.uid, name: e.detail.name, avatar: e.detail.avatar || a?.avatar || null, xp: a?.xp ?? null });
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSocial(); });
+
+  if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); });
+  else startSocial().then(() => paintBell()); // demo mode
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

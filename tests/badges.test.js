@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { evaluateBadges, newlyUnlocked, BADGES } from '../js/core/badges.js';
 
 const done = (date, type, distanceKm = 0, durationMin = 60, intensity = 'easy') =>
-  ({ date, type, intensity, durationMin, completed: true, metrics: { distanceKm } });
+  ({ date, type, intensity, durationMin, completed: true, strava_activity_id: 1, metrics: { distanceKm } });
 
 test('there are at least 15 badges with unique ids', () => {
   assert.ok(BADGES.length >= 15, `only ${BADGES.length} badges`);

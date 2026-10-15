@@ -1,7 +1,7 @@
 // ui.js — pure-ish HTML rendering. Functions return HTML strings that main.js
 // injects; all interactivity is wired via delegated data-action attributes.
 
-import { formatDuration, sportProgress } from '../core/scoring.js';
+import { formatDuration, sportProgress, earnsXp } from '../core/scoring.js';
 import { BADGES } from '../core/badges.js';
 import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
@@ -364,7 +364,7 @@ export function renderHome(ctx) {
 export function questsPanel(ctx) {
   const qs = ctx.quests || [];
   const done = qs.filter((q) => q.done).length;
-  const verifiedToday = ctx.workouts.filter((w) => w.date === ctx.today && w.completed && (w.strava_activity_id || w.source === 'strava')).length;
+  const verifiedToday = ctx.workouts.filter((w) => w.date === ctx.today && earnsXp(w)).length;
   const planned = ctx.workouts.filter((w) => w.date === ctx.today && w.source !== 'strava').length;
   const line = dayLine({ planned, verified: verifiedToday, questsDone: done, questsTotal: qs.length, streak: ctx.streaks?.current || 0 });
   const rows = qs.length
@@ -386,7 +386,8 @@ function homeDateHeader(ctx) {
   const d = parseISO(ctx.today);
   const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
   const label = `${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'long' })}`;
-  return `<div class="home-date"><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2></div>`;
+  return `<div class="home-date"><div><small>${esc(weekday)} · today</small><h2>${esc(label)}</h2></div>
+    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="Open your journal">${svg('journal')} Journal</button></div>`;
 }
 
 // A scaled-down one-line preview of tomorrow — never more than today + tomorrow.

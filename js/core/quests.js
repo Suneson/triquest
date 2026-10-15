@@ -11,7 +11,7 @@
 
 import { addDays, diffDays } from './dates.js';
 import { isPlanned, isRestDay } from './rest.js';
-import { levelFromTotalXp, xpForWorkout } from './scoring.js';
+import { levelFromTotalXp, xpForWorkout, earnsXp } from './scoring.js';
 
 /** First day quests exist. Days before it earn no quest XP. */
 export const QUESTS_SINCE = '2026-10-05';
@@ -19,7 +19,8 @@ export const QUESTS_PER_DAY = 3;
 /** The recovery quest and the rest-aware "train 45+" start here. */
 export const REST_SINCE = '2026-10-08';
 
-export const isVerified = (w) => !!(w && w.completed && (w.strava_activity_id || w.source === 'strava'));
+// verified = earns XP: Strava proof, or a gym session logged in the app
+export const isVerified = (w) => earnsXp(w);
 
 const minutesOf = (w) => Math.max(0, Number(w.actual?.durationMin ?? w.durationMin) || 0);
 const kmOf = (w) => Math.max(0, Number(w.actual?.distanceKm ?? w.metrics?.distanceKm) || 0);
@@ -187,7 +188,7 @@ export function questXpThrough(today, workouts, settings) {
 
 /** Training XP from completed sessions (same rule as computeStats). */
 export function trainingXp(workouts) {
-  return (workouts || []).reduce((a, w) => a + (w.completed ? xpForWorkout(w) : 0), 0);
+  return (workouts || []).reduce((a, w) => a + (earnsXp(w) ? xpForWorkout(w) : 0), 0);
 }
 
 /** The account level: training XP + quest XP on the shared level curve.

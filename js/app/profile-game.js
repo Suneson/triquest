@@ -18,6 +18,7 @@ import { currentUser } from './auth.js';
 import * as store from './store.js';
 import { PAD, snap, wavePath, stepBand, telemetryGrid, square, blockBars } from './pixel-chart.js';
 import { recordsShelfHtml, wireRecords, gymCardHtml, wireGymCard } from './gym-history.js';
+import { friendButton, wireFriendButton } from './chat.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -519,9 +520,13 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
       <div class="fh-title"><small>Athlete</small><h2>${esc(name || 'Athlete')}</h2></div>
       <span class="fh-avatar" aria-hidden="true">${avatarHtml}</span>
     </div>
+    ${friendButton(uid) ? `<div class="fh-friend-row">${friendButton(uid)}</div>` : ''}
     ${body}
   </div>`;
-  const wireBack = () => root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+  const wireBack = () => {
+    root.querySelector('[data-fh-close]').addEventListener('click', closeHub);
+    wireFriendButton(root);
+  };
   // loading tiles in the shape of the stats, calendar and charts below
   const skStat = (i) => `<div class="pc-stat is-sk" style="--sk-i:${i}"><b><i class="sk-line" style="width:3ch"></i></b><small><i class="sk-line" style="width:60%"></i></small></div>`;
   root.innerHTML = shell(`<span class="sr">Loading athlete data…</span>
@@ -551,7 +556,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
         ${stat(Number(p.completed || 0).toLocaleString(), 'Workouts')}
         ${stat(`${streaks.current} d`, 'Streak')}
         ${stat(((Number(p.total_min) || 0) / 60).toFixed(1), 'Hours')}
-        ${stat(level, 'Level')}
+        ${stat(xp == null ? '–' : level, 'Level')}
       </div>
       ${calendarGrid(ctx)}
       ${trendGraph(ctx)}

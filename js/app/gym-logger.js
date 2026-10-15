@@ -16,6 +16,7 @@ import { svg } from '../core/icons.js';
 import { exerciseArtSrc, cuesForId, exerciseById } from '../core/exercises.js';
 import { cuesFor, poseSvgFor } from '../core/poses.js';
 import { openPicker, openNameSheet } from './gym-picker.js';
+import { xpForWorkout } from '../core/scoring.js';
 import { enableDragSort } from './drag-sort.js';
 import { openExerciseHistory } from './gym-history.js';
 import { detectPRs } from '../core/gym-stats.js';
@@ -247,7 +248,7 @@ export function finishView(w) {
   const sum = sessionSummary(w, Date.parse(w.gymLoggedAt) || Date.now());
   const dur = w.gymDurationSec != null ? w.gymDurationSec : sum.durationSec;
   return `
-    <div role="status">${dialogue({ text: 'Logged. Sync with Strava to earn XP.', cls: 'coach-say gl-done' })}</div>
+    <div role="status">${dialogue({ text: `Saved. +${xpForWorkout(w)} XP for this session.`, cls: 'coach-say gl-done' })}</div>
     <div class="gl-sum">
       <div class="gl-sum-cell"><span class="gl-k">Time</span><b class="data-num">${dur != null ? fmtClock(dur) : '–'}</b></div>
       <div class="gl-sum-cell"><span class="gl-k">Sets</span><b class="data-num">${sum.sets}</b></div>
@@ -401,11 +402,13 @@ export function handleGymAction(action, el, deps, kind) {
     case 'gym-finish': {
       const patch = finishPatch(w, now);
       if (!patch) { deps.toast('Tick at least one working set first.'); break; }
-      Object.assign(w, patch); // gymLoggedAt + gymDurationSec only — never `completed`
+      const wasLogged = !!w.gymLoggedAt;
       writeJSON(REST_KEY, null);
       writeJSON(SW_KEY, null);
-      store.touchWorkout(id);
-      deps.showFinish(id);
+      // completes the session (gym earns XP without Strava), freezes the clock,
+      // saves and redraws the app so XP and levels update
+      store.updateWorkout(id, patch);
+      if (wasLogged) { refresh(id); deps.toast('Saved', 'check'); } else deps.showFinish(id);
       break;
     }
     case 'gym-back': refresh(id); break;

@@ -120,11 +120,15 @@ test('stopwatch counts up from its start stamp', () => {
   assert.equal(stopwatchElapsed(null, T0), 0);
 });
 
-test('finish logs the session and never marks it completed (XP comes from Strava)', () => {
+test('finish completes the gym session, freezes the clock and keeps it on Save', () => {
   const w = { completed: false, gymStartedAt: new Date(T0).toISOString(), exercises: [ex([done({ weight: 100, reps: 5 })])] };
   const patch = finishPatch(w, T0 + 600000);
-  assert.deepEqual(patch, { gymLoggedAt: '2026-10-14T10:10:00.000Z', gymDurationSec: 600 });
-  assert.ok(!('completed' in patch) && !('completedAt' in patch));
+  assert.deepEqual(patch, { completed: true, completedAt: '2026-10-14T10:10:00.000Z', gymLoggedAt: '2026-10-14T10:10:00.000Z', gymDurationSec: 600 });
+  Object.assign(w, patch);
+  assert.equal(sessionSummary(w, T0 + 3600000).durationSec, 600, 'the clock stops once logged');
+  const again = finishPatch(w, T0 + 900000);
+  assert.equal(again.gymDurationSec, 600, 'Save keeps the first duration');
+  assert.equal(again.completedAt, '2026-10-14T10:10:00.000Z');
   assert.equal(finishPatch({ exercises: [ex([newSet('work')])] }, T0), null, 'nothing ticked, nothing to log');
   const onlyWarmups = { exercises: [ex([done({ weight: 40, reps: 10 }, 'warmup')])] };
   assert.equal(finishPatch(onlyWarmups, T0), null, 'warm-ups alone are not a session');

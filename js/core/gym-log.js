@@ -133,7 +133,9 @@ export function sessionSummary(w, now) {
     sets: doneSets.length,
     exercises: ex.filter((e) => workSets(e).some((s) => s.done)).length,
     volumeKg: Math.round(ex.reduce((t, e) => t + exerciseVolume(e), 0)),
-    durationSec: started != null && Number.isFinite(started) ? Math.max(0, Math.round((now - started) / 1000)) : null,
+    // once logged, the clock stops at the logged duration
+    durationSec: w.gymLoggedAt && w.gymDurationSec != null ? w.gymDurationSec
+      : started != null && Number.isFinite(started) ? Math.max(0, Math.round((now - started) / 1000)) : null,
   };
 }
 
@@ -189,14 +191,22 @@ export function stopwatchElapsed(sw, now) {
 // ---- finish -------------------------------------------------------------------------------
 
 /**
- * What Finish writes onto the workout: the time it was logged and how long it
- * took. It never touches `completed` — XP only comes from a verified Strava
- * activity. Returns null when nothing has been ticked.
+ * What Finish (and Save afterwards) writes onto the workout: it completes the
+ * session — gym sessions are the one sport that earns XP without Strava —
+ * stamps when it was logged and freezes how long it took. Saving again keeps
+ * the first duration, so the clock never restarts. Returns null when no
+ * working set has been ticked.
  */
 export function finishPatch(w, now) {
   const sum = sessionSummary(w, now);
   if (!sum.sets) return null;
-  return { gymLoggedAt: new Date(now).toISOString(), gymDurationSec: sum.durationSec };
+  const at = new Date(now).toISOString();
+  return {
+    completed: true,
+    completedAt: w.completedAt || at,
+    gymLoggedAt: at,
+    gymDurationSec: w.gymLoggedAt && w.gymDurationSec != null ? w.gymDurationSec : sum.durationSec,
+  };
 }
 
 // ---- guided workout -----------------------------------------------------------------------

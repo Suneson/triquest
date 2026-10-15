@@ -12,7 +12,7 @@ const reduced = () => prefersReducedMotion() || document.body.classList.contains
 // the swap. CSS (::view-transition-*(view)) draws the wipe; this only picks the
 // direction so the wipe travels the way the tab bar moved.
 
-const TAB_ORDER = ['home', 'journal', 'leaderboards', 'shop', 'progress'];
+const TAB_ORDER = ['home', 'journal', 'shop', 'leaderboards', 'chat', 'progress'];
 
 export function withTabTransition(from, to, update) {
   if (!document.startViewTransition || reduced() || from === to) { update(); return; }

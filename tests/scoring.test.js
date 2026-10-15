@@ -38,8 +38,8 @@ test('levelFromTotalXp inverts the thresholds', () => {
 
 test('computeStats only counts completed sessions', () => {
   const workouts = [
-    { type: 'run', intensity: 'easy', durationMin: 60, completed: true, metrics: { distanceKm: 10 } },
-    { type: 'bike', intensity: 'steady', durationMin: 120, completed: true, metrics: { distanceKm: 60 } },
+    { type: 'run', intensity: 'easy', durationMin: 60, completed: true, strava_activity_id: 1, metrics: { distanceKm: 10 } },
+    { type: 'bike', intensity: 'steady', durationMin: 120, completed: true, source: 'strava', metrics: { distanceKm: 60 } },
     { type: 'swim', intensity: 'easy', durationMin: 30, completed: false, metrics: { distanceKm: 1.5 } },
   ];
   const s = computeStats(workouts);
@@ -56,4 +56,20 @@ test('formatDuration renders hours and minutes', () => {
   assert.equal(formatDuration(60), '1 h');
   assert.equal(formatDuration(45), '45 m');
   assert.equal(formatDuration(0), '0 m');
+});
+
+test('XP rule: gym logged in the app earns XP; every other sport needs Strava', async () => {
+  const { earnsXp } = await import('../js/core/scoring.js');
+  assert.ok(earnsXp({ type: 'gym', completed: true, gymLoggedAt: '2026-10-15T10:00:00Z' }));
+  assert.ok(!earnsXp({ type: 'gym', completed: false, gymLoggedAt: '2026-10-15T10:00:00Z' }));
+  assert.ok(!earnsXp({ type: 'run', completed: true }), 'a run without Strava earns nothing');
+  assert.ok(!earnsXp({ type: 'run', completed: true, gymLoggedAt: 'x' }), 'the gym stamp only counts for gym');
+  assert.ok(earnsXp({ type: 'run', completed: true, strava_activity_id: 42 }));
+  assert.ok(earnsXp({ type: 'swim', completed: true, source: 'strava' }));
+  const stats = computeStats([
+    { type: 'run', intensity: 'easy', durationMin: 60, completed: true, metrics: {} },
+    { type: 'gym', intensity: 'moderate', durationMin: 50, completed: true, gymLoggedAt: 'x', metrics: {} },
+  ]);
+  assert.equal(stats.completedCount, 1);
+  assert.equal(stats.totalMinutes, 50);
 });

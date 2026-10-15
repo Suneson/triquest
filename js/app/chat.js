@@ -135,8 +135,10 @@ function drawThread(root, uid) {
   root.innerHTML = `
     <div class="ch-head">
       <button class="fh-back" data-ch="back" aria-label="Back to chats">${svg('back')}</button>
-      ${avatar(f)}
-      <span class="ch-txt"><b>${esc(f?.display_name || 'Friend')}</b><small class="muted">${esc(handle(f))}</small></span>
+      <button class="ch-who" data-ch="profile" aria-label="View ${esc(f?.display_name || 'friend')}’s profile">
+        ${avatar(f)}
+        <span class="ch-txt"><b>${esc(f?.display_name || 'Friend')}</b><small class="muted">${esc(handle(f))}</small></span>
+      </button>
       <label class="icon-btn tiny gl-more" title="More">${svg('more')}
         <select data-ch-menu aria-label="More options">
           <option value="" selected disabled hidden>More</option>
@@ -188,6 +190,7 @@ function wireChat(root) {
       else if (act === 'decline') { await respondFriend(Number(b.dataset.fid), false); }
       else if (act === 'cancel') { await removeFriend(b.dataset.uid); }
       else if (act === 'edit-name') editUsername();
+      else if (act === 'profile') openProfile(friendRow(ui.open));
     } catch (err) { toast(esc(err.message || 'Something went wrong'), { icon: svg('warn') }); }
   };
   root.onsubmit = async (e) => {
@@ -234,10 +237,13 @@ function wireChat(root) {
     const f = friendRow(ui.open);
     if (v === 'remove' && f && confirm(`Remove ${f.display_name} from your friends? You won’t be able to message each other.`)) {
       await removeFriend(f.user_id); ui.open = null; drawChat();
-    } else if (v === 'profile' && f) {
-      document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: f.user_id, name: f.display_name, avatar: f.avatar } }));
-    }
+    } else if (v === 'profile') openProfile(f);
   };
+}
+
+function openProfile(f) {
+  if (!f) return;
+  document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: f.user_id, name: f.display_name, avatar: f.avatar } }));
 }
 
 function editUsername() {

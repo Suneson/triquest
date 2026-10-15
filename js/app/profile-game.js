@@ -19,6 +19,7 @@ import * as store from './store.js';
 import { PAD, snap, wavePath, stepBand, telemetryGrid, square, blockBars } from './pixel-chart.js';
 import { recordsShelfHtml, wireRecords, gymCardHtml, wireGymCard } from './gym-history.js';
 import { friendButton, wireFriendButton } from './chat.js';
+import { onSwipe, nextSport } from './swipe.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -126,42 +127,61 @@ function edgeColor(bd, which) {
   return `#${which === 0 ? cols[0] : cols[cols.length - 1]}`;
 }
 
-const SWITCH = [['bike', 'Cycling'], ['swim', 'Swim'], ['run', 'Run'], ['gym', 'Gym']];
+export const SWITCH = [['bike', 'Cycling'], ['swim', 'Swim'], ['run', 'Run'], ['gym', 'Gym']];
+export const SPORT_ORDER = SWITCH.map(([s]) => s);
 
-export function renderProfileGame(ctx, sport = 'bike') {
-  const p = sportProgress(ctx.workouts, sport);
+/**
+ * One sport's scene, switcher and level HUD. Your own Profile tab shows it
+ * full screen; another athlete's profile embeds it (`embed`) above their stats,
+ * with their levels and a read-only HUD.
+ */
+function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '' }) {
   const scene = sceneFor(sport, p.level) || sceneFor('bike', p.level);
-  const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
   const still = scene.kind === 'still';
-  // lighting follows the athlete's local clock: dawn, day, dusk, night
+  // lighting follows the viewer's local clock: dawn, day, dusk, night
   const tod = timeOfDay(new Date().getHours());
   const indoor = scene.sport === 'gym' || scene.sport === 'swim';
   const bd = still ? `--bd-top:${edgeColor(scene.entry.backdrop, 0)};--bd-bot:${edgeColor(scene.entry.backdrop, -1)}` : '';
+  const key = embed ? `ap-${scene.sport}` : scene.sport;
 
   const sportBtn = ([s, label]) => {
     const on = s === scene.sport;
-    return `<button class="pg-sport ${on ? 'active' : ''}" data-action="pg-sport" data-sport="${s}"${on ? ' aria-current="true"' : ''}>
+    return `<button class="pg-sport ${on ? 'active' : ''}" data-action="${action}" data-sport="${s}"${on ? ' aria-current="true"' : ''}>
        ${svg(s)}<span>${label}</span></button>`;
   };
+  const lvl = `LVL ${rollNum(p.level, `lvl-${key}`)}`;
 
   return `
-  <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}" style="${bd}">
-    ${still ? stillStage(scene, tod) : layeredWorld(scene, tod)}
+  <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}${embed ? ' pg-embed' : ''}" style="${bd}" data-pg-swipe>
+    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod) : layeredWorld(scene, tod)}</div>
 
     <div class="pg-topbar">
       <div class="pg-sports" role="group" aria-label="Sport">${SWITCH.map(sportBtn).join('')}</div>
-      <button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${avatarInner(ctx, initial)}</button>
+      ${avatarBtn}
     </div>
 
     <div class="pg-hud">
       <div class="pg-hud-top">
         <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
-        <button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">LVL ${rollNum(p.level, `lvl-${scene.sport}`)}</button>
+        ${embed
+          ? `<span class="lvl-chip" aria-label="Level ${p.level}">${lvl}</span>`
+          : `<button class="lvl-chip" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="Level ${p.level}: see every level">${lvl}</button>`}
       </div>
-      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}`, key: `hud-${scene.sport}` })}
-      <div class="pg-xptext">${rollNum(p.into, `into-${scene.sport}`)} / ${p.span.toLocaleString()} XP · ${rollNum(p.toNext, `next-${scene.sport}`)} to LVL ${p.level + 1}</div>
+      ${meter(p.progress, { segments: 20, label: `${Math.round(p.progress * 100)}% to level ${p.level + 1}`, key: `hud-${key}` })}
+      <div class="pg-xptext">${rollNum(p.into, `into-${key}`)} / ${p.span.toLocaleString()} XP · ${rollNum(p.toNext, `next-${key}`)} to LVL ${p.level + 1}</div>
     </div>
   </section>`;
+}
+
+export function renderProfileGame(ctx, sport = 'bike', slide = '') {
+  const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
+  return sceneScreen({
+    sport,
+    p: sportProgress(ctx.workouts, sport),
+    action: 'pg-sport',
+    slide,
+    avatarBtn: `<button class="pg-avatar" data-action="pg-profile" aria-label="Open profile">${avatarInner(ctx, initial)}</button>`,
+  });
 }
 
 // ---- decluttered avatar modal (core stats only) -----------------------------
@@ -516,7 +536,7 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
   const shell = (body) => `
   <div class="fh-screen" role="dialog" aria-modal="true" aria-label="Athlete profile">
     <div class="fh-head">
-      <button class="fh-back" data-fh-close aria-label="Back to leaderboard">${svg('back')}</button>
+      <button class="fh-back" data-fh-close aria-label="Back">${svg('back')}</button>
       <div class="fh-title"><small>Athlete</small><h2>${esc(name || 'Athlete')}</h2></div>
       <span class="fh-avatar" aria-hidden="true">${avatarHtml}</span>
     </div>
@@ -551,12 +571,20 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     const streaks = computeStreaks(workouts, today);
     const level = levelFromTotalXp(Number(xp) || 0).level;
     const stat = (v, l) => `<div class="pc-stat"><b>${esc(String(v))}</b><small>${esc(l)}</small></div>`;
+    // their levels per sport, shown like your own Profile tab; opens on their best sport
+    const sx = p.sport_xp || null;
+    let sport = sx ? SPORT_ORDER.reduce((a, b) => ((Number(sx[b]) || 0) > (Number(sx[a]) || 0) ? b : a), SPORT_ORDER[0]) : null;
+    const scene = (slide = '') => sceneScreen({
+      sport, p: levelFromTotalXp(Number(sx[sport]) || 0), action: 'ap-sport', embed: true, slide,
+    });
     root.innerHTML = shell(`
+      ${sx ? `<div class="ap-scene">${scene()}</div>
+      <p class="ap-hint muted">${svg('back')} Swipe for their other sports ${svg('back', 'flip')}</p>` : ''}
       <div class="pc-stats fh-stats">
         ${stat(Number(p.completed || 0).toLocaleString(), 'Workouts')}
         ${stat(`${streaks.current} d`, 'Streak')}
         ${stat(((Number(p.total_min) || 0) / 60).toFixed(1), 'Hours')}
-        ${stat(xp == null ? '–' : level, 'Level')}
+        ${stat(xp == null ? '–' : level, 'Overall level')}
       </div>
       ${calendarGrid(ctx)}
       ${trendGraph(ctx)}
@@ -564,6 +592,17 @@ export async function openPublicFitness({ uid, name, avatar, xp }) {
     wireBack();
     // this view is read-only: the trend card is not a drill-down here
     root.querySelector('[data-fh-activity]')?.removeAttribute('data-fh-activity');
+    const box = root.querySelector('.ap-scene');
+    if (box) {
+      const show = (next) => {
+        if (!next || next === sport) return;
+        const slide = SPORT_ORDER.indexOf(next) > SPORT_ORDER.indexOf(sport) ? 'left' : 'right';
+        sport = next;
+        box.innerHTML = scene(slide);
+      };
+      box.addEventListener('click', (e) => show(e.target.closest('[data-action="ap-sport"]')?.dataset.sport));
+      onSwipe(box, (dir) => show(nextSport(SPORT_ORDER, sport, dir)));
+    }
   } catch (e) {
     root.innerHTML = shell('<p class="fh-foot">Couldn’t load this athlete — check your connection.</p>');
     wireBack();

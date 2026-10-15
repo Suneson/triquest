@@ -16,7 +16,8 @@ import {
 import { leaderboardShell, loadLeaderboard, athleteByUid } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { openPublicProfile } from './profile.js';
-import { renderProfileGame, openFitnessHub, openPublicFitness } from './profile-game.js';
+import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER } from './profile-game.js';
+import { onSwipe, nextSport } from './swipe.js';
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
 import { openEditor } from './editor.js';
@@ -44,6 +45,7 @@ const appState = {
   lbView: 'season',
   journalDate: null, // ISO date selected in the Journal strip (null = today)
   pgSport: 'bike',   // which sport the Profile scene shows
+  pgSlide: '',       // 'left' / 'right': the next scene slides in from that side
   lastLevel: null,
   booted: false,
   // previous-render snapshots for feedback moments (null until first render)
@@ -200,7 +202,8 @@ function render() {
     view.innerHTML = shopShell();
     loadShop();
   } else if (appState.tab === 'progress') {
-    view.innerHTML = renderProfileGame(ctx, appState.pgSport);
+    view.innerHTML = renderProfileGame(ctx, appState.pgSport, appState.pgSlide);
+    appState.pgSlide = '';
     startScene(view);
   } else if (appState.tab === 'journal') {
     view.innerHTML = renderJournal(ctx, appState.journalDate || ctx.today);
@@ -217,6 +220,17 @@ function render() {
 }
 
 // ---- Profile scene lifecycle --------------------------------------------------
+// Switch sport from the buttons or a swipe; the new scene slides in from the
+// side you're heading to (no slide under reduced motion: CSS drops it).
+function setPgSport(sport) {
+  if (!sport || sport === appState.pgSport) return;
+  const from = SPORT_ORDER.indexOf(appState.pgSport);
+  appState.pgSlide = SPORT_ORDER.indexOf(sport) > from ? 'left' : 'right';
+  appState.pgSport = sport;
+  try { localStorage.setItem('moske-pg-sport', sport); } catch { /* private mode */ }
+  render();
+}
+
 // Scene motion is pure CSS; this only pauses it while the page is hidden.
 function startScene(view) {
   const screen = view.querySelector('.pg-screen');
@@ -341,11 +355,7 @@ function onClick(e) {
       import('./strava-client.js').then((m) => m.disconnectStrava()
         .then(() => toast('Strava disconnected')).catch((e) => toast(e.message || 'Disconnect failed')));
       break;
-    case 'pg-sport':
-      appState.pgSport = el.dataset.sport;
-      localStorage.setItem('moske-pg-sport', appState.pgSport);
-      render();
-      break;
+    case 'pg-sport': setPgSport(el.dataset.sport); break;
     case 'open-workout': openWorkoutDetail(id); break;
     case 'open-bell': openBell(); break;
     case 'routine-start': startRoutine(el.dataset.rt, el.dataset.date || todayISO()); break;
@@ -898,6 +908,10 @@ async function boot() {
     openPublicFitness({ uid: e.detail.uid, name: e.detail.name, avatar: e.detail.avatar || a?.avatar || null, xp: a?.xp ?? null });
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSocial(); });
+  // Profile tab: swipe left / right to change sport, as well as the four buttons
+  onSwipe(document.getElementById('view'), (dir) => setPgSport(nextSport(SPORT_ORDER, appState.pgSport, dir)), {
+    when: () => appState.tab === 'progress' && !document.getElementById('modal-root')?.classList.contains('open'),
+  });
 
   if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); });
   else startSocial().then(() => paintBell()); // demo mode

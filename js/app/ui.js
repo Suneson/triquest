@@ -373,11 +373,11 @@ export function eventBanner(ctx) {
 // they're cleared, and the AI coach offer is a quiet row at the end.
 export function renderHome(ctx) {
   const ws = mondayOf(ctx.today);
-  return homeDateHeader(ctx)
+  return weekPathCard(ctx)
+    + homeDateHeader(ctx)
     + focusCard(ctx)
     + weekStrip(ctx, ws, !!ctx.ui?.weekOpen)
     + questsPanel(ctx)
-    + weekPathCard(ctx)
     + tomorrowGlance(ctx)
     + `<section class="ai-row">${coachMini()}<p>${t('ui.aiOffer')}</p>
         <button class="btn tiny secondary" data-action="ai-onboard">${svg('spark')} ${t('ui.buildPlan')}</button></section>`;

@@ -30,6 +30,9 @@ export function actualsFromActivity(activity) {
     stravaLink: `https://www.strava.com/activities/${activity.id}`,
     name: activity.name || null,
     startedAt: activity.start_date_local || activity.start_date || null,
+    // start_date_local is wall-clock time with a misleading 'Z'; these two are the real instant (gel windows need it)
+    startUtc: activity.start_date || null,
+    elapsedSec: num(activity.elapsed_time),
     distanceKm: num(activity.distance) != null ? Math.round(activity.distance / 100) / 10 : null,
     durationMin: num(activity.moving_time) != null ? Math.round(activity.moving_time / 60) : null,
     elevationGainM: num(activity.total_elevation_gain),

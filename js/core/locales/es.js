@@ -1911,4 +1911,145 @@ es.checkin = {
   "noLocation": "No se pudo obtener tu ubicación. Revisa el permiso de ubicación del navegador."
 };
 
+es.gear = {
+  "title": "MATERIAL",
+  "item": {
+    "bike-wheels": {
+      "slot": "Ruedas",
+      "blurb": "Unas ruedas mejores ruedan más rápido con los mismos vatios.",
+      "t0": "Ruedas de serie",
+      "t1": "Ruedas de aluminio",
+      "t2": "Ruedas de carbono",
+      "t3": "Carbono de perfil alto"
+    },
+    "bike-aerobars": {
+      "slot": "Acoples",
+      "blurb": "Agáchate y corta el viento.",
+      "t0": "Sin acoples",
+      "t1": "Acoples de pinza",
+      "t2": "Acoples de carbono",
+      "t3": "Cockpit integrado"
+    },
+    "bike-frame": {
+      "slot": "Cuadro",
+      "blurb": "Más ligero y rígido: cada pedalada cuenta.",
+      "t0": "Cuadro de acero",
+      "t1": "Cuadro de aluminio",
+      "t2": "Cuadro de carbono",
+      "t3": "Cuadro de crono de carbono"
+    },
+    "bike-power": {
+      "slot": "Potencia",
+      "blurb": "Entrena por vatios, no por sensaciones.",
+      "t0": "Sin potenciómetro",
+      "t1": "Potenciómetro de una biela",
+      "t2": "Potenciómetro doble",
+      "t3": "Potenciómetro doble y rodillo inteligente"
+    },
+    "swim-goggles": {
+      "slot": "Gafas",
+      "blurb": "Ve la línea, encuentra la boya.",
+      "t0": "Gafas básicas",
+      "t1": "Gafas antivaho",
+      "t2": "Gafas espejadas",
+      "t3": "Gafas de competición"
+    },
+    "swim-paddles": {
+      "slot": "Palas",
+      "blurb": "Más agua por brazada, más fuerza de tracción.",
+      "t0": "Sin palas",
+      "t1": "Palas de dedos",
+      "t2": "Palas pequeñas",
+      "t3": "Palas grandes"
+    },
+    "swim-buoy": {
+      "slot": "Pull y aletas",
+      "blurb": "Aísla los brazos y luego las piernas.",
+      "t0": "Sin pull",
+      "t1": "Pull buoy",
+      "t2": "Pull y aletas",
+      "t3": "Pull, aletas y tubo"
+    },
+    "swim-wetsuit": {
+      "slot": "Neopreno",
+      "blurb": "Flota más y nada más recto en aguas abiertas.",
+      "t0": "Sin neopreno",
+      "t1": "Neopreno sin mangas",
+      "t2": "Neopreno completo",
+      "t3": "Neopreno de competición"
+    },
+    "run-shoes": {
+      "slot": "Zapatillas",
+      "blurb": "La pieza de material que todo corredor nota.",
+      "t0": "Zapatillas viejas",
+      "t1": "Zapatillas de rodaje",
+      "t2": "Zapatillas de ritmo",
+      "t3": "Zapatillas de carbono"
+    },
+    "run-watch": {
+      "slot": "Reloj",
+      "blurb": "Ritmo, pulso y parciales en la muñeca.",
+      "t0": "Sin reloj",
+      "t1": "Reloj GPS",
+      "t2": "GPS y banda de pulso",
+      "t3": "Reloj multideporte"
+    },
+    "run-kit": {
+      "slot": "Ropa",
+      "blurb": "Ropa ligera que no roza en el kilómetro 30.",
+      "t0": "Camiseta de algodón",
+      "t1": "Ropa técnica",
+      "t2": "Ropa ligera",
+      "t3": "Camiseta de competición"
+    },
+    "run-recovery": {
+      "slot": "Recuperación",
+      "blurb": "Recupera antes y vuelve a correr antes.",
+      "t0": "Sin material de recuperación",
+      "t1": "Rodillo de espuma",
+      "t2": "Pistola de masaje",
+      "t3": "Botas de presoterapia"
+    },
+    "gym-belt": {
+      "slot": "Cinturón",
+      "blurb": "Más estabilidad en las series pesadas.",
+      "t0": "Sin cinturón",
+      "t1": "Cinturón de nailon",
+      "t2": "Cinturón de cuero",
+      "t3": "Cinturón de palanca"
+    },
+    "gym-shoes": {
+      "slot": "Zapatillas",
+      "blurb": "Una base estable bajo la barra.",
+      "t0": "Zapatillas de correr",
+      "t1": "Zapatillas planas",
+      "t2": "Zapatillas de halterofilia",
+      "t3": "Zapatillas de competición"
+    },
+    "gym-sleeves": {
+      "slot": "Straps y rodilleras",
+      "blurb": "Agarre y articulaciones que aguantan la sesión.",
+      "t0": "Sin straps",
+      "t1": "Straps",
+      "t2": "Straps y rodilleras",
+      "t3": "Straps, rodilleras y muñequeras"
+    },
+    "gym-bar": {
+      "slot": "Barra",
+      "blurb": "Una barra que no resbala y discos que pesan lo que dicen.",
+      "t0": "Cualquier barra",
+      "t1": "Magnesio",
+      "t2": "Magnesio y buena barra",
+      "t3": "Barra y discos calibrados"
+    }
+  },
+  "kit": {
+    "moske-navy": "MOSKE marino",
+    "moske-sand": "MOSKE arena"
+  },
+  "gel": {
+    "name": "Gel energético"
+  }
+};
+
 export default es;

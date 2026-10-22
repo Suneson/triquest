@@ -1911,4 +1911,145 @@ en.checkin = {
   "noLocation": "Couldn’t get your location. Check the browser’s location permission."
 };
 
+en.gear = {
+  "title": "GEAR",
+  "item": {
+    "bike-wheels": {
+      "slot": "Wheels",
+      "blurb": "Better wheels roll faster for the same watts.",
+      "t0": "Stock wheels",
+      "t1": "Alloy training wheels",
+      "t2": "Carbon wheels",
+      "t3": "Deep-section carbon"
+    },
+    "bike-aerobars": {
+      "slot": "Aerobars",
+      "blurb": "Get low, cut the wind.",
+      "t0": "No aerobars",
+      "t1": "Clip-on aerobars",
+      "t2": "Carbon clip-ons",
+      "t3": "Integrated cockpit"
+    },
+    "bike-frame": {
+      "slot": "Frame",
+      "blurb": "Lighter and stiffer, every pedal stroke counts.",
+      "t0": "Steel frame",
+      "t1": "Alloy frame",
+      "t2": "Carbon frame",
+      "t3": "Carbon TT frame"
+    },
+    "bike-power": {
+      "slot": "Power",
+      "blurb": "Train by watts, not by feel.",
+      "t0": "No power meter",
+      "t1": "Single-sided power",
+      "t2": "Dual-sided power",
+      "t3": "Dual power + smart trainer"
+    },
+    "swim-goggles": {
+      "slot": "Goggles",
+      "blurb": "See the line, sight the buoy.",
+      "t0": "Basic goggles",
+      "t1": "Anti-fog goggles",
+      "t2": "Mirrored goggles",
+      "t3": "Racing goggles"
+    },
+    "swim-paddles": {
+      "slot": "Paddles",
+      "blurb": "More water per stroke builds the pull.",
+      "t0": "No paddles",
+      "t1": "Finger paddles",
+      "t2": "Small paddles",
+      "t3": "Full paddles"
+    },
+    "swim-buoy": {
+      "slot": "Buoy and fins",
+      "blurb": "Isolate the arms, then the legs.",
+      "t0": "No pull buoy",
+      "t1": "Pull buoy",
+      "t2": "Pull buoy and fins",
+      "t3": "Pull, fins and snorkel"
+    },
+    "swim-wetsuit": {
+      "slot": "Wetsuit",
+      "blurb": "Float higher, swim straighter in open water.",
+      "t0": "No wetsuit",
+      "t1": "Sleeveless wetsuit",
+      "t2": "Full wetsuit",
+      "t3": "Race wetsuit"
+    },
+    "run-shoes": {
+      "slot": "Shoes",
+      "blurb": "The one piece of kit every runner feels.",
+      "t0": "Old trainers",
+      "t1": "Daily trainers",
+      "t2": "Tempo shoes",
+      "t3": "Carbon racers"
+    },
+    "run-watch": {
+      "slot": "Watch",
+      "blurb": "Pace, heart rate and splits on your wrist.",
+      "t0": "No watch",
+      "t1": "GPS watch",
+      "t2": "GPS + heart-rate strap",
+      "t3": "Multisport watch"
+    },
+    "run-kit": {
+      "slot": "Kit",
+      "blurb": "Light kit that doesn’t chafe at kilometre 30.",
+      "t0": "Cotton T-shirt",
+      "t1": "Technical kit",
+      "t2": "Lightweight kit",
+      "t3": "Race singlet"
+    },
+    "run-recovery": {
+      "slot": "Recovery",
+      "blurb": "Recover faster, run again sooner.",
+      "t0": "No recovery kit",
+      "t1": "Foam roller",
+      "t2": "Massage gun",
+      "t3": "Compression boots"
+    },
+    "gym-belt": {
+      "slot": "Belt",
+      "blurb": "Brace harder on the heavy sets.",
+      "t0": "No belt",
+      "t1": "Nylon belt",
+      "t2": "Leather belt",
+      "t3": "Lever belt"
+    },
+    "gym-shoes": {
+      "slot": "Shoes",
+      "blurb": "A stable base under the bar.",
+      "t0": "Running trainers",
+      "t1": "Flat shoes",
+      "t2": "Lifting shoes",
+      "t3": "Competition lifters"
+    },
+    "gym-sleeves": {
+      "slot": "Straps and sleeves",
+      "blurb": "Grip and joints that last the session.",
+      "t0": "No straps",
+      "t1": "Lifting straps",
+      "t2": "Straps and knee sleeves",
+      "t3": "Straps, sleeves and wrist wraps"
+    },
+    "gym-bar": {
+      "slot": "Bar",
+      "blurb": "A bar that doesn’t slip, plates that weigh what they say.",
+      "t0": "Any bar",
+      "t1": "Chalk",
+      "t2": "Chalk and a good bar",
+      "t3": "Calibrated bar and plates"
+    }
+  },
+  "kit": {
+    "moske-navy": "MOSKE navy",
+    "moske-sand": "MOSKE sand"
+  },
+  "gel": {
+    "name": "Energy gel"
+  }
+};
+
 export default en;

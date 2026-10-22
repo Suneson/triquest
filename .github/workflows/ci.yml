@@ -18,6 +18,11 @@ jobs:
         with:
           node-version: 20
 
-      # No runtime or dev dependencies — the test runner is built into Node.
+      # The test runner is built into Node. The one dev dependency the tests use
+      # is PGlite, to run the migrations and check the SQL matches js/core
+      # (tests/gear-sql.test.js); sharp is build-time only, so scripts are skipped.
+      - name: Install dev dependencies
+        run: npm ci --no-audit --no-fund --ignore-scripts
+
       - name: Run tests
         run: npm test

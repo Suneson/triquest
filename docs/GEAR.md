@@ -1,9 +1,12 @@
 # GEAR: the training workshop (economy design)
 
-Status: **Phase 0 proposal, waiting for sign-off.** No feature code has been
-written. Every number below is a starting value; they all live in one constants
-block (`GEAR_RULES` in `js/core/gear.js`, mirrored in `0014_gear.sql`) so tuning
-is a one-line change on both sides.
+Status: **Phase 1 built, Phase 2 SQL written (not yet applied).** Phase 0 was
+signed off with the recommended answer to every question in §9: a free
+starter plus three bought tiers, Recovery instead of run hydration, a +30%
+gel for 4 h, a +16% cap, coins from launch with a 300 purse, and T3 at 850.
+Every number lives in one constants block (`GEAR_RULES` in
+`js/core/gear.js`). The SQL copy in `0014_gear.sql` is generated from it by
+`tools/gear-sql.mjs`, so tuning is a one-line change plus one command.
 
 The short version:
 
@@ -24,7 +27,10 @@ The short version:
 
 ## 1. Where coins come from
 
-**Coins = ½ of the session's base XP, rounded down, at most 120 a day.**
+**Coins for a day = ½ of that day's base XP, rounded down, at most 120.**
+(Per day rather than per session so the client and the SQL sum the same way
+whatever order sessions arrive in. The session summary shows what each
+session added to its day.)
 
 - "Base XP" is the number `xpLedger()` already gives: the session passed
   `earnsXp`, the Strava ×1.1 is applied, and app-logged gym XP is already
@@ -301,6 +307,27 @@ of whatever they could already fake, and none of it reaches Ranks. The list:
 
 ## 8. What gets built, in one paragraph per phase
 
+**Built so far:**
+- `js/core/gear.js`: the catalog, kits, the gel and `GEAR_RULES`.
+- `js/core/wallet.js`: `coinDays`, `coinsEarned`, `coinsForSession`,
+  `balance` and `gelsHeld`.
+- `js/core/boosts.js`:
+  - `gearBoost`, `activeGel`, `canUseGel`, `sessionSpan` and `gelShare`
+  - `boostStamp`, `applyBoost`, `boostFor`, `boostedLedger` and
+    `boostedSportXp`
+- `xp-rules.js` now exports `ledgerOrder`, so the coin and boost ledgers take
+  sessions in exactly the order the gym cap does.
+- Strava actuals now carry `startUtc` and `elapsedSec`, in the app and in the
+  edge functions' shared mapping.
+- `0014_gear.sql` and `tools/gear-sql.mjs`.
+- Tests:
+  - `tests/gear.test.js`
+  - `tests/gear-sql.test.js`, which runs every migration in PGlite and
+    checks that the ledger, every stamp, coins, boosted sport XP and the
+    unchanged leaderboard match the JS over a fixture set; it also tests
+    buying and gels end to end.
+- CI now runs `npm ci` so PGlite is there.
+
 - **Phase 1:** `js/core/gear.js` (catalog plus `GEAR_RULES`),
   `js/core/wallet.js` (coins from `xpLedger`, the cap, the purse and the
   balance) and `js/core/boosts.js` (`gearBoost`, `activeGel`, `boostFor` →
@@ -320,7 +347,51 @@ of whatever they could already fake, and none of it reaches Ranks. The list:
   connector**, so after your sign-off on the SQL I can apply it with
   `apply_migration`. As in 0013, statements containing `DROP`, `DELETE` or
   `REVOKE` stall the connector and are split into separate steps.
-- **Phases 3 to 7:** as briefed.
+- **Phases 3 to 5:** as briefed.
+- **Phase 5b, kit colours by palette swap:** the ten per-level characters stay
+  as they are.
+  - Gear that changes the silhouette (frame, wheels, aerobars, wetsuit,
+    carbon shoes) is already drawn by the level art. It is never layered
+    onto the character; it goes on a kit card under the HUD instead.
+  - Only clothing colour changes, as a build-time palette swap:
+    1. `tools/quantise-char.mjs` reduces each sprite to an indexed palette.
+    2. `tools/kit-ramp.mjs` dumps a labelled palette sheet, so the jersey,
+       shorts and shoes indices can be tagged in `ramps.json`.
+    3. `tools/kit-variants.mjs` writes `<base>--<kitId>.webp` for every kit
+       in `KITS`.
+  - The scene manifest picks the sprite by level and equipped kit.
+  - The kit ramps live in `js/core/gear.js` (`KITS`), so a new kit is data
+    plus one regeneration run.
+- **Phase 6** (overlays on the animated character) is mostly overtaken by
+  5b. Gear that changes the silhouette is never layered, so only a prototype
+  would be left to decide.
+- **Phase 7:** as briefed.
+
+### What the audit of the character sprites found (Phase 5b, step 1)
+
+Only cycling has animated characters today (run, gym and swim are stills, and
+swim has only level 1). Bike, measured with sharp:
+
+| Sprite | Canvas | Frames | Frame time | Opaque colours per frame | All frames | Semi-transparent px | Size |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| bikelvl1_char | 768×624 | 8 | 83 ms (12 fps) | 26.4k–27.9k | 74k | 137k | 296 KB |
+| bikelvl2_char | 768×624 | 16 | 83 ms | 22.2k–24.9k | 83k | 694k | 866 KB |
+| bikelvl3_char | 768×624 | 8 | 83 ms | 24.4k–26.9k | 79k | 350k | 422 KB |
+| bikelvl4_char | 768×624 | 8 | 83 ms | 25.5k–26.5k | 78k | 123k | 276 KB |
+| bikelvl5_char | 768×624 | 9 | 83 ms | 25.9k–26.5k | 86k | 126k | 288 KB |
+| bikelvl6_char | 768×624 | 7 | 83 ms | 26.0k–27.4k | 80k | 182k | 278 KB |
+| bikelvl7_char | 768×624 | 10 | 83 ms | 25.9k–28.1k | 98k | 344k | 485 KB |
+| bikelvl8_char | 768×624 | 7 | 83 ms | 23.3k–24.5k | 75k | 174k | 280 KB |
+| bikelvl9_char | 768×624 | 9 | 83 ms | 60.5k–63.6k | 269k | 746k | 862 KB |
+| bikelvl10_char | 768×624 | 8 | 83 ms | 73.1k–87.0k | 294k | 583k | 789 KB |
+
+The 30k–106k you quoted fits the per-frame count for levels 1 to 8.
+- **Levels 9 and 10 are about three times noisier.**
+- **Every sprite has a large band of semi-transparent pixels.** That's lossy
+  alpha from the video source. The quantise pass has to harden alpha
+  (threshold to 0 or 255) before indexing. Otherwise the soft edge becomes
+  dozens of near-duplicate palette entries, and a palette swap leaves a halo
+  in the old colour.
 
 ---
 

@@ -419,3 +419,51 @@ The 30k–106k you quoted fits the per-frame count for levels 1 to 8.
    (13 weeks; a light athlete in about 6 months)?
 7. **Manual Strava activities** (§7): leave as today, or stop them earning
    XP and coins? This one is separate from GEAR.
+
+---
+
+## 10. Carbs, fuel, storage and the scene buttons (added on review)
+
+Asked for after Phase 4, and built ahead of Phase 5:
+
+- **Two currencies**, both earned only by training and missions:
+  - **Coins** buy gear upgrades and clothes.
+  - **Carbs** (grams) buy fuel.
+  - Each is held in a store of at most **10,000**. Anything earned while a store is full is lost, the way a full storage works in a base-building game.
+  - Balances are still derived, never stored. `wallet_fold()` (0015) and `walletFold()` walk every earning and spend in time order. A day's training counts at the start of that day, a mission on its day, and a spend when it was made.
+- **Earning from training:**
+  - Carbs for a day = 0.8 g × that day's base XP, at most 300 g a day.
+  - A typical week (~650 XP) gives ~520 g of carbs alongside ~325 coins.
+  - Starting balance: 200 g of carbs, alongside the 300 coins.
+- **Missions** pay coins or carbs on top of their XP (`QUEST_REWARDS`):
+
+  | Mission | Reward |
+  | --- | --- |
+  | plan done | 25 coins |
+  | two disciplines | 35 coins |
+  | brick | 35 coins |
+  | 45 min | 30 g carbs |
+  | streak | 20 g carbs |
+  | 10 km | 25 g carbs |
+  | pack bag | 10 g carbs |
+  | rest day | 15 g carbs |
+
+- **Fuel** (bought with carbs). Only one fuel runs at a time, and each kind has its own limit in any 7 days. A session never gets more than the biggest fuel's worth (+30%).
+
+  | Fuel | Price | Effect | Limit |
+  | --- | --- | --- | --- |
+  | Gel | 120 g | +30% for 4 h | 2 a week |
+  | Energy bar | 80 g | +15% for 6 h | 2 a week |
+  | Pasta meal | 150 g | +10% for 12 h | 1 a week |
+
+  Worst case over a year this adds about a third of a level on top of §5, because the bar and the pasta are smaller and slower.
+- **On the Profile scene:**
+  - Two storage bars top right (coins, carbs; "Max 10,000").
+  - An **inventory** button bottom left: your fuel with a Use button on each, the clothes you own and the gear you've fitted.
+  - A **shop** button bottom right, a stall icon in the gold accent: Gear (coins, by discipline), Clothes (coins) and Fuel (carbs) tabs, each showing the currency it costs.
+  - The GEAR button in the top bar is gone.
+- **Art drawn for this pass** (`tools/draw-items.mjs`, contact sheet in `docs/gear/items-sheet.png`): the gel (with the MOSKE bird from `icons/logo.png`), the energy bar, the pasta meal, the coin, carbs, and the navy and sand jerseys.
+- **Kit on the animated rider:**
+  - `tools/kit-recolor.py` recolours the level-6 cyclist's blue kit (jersey, shorts, helmet) to the sand colourway, keeping every frame's shading.
+  - It's wired through `KIT_SPRITES`/`kitSprite()`, so wearing the sand kit at level 6 shows it on the bike.
+  - Limit: it recolours by hue. A slight tint reaches the bike frame, and the tagged-palette pipeline (5b) is the proper version.

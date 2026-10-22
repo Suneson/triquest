@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { generatedBlock, BEGIN, END, MIGRATION } from '../tools/gear-sql.mjs';
-import { coinsEarned } from '../js/core/wallet.js';
+import { coinsEarned, walletFold } from '../js/core/wallet.js';
 import { boostStamp, boostedSportXp } from '../js/core/boosts.js';
 import { xpLedger } from '../js/core/xp-rules.js';
 import { GEAR_RULES } from '../js/core/gear.js';
@@ -148,7 +148,7 @@ test('a client cannot write its own boost, and re-completing does not restamp', 
   assert.ok(z.gear_bp < 9999 && z.gel_bp < 9999);
 });
 
-test('buying: tiers in order, balance checked, errors the client can translate', { skip: !PGlite && 'PGlite not installed' }, async () => {
+test('buying: tiers in order, each currency checked, errors the client can translate', { skip: !PGlite && 'PGlite not installed' }, async () => {
   const db = await freshDb();
   await db.query(`select set_config('test.uid', $1, false)`, [UID]);
   const buy = (id) => db.query('select public.buy_gear($1) as w', [id]).then((r) => r.rows[0].w);
@@ -157,12 +157,16 @@ test('buying: tiers in order, balance checked, errors the client can translate',
   assert.equal(await code(buy('bike-wheels-t2')), 'tier_locked');
   assert.equal(await code(buy('bike-wheels-t0')), 'starter');
   assert.equal(await code(buy('nope')), 'unknown_item');
-  const w1 = await buy('bike-wheels-t1');                // purse 300 → 200
-  assert.equal(Number(w1.balance), GEAR_RULES.starterPurse - 100);
+  const w1 = await buy('bike-wheels-t1');                // coins 300 → 200
+  assert.equal(Number(w1.coins), GEAR_RULES.starterPurse - 100);
+  assert.equal(Number(w1.carbs), GEAR_RULES.starterCarbs);
   assert.equal(await code(buy('bike-wheels-t1')), 'owned');
   assert.equal(await code(buy('bike-wheels-t2')), 'insufficient');
-  const w2 = await buy('gel');
-  assert.equal(Number(w2.gels_held), 1);
+  const w2 = await buy('gel');                           // carbs 200 → 80
+  assert.equal(Number(w2.carbs), GEAR_RULES.starterCarbs - GEAR_RULES.fuel.items.gel.cost);
+  assert.equal(Number(w2.coins), GEAR_RULES.starterPurse - 100);
+  assert.equal(Number(w2.held.gel), 1);
+  assert.equal(await code(buy('gel')), 'insufficient');
   // the rows can't be written directly by a signed-in user
   await db.exec('set role authenticated');
   assert.notEqual(await code(db.query(`insert into public.user_gear (user_id, item_id) values ('${UID}', 'bike-frame-t1')`)), 'ok');
@@ -170,24 +174,54 @@ test('buying: tiers in order, balance checked, errors the client can translate',
   await db.exec('reset role');
 });
 
-test('gels: one at a time, two in seven days, and you need one', { skip: !PGlite && 'PGlite not installed' }, async () => {
+test('fuel: one at a time, a weekly limit per kind, and you need one', { skip: !PGlite && 'PGlite not installed' }, async () => {
   const db = await freshDb();
   await db.query(`select set_config('test.uid', $1, false)`, [UID]);
   const code = (p) => p.then(() => 'ok', (e) => String(e.message).replace(/^.*gear:/, ''));
-  const use = () => db.query(`select public.use_gel('gel') as w`);
-  assert.equal(await code(use()), 'gel_none');
-  await db.query(`select public.buy_gear('gel')`);
-  await db.query(`select public.buy_gear('gel')`);
-  await db.query(`select public.buy_gear('gel')`);
-  assert.equal(await code(db.query(`select public.buy_gear('gel')`)), 'gel_full');
+  const use = (k = 'gel') => db.query(`select public.use_gel($1) as w`, [k]);
+  assert.equal(await code(use()), 'fuel_none');
+  // stock up past the starter carbs (written as the server would, to skip earning them)
+  for (const k of ['gel', 'gel', 'gel', 'pasta']) {
+    await db.query(`insert into public.coin_spends (user_id, item_id, coins, currency) values ($1, $2, 0, 'carbs')`, [UID, k]);
+  }
+  assert.equal(await code(db.query(`select public.buy_gear('gel')`)), 'fuel_full');
   assert.equal(await code(use()), 'ok');
-  assert.equal(await code(use()), 'gel_active');
-  // end the first gel, then use the second; a third in the same week is refused
+  assert.equal(await code(use('pasta')), 'fuel_active');
   await db.exec(`update public.user_boosts set started_at = now() - interval '5 hours', expires_at = now() - interval '1 hour'`);
   assert.equal(await code(use()), 'ok');
   await db.exec(`update public.user_boosts set started_at = started_at - interval '5 hours', expires_at = expires_at - interval '5 hours'`);
-  assert.equal(await code(use()), 'gel_limit');
+  assert.equal(await code(use()), 'fuel_limit');
+  assert.equal(await code(use('pasta')), 'ok');           // another kind has its own limit
   const w = (await db.query('select public.wallet() as w')).rows[0].w;
-  assert.equal(Number(w.gels_held), 1);
-  assert.equal(Number(w.gels_recent), 2);
+  assert.equal(Number(w.held.gel), 1);
+  assert.equal(w.active.kind, 'pasta');
+});
+
+test('JS and SQL agree on the storage-capped wallet: training, missions and spends in time order', { skip: !PGlite && 'PGlite not installed' }, async () => {
+  const db = await freshDb();
+  const days = Array.from({ length: 95 }, (_, i) => ({
+    id: `w${i}`, date: new Date(Date.parse('2026-11-03') + i * 864e5).toISOString().slice(0, 10), type: 'bike', intensity: 'steady',
+    durationMin: 240, completed: true, strava_activity_id: 1000 + i, metrics: { distanceKm: 110 },
+  }));
+  for (const w of days) {
+    await db.query(`insert into public.workouts (id, user_id, date, type, intensity, duration_min, distance_km, completed, strava_activity_id)
+      values ($1, $2, $3, 'bike', 'steady', $4, $5, true, $6)`, [w.id, UID, w.date, w.durationMin, w.metrics.distanceKm, w.strava_activity_id]);
+  }
+  const quests = [{ day: '2026-11-05', quest_id: 'brick' }, { day: '2026-12-01', quest_id: 'min-45' }, { day: '2026-10-20', quest_id: 'km-10' }];
+  for (const q of quests) await db.query(`insert into public.quest_completions (user_id, day, quest_id, xp) values ($1, $2, $3, 10)`, [UID, q.day, q.quest_id]);
+  const spends = [
+    { item_id: 'bike-frame-t1', coins: 100, currency: 'coins', created_at: '2026-11-04T09:30:00.000Z' },
+    { item_id: 'gel', coins: 120, currency: 'carbs', created_at: '2027-01-15T18:00:00.000Z' },
+    { item_id: 'bike-frame-t2', coins: 350, currency: 'coins', created_at: '2027-02-01T08:00:00.000Z' },
+  ];
+  for (const s of spends) {
+    await db.query(`insert into public.coin_spends (user_id, item_id, coins, currency, created_at) values ($1, $2, $3, $4, $5)`,
+      [UID, s.item_id, s.coins, s.currency, s.created_at]);
+  }
+  const sql = (await db.query('select * from public.wallet_fold($1)', [UID])).rows[0];
+  const js = walletFold({ workouts: days, quests, spends });
+  assert.deepEqual(
+    { coins: Number(sql.coins), carbs: Number(sql.carbs), lostCoins: Number(sql.lost_coins), lostCarbs: Number(sql.lost_carbs), spentCoins: Number(sql.spent_coins) },
+    { coins: js.coins, carbs: js.carbs, lostCoins: js.lost.coins, lostCarbs: js.lost.carbs, spentCoins: js.spent.coins });
+  assert.ok(js.lost.coins > 0, 'the fixture fills the coin store');
 });

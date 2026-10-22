@@ -1894,11 +1894,12 @@ es.xp = {
   "lbBase": "La clasificación cuenta la XP base: el material y los geles nunca cuentan aquí.",
   "baseN": "{n} base",
   "gearN": "{n} material",
-  "gelN": "{n} gel",
+  "gelN": "{n} nutrición",
   "coinsN": {
     "one": "+{n} moneda",
     "other": "+{n} monedas"
-  }
+  },
+  "carbsN": "+{n} g de carbohidratos"
 };
 
 es.checkin = {
@@ -2056,11 +2057,6 @@ es.gear = {
     "moske-navy": "MOSKE marino",
     "moske-sand": "MOSKE arena"
   },
-  "gel": {
-    "name": "Gel energético"
-  },
-  "openAria": "Abrir MATERIAL, el taller de entrenamiento",
-  "balanceAria": "Saldo: {n} monedas",
   "signIn": "Inicia sesión para montar tu material. Las monedas salen del entrenamiento que suma XP, y tu material se guarda en tu cuenta.",
   "offline": "Estás sin conexión. Puedes mirar; para comprar hace falta conexión.",
   "disciplines": "Disciplinas",
@@ -2072,18 +2068,6 @@ es.gear = {
   "noBoost": "Sin mejora aún",
   "needMore": "Faltan {n} monedas",
   "buyAria": "Comprar {name} por {cost} monedas, {boost} de XP en esta disciplina",
-  "consumables": "Geles",
-  "gelBlurb": "+{pct}% de XP en cada sesión durante {h} horas desde que lo tomas. {n} por semana.",
-  "useGel": "Tomar un gel",
-  "buyGelAria": "Comprar un gel por {cost} monedas",
-  "gelFull": "Puedes llevar {n}",
-  "gelWhy": {
-    "active": "Ya tienes uno activo",
-    "limit": "Ya has usado dos esta semana"
-  },
-  "gelActiveAria": "Gel activo: quedan {time}, +{pct}% de XP",
-  "gelOn": "Gel activo: +{pct}% de XP durante {h} horas",
-  "kits": "Colores de equipación",
   "kitsNote": "Combinaciones de color para tu atleta. Cambian tu aspecto, no tu XP.",
   "wear": "Ponerla",
   "wearing": "Puesta",
@@ -2097,13 +2081,59 @@ es.gear = {
     "owned": "Ya lo tienes.",
     "tier_locked": "Compra antes el nivel anterior.",
     "insufficient": "Aún no tienes monedas suficientes.",
-    "gel_full": "Ya llevas el máximo de geles.",
-    "gel_none": "No tienes geles. Compra uno antes.",
-    "gel_active": "Ya tienes un gel activo.",
-    "gel_limit": "Has usado dos geles en los últimos siete días.",
     "offline": "Estás sin conexión. Para comprar hace falta conexión.",
     "demo": "Modo demo: no se compra nada.",
-    "generic": "No ha salido bien. Inténtalo de nuevo."
+    "generic": "No ha salido bien. Inténtalo de nuevo.",
+    "fuel_full": "Ya llevas el máximo de eso.",
+    "fuel_none": "No te queda. Compra antes.",
+    "fuel_active": "Ya tienes nutrición activa.",
+    "fuel_limit": "Has llegado al límite de eso esta semana."
+  },
+  "shop": "Tienda de material",
+  "inventory": "Inventario",
+  "openShop": "Abrir la tienda de material",
+  "openInventory": "Abrir tu inventario",
+  "tab": {
+    "gear": "Material",
+    "clothes": "Ropa",
+    "fuel": "Nutrición"
+  },
+  "res": {
+    "max": "Máx. {n}",
+    "aria": "Monedas {coins}, carbohidratos {carbs} g, cada uno guarda hasta {cap}"
+  },
+  "needCarbs": "Faltan {n} g de carbohidratos",
+  "fuelEffect": "+{pct}% de XP durante {h} h · {n} por semana",
+  "fuelFull": "Puedes llevar {n}",
+  "buyFuelAria": "Comprar {name} por {cost} gramos de carbohidratos",
+  "buyKitAria": "Comprar {name} por {cost} monedas",
+  "use": "Usar",
+  "fuelWhy": {
+    "active": "Ya tienes algo activo",
+    "limit": "Agotado esta semana",
+    "none": "No te queda"
+  },
+  "fuelOn": "{name}: +{pct}% de XP durante {h} horas",
+  "fuelActiveAria": "{name} activo: quedan {time}, +{pct}% de XP",
+  "clothesNote": "Equipación para tu atleta, con monedas. Cambia tu aspecto, no tu XP.",
+  "fuelNote": "La nutrición se compra con carbohidratos. Solo funciona una a la vez; tómala justo antes de entrenar.",
+  "toShop": "Ir a la tienda",
+  "invNoFuel": "Aún no tienes nutrición.",
+  "invNoClothes": "Aún no tienes ropa.",
+  "invNoGear": "Por ahora, solo el material de serie.",
+  "fuel": {
+    "gel": {
+      "name": "Gel energético",
+      "blurb": "Un chute rápido para una sesión dura."
+    },
+    "energy-bar": {
+      "name": "Barrita energética",
+      "blurb": "Avena y miel para una mañana larga."
+    },
+    "pasta": {
+      "name": "Plato de pasta",
+      "blurb": "Carga de hidratos para un gran día de entreno."
+    }
   }
 };
 

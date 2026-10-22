@@ -1894,11 +1894,12 @@ en.xp = {
   "lbBase": "Ranks counts base XP: gear and gels never count here.",
   "baseN": "{n} base",
   "gearN": "{n} gear",
-  "gelN": "{n} gel",
+  "gelN": "{n} fuel",
   "coinsN": {
     "one": "+{n} coin",
     "other": "+{n} coins"
-  }
+  },
+  "carbsN": "+{n} g carbs"
 };
 
 en.checkin = {
@@ -2056,11 +2057,6 @@ en.gear = {
     "moske-navy": "MOSKE navy",
     "moske-sand": "MOSKE sand"
   },
-  "gel": {
-    "name": "Energy gel"
-  },
-  "openAria": "Open GEAR, the training workshop",
-  "balanceAria": "Balance: {n} coins",
   "signIn": "Sign in to build your kit. Coins come from training that earns XP, and your gear is kept on your account.",
   "offline": "You’re offline. You can look around; buying needs a connection.",
   "disciplines": "Disciplines",
@@ -2072,18 +2068,6 @@ en.gear = {
   "noBoost": "No boost yet",
   "needMore": "{n} more coins",
   "buyAria": "Buy {name} for {cost} coins, {boost} XP in this discipline",
-  "consumables": "Gels",
-  "gelBlurb": "+{pct}% XP on every session for {h} hours from when you take it. {n} a week.",
-  "useGel": "Take a gel",
-  "buyGelAria": "Buy a gel for {cost} coins",
-  "gelFull": "You can hold {n}",
-  "gelWhy": {
-    "active": "One is already running",
-    "limit": "Two used this week"
-  },
-  "gelActiveAria": "Gel running: {time} left, +{pct}% XP",
-  "gelOn": "Gel on: +{pct}% XP for {h} hours",
-  "kits": "Kit colours",
   "kitsNote": "Colourways for your athlete. They change how you look, not your XP.",
   "wear": "Wear",
   "wearing": "Wearing",
@@ -2097,13 +2081,59 @@ en.gear = {
     "owned": "You already own that.",
     "tier_locked": "Buy the tier below first.",
     "insufficient": "Not enough coins yet.",
-    "gel_full": "You’re holding the most gels you can.",
-    "gel_none": "You have no gels. Buy one first.",
-    "gel_active": "A gel is already running.",
-    "gel_limit": "You’ve used two gels in the last seven days.",
     "offline": "You’re offline. Buying needs a connection.",
     "demo": "Demo mode: nothing is bought.",
-    "generic": "That didn’t go through. Try again."
+    "generic": "That didn’t go through. Try again.",
+    "fuel_full": "You’re holding the most of that you can.",
+    "fuel_none": "You have none of that. Buy some first.",
+    "fuel_active": "Fuel is already running.",
+    "fuel_limit": "You’ve used your limit of that this week."
+  },
+  "shop": "Gear shop",
+  "inventory": "Inventory",
+  "openShop": "Open the gear shop",
+  "openInventory": "Open your inventory",
+  "tab": {
+    "gear": "Gear",
+    "clothes": "Clothes",
+    "fuel": "Fuel"
+  },
+  "res": {
+    "max": "Max {n}",
+    "aria": "Coins {coins}, carbs {carbs} g, each stores up to {cap}"
+  },
+  "needCarbs": "{n} g more carbs",
+  "fuelEffect": "+{pct}% XP for {h} h · {n} a week",
+  "fuelFull": "You can hold {n}",
+  "buyFuelAria": "Buy {name} for {cost} grams of carbs",
+  "buyKitAria": "Buy {name} for {cost} coins",
+  "use": "Use",
+  "fuelWhy": {
+    "active": "Something is already running",
+    "limit": "Used up for this week",
+    "none": "None left"
+  },
+  "fuelOn": "{name}: +{pct}% XP for {h} hours",
+  "fuelActiveAria": "{name} running: {time} left, +{pct}% XP",
+  "clothesNote": "Kit for your athlete, bought with coins. It changes how you look, not your XP.",
+  "fuelNote": "Fuel is bought with carbs. Only one runs at a time; take it right before you train.",
+  "toShop": "Go to the shop",
+  "invNoFuel": "No fuel yet.",
+  "invNoClothes": "No clothes yet.",
+  "invNoGear": "Only the starter kit so far.",
+  "fuel": {
+    "gel": {
+      "name": "Energy gel",
+      "blurb": "A quick hit for one hard session."
+    },
+    "energy-bar": {
+      "name": "Energy bar",
+      "blurb": "Oats and honey for a long morning."
+    },
+    "pasta": {
+      "name": "Pasta meal",
+      "blurb": "Carb-loading for a big training day."
+    }
   }
 };
 

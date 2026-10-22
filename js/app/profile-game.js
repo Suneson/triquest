@@ -27,6 +27,9 @@ import { t, tList, fmtDate, fmtNum } from '../core/i18n.js';
 import { planTitle } from '../core/plan-i18n.js';
 import { DISCIPLINES } from '../core/disciplines.js';
 import { gelChip } from './gel-chip.js';
+import { resourceBars } from './gear-view.js';
+import { kitSprite } from '../core/gear.js';
+import { gearState } from './gear-state.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -114,12 +117,12 @@ function stillStage(scene, tod) {
   </div></div>`;
 }
 
-function layeredWorld(scene, tod) {
+function layeredWorld(scene, tod, kit = null) {
   const e = scene.entry;
   return `<div class="pg-world">
       <img class="pg-layer pg-bg" src="${esc(e.bg)}" alt="" aria-hidden="true">
       <img class="pg-layer pg-platform" src="${esc(e.platform)}" alt="" aria-hidden="true">
-      <img class="pg-char" src="${esc(e.char)}" alt="${esc(t('pg.charAlt', { sport: scene.label, n: scene.artLevel }))}">
+      <img class="pg-char" src="${esc(kitSprite(e.char, kit))}" alt=""${esc(t('pg.charAlt', { sport: scene.label, n: scene.artLevel }))}">
       <div class="pg-tod" aria-hidden="true"></div>
       ${tod === 'night' ? `<div class="pg-fx" aria-hidden="true">${starsFx({ x: 4, y: 3, w: 92, h: 22 })}</div>` : ''}
     </div>`;
@@ -143,7 +146,7 @@ export const SPORT_ORDER = SWITCH.map(([s]) => s);
  * full screen; another athlete's profile embeds it (`embed`) above their stats,
  * with their levels and a read-only HUD.
  */
-function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '', gearXp = 0 }) {
+function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '', gearXp = 0, kit = null, extras = '' }) {
   const scene = sceneFor(sport, p.level) || sceneFor('bike', p.level);
   const still = scene.kind === 'still';
   // lighting follows the viewer's local clock: dawn, day, dusk, night
@@ -162,7 +165,8 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
 
   return `
   <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}${embed ? ' pg-embed' : ''}" style="${bd}" data-pg-swipe>
-    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod) : layeredWorld(scene, tod)}</div>
+    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod) : layeredWorld(scene, tod, kit)}</div>
+    ${extras}
 
     <div class="pg-topbar">
       <div class="pg-sports" role="group" aria-label="${t('pg.sportGroup')}">${SWITCH.map(sportBtn).join('')}</div>
@@ -195,10 +199,17 @@ export function renderProfileGame(ctx, sport = 'bike', slide = '') {
     action: 'pg-sport',
     slide,
     gearXp: boosted == null ? 0 : boosted - (ctx.boost.sportBase[sport] || 0),
-    avatarBtn: `<button class="pg-gear-btn" data-action="open-gear" aria-label="${t('gear.openAria')}">${svg('wrench')}<span>${t('gear.title')}</span></button>
-      <button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`,
+    avatarBtn: `<button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`,
+    // the kit you wear shows on the character where a recoloured sprite exists
+    kit: ownedKit(ctx.settings?.kit),
+    // coins and carbs top right; the inventory bottom left and the shop bottom right of the scene
+    extras: `${resourceBars(ctx.workouts, { cls: 'on-scene' })}
+      <button class="pg-scene-btn is-inv" data-action="open-inventory" aria-label="${t('gear.openInventory')}">${svg('backpack')}</button>
+      <button class="pg-scene-btn is-shop" data-action="open-gear" aria-label="${t('gear.openShop')}">${svg('stall')}</button>`,
   });
 }
+
+const ownedKit = (id) => (id && gearState().inventory.some((r) => r.item_id === id) ? id : null);
 
 // ---- decluttered avatar modal (core stats only) -----------------------------
 

@@ -7,13 +7,13 @@
 import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { isDemo } from './demo.js';
-import { coinsEarned, balance, gelsHeld } from '../core/wallet.js';
-import { gearById, GEAR_RULES, GEL, KITS, tierId } from '../core/gear.js';
-import { canUseGel } from '../core/boosts.js';
+import { walletFold, fuelHeld } from '../core/wallet.js';
+import { gearById, GEAR_RULES, KITS, FUELS, fuelById, currencyOf, tierId } from '../core/gear.js';
+import { canUseFuel } from '../core/boosts.js';
 import { t } from '../core/i18n.js';
 
 const KEY = 'moske-gear';
-const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], wallet: null, at: 0 };
+const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, at: 0 };
 const listeners = new Set();
 
 function load() {
@@ -26,18 +26,18 @@ function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {
 
 let state = load();
 
-// demo mode: a part-kitted athlete with a gel running, so the workshop and the
-// boosted numbers can be reviewed without an account
+// demo mode: a part-kitted athlete with a gel running, so the shop, the
+// inventory and the boosted numbers can be reviewed without an account
 function demoState() {
   const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
-  const inventory = ['bike-wheels-t1', 'bike-wheels-t2', 'bike-frame-t1', 'bike-aerobars-t1', 'run-shoes-t1', 'gym-belt-t1', 'kit-moske-navy']
+  const inventory = ['bike-wheels-t1', 'bike-wheels-t2', 'bike-frame-t1', 'bike-aerobars-t1', 'run-shoes-t1', 'gym-belt-t1', 'kit-moske-navy', 'kit-moske-sand']
     .map((item_id, i) => ({ item_id, acquired_at: ago(24 * 30 - i) }));
-  // ?demo=1&gel=0 starts with no gel running (to review taking one)
+  // ?demo=1&gel=0 starts with no fuel running (to review taking one)
   let gelOn = true;
   try { gelOn = new URLSearchParams(location.search).get('gel') !== '0'; } catch { /* no location */ }
   const boosts = [{ kind: 'gel', started_at: ago(gelOn ? 1.25 : 72), expires_at: ago(gelOn ? -2.75 : 68), multiplier: 1.3 }];
-  const spends = [{ item_id: 'gel', coins: 60 }, { item_id: 'gel', coins: 60 }];
-  return { uid: 'demo', inventory, spends, boosts, wallet: { earned: 1640, spent: 1010, balance: 630 }, at: Date.now() };
+  const spends = ['gel', 'gel', 'energy-bar', 'pasta'].map((item_id) => ({ item_id, coins: 0, currency: 'carbs', created_at: ago(80) }));
+  return { uid: 'demo', inventory, spends, boosts, quests: [], wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, at: Date.now() };
 }
 
 /** Can this device talk to the workshop at all (signed in, or demo)? */
@@ -60,15 +60,16 @@ export async function refreshGear() {
   const uid = currentUser().id;
   try {
     const c = await client();
-    const [inv, sp, bo, wa] = await Promise.all([
+    const [inv, sp, bo, qc, wa] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
-      c.from('coin_spends').select('item_id, coins, created_at'),
+      c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('kind, started_at, expires_at, multiplier'),
+      c.from('quest_completions').select('day, quest_id'),
       c.rpc('wallet'),
     ]);
-    const err = inv.error || sp.error || bo.error || wa.error;
+    const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
-    state = { uid, inventory: inv.data || [], spends: sp.data || [], boosts: bo.data || [], wallet: wa.data || null, at: Date.now() };
+    state = { uid, inventory: inv.data || [], spends: sp.data || [], boosts: bo.data || [], quests: qc.data || [], wallet: wa.data || null, at: Date.now() };
     save(state);
     emit();
   } catch (e) {
@@ -85,29 +86,32 @@ export function gearError(e) {
   return t('gear.err.generic');
 }
 
-// demo mode plays the server's rules on the local copy, so the workshop
-// moment can be reviewed without an account (nothing is stored or sent)
+// demo mode plays the server's rules on the local copy, so the shop moment
+// can be reviewed without an account (nothing is stored or sent)
 function demoCall(fn, args) {
   const s = gearState();
   const owned = (id) => s.inventory.some((r) => r.item_id === id);
-  const held = gelsHeld(s.spends, s.boosts);
   const now = new Date().toISOString();
   if (fn === 'use_gel') {
-    const ok = canUseGel(s.boosts, held, Date.now());
-    if (!ok.ok) throw new Error(`gear:gel_${ok.reason}`);
-    s.boosts.push({ kind: 'gel', started_at: now, expires_at: new Date(Date.now() + GEAR_RULES.gel.hours * 3600e3).toISOString(), multiplier: 1 + GEAR_RULES.gel.boostBp / 10000 });
+    const kind = args.p_kind;
+    const f = fuelById(kind);
+    if (!f) throw new Error('gear:unknown_item');
+    const ok = canUseFuel(kind, s.boosts, fuelHeld(s.spends, s.boosts, kind), Date.now());
+    if (!ok.ok) throw new Error(`gear:fuel_${ok.reason}`);
+    s.boosts.push({ kind, started_at: now, expires_at: new Date(Date.now() + f.hours * 3600e3).toISOString(), multiplier: 1 + f.boostBp / 10000 });
   } else {
     const id = args.p_item_id;
-    const item = gearById(id) || KITS.find((k) => k.id === id) || (id === 'gel' ? GEL : null);
+    const item = gearById(id) || KITS.find((k) => k.id === id) || fuelById(id);
     if (!item) throw new Error('gear:unknown_item');
+    const cur = currencyOf(item);
     if (item.kind === 'gear' && item.tier === 0) throw new Error('gear:starter');
-    if (item.kind !== 'gel' && owned(id)) throw new Error('gear:owned');
+    if ((item.kind === 'gear' || item.kind === 'kit') && owned(id)) throw new Error('gear:owned');
     if (item.kind === 'gear' && item.tier > 1 && !owned(tierId(item.sport, item.slot, item.tier - 1))) throw new Error('gear:tier_locked');
-    if (item.kind === 'gel' && held >= GEAR_RULES.gel.maxHeld) throw new Error('gear:gel_full');
-    if (s.wallet.balance < item.cost) throw new Error('gear:insufficient');
-    s.spends.push({ item_id: id, coins: item.cost });
-    if (item.kind !== 'gel') s.inventory.push({ item_id: id, acquired_at: now });
-    s.wallet = { ...s.wallet, spent: s.wallet.spent + item.cost, balance: s.wallet.balance - item.cost };
+    if (fuelById(id) && fuelHeld(s.spends, s.boosts, id) >= item.maxHeld) throw new Error('gear:fuel_full');
+    if (s.wallet[cur] < item.cost) throw new Error('gear:insufficient');
+    s.spends.push({ item_id: id, coins: item.cost, currency: cur, created_at: now });
+    if (item.kind === 'gear' || item.kind === 'kit') s.inventory.push({ item_id: id, acquired_at: now });
+    s.wallet = { ...s.wallet, [cur]: s.wallet[cur] - item.cost };
   }
   listeners.forEach((f) => f(s));
   return s;
@@ -123,24 +127,27 @@ async function call(fn, args) {
   return refreshGear();
 }
 
-/** Buy an item (a gear tier, a kit, or a gel). Throws with a `gear:` code. */
+/** Buy an item (a gear tier, clothes, or fuel). Throws with a `gear:` code. */
 export const buyItem = (id) => call('buy_gear', { p_item_id: id });
-/** Start a gel. Throws with a `gear:` code. */
-export const useGel = () => call('use_gel', { p_kind: 'gel' });
+/** Start a fuel (gel, energy bar, pasta). Throws with a `gear:` code. */
+export const useFuel = (kind) => call('use_gel', { p_kind: kind });
+export const useGel = () => useFuel('gel');
 
 /**
- * Your balance: the server's wallet when it's fresh; otherwise worked out
- * from your sessions the same way (wallet.js), so it shows offline too.
+ * Your coins and carbs: the server's wallet when there is one; otherwise
+ * worked out from your sessions the same way (wallet.js), so it shows offline.
+ * { coins, carbs, cap, held: { gel, 'energy-bar', pasta } }
  */
 export function walletNow(workouts) {
   const s = gearState();
-  const local = { earned: coinsEarned(workouts), spent: (s.spends || []).reduce((n, x) => n + (Number(x.coins) || 0), 0) };
-  local.balance = balance(local.earned, s.spends);
   const w = s.wallet;
+  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends });
+  const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id)]));
   return {
-    earned: w ? Number(w.earned) : local.earned,
-    spent: w ? Number(w.spent) : local.spent,
-    balance: w ? Number(w.balance) : local.balance,
-    gels: gelsHeld(s.spends, s.boosts),
+    coins: Number(w ? w.coins : local.coins) || 0,
+    carbs: Number(w ? w.carbs : local.carbs) || 0,
+    cap: GEAR_RULES.storageCap,
+    held,
+    gels: held.gel,
   };
 }

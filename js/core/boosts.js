@@ -32,27 +32,39 @@ export function gearBoost(inventory, sport, at = null) {
   return Math.min(GEAR_RULES.sportCapBp, sum);
 }
 
-/** The gel running at `at` (ms or ISO), or null. `boosts` are user_boosts rows. */
-export function activeGel(boosts, at) {
+const FUEL = GEAR_RULES.fuel.items;
+const isFuel = (b) => !!(b && FUEL[b.kind]);
+/** The largest fuel boost: a session never gets more than one fuel's worth. */
+const FUEL_CAP_BP = Math.max(...Object.values(FUEL).map((f) => f.boostBp));
+
+/** The fuel running at `at` (ms or ISO), or null. `boosts` are user_boosts rows. One runs at a time. */
+export function activeFuel(boosts, at) {
   const t = typeof at === 'number' ? at : ms(at);
   if (t == null) return null;
-  return (boosts || []).find((b) => b?.kind === 'gel' && ms(b.started_at) <= t && t < ms(b.expires_at)) || null;
+  return (boosts || []).find((b) => isFuel(b) && ms(b.started_at) <= t && t < ms(b.expires_at)) || null;
 }
+/** The gel running at `at`, or null. */
+export const activeGel = (boosts, at) => {
+  const f = activeFuel(boosts, at);
+  return f?.kind === 'gel' ? f : null;
+};
 
-/** Gels used in the rolling window ending at `at`. */
-export function gelsUsedRecently(boosts, at) {
+/** Fuel of one kind used in the rolling window ending at `at`. */
+export function fuelUsedRecently(boosts, kind, at) {
   const t = typeof at === 'number' ? at : ms(at);
-  const from = t - GEAR_RULES.gel.windowDays * 864e5;
-  return (boosts || []).filter((b) => b?.kind === 'gel' && ms(b.started_at) > from && ms(b.started_at) <= t).length;
+  const from = t - GEAR_RULES.fuel.windowDays * 864e5;
+  return (boosts || []).filter((b) => b?.kind === kind && ms(b.started_at) > from && ms(b.started_at) <= t).length;
 }
+export const gelsUsedRecently = (boosts, at) => fuelUsedRecently(boosts, 'gel', at);
 
-/** Can a gel be used at `at`? { ok } or { ok: false, reason: 'active' | 'limit' | 'none' }. */
-export function canUseGel(boosts, held, at) {
-  if (activeGel(boosts, at)) return { ok: false, reason: 'active' };
-  if (gelsUsedRecently(boosts, at) >= GEAR_RULES.gel.perWindow) return { ok: false, reason: 'limit' };
+/** Can this fuel be used at `at`? { ok } or { ok: false, reason: 'active' | 'limit' | 'none' }. */
+export function canUseFuel(kind, boosts, held, at) {
+  if (activeFuel(boosts, at)) return { ok: false, reason: 'active' };
+  if (fuelUsedRecently(boosts, kind, at) >= (FUEL[kind]?.perWindow ?? 0)) return { ok: false, reason: 'limit' };
   if (!(held > 0)) return { ok: false, reason: 'none' };
   return { ok: true };
 }
+export const canUseGel = (boosts, held, at) => canUseFuel('gel', boosts, held, at);
 
 /**
  * When a session happened, as [startMs, endMs] (UTC instants), or null.
@@ -81,7 +93,7 @@ export function sessionSpan(w) {
 export function gelShare(gel, span) {
   if (!gel || !span) return 0;
   const [s, e] = span;
-  const bp = Math.round((Number(gel.multiplier) - 1) * 10000) || GEAR_RULES.gel.boostBp;
+  const bp = Math.round((Number(gel.multiplier) - 1) * 10000) || FUEL[gel.kind]?.boostBp || 0;
   if (e <= s) return s >= ms(gel.started_at) && s < ms(gel.expires_at) ? bp : 0;
   const inside = Math.max(0, Math.min(e, ms(gel.expires_at)) - Math.max(s, ms(gel.started_at)));
   return Math.round(bp * inside / (e - s));
@@ -99,9 +111,9 @@ export function boostStamp(w, inventory, boosts) {
   const span = sessionSpan(w);
   const end = span ? span[1] : null;
   const gear_bp = end == null ? 0 : gearBoost(inventory, w?.type, new Date(end).toISOString());
-  // a long session can run across two back-to-back gels; it never gets more than one gel's worth
-  const gel = span ? (boosts || []).filter((b) => b?.kind === 'gel').reduce((n, b) => n + gelShare(b, span), 0) : 0;
-  return { gear_bp, gel_bp: Math.min(GEAR_RULES.gel.boostBp, gel) };
+  // a long session can run across two back-to-back fuels; it never gets more than the biggest one's worth
+  const gel = span ? (boosts || []).filter(isFuel).reduce((n, b) => n + gelShare(b, span), 0) : 0;
+  return { gear_bp, gel_bp: Math.min(FUEL_CAP_BP, gel) };
 }
 
 /** Split a base XP into { base, gear, gel, total } under a stamp. */

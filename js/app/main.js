@@ -3,7 +3,7 @@
 import * as store from './store.js';
 import { computeStats, xpStatus, earnsXp, levelFromTotalXp } from '../core/scoring.js';
 import { boostedLedger } from '../core/boosts.js';
-import { coinsForSession } from '../core/wallet.js';
+import { earnedBySession } from '../core/wallet.js';
 import { computeStreaks } from '../core/streaks.js';
 import { evaluateBadges, BADGES } from '../core/badges.js';
 import { questsFor, accountProgress, msUntilReset, formatCountdown } from '../core/quests.js';
@@ -47,7 +47,7 @@ import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
 import { openCheckinSheet } from './checkin.js';
 import { gearState, refreshGear, onGear } from './gear-state.js';
-import { openGear } from './gear-view.js';
+import { openGear, openInventory } from './gear-view.js';
 import { startGelTicker } from './gel-chip.js';
 
 
@@ -181,8 +181,8 @@ function feedbackMoments(ctx) {
     // the boosted number flies; the base and the coins it earned sit underneath
     const b = ctx.boost.byId.get(w.id);
     const base = xpStatus(w, ctx.workouts).xp;
-    const coins = coinsForSession(w, ctx.workouts);
-    const sub = [b && b.total !== base ? t('xp.baseN', { n: base }) : '', coins ? t('xp.coinsN', { n: coins }) : ''].filter(Boolean).join(' · ');
+    const got = earnedBySession(w, ctx.workouts);
+    const sub = [b && b.total !== base ? t('xp.baseN', { n: base }) : '', got.coins ? t('xp.coinsN', { n: got.coins }) : '', got.carbs ? t('xp.carbsN', { n: got.carbs }) : ''].filter(Boolean).join(' · ');
     xpPop(`+${b ? b.total : base} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3, sub);
     playComplete();
   }, 300 + i * 500));
@@ -445,6 +445,7 @@ function onClick(e) {
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;
     case 'open-gear': openGear(buildCtx(), appState.pgSport); break;
+    case 'open-inventory': openInventory(); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
       if (confirm(t('main.signOutConfirm'))) { auth.signOut(); closeAllLayers(); }

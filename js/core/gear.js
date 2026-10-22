@@ -14,26 +14,47 @@
 
 import { t } from './i18n.js';
 
-/** Sessions dated before this earn no coins (everyone starts with the purse). */
+/** Sessions and missions dated before this earn nothing (everyone starts with the purse). */
 export const GEAR_SINCE = '2026-11-02';
 
+/**
+ * Fuel: consumables bought with carbs. Each one boosts every session inside
+ * its window (prorated at the edges). Only one fuel runs at a time, and each
+ * kind has its own limit in any rolling 7 days.
+ */
+const FUEL_ITEMS = {
+  gel: { boostBp: 3000, hours: 4, perWindow: 2, cost: 120, maxHeld: 3 },          // +30% for 4 h
+  'energy-bar': { boostBp: 1500, hours: 6, perWindow: 2, cost: 80, maxHeld: 3 },  // +15% for 6 h
+  pasta: { boostBp: 1000, hours: 12, perWindow: 1, cost: 150, maxHeld: 2 },       // +10% for 12 h
+};
+
 export const GEAR_RULES = {
+  // two currencies, both earned only by training (and missions), each stored up to a cap
+  storageCap: 10000,        // coins and grams of carbs; anything earned past a full store is lost
   coinsPerXp: 0.5,          // coins for a day = floor(that day's base XP × this)…
   dailyCoinCap: 120,        // …at most this many
-  starterPurse: 300,        // everyone's opening balance, once
-  tierCost: [0, 100, 350, 850],
+  carbsPerXp: 0.8,          // grams of carbs for a day = floor(that day's base XP × this)…
+  dailyCarbCap: 300,        // …at most this many
+  starterPurse: 300,        // everyone's opening coins, once
+  starterCarbs: 200,        // and opening carbs
+  tierCost: [0, 100, 350, 850],    // coins
   tierBoostBp: [0, 100, 200, 400], // per item, cumulative: +1% / +2% / +4%
   sportCapBp: 1600,         // a discipline's gear boost never exceeds +16% (= a full kit)
-  gel: {
-    boostBp: 3000,          // +30%…
-    hours: 4,               // …for sessions inside a 4-hour window (prorated at the edges)
-    perWindow: 2,           // at most this many used…
-    windowDays: 7,          // …in any rolling 7 days
-    graceHours: 24,         // a session first seen this long after the window closed doesn't get it
-    cost: 60,
-    maxHeld: 3,
-  },
-  kitCost: 250,
+  fuel: { windowDays: 7, graceHours: 24, items: FUEL_ITEMS },
+  gel: { ...FUEL_ITEMS.gel, windowDays: 7, graceHours: 24 }, // the gel on its own, for the countdown
+  kitCost: 250,             // coins
+};
+
+/** What each mission pays, in coins or grams of carbs (on top of its XP). */
+export const QUEST_REWARDS = {
+  'plan-done': { coins: 25 },
+  'min-45': { carbs: 30 },
+  'two-disc': { coins: 35 },
+  streak: { carbs: 20 },
+  'km-10': { carbs: 25 },
+  brick: { coins: 35 },
+  'pack-bag': { carbs: 10 },
+  'rest-day': { carbs: 15 },
 };
 
 export const SPORTS = ['bike', 'swim', 'run', 'gym'];
@@ -114,21 +135,40 @@ export const KITS = [
   },
 ];
 export const kitById = (id) => KITS.find((k) => k.id === id) || null;
+export const kitArt = (id) => `icons/Pixelart/GEAR/${id}.png`;
 
-/** The gel, the one consumable. */
-export const GEL = {
-  id: 'gel',
-  kind: 'gel',
-  get name() { return t('gear.gel.name'); },
-  cost: GEAR_RULES.gel.cost,
+/**
+ * Character sprites that have a recoloured version for a kit
+ * (tools/kit-recolor.py writes `<base>--<kitId>.webp` next to the base).
+ * A level without one shows the base kit.
+ */
+export const KIT_SPRITES = {
+  'kit-moske-sand': ['icons/Pixelart/BIKE/CHARACTERS/bikelvl6_char.webp'],
 };
+/** The character sprite to show for a level's base sprite and the kit worn. */
+export const kitSprite = (src, kitId) => (kitId && KIT_SPRITES[kitId]?.includes(src) ? src.replace(/\.webp$/, `--${kitId}.webp`) : src);
 
-/** Everything that can be bought, as plain rows (what 0014 seeds into gear_catalog). */
+/** Fuel you buy with carbs: a gel, an energy bar, a pasta meal. */
+export const FUELS = Object.entries(FUEL_ITEMS).map(([id, f]) => ({
+  id,
+  kind: id === 'gel' ? 'gel' : 'food',
+  currency: 'carbs',
+  get name() { return t(`gear.fuel.${id}.name`); },
+  ...f,
+  art: `icons/Pixelart/GEAR/fuel-${id}.png`,
+}));
+export const fuelById = (id) => FUELS.find((f) => f.id === id) || null;
+export const GEL = fuelById('gel');
+
+/** Which currency an item costs. */
+export const currencyOf = (item) => (item?.currency || (fuelById(item?.id) ? 'carbs' : 'coins'));
+
+/** Everything that can be bought, as plain rows (what 0015 seeds into gear_catalog). */
 export function catalogRows() {
   return [
-    ...CATALOG.map((e) => ({ id: e.id, kind: 'gear', sport: e.sport, slot: e.slot, tier: e.tier, cost: e.cost, boost_bp: e.boostBp })),
-    ...KITS.map((k) => ({ id: k.id, kind: 'kit', sport: null, slot: null, tier: null, cost: k.cost, boost_bp: 0 })),
-    { id: GEL.id, kind: 'gel', sport: null, slot: null, tier: null, cost: GEL.cost, boost_bp: 0 },
+    ...CATALOG.map((e) => ({ id: e.id, kind: 'gear', sport: e.sport, slot: e.slot, tier: e.tier, cost: e.cost, boost_bp: e.boostBp, currency: 'coins' })),
+    ...KITS.map((k) => ({ id: k.id, kind: 'kit', sport: null, slot: null, tier: null, cost: k.cost, boost_bp: 0, currency: 'coins' })),
+    ...FUELS.map((f) => ({ id: f.id, kind: f.kind, sport: null, slot: null, tier: null, cost: f.cost, boost_bp: f.boostBp, currency: 'carbs' })),
   ];
 }
 

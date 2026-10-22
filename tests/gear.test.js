@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CATALOG, KITS, GEAR_RULES, GEAR_SINCE, SLOTS, gearById, ownedTier, nextTier, catalogRows, tierId,
+  CATALOG, KITS, FUELS, GEAR_RULES, GEAR_SINCE, SLOTS, QUEST_REWARDS, gearById, ownedTier, nextTier, catalogRows, tierId,
 } from '../js/core/gear.js';
-import { coinsEarned, coinDays, coinsForDay, coinsForSession, balance, gelsHeld } from '../js/core/wallet.js';
+import { coinsEarned, coinDays, coinsForDay, coinsForSession, balance, gelsHeld, walletFold, earnedBySession, fuelHeld } from '../js/core/wallet.js';
 import {
-  gearBoost, activeGel, canUseGel, sessionSpan, gelShare, boostStamp, applyBoost, boostFor, boostedSportXp,
+  gearBoost, activeGel, canUseGel, canUseFuel, sessionSpan, gelShare, boostStamp, applyBoost, boostFor, boostedSportXp,
 } from '../js/core/boosts.js';
 import { computeStats } from '../js/core/scoring.js';
 
@@ -37,7 +37,8 @@ test('the catalog: four disciplines, four slots each, a free starter and three t
   // a full kit is exactly the cap, so the last purchase still counts
   assert.equal(4 * GEAR_RULES.tierBoostBp[3], GEAR_RULES.sportCapBp);
   const rows = catalogRows();
-  assert.equal(rows.length, CATALOG.length + KITS.length + 1);
+  assert.equal(rows.length, CATALOG.length + KITS.length + FUELS.length);
+  assert.ok(rows.every((r) => (r.kind === 'gear' || r.kind === 'kit') === (r.currency === 'coins')), 'coins buy gear and clothes, carbs buy fuel');
   assert.equal(new Set(rows.map((r) => r.id)).size, rows.length);
 });
 
@@ -155,4 +156,44 @@ test('boosted sport XP is for your own levels; base totals are untouched', () =>
   const inv = [own('bike-wheels-t3', -H)];
   assert.equal(boostedSportXp([r], inv, []).bike, Math.round(114 * 1.04));
   assert.equal(computeStats([r]).totalXp, 114); // the base the leaderboard sees
+});
+
+// ---- carbs, missions, storage, fuel ------------------------------------------
+
+test('carbs come with coins: grams from the day’s base XP, capped per day', () => {
+  const r = ride(); // 114 XP → 57 coins, 91 g
+  assert.deepEqual(earnedBySession(r, [r]), { coins: 57, carbs: Math.floor(114 * GEAR_RULES.carbsPerXp) });
+  const big = ride({ id: 'big', durationMin: 400, metrics: { distanceKm: 160 } });
+  assert.equal(coinDays([big])[0].carbs, GEAR_RULES.dailyCarbCap);
+});
+
+test('missions pay coins or carbs, from launch on', () => {
+  const f = walletFold({ quests: [{ day: '2026-11-10', quest_id: 'brick' }, { day: '2026-11-10', quest_id: 'min-45' }, { day: '2026-10-01', quest_id: 'brick' }] });
+  assert.equal(f.coins, GEAR_RULES.starterPurse + QUEST_REWARDS.brick.coins);
+  assert.equal(f.carbs, GEAR_RULES.starterCarbs + QUEST_REWARDS['min-45'].carbs);
+});
+
+test('storage: each currency holds at most the cap; a full store loses what comes in, a spend makes room', () => {
+  const days = Array.from({ length: 100 }, (_, i) => ride({ id: `d${i}`, date: new Date(Date.parse('2026-11-03') + i * 864e5).toISOString().slice(0, 10), durationMin: 300, metrics: { distanceKm: 150 } }));
+  const full = walletFold({ workouts: days });
+  assert.equal(full.coins, GEAR_RULES.storageCap);
+  assert.equal(full.earned.coins - full.lost.coins, GEAR_RULES.storageCap);
+  assert.ok(full.lost.coins > 0);
+  // spending in the middle makes room, so less is lost
+  const mid = walletFold({ workouts: days, spends: [{ item_id: 'bike-frame-t1', coins: 850, currency: 'coins', created_at: '2027-01-20T12:00:00Z' }] });
+  assert.equal(mid.coins, GEAR_RULES.storageCap);
+  assert.equal(mid.lost.coins, full.lost.coins - 850);
+  // a spend after the last earning stays spent
+  const late = walletFold({ workouts: days, spends: [{ item_id: 'gel', coins: 120, currency: 'carbs', created_at: '2027-12-01T00:00:00Z' }] });
+  assert.equal(late.carbs, GEAR_RULES.storageCap - 120);
+});
+
+test('fuel: one runs at a time, each kind has its own weekly limit', () => {
+  const pasta = { kind: 'pasta', started_at: iso(-30 * H), expires_at: iso(-18 * H), multiplier: 1.1 };
+  assert.deepEqual(canUseFuel('pasta', [pasta], 1, T0), { ok: false, reason: 'limit' });
+  assert.deepEqual(canUseFuel('gel', [pasta], 1, T0), { ok: true });
+  const bar = { kind: 'energy-bar', started_at: iso(-H), expires_at: iso(5 * H), multiplier: 1.15 };
+  assert.deepEqual(canUseFuel('gel', [bar], 1, T0), { ok: false, reason: 'active' });
+  assert.equal(boostStamp(ride(), [], [bar]).gel_bp, 1500);
+  assert.equal(fuelHeld([{ item_id: 'pasta' }, { item_id: 'pasta' }], [pasta], 'pasta'), 1);
 });

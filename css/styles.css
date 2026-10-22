@@ -1934,3 +1934,63 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .gw-screen > .gw-sports { width: auto; }
 .btn.primary .coin-amt { color: var(--on-accent); }
 .gw-total b { font-family: var(--font-data); font-weight: 800; }
+
+/* ---- coins and carbs: two storage bars, top right of the scene (gear-view.js resourceBars) ---- */
+.res-bars { display: grid; gap: 8px; justify-items: end; }
+.res-bars.on-scene { position: absolute; z-index: 9; right: 12px; top: calc(var(--safe-t) + 10px + var(--pg-top-h)); }
+.gw-screen > .res-bars.in-sheet { margin: 0 16px var(--sp-group); justify-items: stretch; }
+.res-bar { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 20px; align-items: center; width: 168px; }
+.res-bars.in-sheet .res-bar { width: auto; }
+.res-max { grid-column: 1; justify-self: end; margin-right: 8px; font: 700 10px/1 var(--font-display); color: var(--fg); text-shadow: 1px 1px 0 var(--shade); text-transform: uppercase; }
+.res-track { grid-column: 1 / -1; grid-row: 2; position: relative; height: 24px; margin-right: 14px; background: var(--shade);
+  box-shadow: 0 -2px 0 0 var(--ink, var(--shade)), 0 2px 0 0 var(--shade), -2px 0 0 0 var(--shade), 2px 0 0 0 var(--shade), inset 0 0 0 2px #24345A; }
+.res-fill { position: absolute; left: 2px; top: 2px; bottom: 2px; width: calc((100% - 4px) * var(--f)); }
+.res-bar.is-coins .res-fill { background: linear-gradient(var(--gold3, #FFE08A) 0 30%, var(--accent) 30% 75%, var(--accent-lo) 75%); }
+.res-bar.is-carbs .res-fill { background: linear-gradient(#FFD978 0 30%, #E8B64C 30% 75%, #A8792A 75%); }
+.res-bar.is-carbs .res-track { box-shadow: 0 -2px 0 0 var(--shade), 0 2px 0 0 var(--shade), -2px 0 0 0 var(--shade), 2px 0 0 0 var(--shade), inset 0 0 0 2px #3A2E14; }
+.res-track b { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); font: 700 var(--fs-d3)/1 var(--font-display); color: #fff; text-shadow: 2px 2px 0 var(--shade); }
+.res-unit { font-size: 11px; margin-left: 1px; }
+.res-ico { grid-column: 2; grid-row: 2; width: 36px; height: 36px; margin-left: -22px; image-rendering: pixelated; position: relative; z-index: 1; filter: drop-shadow(2px 2px 0 var(--shade)); }
+.res-bar.is-full .res-max { color: var(--accent); }
+
+/* the inventory (bottom left) and shop (bottom right) buttons on the scene */
+.pg-scene-btn { --b: var(--steel); --eo: 6px; position: absolute; z-index: 9; width: 60px; height: 60px; display: grid; place-items: center;
+  bottom: calc(var(--tabs-h) + var(--pg-hud-h) + 30px); background: var(--bg-2); color: var(--steel); padding: 0;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--shade);
+  transition: transform var(--t-press); }
+.pg-scene-btn .ic { width: 36px; height: 36px; }
+.pg-scene-btn.is-inv { left: 18px; }
+.pg-scene-btn.is-shop { right: 18px; color: var(--accent); --b: var(--accent); }
+.pg-scene-btn:active { transform: translateY(3px); }
+
+/* shop tabs: what each costs is on the tab */
+.gw-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gw-tab { --b: var(--line-soft); --e: var(--shade); --eo: 6px; display: grid; justify-items: center; gap: 4px; padding: 8px 4px; background: var(--bg-2); color: var(--muted);
+  font: 700 12px/1 var(--font-display); text-transform: uppercase; margin: 2px 2px 4px; min-height: 64px; position: relative;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--e); }
+.gw-tab .ic { width: 24px; height: 24px; }
+.gw-tab small { position: absolute; top: 4px; right: 4px; }
+.gw-tab small .ic { width: 12px; height: 12px; color: var(--accent); }
+.gw-tab.active { --b: var(--steel); background: var(--bg-4); color: var(--fg); }
+.cur-amt { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--accent); }
+.cur-amt.is-carbs { color: #E8B64C; }
+.cur-amt .cur-ico { width: 16px; height: 16px; }
+.cur-amt b { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); }
+.cur-amt small { font-size: 11px; }
+.btn.primary .cur-amt { color: var(--on-accent); }
+.gw-art.has-img { background: var(--bg-3); }
+.gw-art.has-img img { width: 100%; height: 100%; image-rendering: pixelated; }
+/* the inventory's gear list */
+.inv-list, .inv-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.inv-sport h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 700 var(--fs-d3)/1 var(--font-display); text-transform: uppercase; }
+.inv-gear { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px; background: var(--bg-2); }
+.inv-gear .gw-art { width: 56px; height: 56px; }
+.inv-gear .gw-art .ic { width: 32px; height: 32px; }
+.inv-gear b { display: block; font-size: var(--fs-small); }
+.inv-gear small { color: var(--muted); font-size: var(--fs-tiny); }
+.inv-empty { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.gw-screen > .gw-tabs { margin: 0 16px var(--sp-group); }
+.res-track b { right: 30px; }
+.gw-screen > .gw-note, .gw-screen > .gw-offline { margin: 0 16px var(--sp-group); }
+.res-track b { right: 42px; }
+.pg-scene-btn { bottom: calc(var(--tabs-h) + var(--pg-hud-h) + 50px); }

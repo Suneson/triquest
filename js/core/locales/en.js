@@ -1876,6 +1876,7 @@ en.ai = {
 en.xp = {
   "reason": {
     "proof": "Not counted: link it on Strava to earn XP.",
+    "manual": "Not counted: this Strava activity was typed in by hand, not recorded.",
     "sets": "Not counted: tick at least 3 working sets.",
     "timestamps": "Not counted: some sets were ticked without a time.",
     "tooFast": "Not counted: the sets were ticked too fast to be one session.",
@@ -2156,6 +2157,142 @@ en.gear = {
       "name": "Recovery shake",
       "blurb": "Protein and carbs to come back stronger tomorrow."
     }
+  }
+};
+
+// feats (js/core/feats.js, docs/FEATS.md)
+en.feat = {
+  "run-10k": {
+    "name": "10 km run",
+    "blurb": "Ten kilometres in one go."
+  },
+  "run-5k-25": {
+    "name": "5 km under 25",
+    "blurb": "Five kilometres in 25:00 or less."
+  },
+  "run-5k-22": {
+    "name": "5 km under 22",
+    "blurb": "Five kilometres in 22:00 or less."
+  },
+  "run-5k-20": {
+    "name": "Sub-20 5 km",
+    "blurb": "Five kilometres under 20 minutes. The one everyone chases."
+  },
+  "run-10k-50": {
+    "name": "10 km under 50",
+    "blurb": "Ten kilometres in 50:00 or less."
+  },
+  "run-10k-45": {
+    "name": "10 km under 45",
+    "blurb": "Ten kilometres in 45:00 or less."
+  },
+  "run-half": {
+    "name": "Half marathon",
+    "blurb": "21.1 km in one run."
+  },
+  "run-30k": {
+    "name": "30 km run",
+    "blurb": "Thirty kilometres in one run."
+  },
+  "run-marathon": {
+    "name": "Marathon",
+    "blurb": "42.2 km in one run."
+  },
+  "run-month-50": {
+    "name": "50 km month",
+    "blurb": "Fifty kilometres of running in a calendar month."
+  },
+  "run-month-100": {
+    "name": "100 km month",
+    "blurb": "A hundred kilometres of running in a calendar month."
+  },
+  "bike-50": {
+    "name": "50 km ride",
+    "blurb": "Fifty kilometres in one ride."
+  },
+  "bike-100": {
+    "name": "Century",
+    "blurb": "A hundred kilometres in one ride."
+  },
+  "bike-160": {
+    "name": "Gran fondo",
+    "blurb": "160 km in one ride."
+  },
+  "bike-climb-2000": {
+    "name": "2,000 m day",
+    "blurb": "Two thousand metres of climbing in one ride."
+  },
+  "bike-40kph": {
+    "name": "40 km/h",
+    "blurb": "Twenty kilometres or more at a 40 km/h moving average."
+  },
+  "bike-hc": {
+    "name": "Hors catégorie",
+    "blurb": "A whole HC climb in one effort."
+  },
+  "bike-month-200": {
+    "name": "200 km month",
+    "blurb": "Two hundred kilometres of riding in a calendar month."
+  },
+  "bike-month-500": {
+    "name": "500 km month",
+    "blurb": "Five hundred kilometres of riding in a calendar month."
+  },
+  "swim-1k": {
+    "name": "1 km swim",
+    "blurb": "A kilometre in one swim."
+  },
+  "swim-1k-steady": {
+    "name": "Steady kilometre",
+    "blurb": "A kilometre with barely a rest at the wall."
+  },
+  "swim-2k": {
+    "name": "2 km swim",
+    "blurb": "Two kilometres in one swim."
+  },
+  "swim-1k-145": {
+    "name": "1:45 pace",
+    "blurb": "A kilometre or more at 1:45 per 100 m."
+  },
+  "swim-month-10": {
+    "name": "10 km month",
+    "blurb": "Ten kilometres of swimming in a calendar month."
+  },
+  "gym-25": {
+    "name": "25 sessions",
+    "blurb": "Twenty-five gym sessions that earned XP."
+  },
+  "gym-100": {
+    "name": "100 sessions",
+    "blurb": "A hundred gym sessions that earned XP."
+  },
+  "gym-bench-1": {
+    "name": "Bodyweight bench",
+    "blurb": "Bench press your bodyweight for 1–5 reps."
+  },
+  "gym-squat-15": {
+    "name": "1.5× squat",
+    "blurb": "Back squat one and a half times your bodyweight."
+  },
+  "gym-dead-2": {
+    "name": "Double deadlift",
+    "blurb": "Deadlift twice your bodyweight."
+  },
+  "cross-four-weeks": {
+    "name": "Four for four",
+    "blurb": "Run, ride, swim and lift every week for four weeks."
+  },
+  "cross-olympic-day": {
+    "name": "Olympic day",
+    "blurb": "Swim 1.5 km, ride 40 km and run 10 km on one day."
+  },
+  "cross-iron-day": {
+    "name": "Iron day",
+    "blurb": "Swim 3.8 km, ride 180 km and run 42.2 km on one day."
+  },
+  "cross-race": {
+    "name": "Race day",
+    "blurb": "A real race, planned and flagged on Strava."
   }
 };
 

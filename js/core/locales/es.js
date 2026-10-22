@@ -1876,6 +1876,7 @@ es.ai = {
 es.xp = {
   "reason": {
     "proof": "No cuenta: vincúlala en Strava para ganar XP.",
+    "manual": "No cuenta: esta actividad de Strava se metió a mano, no se grabó.",
     "sets": "No cuenta: marca al menos 3 series efectivas.",
     "timestamps": "No cuenta: hay series marcadas sin hora.",
     "tooFast": "No cuenta: las series se marcaron demasiado rápido para ser una sesión.",
@@ -2156,6 +2157,142 @@ es.gear = {
       "name": "Batido de recuperación",
       "blurb": "Proteína e hidratos para volver más fuerte mañana."
     }
+  }
+};
+
+// feats (js/core/feats.js, docs/FEATS.md)
+es.feat = {
+  "run-10k": {
+    "name": "10 km corriendo",
+    "blurb": "Diez kilómetros del tirón."
+  },
+  "run-5k-25": {
+    "name": "5 km en menos de 25",
+    "blurb": "Cinco kilómetros en 25:00 o menos."
+  },
+  "run-5k-22": {
+    "name": "5 km en menos de 22",
+    "blurb": "Cinco kilómetros en 22:00 o menos."
+  },
+  "run-5k-20": {
+    "name": "5 km sub-20",
+    "blurb": "Cinco kilómetros por debajo de 20 minutos. La que todos persiguen."
+  },
+  "run-10k-50": {
+    "name": "10 km en menos de 50",
+    "blurb": "Diez kilómetros en 50:00 o menos."
+  },
+  "run-10k-45": {
+    "name": "10 km en menos de 45",
+    "blurb": "Diez kilómetros en 45:00 o menos."
+  },
+  "run-half": {
+    "name": "Media maratón",
+    "blurb": "21,1 km en una sola carrera."
+  },
+  "run-30k": {
+    "name": "30 km corriendo",
+    "blurb": "Treinta kilómetros en una sola carrera."
+  },
+  "run-marathon": {
+    "name": "Maratón",
+    "blurb": "42,2 km en una sola carrera."
+  },
+  "run-month-50": {
+    "name": "Mes de 50 km",
+    "blurb": "Cincuenta kilómetros corriendo en un mes natural."
+  },
+  "run-month-100": {
+    "name": "Mes de 100 km",
+    "blurb": "Cien kilómetros corriendo en un mes natural."
+  },
+  "bike-50": {
+    "name": "Salida de 50 km",
+    "blurb": "Cincuenta kilómetros en una salida."
+  },
+  "bike-100": {
+    "name": "Centenaria",
+    "blurb": "Cien kilómetros en una salida."
+  },
+  "bike-160": {
+    "name": "Gran fondo",
+    "blurb": "160 km en una salida."
+  },
+  "bike-climb-2000": {
+    "name": "Día de 2.000 m",
+    "blurb": "Dos mil metros de desnivel en una salida."
+  },
+  "bike-40kph": {
+    "name": "A 40 por hora",
+    "blurb": "Veinte kilómetros o más a 40 km/h de media en movimiento."
+  },
+  "bike-hc": {
+    "name": "Fuera de categoría",
+    "blurb": "Un puerto HC entero de un tirón."
+  },
+  "bike-month-200": {
+    "name": "Mes de 200 km",
+    "blurb": "Doscientos kilómetros en bici en un mes natural."
+  },
+  "bike-month-500": {
+    "name": "Mes de 500 km",
+    "blurb": "Quinientos kilómetros en bici en un mes natural."
+  },
+  "swim-1k": {
+    "name": "1 km nadando",
+    "blurb": "Un kilómetro en un solo entreno de natación."
+  },
+  "swim-1k-steady": {
+    "name": "Kilómetro seguido",
+    "blurb": "Un kilómetro casi sin pararte en la pared."
+  },
+  "swim-2k": {
+    "name": "2 km nadando",
+    "blurb": "Dos kilómetros en un solo entreno."
+  },
+  "swim-1k-145": {
+    "name": "Ritmo 1:45",
+    "blurb": "Un kilómetro o más a 1:45 los 100 m."
+  },
+  "swim-month-10": {
+    "name": "Mes de 10 km",
+    "blurb": "Diez kilómetros nadando en un mes natural."
+  },
+  "gym-25": {
+    "name": "25 sesiones",
+    "blurb": "Veinticinco sesiones de gimnasio que dieron XP."
+  },
+  "gym-100": {
+    "name": "100 sesiones",
+    "blurb": "Cien sesiones de gimnasio que dieron XP."
+  },
+  "gym-bench-1": {
+    "name": "Press con tu peso",
+    "blurb": "Press de banca con tu peso corporal, de 1 a 5 repeticiones."
+  },
+  "gym-squat-15": {
+    "name": "Sentadilla 1,5×",
+    "blurb": "Sentadilla con vez y media tu peso corporal."
+  },
+  "gym-dead-2": {
+    "name": "Peso muerto doble",
+    "blurb": "Peso muerto con el doble de tu peso corporal."
+  },
+  "cross-four-weeks": {
+    "name": "Cuatro de cuatro",
+    "blurb": "Correr, bici, nadar y gimnasio todas las semanas durante cuatro semanas."
+  },
+  "cross-olympic-day": {
+    "name": "Día olímpico",
+    "blurb": "Nadar 1,5 km, 40 km en bici y correr 10 km el mismo día."
+  },
+  "cross-iron-day": {
+    "name": "Día Ironman",
+    "blurb": "Nadar 3,8 km, 180 km en bici y correr 42,2 km el mismo día."
+  },
+  "cross-race": {
+    "name": "Día de carrera",
+    "blurb": "Una carrera de verdad, planificada y marcada como carrera en Strava."
   }
 };
 

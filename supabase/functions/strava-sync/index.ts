@@ -4,7 +4,7 @@
 // Deploy WITH JWT verification (default):
 //   supabase functions deploy strava-sync
 
-import { adminClient, validAccessToken, matchAndWrite, json, CORS } from "../_shared/util.ts";
+import { adminClient, validAccessToken, fetchActivity, matchAndWrite, json, CORS } from "../_shared/util.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -36,9 +36,26 @@ Deno.serve(async (req) => {
     break;
   }
 
-  const results: Record<string, number> = { link: 0, insert: 0, update: 0 };
-  for (const a of activities) {
+  // The list carries no best efforts or segment efforts (feats and segment
+  // challenges need them), so each activity not yet stored in detail is
+  // fetched once in full, up to DETAIL_BUDGET per sync; the rest get theirs
+  // on the next sync. One already stored in detail is left alone.
+  const DETAIL_BUDGET = 25;
+  const { data: stored } = await admin.from("workouts").select("strava_activity_id, actual")
+    .eq("user_id", userId).in("strava_activity_id", activities.map((a) => a.id));
+  const detailed = new Set((stored || []).filter((w: any) => w.actual?.detail).map((w: any) => Number(w.strava_activity_id)));
+  let fetched = 0;
+
+  const results: Record<string, number> = { link: 0, insert: 0, update: 0, detail: 0 };
+  for (const summary of activities) {
     try {
+      if (detailed.has(Number(summary.id))) continue;
+      let a = summary;
+      if (fetched < DETAIL_BUDGET) {
+        fetched++;
+        a = await fetchActivity(token, summary.id).catch(() => summary);
+        if (a !== summary) results.detail++;
+      }
       const r = await matchAndWrite(admin, userId, a);
       results[r.action] = (results[r.action] || 0) + 1;
     } catch (e) {

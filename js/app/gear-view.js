@@ -160,8 +160,11 @@ function kitCard(k, owned, worn, coins, mode) {
 
 function shell(root, { title, icon, id, body, workouts }) {
   const head = sheetHead({ lead: 'back', icon, title, id, action: '' });
+  // a redraw (a tab, a purchase) keeps the page where it was: same scroll, no jump
+  const top = root.querySelector('.fh-screen')?.scrollTop || 0;
   root.innerHTML = `<div class="fh-screen gw-screen" role="dialog" aria-modal="true" aria-labelledby="${id}">${head}
     ${resourceBars(workouts, { cls: 'in-sheet' })}${body}</div>`;
+  if (top) root.querySelector('.fh-screen').scrollTop = top;
   animateIn(root);
 }
 

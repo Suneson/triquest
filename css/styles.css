@@ -1961,7 +1961,12 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .pg-scene-btn .ic { width: 36px; height: 36px; }
 .pg-scene-btn.is-inv { left: 18px; }
 .pg-scene-btn.is-shop { right: 18px; color: var(--accent); --b: var(--accent); }
-.pg-scene-btn:active { transform: translateY(3px); }
+/* a real button press: it sinks onto its edge the moment it is touched (no
+   transition, so even a quick tap shows it), and the shop or inventory opens
+   on release with no entrance animation */
+.pg-scene-btn { transition: none; }
+.pg-scene-btn:active { transform: translateY(4px); --eo: 2px; background: var(--bg-4); }
+.pg-scene-btn:active img { filter: brightness(.85); }
 
 /* shop tabs: what each costs is on the tab */
 .gw-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -2009,3 +2014,9 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .btn.primary .cur-amt.is-carbs { color: var(--on-accent); }
 .gw-tab small .ic.cur-ico { color: var(--accent); }
 .gw-art img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
+
+/* the shop and the inventory are one page each: they appear and go at once,
+   and switching tab (gear, clothes, fuel, or a discipline) swaps the content
+   in place instead of replaying the layer's slide-in */
+.gear-layer > .fh-screen { animation: none; }
+.gear-layer.is-leaving { display: none; }

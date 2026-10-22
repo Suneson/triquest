@@ -1,6 +1,6 @@
 # Feats and trophies
 
-Status: **Phase 1 built, not applied.** The engine is `js/core/feats.js` (tests: `tests/feats.test.js`), the server copy is `supabase/migrations/0018_feats.sql` (parity: `tests/feats-sql.test.js`). Both wait for sign-off before they touch the database. Phase 0 sign-off (2026-10-22): option A for gym with the check-in required, manual activities stop earning XP, season names to come.
+Status: **Phase 1 live (2026-10-23).** 0018 applied as 0018_feats_a–f; strava-sync and strava-webhook v6 import best efforts and segments and run `award_feats` after every sync. The engine is `js/core/feats.js` (tests: `tests/feats.test.js`), the server copy `supabase/migrations/0018_feats.sql` (parity: `tests/feats-sql.test.js`). The first live attempt used temp tables, which the connector couldn't apply, so the engine was rewritten to hold the history in an array; a leftover `feat_tri_pick(date, text, numeric)` from that attempt is live, unused and revoked, and can be dropped any time.
 goes into one constants block in `js/core/feats.js`, and the SQL copy
 (`0018_feats.sql`) is generated from it, as `tools/gear-sql.mjs` does for GEAR.
 

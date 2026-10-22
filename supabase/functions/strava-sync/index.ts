@@ -59,9 +59,13 @@ Deno.serve(async (req) => {
       const r = await matchAndWrite(admin, userId, a);
       results[r.action] = (results[r.action] || 0) + 1;
     } catch (e) {
-      console.error("sync match error", a?.id, e);
+      console.error("sync match error", summary?.id, e);
     }
   }
 
-  return json({ synced: activities.length, ...results });
+  // anything new may win a feat (0018_feats.sql)
+  const { data: won, error: featErr } = await admin.rpc("award_feats", { p_user: userId });
+  if (featErr) console.error("award_feats", userId, featErr.message);
+
+  return json({ synced: activities.length, ...results, feats: (won || []).map((f: any) => f.feat_id) });
 });

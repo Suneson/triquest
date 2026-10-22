@@ -185,7 +185,15 @@ grant select on public.feat_rejections to authenticated;
 
 -- ---- 5. the engine --------------------------------------------------------------
 
--- A session as feats see it (distM, movingSec … in js/core/feats.js).
+-- A session as feats see it (distM, movingSec … in js/core/feats.js). The
+-- engine holds one athlete's history as an array of these: no temp tables.
+create type public.feat_row as (
+  id text, date date, type text, ord text, start_ts timestamptz,
+  dist_m numeric, mov numeric, el numeric, vmax numeric, sport_type text,
+  manual boolean, trainer boolean, earns boolean, strava boolean, rest boolean,
+  elev numeric, best jsonb, segs jsonb, wtype int, source text, extra jsonb, exercises jsonb
+);
+
 create or replace function public.feat_base(p_user uuid)
 returns table (
   id text, date date, type text, ord text, start_ts timestamptz,
@@ -281,17 +289,16 @@ declare
   ps record; pb record; pr record;
   ov boolean;
   sea text;
+  fb public.feat_row[];
 begin
-  create temp table if not exists _fb on commit drop as select * from public.feat_base(p_user) limit 0;
-  delete from _fb;
-  insert into _fb select * from public.feat_base(p_user);
+  fb := array(select row(x.*)::public.feat_row from public.feat_base(p_user) x);
 
   for f in select * from public.feats order by ord loop
     p := f.params;
 
     if f.kind in ('distance', 'time', 'climb', 'speed', 'segment', 'steady', 'pace') then
       done := false;
-      for b in select * from _fb where type = f.sport order by date, ord collate "C", id collate "C" loop
+      for b in select * from unnest(fb) where type = f.sport order by date, ord collate "C", id collate "C" loop
         v := 0; hit := false; why := null; wh := false;
         if f.kind = 'distance' then
           v := round(b.dist_m) / 1000.0;
@@ -350,7 +357,7 @@ begin
       seasons := '{}';
       for b in
         with ok as (
-          select * from _fb
+          select * from unnest(fb)
           where type = f.sport
             and public.feat_base_reason(date, manual, earns, strava, trainer, sport_type, rest, f.sport) is null
             and public.feat_bound(f.sport, dist_m, mov, vmax) is null
@@ -380,7 +387,7 @@ begin
 
     elsif f.kind = 'count' then
       select * into b from (
-        select *, row_number() over (order by date, ord collate "C", id collate "C") as rn from _fb
+        select *, row_number() over (order by date, ord collate "C", id collate "C") as rn from unnest(fb)
         where type = 'gym' and earns and date >= since and not rest
       ) q where rn = (p ->> 'n')::int;
       if found then
@@ -389,7 +396,7 @@ begin
 
     elsif f.kind = 'lift' then
       lib := rules -> 'lifts' ->> (p ->> 'lift');
-      for b in select * from _fb where type = 'gym' and earns and date >= since order by date, ord collate "C", id collate "C" loop
+      for b in select * from unnest(fb) where type = 'gym' and earns and date >= since order by date, ord collate "C", id collate "C" loop
         select max(kg) into top from public.feat_lift_sets(b.exercises, lib)
           where reps between (rules -> 'liftReps' ->> 0)::int and (rules -> 'liftReps' ->> 1)::int;
         if top is null then continue; end if;
@@ -397,11 +404,11 @@ begin
         if bw is null or top < (p ->> 'ratio')::numeric * bw then continue; end if;
         select max(reps) into best_reps from public.feat_lift_sets(b.exercises, lib) where kg = top
           and reps between (rules -> 'liftReps' ->> 0)::int and (rules -> 'liftReps' ->> 1)::int;
-        select count(*) into n_earlier from _fb x
+        select count(*) into n_earlier from unnest(fb) x
           where x.type = 'gym' and (x.date, x.ord collate "C", x.id collate "C") < (b.date, b.ord collate "C", b.id collate "C")
             and exists (select 1 from public.feat_lift_sets(x.exercises, lib));
         select coalesce(max(case when s.reps = 1 then s.kg else s.kg * (1 + s.reps / 30.0) end), 0) into prev_best
-          from _fb x, public.feat_lift_sets(x.exercises, lib) s
+          from unnest(fb) x, public.feat_lift_sets(x.exercises, lib) s
           where x.type = 'gym' and (x.date, x.ord collate "C", x.id collate "C") < (b.date, b.ord collate "C", b.id collate "C")
             and x.date >= b.date - (rules ->> 'liftJumpDays')::int and s.reps <= 12;
         why := case
@@ -422,7 +429,7 @@ begin
     elsif f.kind = 'weeks' then
       for wrec in
         with ok as (
-          select *, date_trunc('week', date)::date as wk from _fb
+          select *, date_trunc('week', date)::date as wk from unnest(fb)
           where type in ('run', 'bike', 'swim', 'gym')
             and case when type = 'gym' then earns and date >= since and not rest
                      else public.feat_base_reason(date, manual, earns, strava, trainer, sport_type, rest, type) is null end
@@ -443,10 +450,10 @@ begin
       end loop;
 
     elsif f.kind = 'triday' then
-      for dt in select distinct date from _fb order by date loop
-        select * into ps from public.feat_tri_pick(dt, 'swim', (p ->> 'swim')::numeric);
-        select * into pb from public.feat_tri_pick(dt, 'bike', (p ->> 'bike')::numeric);
-        select * into pr from public.feat_tri_pick(dt, 'run', (p ->> 'run')::numeric);
+      for dt in select distinct date from unnest(fb) order by date loop
+        select * into ps from public.feat_tri_pick(fb, dt, 'swim', (p ->> 'swim')::numeric);
+        select * into pb from public.feat_tri_pick(fb, dt, 'bike', (p ->> 'bike')::numeric);
+        select * into pr from public.feat_tri_pick(fb, dt, 'run', (p ->> 'run')::numeric);
         if ps.id is null or pb.id is null or pr.id is null then continue; end if;
         ov := ps.start_ts is not null and pb.start_ts is not null and pr.start_ts is not null and (
               (ps.start_ts < pb.start_ts + make_interval(secs => pb.el) and pb.start_ts < ps.start_ts + make_interval(secs => ps.el))
@@ -465,9 +472,9 @@ begin
     elsif f.kind = 'race' then
       seasons := '{}';
       for b in
-        select x.* from _fb x
+        select x.* from unnest(fb) x
         where ((x.type = 'run' and x.wtype = 1) or (x.type = 'bike' and x.wtype = 11))
-          and (exists (select 1 from _fb y where y.date = x.date and coalesce((y.extra ->> 'isRace')::boolean, false)
+          and (exists (select 1 from unnest(fb) y where y.date = x.date and coalesce((y.extra ->> 'isRace')::boolean, false)
                                              and y.source is distinct from 'strava')
                or exists (select 1 from public.profiles pf, jsonb_array_elements(
                             case when jsonb_typeof(pf.settings -> 'events') = 'array' then pf.settings -> 'events' else '[]'::jsonb end) e
@@ -494,13 +501,13 @@ end;
 $$;
 
 create or replace function public.feat_season(p_date date)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = public as $$
   select extract(year from p_date)::int || '-Q' || extract(quarter from p_date)::int;
 $$;
 
 -- Done working sets of one library lift: (kg, reps).
 create or replace function public.feat_lift_sets(p_exercises jsonb, p_lib text)
-returns table (kg numeric, reps int) language sql immutable as $$
+returns table (kg numeric, reps int) language sql immutable set search_path = public as $$
   select (st ->> 'weight')::numeric, (st ->> 'reps')::numeric::int
   from jsonb_array_elements(p_exercises) ex,
        jsonb_array_elements(case when jsonb_typeof(ex -> 'sets') = 'array' then ex -> 'sets' else '[]'::jsonb end) st
@@ -523,21 +530,17 @@ returns numeric language sql stable set search_path = public as $$
     and jsonb_typeof(m -> 'weight') = 'number' and (m ->> 'weight')::numeric > 0;
 $$;
 
--- One sport's longest qualifying session on a day, if it reaches the distance (from _fb).
-create or replace function public.feat_tri_pick(p_date date, p_sport text, p_km numeric)
+-- One sport's longest qualifying session on a day, if it reaches the distance.
+create or replace function public.feat_tri_pick(p_fb public.feat_row[], p_date date, p_sport text, p_km numeric)
 returns table (id text, ord text, start_ts timestamptz, el numeric)
-language plpgsql volatile set search_path = public as $$
-begin
-  return query execute
-    'select q.id, q.ord, q.start_ts, q.el from (
-       select * from _fb
-       where date = $1 and type = $2
-         and public.feat_base_reason(date, manual, earns, strava, trainer, sport_type, rest, $2) is null
-         and public.feat_bound($2, dist_m, mov, vmax) is null
-       order by dist_m desc, date, ord collate "C", id collate "C" limit 1
-     ) q where q.dist_m >= $3 * 1000'
-    using p_date, p_sport, p_km;
-end;
+language sql stable set search_path = public as $$
+  select q.id, q.ord, q.start_ts, q.el from (
+    select * from unnest(p_fb) x
+    where x.date = p_date and x.type = p_sport
+      and public.feat_base_reason(x.date, x.manual, x.earns, x.strava, x.trainer, x.sport_type, x.rest, p_sport) is null
+      and public.feat_bound(p_sport, x.dist_m, x.mov, x.vmax) is null
+    order by x.dist_m desc, x.date, x.ord collate "C", x.id collate "C" limit 1
+  ) q where q.dist_m >= p_km * 1000;
 $$;
 
 -- Write what's new: awards (once per feat, or per season) and rejections.
@@ -548,24 +551,23 @@ begin
   if p_user is null then raise exception 'not signed in' using errcode = '28000'; end if;
   if p_user <> coalesce(auth.uid(), p_user) then raise exception 'not yours' using errcode = '42501'; end if;
   perform pg_advisory_xact_lock(hashtext('feats:' || p_user::text));
-  create temp table if not exists _fe on commit drop as select * from public.feat_eval(p_user) limit 0;
-  delete from _fe;
-  insert into _fe select * from public.feat_eval(p_user);
-  insert into public.feat_rejections (user_id, feat_id, workout_id, reason)
-    select distinct p_user, e.feat_id, e.workout_id, e.reason from _fe e where e.out_kind = 'reject'
-    on conflict (user_id, feat_id, workout_id) do update set reason = excluded.reason;
   return query
+    with e as materialized (select * from public.feat_eval(p_user)),
+    rej as (
+      insert into public.feat_rejections (user_id, feat_id, workout_id, reason)
+      select distinct p_user, e.feat_id, e.workout_id, e.reason from e where e.out_kind = 'reject'
+      on conflict (user_id, feat_id, workout_id) do update set reason = excluded.reason
+    )
     insert into public.user_feats (user_id, feat_id, season, workout_id, value, whole, logged, achieved_on)
     select p_user, e.feat_id,
            -- a one-off feat is one row ever; its season is the one it was won in
            e.season, e.workout_id, e.value, e.whole, e.logged, e.achieved_on
-    from _fe e join public.feats f on f.id = e.feat_id
+    from e join public.feats f on f.id = e.feat_id
     where e.out_kind = 'award'
       and (f.repeatable or not exists (select 1 from public.user_feats u where u.user_id = p_user and u.feat_id = e.feat_id))
     on conflict (user_id, feat_id, season) do nothing
     returning *;
 end;
 $$;
-revoke execute on function public.award_feats(uuid) from public, anon;
-grant execute on function public.award_feats(uuid) to authenticated;
+grant execute on function public.award_feats(uuid) to authenticated, service_role;
 revoke execute on function public.feat_eval(uuid) from public, anon, authenticated;

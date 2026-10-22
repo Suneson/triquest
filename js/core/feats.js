@@ -137,17 +137,15 @@ export function seasonOf(date) {
 // ---- what a session is ---------------------------------------------------------
 
 const A = (w) => w?.actual || {};
+// the first positive of: exact metres, Strava's rounded km, the session's km
 const distM = (w) => {
-  const m = Number(A(w).distanceM);
-  if (m > 0) return m;
-  const km = Number(A(w).distanceKm ?? w?.metrics?.distanceKm);
-  return km > 0 ? km * 1000 : 0;
+  for (const v of [Number(A(w).distanceM), Number(A(w).distanceKm) * 1000, Number(w?.metrics?.distanceKm) * 1000]) if (v > 0) return v;
+  return 0;
 };
+// the first positive of: Strava's moving seconds, its moving minutes, the session's minutes
 const movingSec = (w) => {
-  const s = Number(A(w).movingSec);
-  if (s > 0) return s;
-  const min = Number(A(w).durationMin ?? w?.durationMin);
-  return min > 0 ? min * 60 : 0;
+  for (const v of [Number(A(w).movingSec), Number(A(w).durationMin) * 60, Number(w?.durationMin) * 60]) if (v > 0) return v;
+  return 0;
 };
 const elapsedSec = (w) => Number(A(w).elapsedSec) || movingSec(w);
 /** The Strava sport type, or a stand-in from the app type for rows imported before it was stored. */

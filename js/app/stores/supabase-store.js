@@ -62,6 +62,8 @@ export function rowToWorkout(r) {
     strava_activity_id: r.strava_activity_id ?? null,
     source: r.source ?? 'custom',
     boost: r.boost ?? null, // GEAR stamp, written by the server only (0014); never sent back
+    // planned rest day when it first earned (0018); server only, never sent back
+    ...(typeof r.on_rest_day === 'boolean' ? { onRestDay: r.on_rest_day } : {}),
     updated_at: r.updated_at,
     ...(r.extra || {}),
   });

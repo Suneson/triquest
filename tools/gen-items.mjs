@@ -8,7 +8,7 @@
 // own pictures as style references (an exercise card and the MOSKE logo), then:
 //   - the green is keyed out (with spill suppression) and the sprite trimmed,
 //   - it is fitted into a 128×128 square, nearest-neighbour, and quantised,
-//   - the raw model output is kept in docs/gear/gen/ for review.
+//   - the raw model output is kept in docs/gear/gen/ for review (git-ignored: it's large).
 // Output: icons/Pixelart/GEAR/<name>.png and a contact sheet docs/gear/gen-sheet.png.
 // Build-time only (sharp + fetch).
 

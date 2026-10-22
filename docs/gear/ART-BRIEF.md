@@ -120,4 +120,4 @@ GEMINI_API_KEY=… node tools/gen-items.mjs fuel-gel   # one item
 
 - The key is read from the environment only.
 - Prompts live in `tools/gen-items.mjs`. A new item is one line there, plus its entry in `js/core/gear.js`.
-- Raw model outputs land in `docs/gear/gen/` for review.
+- Raw model outputs land in `docs/gear/gen/` for review. That folder is git-ignored because it's about 20 MB; `docs/gear/art-check.png` shows every final image.

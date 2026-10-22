@@ -239,7 +239,7 @@ $$;
 -- Clients can't write boost or first_earned_at: the trigger keeps the stored
 -- values and stamps a session once, the first time it earns.
 create or replace function public.workouts_stamp_boost()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security invoker set search_path = public as $$
 begin
   if tg_op = 'UPDATE' then
     new.boost := old.boost;

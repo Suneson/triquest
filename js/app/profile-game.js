@@ -204,8 +204,8 @@ export function renderProfileGame(ctx, sport = 'bike', slide = '') {
     kit: ownedKit(ctx.settings?.kit),
     // coins and carbs top right; the inventory bottom left and the shop bottom right of the scene
     extras: `${resourceBars(ctx.workouts, { cls: 'on-scene' })}
-      <button class="pg-scene-btn is-inv" data-action="open-inventory" aria-label="${t('gear.openInventory')}">${svg('backpack')}</button>
-      <button class="pg-scene-btn is-shop" data-action="open-gear" aria-label="${t('gear.openShop')}">${svg('stall')}</button>`,
+      <button class="pg-scene-btn is-inv" data-action="open-inventory" aria-label="${t('gear.openInventory')}"><img src="icons/Pixelart/GEAR/btn-inventory.png" width="128" height="128" alt=""></button>
+      <button class="pg-scene-btn is-shop" data-action="open-gear" aria-label="${t('gear.openShop')}"><img src="icons/Pixelart/GEAR/btn-shop.png" width="128" height="128" alt=""></button>`,
   });
 }
 

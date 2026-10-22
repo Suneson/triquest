@@ -467,3 +467,9 @@ Asked for after Phase 4, and built ahead of Phase 5:
   - `tools/kit-recolor.py` recolours the level-6 cyclist's blue kit (jersey, shorts, helmet) to the sand colourway, keeping every frame's shading.
   - It's wired through `KIT_SPRITES`/`kitSprite()`, so wearing the sand kit at level 6 shows it on the bike.
   - Limit: it recolours by hue. A slight tint reaches the bike frame, and the tagged-palette pipeline (5b) is the proper version.
+- **Generated art** (`tools/gen-items.mjs`, Gemini image model, run with `GEMINI_API_KEY` in the environment):
+  - What it made: the gel, energy bar, pasta, coin, carbs, both jerseys, and the shop and inventory button pictures.
+  - Inputs: each item is asked for on flat green with an exercise card and the MOSKE logo as style references.
+  - Processing: the green is keyed out with spill suppression, alpha hardened, the sprite fitted into 128×128 nearest-neighbour and quantised to 48 colours.
+  - Where things live: the model's raw outputs are kept in `docs/gear/gen/`, and the contact sheet is `docs/gear/gen-sheet.png`.
+  - The earlier hand-drawn set now writes to `docs/gear/drawn/` for comparison.

@@ -5,7 +5,7 @@
 // so it stays crisp. The gel and the jersey carry the real MOSKE logo
 // (icons/logo.png), reduced to a few pixels.
 //
-//   node tools/draw-items.mjs        writes icons/Pixelart/GEAR/*.png and docs/gear/items-sheet.png
+//   node tools/draw-items.mjs        writes docs/gear/drawn/*.png and docs/gear/items-sheet.png
 //
 // Build-time only (sharp). Regenerate rather than hand-editing the PNGs.
 
@@ -14,7 +14,7 @@ import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const OUT = `${ROOT}icons/Pixelart/GEAR/`;
+const OUT = `${ROOT}docs/gear/drawn/`; // the hand-drawn set, kept for comparison; the app uses tools/gen-items.mjs
 const N = 32;
 const SCALE = 4;
 

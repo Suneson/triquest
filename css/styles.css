@@ -1994,3 +1994,5 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .gw-screen > .gw-note, .gw-screen > .gw-offline { margin: 0 16px var(--sp-group); }
 .res-track b { right: 42px; }
 .pg-scene-btn { bottom: calc(var(--tabs-h) + var(--pg-hud-h) + 50px); }
+.pg-scene-btn { width: 68px; height: 68px; }
+.pg-scene-btn img { width: 60px; height: 60px; image-rendering: pixelated; }

@@ -35,7 +35,10 @@ function demoState() {
   // ?demo=1&gel=0 starts with no fuel running (to review taking one)
   let gelOn = true;
   try { gelOn = new URLSearchParams(location.search).get('gel') !== '0'; } catch { /* no location */ }
-  const boosts = [{ kind: 'gel', started_at: ago(gelOn ? 1.25 : 72), expires_at: ago(gelOn ? -2.75 : 68), multiplier: 1.3 }];
+  // a gel taken and waiting for the next workout (or, with gel=0, one an old ride used up)
+  const boosts = [gelOn
+    ? { id: 1, kind: 'gel', started_at: ago(1.25), expires_at: 'infinity', multiplier: 1.3, until_next: true, workout_id: null }
+    : { id: 1, kind: 'gel', started_at: ago(72), expires_at: ago(70), multiplier: 1.3, until_next: true, workout_id: 'demo-old' }];
   const spends = ['gel', 'gel', 'gel-caffeine', 'energy-bar', 'rice-cake', 'pasta'].map((item_id) => ({ item_id, coins: 0, currency: 'carbs', created_at: ago(80) }));
   return { uid: 'demo', inventory, spends, boosts, quests: [], wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, at: Date.now() };
 }
@@ -63,7 +66,7 @@ export async function refreshGear() {
     const [inv, sp, bo, qc, wa] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
-      c.from('user_boosts').select('kind, started_at, expires_at, multiplier'),
+      c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
       c.from('quest_completions').select('day, quest_id'),
       c.rpc('wallet'),
     ]);
@@ -98,7 +101,9 @@ function demoCall(fn, args) {
     if (!f) throw new Error('gear:unknown_item');
     const ok = canUseFuel(kind, s.boosts, fuelHeld(s.spends, s.boosts, kind), Date.now());
     if (!ok.ok) throw new Error(`gear:fuel_${ok.reason}`);
-    s.boosts.push({ kind, started_at: now, expires_at: new Date(Date.now() + f.hours * 3600e3).toISOString(), multiplier: 1 + f.boostBp / 10000 });
+    s.boosts.push(f.nextWorkout
+      ? { id: s.boosts.length + 1, kind, started_at: now, expires_at: 'infinity', multiplier: 1 + f.boostBp / 10000, until_next: true, workout_id: null }
+      : { id: s.boosts.length + 1, kind, started_at: now, expires_at: new Date(Date.now() + f.hours * 3600e3).toISOString(), multiplier: 1 + f.boostBp / 10000 });
   } else {
     const id = args.p_item_id;
     const item = gearById(id) || KITS.find((k) => k.id === id) || fuelById(id);

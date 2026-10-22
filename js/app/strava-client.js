@@ -42,7 +42,10 @@ export async function syncNow() {
     headers: { Authorization: `Bearer ${s.access_token}` },
   });
   if (!res.ok) throw new Error(t('misc.syncFailed', { status: res.status }));
-  return res.json();
+  const out = await res.json();
+  // a new activity may have used up a waiting gel: read the fuel again
+  import('./gear-state.js').then((m) => m.refreshGear()).catch(() => {});
+  return out;
 }
 
 /** Disconnect: delete the user's token row (RLS allows deleting own row only). */

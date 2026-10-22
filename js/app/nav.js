@@ -42,24 +42,25 @@ export const inLayer = (node) => !!node?.closest?.('.layer');
  * name, it's reused (a redraw, not a new layer): the caller just re-renders.
  * `onClose` runs once however the layer goes (button, back, swipe, Escape).
  */
-export function openLayer(name, { onClose = null, swipeBack = true, className = '', reuse = true } = {}) {
+// `instant`: the layer appears and goes at once, like a chat thread (the shop, the inventory)
+export function openLayer(name, { onClose = null, swipeBack = true, className = '', reuse = true, instant = false } = {}) {
   const top = topLayer();
   if (reuse && top?.el && top.name === name) {
     if (onClose) top.onClose = onClose;
     return top.el;
   }
-  return openOver(name, { onClose, swipeBack, className });
+  return openOver(name, { onClose, swipeBack, className, instant });
 }
 
-function openOver(name, { onClose, swipeBack, className }) {
+function openOver(name, { onClose, swipeBack, className, instant = false }) {
   const top = topLayer();
   const el = document.createElement('div');
-  el.className = `modal-root layer open ${className}`.trim();
+  el.className = `modal-root layer open${instant ? ' is-instant' : ''} ${className}`.trim();
   el.dataset.layer = name;
   el.style.zIndex = String(10000 + stack.length * 2);
   const beneath = top?.el || appEl();
   const layer = {
-    id: ++seq, name, el, onClose, swipeBack,
+    id: ++seq, name, el, onClose, swipeBack, instant,
     trigger: document.activeElement instanceof HTMLElement ? document.activeElement : null,
     beneath, beneathInert: beneath ? beneath.inert : false,
   };
@@ -109,7 +110,7 @@ function removeTop(animate = false) {
   if (!layer) return;
   if (layer.el) {
     const el = layer.el;
-    if (animate && !reduced()) {
+    if (animate && !reduced() && !layer.instant) {
       el.classList.add('is-leaving');
       el.inert = true;
       setTimeout(() => el.remove(), 170);

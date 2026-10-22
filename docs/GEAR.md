@@ -523,3 +523,18 @@ All five kits are recoloured onto the level-6 cyclist.
 **Launch:** `GEAR_SINCE` is 22 October 2026. Sessions and missions from that day earn coins and carbs, and everyone starts with 300 coins and 200 g of carbs.
 
 **Phase 6** (gear layered on the animated character) is not built. Kit colour is done by palette swap (5b), and silhouette gear is already drawn by the level art. That was the agreed fallback.
+
+## 12. Gels boost your next workout (added on review)
+
+Gels no longer run on a clock. You take a gel in the inventory, and it waits
+for your **next workout**: the next session that earns XP once it reaches
+the server, whether that's a Strava activity or a session logged in the app.
+That session gets the gel's whole boost (+30% blue, +40% red, +50% gold), however
+long after you took it. The percentages, prices and weekly limits are unchanged.
+Food (rice cake, energy bar, pasta, recovery shake) still runs for its hours.
+
+- **One fuel at a time.** A waiting gel counts as "on". You can't take another gel or any food until a workout uses it. The chip reads "Next workout" instead of a countdown.
+- **One workout per gel.** The first session to reach the server takes the gel. The server records which one (`user_boosts.workout_id`) and closes the gel (`expires_at` set to that moment). Before that, a waiting gel's `expires_at` is `'infinity'`.
+- **No filing old sessions into it.** A session that ended more than `graceHours` (24 h) before you took the gel can't use it, so an old activity synced late doesn't eat it. Taking a gel just after a ride, before Strava has synced it, still counts.
+- **Where it happens.** The stamp trigger (`workouts_stamp_boost`, now security definer with execute revoked, so it can close the gel row) adds the gel when a session first earns. The client's `gelClaims()` (js/core/boosts.js) gives the same answer for instant feedback until the server's stamp arrives. After a Strava sync, the app reads the fuel again.
+- Migration: `0017_gel_next_workout.sql` (adds `until_next` and `workout_id`). Rows from before keep their clock.

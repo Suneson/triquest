@@ -29,12 +29,35 @@ const PREFERRED = [/gpt-oss-120b/i, /gpt-oss/i, /llama.*(70b|versatile)/i, /qwen
 // Endpoints that exist on Groq but cannot answer a chat completion.
 const NOT_CHAT = /whisper|tts|embed|guard|playai|compound/i;
 
+// A full plan is long (weeks of sessions with notes, power blocks and
+// exercises): give the answer room, and keep gpt-oss's hidden reasoning short
+// so it doesn't eat the output budget and cut the JSON off half way.
 const chat = (key: string, model: string, messages: unknown[]) =>
   fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model, messages, response_format: { type: "json_object" }, temperature: 0.7 }),
+    body: JSON.stringify({
+      model, messages, response_format: { type: "json_object" }, temperature: 0.7,
+      max_completion_tokens: /gpt-oss/i.test(model) ? 32000 : 8000,
+      ...(/gpt-oss/i.test(model) ? { reasoning_effort: "low" } : {}),
+    }),
   });
+
+/** Parse the model's JSON; when it was cut off mid-plan, keep every session
+ *  that arrived whole instead of failing the whole plan. */
+function parsePlan(content: string): any {
+  try { return JSON.parse(content); } catch { /* cut off: salvage below */ }
+  const start = content.indexOf("[");
+  if (start < 0) throw new Error("no array");
+  const lastClose = content.lastIndexOf("}");
+  for (let end = lastClose; end > start; end = content.lastIndexOf("}", end - 1)) {
+    try {
+      const arr = JSON.parse(`${content.slice(start, end + 1)}]`);
+      if (Array.isArray(arr) && arr.length) return { workouts: arr, salvaged: true };
+    } catch { /* keep walking back */ }
+  }
+  throw new Error("unparseable");
+}
 
 /** Last-resort recovery: ask Groq which chat models this key can actually run,
  *  so one more decommission does not need a code change to unbreak the coach. */
@@ -98,8 +121,52 @@ const FALLBACK_TITLE: Record<string, string> = { en: "AI session", es: "Sesión 
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
+function planPrompt(wizard: any, strava: unknown[], allowed: string[]) {
+  const maxDoubles = Math.max(0, Math.min(5, parseInt(wizard?.max_double_days) || 0));
+  const ftp = Math.max(50, Math.min(600, parseInt(wizard?.ftp) || 250));
+  return `Today is ${new Date().toISOString().slice(0, 10)}.
+Athlete FTP: ${ftp}W (use for cycling watt targets).
+HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sessions (two-a-day / double training). Every other day must have at most one session. Never exceed ${maxDoubles} double days in any single weekly cycle.
+ALLOWED DISCIPLINES: every session's "type" MUST be one of: ${allowed.join(", ")}. Never schedule any other type, not even as cross-training or recovery.
+LENGTH: keep each "notes" to at most about 400 characters so the whole plan fits in one answer.
+${splitPrompt(wizard?.gym_split)}
+Questionnaire: ${JSON.stringify(wizard || {})}
+Recent Strava history (most recent first): ${JSON.stringify(strava || [])}`;
+}
+
+// A failure the athlete sees as "the coach isn't working" is also written to
+// the function's log with its cause, so it can be found without a repro.
+const fail = (error: string, status: number, detail = "") => {
+  console.error(`ai-plan ${status}: ${error}${detail ? ` | ${detail}` : ""}`);
+  return json(detail ? { error, detail } : { error }, status);
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  // GET ?health=1: is Groq answering, and with which model? ?health=plan runs a
+  // full plan for a sample athlete and reports how it came back, saving nothing.
+  const health = req.method === "GET" ? new URL(req.url).searchParams.get("health") : null;
+  if (health) {
+    const key = Deno.env.get("GROQ_API_KEY");
+    if (!key) return json({ ok: false, error: "GROQ_API_KEY not configured" }, 500);
+    const override = Deno.env.get("GROQ_MODEL");
+    const models = override ? [override, ...FALLBACK_MODELS.filter((m) => m !== override)] : FALLBACK_MODELS;
+    const started = Date.now();
+    try {
+      if (health !== "plan") {
+        const g = await groqComplete(key, models, [{ role: "user", content: 'Reply with the JSON {"ok": true}.' }]);
+        return json({ ok: true, model: g?.model, ms: Date.now() - started });
+      }
+      const sample = { goal: "Olympic triathlon", sports: ["Running", "Cycling", "Swimming", "Gym"], weeks: 12, hours_per_week: 8, max_double_days: 2, ftp: 230, level: "intermediate", lang: "en" };
+      const g = await groqComplete(key, models, [{ role: "system", content: SYSTEM }, { role: "user", content: planPrompt(sample, [], TYPES) }]);
+      const content = g.choices?.[0]?.message?.content || "";
+      let sessions = 0; let salvaged = false;
+      try { const p = parsePlan(content); sessions = (p.workouts || p.plan || p.sessions || []).length; salvaged = !!p.salvaged; } catch { /* reported below */ }
+      return json({ ok: sessions > 0, model: g?.model, finish: g.choices?.[0]?.finish_reason, chars: content.length, sessions, salvaged, usage: g.usage, ms: Date.now() - started });
+    } catch (e) {
+      return json({ ok: false, detail: String((e as Error)?.message || e), ms: Date.now() - started }, 502);
+    }
+  }
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
 
   const auth = req.headers.get("Authorization")?.replace("Bearer ", "");
@@ -114,20 +181,12 @@ Deno.serve(async (req) => {
   if (!key) return json({ error: "GROQ_API_KEY not configured" }, 500);
 
   const body = await req.json().catch(() => ({}));
-  const maxDoubles = Math.max(0, Math.min(5, parseInt(body.wizard?.max_double_days) || 0));
-  const ftp = Math.max(50, Math.min(600, parseInt(body.wizard?.ftp) || 250));
   const lang = LANGS.includes(body.wizard?.lang) ? body.wizard.lang : "en";
   const allowed = allowedTypes(body.wizard?.sports, TYPES);
   // the athlete's Monday of this week (their local date): every unfinished,
   // unverified session from there on is replaced by the new plan
   const wipeFrom = ISO.test(String(body.wipe_from || "")) ? String(body.wipe_from) : null;
-  const prompt = `Today is ${new Date().toISOString().slice(0, 10)}.
-Athlete FTP: ${ftp}W (use for cycling watt targets).
-HARD SCHEDULING RULE: at most ${maxDoubles} day(s) per week may contain two sessions (two-a-day / double training). Every other day must have at most one session. Never exceed ${maxDoubles} double days in any single weekly cycle.
-ALLOWED DISCIPLINES: every session's "type" MUST be one of: ${allowed.join(", ")}. Never schedule any other type, not even as cross-training or recovery.
-${splitPrompt(body.wizard?.gym_split)}
-Questionnaire: ${JSON.stringify(body.wizard || {})}
-Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`;
+  const prompt = planPrompt(body.wizard || {}, body.strava || [], allowed);
 
   const override = Deno.env.get("GROQ_MODEL");
   const models = override ? [override, ...FALLBACK_MODELS.filter((m) => m !== override)] : FALLBACK_MODELS;
@@ -139,13 +198,15 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
       { role: "user", content: prompt },
     ]);
   } catch (e) {
-    return json({ error: "AI coach unavailable", detail: String((e as Error)?.message || e) }, 502);
+    return fail("AI coach unavailable", 502, String((e as Error)?.message || e));
   }
 
   let parsed: any;
-  try { parsed = JSON.parse(g.choices?.[0]?.message?.content || "{}"); } catch { return json({ error: "AI returned invalid JSON" }, 502); }
+  const content = g.choices?.[0]?.message?.content || "{}";
+  try { parsed = parsePlan(content); } catch { return fail("AI returned invalid JSON", 502, `${g?.model} finish=${g.choices?.[0]?.finish_reason} len=${content.length}`); }
+  if (parsed.salvaged) console.warn(`ai-plan: answer was cut off (finish=${g.choices?.[0]?.finish_reason}); kept ${parsed.workouts.length} whole sessions`);
   const plan = Array.isArray(parsed) ? parsed : (parsed.workouts || parsed.plan || parsed.sessions || []);
-  if (!Array.isArray(plan) || !plan.length) return json({ error: "AI returned no sessions" }, 502);
+  if (!Array.isArray(plan) || !plan.length) return fail("AI returned no sessions", 502, `${g?.model} keys=${Object.keys(parsed || {}).join(",")}`);
 
   const now = new Date().toISOString();
   // sessions in a discipline the athlete didn't pick are dropped, whatever the model sent
@@ -180,7 +241,7 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
       updated_at: now,
     };
   });
-  if (!rows.length) return json({ error: "no valid sessions" }, 502);
+  if (!rows.length) return fail("no valid sessions", 502, `allowed=${allowed.join(",")} got=${[...new Set(plan.map((p: any) => p?.type))].join(",")}`);
 
   // A new plan replaces the old one: unfinished, unverified sessions from this
   // week's Monday on go (completed and Strava-verified history always stays),
@@ -190,11 +251,11 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
     const { data: gone, error: delErr } = await admin.from("workouts").delete()
       .eq("user_id", userId).gte("date", wipeFrom).eq("completed", false).is("strava_activity_id", null)
       .select("id");
-    if (delErr) return json({ error: delErr.message }, 500);
+    if (delErr) return fail(delErr.message, 500, "wipe");
     removed = gone?.length || 0;
   }
 
   const { error: insErr } = await admin.from("workouts").insert(rows);
-  if (insErr) return json({ error: insErr.message }, 500);
+  if (insErr) return fail(insErr.message, 500, "insert");
   return json({ inserted: rows.length, removed });
 });

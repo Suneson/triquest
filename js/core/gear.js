@@ -18,16 +18,19 @@ import { t } from './i18n.js';
 export const GEAR_SINCE = '2026-10-22';
 
 /**
- * Fuel: consumables bought with carbs. Each one boosts every session inside
- * its window (prorated at the edges). Only one fuel runs at a time, and each
+ * Fuel: consumables bought with carbs. Only one is on at a time, and each
  * kind has its own limit in any rolling 7 days.
+ *   - Gels (`nextWorkout`) wait for your next workout: the next session that
+ *     earns XP after you take one (a Strava activity or a logged session) gets
+ *     the whole boost, however long ago you took it.
+ *   - Food (`hours`) boosts every session inside its window, prorated at the edges.
  */
 const FUEL_ITEMS = {
-  // gels: short and strong; the rarer the colour, the dearer and the stronger
-  gel: { boostBp: 3000, hours: 4, perWindow: 2, cost: 120, maxHeld: 3 },             // blue: +30% for 4 h
-  'gel-caffeine': { boostBp: 4000, hours: 4, perWindow: 1, cost: 220, maxHeld: 2 },  // red: +40% for 4 h
-  'gel-race': { boostBp: 5000, hours: 3, perWindow: 1, cost: 360, maxHeld: 1 },      // gold: +50% for 3 h
-  // food: gentler and longer
+  // gels: one workout each; the rarer the colour, the dearer and the stronger
+  gel: { boostBp: 3000, nextWorkout: true, perWindow: 2, cost: 120, maxHeld: 3 },             // blue: +30% next workout
+  'gel-caffeine': { boostBp: 4000, nextWorkout: true, perWindow: 1, cost: 220, maxHeld: 2 },  // red: +40% next workout
+  'gel-race': { boostBp: 5000, nextWorkout: true, perWindow: 1, cost: 360, maxHeld: 1 },      // gold: +50% next workout
+  // food: gentler, for a few hours
   'rice-cake': { boostBp: 1000, hours: 6, perWindow: 3, cost: 60, maxHeld: 4 },      // +10% for 6 h
   'energy-bar': { boostBp: 1500, hours: 6, perWindow: 2, cost: 80, maxHeld: 3 },     // +15% for 6 h
   pasta: { boostBp: 1000, hours: 12, perWindow: 1, cost: 150, maxHeld: 2 },          // +10% for 12 h

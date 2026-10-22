@@ -4,7 +4,7 @@
 //
 // Two currencies, both earned only by training and missions (wallet.js):
 //   coins buy gear upgrades (a small permanent boost to one discipline) and clothes;
-//   carbs buy fuel (gel, energy bar, pasta), which boosts the next few hours.
+//   carbs buy fuel: a gel boosts your next workout, food the next few hours.
 // Prices and effects are shown before you buy; the server does the buying and
 // using (gear-state.js → buy_gear / use_gel). Not the merch Shop tab: its own
 // name, a stall icon and a steel accent.
@@ -116,7 +116,9 @@ function sportTabs(sport) {
   }).join('')}</div>`;
 }
 
-const fuelEffect = (f) => t('gear.fuelEffect', { pct: f.boostBp / 100, h: f.hours, n: f.perWindow });
+const fuelEffect = (f) => (f.nextWorkout
+  ? t('gear.fuelEffectNext', { pct: f.boostBp / 100, n: f.perWindow })
+  : t('gear.fuelEffect', { pct: f.boostBp / 100, h: f.hours, n: f.perWindow }));
 
 function fuelCard(f, s, w, { mode, fresh }) {
   const held = w.held[f.id] || 0;
@@ -160,8 +162,11 @@ function kitCard(k, owned, worn, coins, mode) {
 
 function shell(root, { title, icon, id, body, workouts }) {
   const head = sheetHead({ lead: 'back', icon, title, id, action: '' });
+  // a redraw (a tab, a purchase) keeps the page where it was: same scroll, no jump
+  const top = root.querySelector('.fh-screen')?.scrollTop || 0;
   root.innerHTML = `<div class="fh-screen gw-screen" role="dialog" aria-modal="true" aria-labelledby="${id}">${head}
     ${resourceBars(workouts, { cls: 'in-sheet' })}${body}</div>`;
+  if (top) root.querySelector('.fh-screen').scrollTop = top;
   animateIn(root);
 }
 
@@ -194,7 +199,7 @@ async function handleCommon(e, draw, onBought) {
         await useFuel(f.id);
         playAccept();
         haptic('levelUp');
-        toast(`<b>${t('gear.fuelOn', { name: f.name, pct: f.boostBp / 100, h: f.hours })}</b>`, { icon: svg('gel') });
+        toast(`<b>${t(f.nextWorkout ? 'gear.fuelOnNext' : 'gear.fuelOn', { name: f.name, pct: f.boostBp / 100, h: f.hours })}</b>`, { icon: svg('gel') });
       } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
     });
     draw();
@@ -217,7 +222,7 @@ const SHOP_TABS = [['gear', 'wrench'], ['clothes', 'user'], ['fuel', 'gel']];
 /** Open the shop: tab 'gear' (by discipline), 'clothes' or 'fuel'. */
 export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
   let off = null;
-  const root = openLayer('shop-gear', { className: 'gear-layer', onClose: () => off?.() });
+  const root = openLayer('shop-gear', { className: 'gear-layer', instant: true, onClose: () => off?.() });
   let current = SLOTS[sport] ? sport : 'bike';
   let view = tab;
   let fresh = null;
@@ -277,7 +282,7 @@ export const openGear = (ctx, sport) => openShop(ctx, { tab: 'gear', sport });
 /** Open the inventory: fuel you hold (use it here), clothes you own, gear fitted. */
 export function openInventory() {
   let off = null;
-  const root = openLayer('inventory', { className: 'gear-layer', onClose: () => off?.() });
+  const root = openLayer('inventory', { className: 'gear-layer', instant: true, onClose: () => off?.() });
   const draw = () => {
     const workouts = store.getWorkouts();
     if (!gearEnabled()) { shell(root, { title: t('gear.inventory'), icon: 'backpack', id: 'inv-title', body: signInBody(), workouts }); return; }

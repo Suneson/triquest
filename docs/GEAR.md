@@ -473,3 +473,53 @@ Asked for after Phase 4, and built ahead of Phase 5:
   - Processing: the green is keyed out with spill suppression, alpha hardened, the sprite fitted into 128×128 nearest-neighbour and quantised to 48 colours.
   - Where things live: the model's raw outputs are kept in `docs/gear/gen/`, and the contact sheet is `docs/gear/gen-sheet.png`.
   - The earlier hand-drawn set now writes to `docs/gear/drawn/` for comparison.
+
+## 11. More fuel and clothes, the art, and launch (added on review)
+
+**Gels by colour** (the rarer the colour, the dearer and the stronger):
+
+| Gel | Price | Effect | Limit |
+| --- | --- | --- | --- |
+| Blue | 120 g | +30% for 4 h | 2 a week |
+| Red, caffeine | 220 g | +40% for 4 h | 1 a week |
+| Gold, race | 360 g | +50% for 3 h | 1 a week, hold 1 |
+
+**Food:**
+
+| Food | Price | Effect | Limit |
+| --- | --- | --- | --- |
+| Rice cake | 60 g | +10% for 6 h | 3 a week |
+| Energy bar | 80 g | +15% for 6 h | 2 a week |
+| Recovery shake | 200 g | +20% for 8 h | 1 a week |
+| Pasta meal | 150 g | +10% for 12 h | 1 a week |
+
+**Clothes:**
+
+| Kit | Price |
+| --- | --- |
+| Crimson | 400 coins |
+| Climber (white with blue dots) | 400 coins |
+| Pro black-and-gold | 700 coins |
+
+All five kits are recoloured onto the level-6 cyclist.
+
+**What carbs limit, not the rules.** Still only one fuel at a time. A session gets at most the strongest fuel's worth (+50%).
+
+- What actually limits fuel is carbs. A typical week earns about 520 g, which is a gold gel and a bar, or two blue gels and a rice cake.
+- So a typical athlete can fuel 2 or 3 sessions a week.
+- Realistic extra on top of §5: about +12% XP, or about half a level a year. A heavy trainer fuelling every session gets up to +25%.
+- Ranks still counts base XP only.
+
+**Art**:
+- All 48 gear tiers, the new fuel and the new kits are generated with `tools/gen-items.mjs`, and the carbs icon is now a blue wheat ear.
+- The Phase 5 pipeline is in place:
+  - `tools/slice-gear-art.mjs` cuts your own 3×3 sheets.
+  - `tools/gear-anim.py` makes animated items from green-screen GIFs or frames.
+  - `docs/gear/ART-BRIEF.md` has the style, every file name and what's still missing.
+- Item art is lazy-loaded and not precached by the service worker.
+
+**Bars:** no "max" label (a full bar says it), and they fill from the icon end, right to left, packed closer together.
+
+**Launch:** `GEAR_SINCE` is 22 October 2026. Sessions and missions from that day earn coins and carbs, and everyone starts with 300 coins and 200 g of carbs.
+
+**Phase 6** (gear layered on the animated character) is not built. Kit colour is done by palette swap (5b), and silhouette gear is already drawn by the level art. That was the agreed fallback.

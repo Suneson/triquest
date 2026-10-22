@@ -18,7 +18,7 @@ import { haptic } from './haptics.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import {
-  SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
+  SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, CATALOG, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
 } from '../core/gear.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
 import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear } from './gear-state.js';
@@ -35,8 +35,9 @@ const price = (n, cur) => `<span class="cur-amt is-${cur}">${svg(cur === 'carbs'
 // ---- coins and carbs, top right of the scene ------------------------------------------
 
 /**
- * Two storage bars, a base-building game's way: each fills toward the cap
- * (10,000), with the amount on the bar and the currency's icon on its end.
+ * Two storage bars, a base-building game's way: each fills from the icon end
+ * (right to left) toward the cap (10,000), with the amount on the bar. The cap
+ * isn't printed; a full bar says it.
  */
 export function resourceBars(workouts, { cls = '' } = {}) {
   if (!gearEnabled()) return '';
@@ -44,7 +45,6 @@ export function resourceBars(workouts, { cls = '' } = {}) {
   const bar = (cur, n) => {
     const f = Math.max(0, Math.min(1, n / w.cap));
     return `<div class="res-bar is-${cur}${f >= 1 ? ' is-full' : ''}" style="--f:${f.toFixed(4)}">
-      <small class="res-max">${t('gear.res.max', { n: fmtNum(w.cap) })}</small>
       <span class="res-track"><i class="res-fill"></i><b class="data-num">${rollNum(n, `res-${cur}`)}${cur === 'carbs' ? '<span class="res-unit">g</span>' : ''}</b></span>
       <img class="res-ico" src="${CUR_ICON[cur]}" width="32" height="32" alt="">
     </div>`;
@@ -55,7 +55,8 @@ export function resourceBars(workouts, { cls = '' } = {}) {
 
 // ---- shop pieces -------------------------------------------------------------------
 
-const ART_READY = new Set(); // gear tier ids whose PNG has landed (Phase 5 fills this)
+// every bought tier has its picture (tools/gen-items.mjs); the free starter shows the slot's icon
+const ART_READY = new Set(CATALOG.filter((e) => e.tier > 0).map((e) => e.id));
 
 function artTile(sport, slot, tier, { locked = false, fresh = false } = {}) {
   const id = tierId(sport, slot, tier);

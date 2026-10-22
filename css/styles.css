@@ -1996,3 +1996,16 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .pg-scene-btn { bottom: calc(var(--tabs-h) + var(--pg-hud-h) + 50px); }
 .pg-scene-btn { width: 68px; height: 68px; }
 .pg-scene-btn img { width: 60px; height: 60px; image-rendering: pixelated; }
+/* bars: no "max" label, fill from the icon end (right to left), packed close */
+.res-bars { gap: 4px; }
+.res-bar { grid-template-columns: minmax(0, 1fr) 20px; }
+.res-track { grid-row: 1; }
+.res-ico { grid-row: 1; }
+.res-fill { left: auto; right: 2px; }
+.res-track b { right: auto; left: 10px; }
+.res-bar.is-carbs .res-fill { background: linear-gradient(#9CC4FF 0 30%, var(--brand-hi) 30% 75%, var(--brand) 75%); }
+.res-bar.is-carbs .res-track { box-shadow: 0 -2px 0 0 var(--shade), 0 2px 0 0 var(--shade), -2px 0 0 0 var(--shade), 2px 0 0 0 var(--shade), inset 0 0 0 2px #142A55; }
+.cur-amt.is-carbs { color: var(--sky, #6EA8FF); }
+.btn.primary .cur-amt.is-carbs { color: var(--on-accent); }
+.gw-tab small .ic.cur-ico { color: var(--accent); }
+.gw-art img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }

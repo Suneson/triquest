@@ -36,7 +36,7 @@ function demoState() {
   let gelOn = true;
   try { gelOn = new URLSearchParams(location.search).get('gel') !== '0'; } catch { /* no location */ }
   const boosts = [{ kind: 'gel', started_at: ago(gelOn ? 1.25 : 72), expires_at: ago(gelOn ? -2.75 : 68), multiplier: 1.3 }];
-  const spends = ['gel', 'gel', 'energy-bar', 'pasta'].map((item_id) => ({ item_id, coins: 0, currency: 'carbs', created_at: ago(80) }));
+  const spends = ['gel', 'gel', 'gel-caffeine', 'energy-bar', 'rice-cake', 'pasta'].map((item_id) => ({ item_id, coins: 0, currency: 'carbs', created_at: ago(80) }));
   return { uid: 'demo', inventory, spends, boosts, quests: [], wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, at: Date.now() };
 }
 

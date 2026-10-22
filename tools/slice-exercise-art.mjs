@@ -17,7 +17,7 @@
 // Usage:
 //   node tools/slice-exercise-art.mjs                    every sheet in docs/gym/sheets.json
 //   node tools/slice-exercise-art.mjs <sheet> <cols>x<rows> id1,id2,...   one sheet, ids in reading order
-// Options: --size=256  --colors=24  --margin=0.08  --out=icons/Pixelart/EXERCISES
+// Options: --size=256  --colors=24  --margin=0.08  --out=icons/Pixelart/EXERCISES  --manifest=docs/gym/sheets.json
 // An id of "-" skips that cell.
 //
 // sheets.json: [{ "file": "docs/gym/sheets/sheet-1.jpg", "grid": "3x3", "ids": ["back-squat", ...] }, ...]
@@ -42,7 +42,7 @@ function sheetsToRun() {
   if (positional.length >= 3) {
     return [{ file: positional[0], grid: positional[1], ids: positional[2].split(',').map((s) => s.trim()) }];
   }
-  const manifest = 'docs/gym/sheets.json';
+  const manifest = opt('manifest', 'docs/gym/sheets.json');
   if (!existsSync(manifest)) throw new Error(`No sheet given and no ${manifest}. See the usage at the top of this file.`);
   return JSON.parse(readFileSync(manifest, 'utf8'));
 }

@@ -2055,7 +2055,10 @@ es.gear = {
   },
   "kit": {
     "moske-navy": "MOSKE marino",
-    "moske-sand": "MOSKE arena"
+    "moske-sand": "MOSKE arena",
+    "moske-crimson": "MOSKE carmesí",
+    "moske-climber": "MOSKE escalador",
+    "moske-pro": "MOSKE pro negro"
   },
   "signIn": "Inicia sesión para montar tu material. Las monedas salen del entrenamiento que suma XP, y tu material se guarda en tu cuenta.",
   "offline": "Estás sin conexión. Puedes mirar; para comprar hace falta conexión.",
@@ -2099,7 +2102,6 @@ es.gear = {
     "fuel": "Nutrición"
   },
   "res": {
-    "max": "Máx. {n}",
     "aria": "Monedas {coins}, carbohidratos {carbs} g, cada uno guarda hasta {cap}"
   },
   "needCarbs": "Faltan {n} g de carbohidratos",
@@ -2124,7 +2126,7 @@ es.gear = {
   "fuel": {
     "gel": {
       "name": "Gel energético",
-      "blurb": "Un chute rápido para una sesión dura."
+      "blurb": "El azul. Un chute rápido para una sesión dura."
     },
     "energy-bar": {
       "name": "Barrita energética",
@@ -2133,6 +2135,22 @@ es.gear = {
     "pasta": {
       "name": "Plato de pasta",
       "blurb": "Carga de hidratos para un gran día de entreno."
+    },
+    "gel-caffeine": {
+      "name": "Gel con cafeína",
+      "blurb": "El rojo: cafeína e hidratos para un esfuerzo más intenso."
+    },
+    "gel-race": {
+      "name": "Gel de carrera",
+      "blurb": "El dorado. Guárdalo para la sesión que importa."
+    },
+    "rice-cake": {
+      "name": "Pastel de arroz",
+      "blurb": "Arroz pegajoso envuelto en papel de aluminio, el tentempié de los pros."
+    },
+    "recovery-shake": {
+      "name": "Batido de recuperación",
+      "blurb": "Proteína e hidratos para volver más fuerte mañana."
     }
   }
 };

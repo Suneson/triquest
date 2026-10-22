@@ -15,7 +15,7 @@
 import { t } from './i18n.js';
 
 /** Sessions and missions dated before this earn nothing (everyone starts with the purse). */
-export const GEAR_SINCE = '2026-11-02';
+export const GEAR_SINCE = '2026-10-22';
 
 /**
  * Fuel: consumables bought with carbs. Each one boosts every session inside
@@ -23,9 +23,15 @@ export const GEAR_SINCE = '2026-11-02';
  * kind has its own limit in any rolling 7 days.
  */
 const FUEL_ITEMS = {
-  gel: { boostBp: 3000, hours: 4, perWindow: 2, cost: 120, maxHeld: 3 },          // +30% for 4 h
-  'energy-bar': { boostBp: 1500, hours: 6, perWindow: 2, cost: 80, maxHeld: 3 },  // +15% for 6 h
-  pasta: { boostBp: 1000, hours: 12, perWindow: 1, cost: 150, maxHeld: 2 },       // +10% for 12 h
+  // gels: short and strong; the rarer the colour, the dearer and the stronger
+  gel: { boostBp: 3000, hours: 4, perWindow: 2, cost: 120, maxHeld: 3 },             // blue: +30% for 4 h
+  'gel-caffeine': { boostBp: 4000, hours: 4, perWindow: 1, cost: 220, maxHeld: 2 },  // red: +40% for 4 h
+  'gel-race': { boostBp: 5000, hours: 3, perWindow: 1, cost: 360, maxHeld: 1 },      // gold: +50% for 3 h
+  // food: gentler and longer
+  'rice-cake': { boostBp: 1000, hours: 6, perWindow: 3, cost: 60, maxHeld: 4 },      // +10% for 6 h
+  'energy-bar': { boostBp: 1500, hours: 6, perWindow: 2, cost: 80, maxHeld: 3 },     // +15% for 6 h
+  pasta: { boostBp: 1000, hours: 12, perWindow: 1, cost: 150, maxHeld: 2 },          // +10% for 12 h
+  'recovery-shake': { boostBp: 2000, hours: 8, perWindow: 1, cost: 200, maxHeld: 2 }, // +20% for 8 h
 };
 
 export const GEAR_RULES = {
@@ -133,6 +139,39 @@ export const KITS = [
       shoes: ['#c9c9c9', '#e0e0e0', '#efefef', '#ffffff'],
     },
   },
+  {
+    id: 'kit-moske-crimson',
+    kind: 'kit',
+    get name() { return t('gear.kit.moske-crimson'); },
+    cost: 400,
+    ramps: {
+      jersey: ['#5A0F14', '#8E1B22', '#C22B33', '#E5545B'],
+      shorts: ['#08080c', '#15151c', '#24242e', '#383844'],
+      shoes: ['#c9c9c9', '#e0e0e0', '#efefef', '#ffffff'],
+    },
+  },
+  {
+    id: 'kit-moske-climber',
+    kind: 'kit',
+    get name() { return t('gear.kit.moske-climber'); },
+    cost: 400,
+    ramps: {
+      jersey: ['#B9C4D6', '#D8DFEA', '#EEF2F8', '#FFFFFF'],
+      shorts: ['#0B1630', '#16264D', '#24396E', '#3A5592'],
+      shoes: ['#0C4CAE', '#2F6FD6', '#6EA8FF', '#9CC4FF'],
+    },
+  },
+  {
+    id: 'kit-moske-pro',
+    kind: 'kit',
+    get name() { return t('gear.kit.moske-pro'); },
+    cost: 700,
+    ramps: {
+      jersey: ['#050608', '#101218', '#1C1F28', '#2B2F3B'],
+      shorts: ['#050608', '#101218', '#1C1F28', '#2B2F3B'],
+      shoes: ['#8A6416', '#B8892A', '#F2C14E', '#FFE08A'],
+    },
+  },
 ];
 export const kitById = (id) => KITS.find((k) => k.id === id) || null;
 export const kitArt = (id) => `icons/Pixelart/GEAR/${id}.png`;
@@ -142,8 +181,12 @@ export const kitArt = (id) => `icons/Pixelart/GEAR/${id}.png`;
  * (tools/kit-recolor.py writes `<base>--<kitId>.webp` next to the base).
  * A level without one shows the base kit.
  */
+const L6 = 'icons/Pixelart/BIKE/CHARACTERS/bikelvl6_char.webp';
 export const KIT_SPRITES = {
-  'kit-moske-sand': ['icons/Pixelart/BIKE/CHARACTERS/bikelvl6_char.webp'],
+  'kit-moske-sand': [L6],
+  'kit-moske-crimson': [L6],
+  'kit-moske-climber': [L6],
+  'kit-moske-pro': [L6],
 };
 /** The character sprite to show for a level's base sprite and the kit worn. */
 export const kitSprite = (src, kitId) => (kitId && KIT_SPRITES[kitId]?.includes(src) ? src.replace(/\.webp$/, `--${kitId}.webp`) : src);
@@ -151,7 +194,7 @@ export const kitSprite = (src, kitId) => (kitId && KIT_SPRITES[kitId]?.includes(
 /** Fuel you buy with carbs: a gel, an energy bar, a pasta meal. */
 export const FUELS = Object.entries(FUEL_ITEMS).map(([id, f]) => ({
   id,
-  kind: id === 'gel' ? 'gel' : 'food',
+  kind: id.startsWith('gel') ? 'gel' : 'food',
   currency: 'carbs',
   get name() { return t(`gear.fuel.${id}.name`); },
   ...f,

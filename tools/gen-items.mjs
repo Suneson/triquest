@@ -15,6 +15,7 @@
 import sharp from 'sharp';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { CATALOG } from '../js/core/gear.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT = `${ROOT}icons/Pixelart/GEAR/`;
@@ -36,12 +37,31 @@ const ITEMS = {
   'fuel-energy-bar': 'A single energy bar for cyclists, gold foil wrapper with crimped ends, torn open at one end showing an oat-and-honey bar with visible oats, a navy blue band on the wrapper with a small gold lightning bolt.',
   'fuel-pasta': 'A white bowl with a royal blue rim, piled with spaghetti and tomato sauce, a basil leaf on top, a silver fork stuck in the pasta. A hearty carb-loading meal.',
   coin: 'A single thick gold coin seen slightly from the side so its edge shows, an embossed letter M on its face, a bright shine highlight. Game currency.',
-  carbs: 'A single golden wheat ear with plump separate grains and long awns, with one small green leaf on the stalk. A game currency icon for carbohydrates.',
+  carbs: 'A single wheat ear rendered in shades of bright royal blue and sky blue (a stylised blue game currency, not a real-colour plant), with plump separate grains, long awns and one small blue leaf on the stalk. A game currency icon for carbohydrates.',
   'kit-moske-navy': `A cycling jersey laid flat, short sleeves, navy blue fabric, a gold band across the chest, gold sleeve cuffs, a full-length zip, a small white MOSKE bird logo on the chest. ${LOGO}`,
   'kit-moske-sand': `A cycling jersey laid flat, short sleeves, sand beige fabric, a dark slate-blue band across the chest, slate-blue sleeve cuffs, a full-length zip, a small navy MOSKE bird logo on the chest. ${LOGO}`,
+  'fuel-gel-caffeine': `A single energy gel sachet, glossy red foil pouch with a torn-off tab at the top, a dark crimson label band with the MOSKE bird logo in white and a small white coffee bean mark, a thin silver stripe. Stronger and more premium than a plain gel. ${LOGO}`,
+  'fuel-gel-race': `A single premium race-day energy gel sachet, shiny gold metallic foil pouch with a torn-off tab, a black label band with the MOSKE bird logo in gold and a small star, a subtle sparkle highlight. The rarest, most expensive gel. ${LOGO}`,
+  'fuel-rice-cake': 'A cyclist rice cake: a square of sticky white rice with a few dark raisins, half wrapped in crinkled silver aluminium foil. A classic pro cycling pocket snack.',
+  'fuel-recovery-shake': `A recovery shake: a clear plastic shaker bottle with a royal blue screw lid, filled with a creamy chocolate-brown shake, a white label with the MOSKE bird logo. ${LOGO}`,
+  'kit-moske-crimson': `A cycling jersey laid flat, short sleeves, deep crimson red fabric, a white band across the chest, white sleeve cuffs, a full-length zip, a small white MOSKE bird logo on the chest. ${LOGO}`,
+  'kit-moske-climber': `A cycling jersey laid flat, short sleeves, white fabric with royal blue polka dots, royal blue sleeve cuffs, a full-length zip, a small blue MOSKE bird logo on the chest. A climber's jersey. ${LOGO}`,
+  'kit-moske-pro': `A premium cycling jersey laid flat, short sleeves, matte black fabric, thin gold pinstripes, gold sleeve cuffs, a full-length gold zip, a small gold MOSKE bird logo on the chest. The pro team kit. ${LOGO}`,
   'btn-shop': 'A small market stall shop for a sports game: a wooden counter with a striped awning in gold and navy, a few cycling items on display (a water bottle, a small wheel, an energy gel), a hanging sign with no text.',
   'btn-inventory': 'A sporty athlete backpack in navy blue with gold zips and straps, a water bottle in the side pocket, slightly open at the top showing an energy gel and a rolled jersey.',
 };
+
+// the 48 gear upgrades, described from the catalog: tier 1 entry level, tier 2 mid-range, tier 3 pro
+const TIER_LOOK = {
+  1: 'an entry-level, simple, honest version in plain colours',
+  2: 'a mid-range, well-made version with some navy and steel details',
+  3: 'a top-of-the-range pro version, sleek, carbon fibre and gold accents, clearly the most premium',
+};
+const SPORT_WORD = { bike: 'cycling', swim: 'swimming', run: 'running', gym: 'weightlifting' };
+for (const e of CATALOG) {
+  if (!e.tier) continue;
+  ITEMS[e.id] = `A single piece of ${SPORT_WORD[e.sport]} equipment for a triathlete: ${e.name} (the "${e.slotName}" slot), shown as ${TIER_LOOK[e.tier]}. Just the object itself, no person.`;
+}
 
 const b64 = (p) => readFileSync(p).toString('base64');
 const refs = [

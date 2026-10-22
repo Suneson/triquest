@@ -2055,7 +2055,10 @@ en.gear = {
   },
   "kit": {
     "moske-navy": "MOSKE navy",
-    "moske-sand": "MOSKE sand"
+    "moske-sand": "MOSKE sand",
+    "moske-crimson": "MOSKE crimson",
+    "moske-climber": "MOSKE climber",
+    "moske-pro": "MOSKE pro black"
   },
   "signIn": "Sign in to build your kit. Coins come from training that earns XP, and your gear is kept on your account.",
   "offline": "You’re offline. You can look around; buying needs a connection.",
@@ -2099,7 +2102,6 @@ en.gear = {
     "fuel": "Fuel"
   },
   "res": {
-    "max": "Max {n}",
     "aria": "Coins {coins}, carbs {carbs} g, each stores up to {cap}"
   },
   "needCarbs": "{n} g more carbs",
@@ -2124,7 +2126,7 @@ en.gear = {
   "fuel": {
     "gel": {
       "name": "Energy gel",
-      "blurb": "A quick hit for one hard session."
+      "blurb": "The blue one. A quick hit for one hard session."
     },
     "energy-bar": {
       "name": "Energy bar",
@@ -2133,6 +2135,22 @@ en.gear = {
     "pasta": {
       "name": "Pasta meal",
       "blurb": "Carb-loading for a big training day."
+    },
+    "gel-caffeine": {
+      "name": "Caffeine gel",
+      "blurb": "The red one: caffeine and carbs for a sharper effort."
+    },
+    "gel-race": {
+      "name": "Race gel",
+      "blurb": "The gold one. Save it for the session that matters."
+    },
+    "rice-cake": {
+      "name": "Rice cake",
+      "blurb": "Sticky rice wrapped in foil, the pro’s pocket snack."
+    },
+    "recovery-shake": {
+      "name": "Recovery shake",
+      "blurb": "Protein and carbs to come back stronger tomorrow."
     }
   }
 };

@@ -42,6 +42,24 @@ Next to each athlete, **✓ 82%** is the share of their session XP that Strava
 verified. Quest XP isn't part of that share. An athlete who only lifts in the
 app shows no ✓, and that's fine: their XP passed the rules above.
 
+## Gear doesn't count on Ranks
+
+GEAR (the workshop, `docs/GEAR.md`) lets you buy equipment and gels with
+coins earned by training. Gear adds a small permanent boost to its
+discipline, up to +16%. A gel adds +30% to sessions inside its 4-hour
+window. Those boosts count for **your own** discipline levels, your account
+level and your scene art. **They never count on Ranks.** The leaderboard is
+base session XP plus quest XP, the same number for everyone, exactly as
+above.
+
+So XP you see on your own sessions is written with both numbers, e.g.
+**+320 XP (240 base · 80 gear)**. Anywhere your number sits next to another
+athlete's, it's the base number, labelled as base.
+
+A session's boost is worked out once, by the server, from the gear you owned
+and the gel that was running when you did the session. It's stored with the
+session, so buying wheels today never inflates last March.
+
 ## The gym check-in (optional)
 
 If you turn it on (Settings → Gym check-in), finishing a gym session checks

@@ -61,6 +61,7 @@ export function rowToWorkout(r) {
     actual: r.actual ?? null,
     strava_activity_id: r.strava_activity_id ?? null,
     source: r.source ?? 'custom',
+    boost: r.boost ?? null, // GEAR stamp, written by the server only (0014); never sent back
     updated_at: r.updated_at,
     ...(r.extra || {}),
   });

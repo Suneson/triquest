@@ -1,0 +1,309 @@
+-- 0015: carbs, fuel and storage (docs/GEAR.md §10). Mirrors js/core/gear.js,
+-- wallet.js and boosts.js; the constants, the catalog and the mission rewards
+-- below are generated from gear.js (tools/gear-sql.mjs).
+--
+--   - A second currency, carbs (grams), earned by training alongside coins,
+--     and by missions (quest_reward). Coins buy gear and clothes; carbs buy
+--     fuel: a gel, an energy bar, a pasta meal.
+--   - Each currency is stored up to storageCap (10,000). wallet_fold() walks
+--     every earning and spend in time order; whatever is earned while the
+--     store is full is lost. Still nothing stored: the balance is derived.
+--   - Fuel generalises the gel: one runs at a time, each kind has its own
+--     weekly limit, and a session gets at most the biggest fuel's worth.
+--   - leaderboard() and leaderboard_proof() are still not touched.
+
+-- ---- columns and kinds ----------------------------------------------------
+
+alter table public.gear_catalog add column if not exists currency text not null default 'coins'
+  check (currency in ('coins', 'carbs'));
+alter table public.gear_catalog drop constraint if exists gear_catalog_kind_check;
+alter table public.gear_catalog add constraint gear_catalog_kind_check check (kind in ('gear', 'kit', 'gel', 'food'));
+
+-- coin_spends keeps its name and its `coins` column (the amount); `currency`
+-- says which one was spent
+alter table public.coin_spends add column if not exists currency text not null default 'coins'
+  check (currency in ('coins', 'carbs'));
+
+alter table public.user_boosts drop constraint if exists user_boosts_kind_check;
+alter table public.user_boosts add constraint user_boosts_kind_check check (kind in ('gel', 'energy-bar', 'pasta'));
+
+-- ---- generated: constants, catalog, mission rewards ---------------------------
+
+-- (generated from js/core/gear.js as it was at 0015; 0016 regenerates the current catalog)
+create or replace function public.gear_rules()
+returns jsonb language sql immutable set search_path = public as $$
+  select '{"storageCap":10000,"coinsPerXp":0.5,"dailyCoinCap":120,"carbsPerXp":0.8,"dailyCarbCap":300,"starterPurse":300,"starterCarbs":200,"tierCost":[0,100,350,850],"tierBoostBp":[0,100,200,400],"sportCapBp":1600,"fuel":{"windowDays":7,"graceHours":24,"items":{"gel":{"boostBp":3000,"hours":4,"perWindow":2,"cost":120,"maxHeld":3},"energy-bar":{"boostBp":1500,"hours":6,"perWindow":2,"cost":80,"maxHeld":3},"pasta":{"boostBp":1000,"hours":12,"perWindow":1,"cost":150,"maxHeld":2}}},"gel":{"boostBp":3000,"hours":4,"perWindow":2,"cost":120,"maxHeld":3,"windowDays":7,"graceHours":24},"kitCost":250,"since":"2026-11-02"}'::jsonb;
+$$;
+
+insert into public.gear_catalog (id, kind, sport, slot, tier, cost, boost_bp, currency) values
+  ('bike-wheels-t0', 'gear', 'bike', 'wheels', 0, 0, 0, 'coins'),
+  ('bike-wheels-t1', 'gear', 'bike', 'wheels', 1, 100, 100, 'coins'),
+  ('bike-wheels-t2', 'gear', 'bike', 'wheels', 2, 350, 200, 'coins'),
+  ('bike-wheels-t3', 'gear', 'bike', 'wheels', 3, 850, 400, 'coins'),
+  ('bike-aerobars-t0', 'gear', 'bike', 'aerobars', 0, 0, 0, 'coins'),
+  ('bike-aerobars-t1', 'gear', 'bike', 'aerobars', 1, 100, 100, 'coins'),
+  ('bike-aerobars-t2', 'gear', 'bike', 'aerobars', 2, 350, 200, 'coins'),
+  ('bike-aerobars-t3', 'gear', 'bike', 'aerobars', 3, 850, 400, 'coins'),
+  ('bike-frame-t0', 'gear', 'bike', 'frame', 0, 0, 0, 'coins'),
+  ('bike-frame-t1', 'gear', 'bike', 'frame', 1, 100, 100, 'coins'),
+  ('bike-frame-t2', 'gear', 'bike', 'frame', 2, 350, 200, 'coins'),
+  ('bike-frame-t3', 'gear', 'bike', 'frame', 3, 850, 400, 'coins'),
+  ('bike-power-t0', 'gear', 'bike', 'power', 0, 0, 0, 'coins'),
+  ('bike-power-t1', 'gear', 'bike', 'power', 1, 100, 100, 'coins'),
+  ('bike-power-t2', 'gear', 'bike', 'power', 2, 350, 200, 'coins'),
+  ('bike-power-t3', 'gear', 'bike', 'power', 3, 850, 400, 'coins'),
+  ('swim-goggles-t0', 'gear', 'swim', 'goggles', 0, 0, 0, 'coins'),
+  ('swim-goggles-t1', 'gear', 'swim', 'goggles', 1, 100, 100, 'coins'),
+  ('swim-goggles-t2', 'gear', 'swim', 'goggles', 2, 350, 200, 'coins'),
+  ('swim-goggles-t3', 'gear', 'swim', 'goggles', 3, 850, 400, 'coins'),
+  ('swim-paddles-t0', 'gear', 'swim', 'paddles', 0, 0, 0, 'coins'),
+  ('swim-paddles-t1', 'gear', 'swim', 'paddles', 1, 100, 100, 'coins'),
+  ('swim-paddles-t2', 'gear', 'swim', 'paddles', 2, 350, 200, 'coins'),
+  ('swim-paddles-t3', 'gear', 'swim', 'paddles', 3, 850, 400, 'coins'),
+  ('swim-buoy-t0', 'gear', 'swim', 'buoy', 0, 0, 0, 'coins'),
+  ('swim-buoy-t1', 'gear', 'swim', 'buoy', 1, 100, 100, 'coins'),
+  ('swim-buoy-t2', 'gear', 'swim', 'buoy', 2, 350, 200, 'coins'),
+  ('swim-buoy-t3', 'gear', 'swim', 'buoy', 3, 850, 400, 'coins'),
+  ('swim-wetsuit-t0', 'gear', 'swim', 'wetsuit', 0, 0, 0, 'coins'),
+  ('swim-wetsuit-t1', 'gear', 'swim', 'wetsuit', 1, 100, 100, 'coins'),
+  ('swim-wetsuit-t2', 'gear', 'swim', 'wetsuit', 2, 350, 200, 'coins'),
+  ('swim-wetsuit-t3', 'gear', 'swim', 'wetsuit', 3, 850, 400, 'coins'),
+  ('run-shoes-t0', 'gear', 'run', 'shoes', 0, 0, 0, 'coins'),
+  ('run-shoes-t1', 'gear', 'run', 'shoes', 1, 100, 100, 'coins'),
+  ('run-shoes-t2', 'gear', 'run', 'shoes', 2, 350, 200, 'coins'),
+  ('run-shoes-t3', 'gear', 'run', 'shoes', 3, 850, 400, 'coins'),
+  ('run-watch-t0', 'gear', 'run', 'watch', 0, 0, 0, 'coins'),
+  ('run-watch-t1', 'gear', 'run', 'watch', 1, 100, 100, 'coins'),
+  ('run-watch-t2', 'gear', 'run', 'watch', 2, 350, 200, 'coins'),
+  ('run-watch-t3', 'gear', 'run', 'watch', 3, 850, 400, 'coins'),
+  ('run-kit-t0', 'gear', 'run', 'kit', 0, 0, 0, 'coins'),
+  ('run-kit-t1', 'gear', 'run', 'kit', 1, 100, 100, 'coins'),
+  ('run-kit-t2', 'gear', 'run', 'kit', 2, 350, 200, 'coins'),
+  ('run-kit-t3', 'gear', 'run', 'kit', 3, 850, 400, 'coins'),
+  ('run-recovery-t0', 'gear', 'run', 'recovery', 0, 0, 0, 'coins'),
+  ('run-recovery-t1', 'gear', 'run', 'recovery', 1, 100, 100, 'coins'),
+  ('run-recovery-t2', 'gear', 'run', 'recovery', 2, 350, 200, 'coins'),
+  ('run-recovery-t3', 'gear', 'run', 'recovery', 3, 850, 400, 'coins'),
+  ('gym-belt-t0', 'gear', 'gym', 'belt', 0, 0, 0, 'coins'),
+  ('gym-belt-t1', 'gear', 'gym', 'belt', 1, 100, 100, 'coins'),
+  ('gym-belt-t2', 'gear', 'gym', 'belt', 2, 350, 200, 'coins'),
+  ('gym-belt-t3', 'gear', 'gym', 'belt', 3, 850, 400, 'coins'),
+  ('gym-shoes-t0', 'gear', 'gym', 'shoes', 0, 0, 0, 'coins'),
+  ('gym-shoes-t1', 'gear', 'gym', 'shoes', 1, 100, 100, 'coins'),
+  ('gym-shoes-t2', 'gear', 'gym', 'shoes', 2, 350, 200, 'coins'),
+  ('gym-shoes-t3', 'gear', 'gym', 'shoes', 3, 850, 400, 'coins'),
+  ('gym-sleeves-t0', 'gear', 'gym', 'sleeves', 0, 0, 0, 'coins'),
+  ('gym-sleeves-t1', 'gear', 'gym', 'sleeves', 1, 100, 100, 'coins'),
+  ('gym-sleeves-t2', 'gear', 'gym', 'sleeves', 2, 350, 200, 'coins'),
+  ('gym-sleeves-t3', 'gear', 'gym', 'sleeves', 3, 850, 400, 'coins'),
+  ('gym-bar-t0', 'gear', 'gym', 'bar', 0, 0, 0, 'coins'),
+  ('gym-bar-t1', 'gear', 'gym', 'bar', 1, 100, 100, 'coins'),
+  ('gym-bar-t2', 'gear', 'gym', 'bar', 2, 350, 200, 'coins'),
+  ('gym-bar-t3', 'gear', 'gym', 'bar', 3, 850, 400, 'coins'),
+  ('kit-moske-navy', 'kit', null, null, null, 250, 0, 'coins'),
+  ('kit-moske-sand', 'kit', null, null, null, 250, 0, 'coins'),
+  ('gel', 'gel', null, null, null, 120, 3000, 'carbs'),
+  ('energy-bar', 'food', null, null, null, 80, 1500, 'carbs'),
+  ('pasta', 'food', null, null, null, 150, 1000, 'carbs')
+on conflict (id) do update set kind = excluded.kind, sport = excluded.sport, slot = excluded.slot,
+  tier = excluded.tier, cost = excluded.cost, boost_bp = excluded.boost_bp, currency = excluded.currency;
+
+-- what each mission pays on top of its XP: { coins, carbs }
+create or replace function public.quest_reward(p_quest_id text)
+returns jsonb language sql immutable set search_path = public as $$
+  select case p_quest_id
+    when 'plan-done' then '{"coins":25,"carbs":0}'::jsonb
+    when 'min-45' then '{"coins":0,"carbs":30}'::jsonb
+    when 'two-disc' then '{"coins":35,"carbs":0}'::jsonb
+    when 'streak' then '{"coins":0,"carbs":20}'::jsonb
+    when 'km-10' then '{"coins":0,"carbs":25}'::jsonb
+    when 'brick' then '{"coins":35,"carbs":0}'::jsonb
+    when 'pack-bag' then '{"coins":0,"carbs":10}'::jsonb
+    when 'rest-day' then '{"coins":0,"carbs":15}'::jsonb
+  end;
+$$;
+
+-- ---- the stamp: any fuel, never more than the biggest one's worth ----------
+
+create or replace function public.boost_stamp(w public.workouts, p_now timestamptz)
+returns jsonb language sql stable set search_path = public as $$
+  with sp as (select s, e from public.session_span(w)),
+  g as (
+    select coalesce(sum(
+             case
+               when sp.e <= sp.s then
+                 case when sp.s >= b.started_at and sp.s < b.expires_at then round((b.multiplier - 1) * 10000) else 0 end
+               else round(round((b.multiplier - 1) * 10000)
+                          * greatest(0, extract(epoch from (least(sp.e, b.expires_at) - greatest(sp.s, b.started_at))))
+                          / extract(epoch from (sp.e - sp.s)))
+             end), 0) as bp
+    from sp, public.user_boosts b
+    where b.user_id = w.user_id
+      and p_now <= b.expires_at + make_interval(hours => (public.gear_rules() -> 'fuel' ->> 'graceHours')::int)
+  )
+  select jsonb_build_object(
+    'gear_bp', public.gear_bp_at(w.user_id, w.type, (select e from sp)),
+    'gel_bp', least((select max((v ->> 'boostBp')::int) from jsonb_each(public.gear_rules() -> 'fuel' -> 'items') x(k, v)),
+                    coalesce((select bp from g), 0))::int);
+$$;
+
+-- ---- the wallet: both currencies, storage-capped, in time order ---------------
+
+-- walletFold(): earnings for a day count at the start of that day, a
+-- mission's on its day, a spend when it was made. Security invoker: under RLS
+-- a caller only reads their own rows.
+create or replace function public.wallet_fold(p_user uuid)
+returns table (coins bigint, carbs bigint, earned_coins bigint, earned_carbs bigint,
+               spent_coins bigint, spent_carbs bigint, lost_coins bigint, lost_carbs bigint)
+language plpgsql stable set search_path = public as $$
+declare
+  r     jsonb := public.gear_rules();
+  cap   bigint := (r ->> 'storageCap')::bigint;
+  since date := (r ->> 'since')::date;
+  e     record;
+  room  bigint;
+begin
+  earned_coins := (r ->> 'starterPurse')::bigint;  earned_carbs := (r ->> 'starterCarbs')::bigint;
+  coins := least(cap, earned_coins);               carbs := least(cap, earned_carbs);
+  spent_coins := 0; spent_carbs := 0; lost_coins := 0; lost_carbs := 0;
+  for e in
+    with days as (
+      select l.date, sum(l.xp) as x from public.xp_ledger(p_user) l where l.date >= since group by l.date
+    ), ev as (
+      select to_char(d.date, 'YYYY-MM-DD') || 'T00:00:00.000Z' as at, 0 as rank, to_char(d.date, 'YYYY-MM-DD') as key,
+             least((r ->> 'dailyCoinCap')::numeric, floor(greatest(d.x, 0) * (r ->> 'coinsPerXp')::numeric))::bigint as c,
+             least((r ->> 'dailyCarbCap')::numeric, floor(greatest(d.x, 0) * (r ->> 'carbsPerXp')::numeric))::bigint as g
+      from days d
+      union all
+      select to_char(q.day, 'YYYY-MM-DD') || 'T00:00:00.000Z', 1, q.quest_id,
+             (public.quest_reward(q.quest_id) ->> 'coins')::bigint, (public.quest_reward(q.quest_id) ->> 'carbs')::bigint
+      from public.quest_completions q
+      where q.user_id = p_user and q.day >= since and public.quest_reward(q.quest_id) is not null
+      union all
+      select to_char(s.created_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), 2, lpad(s.id::text, 12, '0'),
+             case when s.currency = 'coins' then -s.coins else 0 end,
+             case when s.currency = 'carbs' then -s.coins else 0 end
+      from public.coin_spends s where s.user_id = p_user
+    )
+    select * from ev order by at collate "C", rank, key collate "C"
+  loop
+    if e.c > 0 then
+      room := greatest(0, cap - coins);
+      coins := coins + least(e.c, room); earned_coins := earned_coins + e.c; lost_coins := lost_coins + greatest(0, e.c - room);
+    elsif e.c < 0 then
+      coins := coins + e.c; spent_coins := spent_coins - e.c;
+    end if;
+    if e.g > 0 then
+      room := greatest(0, cap - carbs);
+      carbs := carbs + least(e.g, room); earned_carbs := earned_carbs + e.g; lost_carbs := lost_carbs + greatest(0, e.g - room);
+    elsif e.g < 0 then
+      carbs := carbs + e.g; spent_carbs := spent_carbs - e.g;
+    end if;
+  end loop;
+  return next;
+end;
+$$;
+
+create or replace function public.wallet_for(p_user uuid)
+returns json language sql stable set search_path = public as $$
+  with f as (select * from public.wallet_fold(p_user)),
+  k as (select key as kind from jsonb_each(public.gear_rules() -> 'fuel' -> 'items')),
+  held as (
+    select json_object_agg(k.kind,
+             (select count(*) from public.coin_spends s where s.user_id = p_user and s.item_id = k.kind)
+           - (select count(*) from public.user_boosts b where b.user_id = p_user and b.kind = k.kind)) as j
+    from k
+  ),
+  a as (
+    select kind, started_at, expires_at from public.user_boosts
+    where user_id = p_user and started_at <= now() and now() < expires_at
+    order by started_at desc limit 1
+  )
+  select json_build_object(
+    'coins', f.coins, 'carbs', f.carbs, 'cap', (public.gear_rules() ->> 'storageCap')::bigint,
+    'earned', json_build_object('coins', f.earned_coins, 'carbs', f.earned_carbs),
+    'spent', json_build_object('coins', f.spent_coins, 'carbs', f.spent_carbs),
+    'lost', json_build_object('coins', f.lost_coins, 'carbs', f.lost_carbs),
+    'held', held.j,
+    'active', (select json_build_object('kind', a.kind, 'started_at', a.started_at, 'expires_at', a.expires_at) from a))
+  from f, held;
+$$;
+
+-- ---- buying and using ----------------------------------------------------------
+-- Errors are raised as 'gear:<code>': not_signed_in, unknown_item, starter,
+-- owned, tier_locked, insufficient, fuel_full, fuel_none, fuel_active, fuel_limit.
+
+create or replace function public.buy_gear(p_item_id text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  uid  uuid := auth.uid();
+  c    public.gear_catalog;
+  held bigint;
+  bal  bigint;
+begin
+  if uid is null then raise exception 'gear:not_signed_in' using errcode = '28000'; end if;
+  perform pg_advisory_xact_lock(hashtext('gear:' || uid::text));
+  select * into c from public.gear_catalog where id = p_item_id;
+  if not found then raise exception 'gear:unknown_item' using errcode = '22023'; end if;
+  if c.kind = 'gear' then
+    if c.tier = 0 then raise exception 'gear:starter' using errcode = '22023'; end if;
+    if exists (select 1 from public.user_gear where user_id = uid and item_id = c.id) then
+      raise exception 'gear:owned' using errcode = '22023';
+    end if;
+    if c.tier > 1 and not exists (
+      select 1 from public.user_gear g join public.gear_catalog p on p.id = g.item_id
+      where g.user_id = uid and p.kind = 'gear' and p.sport = c.sport and p.slot = c.slot and p.tier = c.tier - 1
+    ) then
+      raise exception 'gear:tier_locked' using errcode = '22023';
+    end if;
+  elsif c.kind = 'kit' then
+    if exists (select 1 from public.user_gear where user_id = uid and item_id = c.id) then
+      raise exception 'gear:owned' using errcode = '22023';
+    end if;
+  else -- fuel
+    held := (select count(*) from public.coin_spends where user_id = uid and item_id = c.id)
+          - (select count(*) from public.user_boosts where user_id = uid and kind = c.id);
+    if held >= (public.gear_rules() -> 'fuel' -> 'items' -> c.id ->> 'maxHeld')::int then
+      raise exception 'gear:fuel_full' using errcode = '22023';
+    end if;
+  end if;
+  select case when c.currency = 'carbs' then f.carbs else f.coins end into bal from public.wallet_fold(uid) f;
+  if bal < c.cost then raise exception 'gear:insufficient' using errcode = '22023'; end if;
+  insert into public.coin_spends (user_id, item_id, coins, currency) values (uid, c.id, c.cost, c.currency);
+  if c.kind in ('gear', 'kit') then
+    insert into public.user_gear (user_id, item_id) values (uid, c.id);
+  end if;
+  return public.wallet_for(uid);
+end;
+$$;
+grant execute on function public.buy_gear(text) to authenticated;
+
+-- use_gel(kind): start a fuel (the name stays from 0014; any fuel kind works)
+create or replace function public.use_gel(p_kind text default 'gel')
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  uid  uuid := auth.uid();
+  fr   jsonb := public.gear_rules() -> 'fuel';
+  it   jsonb := public.gear_rules() -> 'fuel' -> 'items' -> p_kind;
+  held bigint;
+begin
+  if uid is null then raise exception 'gear:not_signed_in' using errcode = '28000'; end if;
+  if it is null then raise exception 'gear:unknown_item' using errcode = '22023'; end if;
+  perform pg_advisory_xact_lock(hashtext('gear:' || uid::text));
+  if exists (select 1 from public.user_boosts where user_id = uid and started_at <= now() and now() < expires_at) then
+    raise exception 'gear:fuel_active' using errcode = '22023';
+  end if;
+  if (select count(*) from public.user_boosts
+      where user_id = uid and kind = p_kind
+        and started_at > now() - make_interval(days => (fr ->> 'windowDays')::int)) >= (it ->> 'perWindow')::int then
+    raise exception 'gear:fuel_limit' using errcode = '22023';
+  end if;
+  held := (select count(*) from public.coin_spends where user_id = uid and item_id = p_kind)
+        - (select count(*) from public.user_boosts where user_id = uid and kind = p_kind);
+  if held < 1 then raise exception 'gear:fuel_none' using errcode = '22023'; end if;
+  insert into public.user_boosts (user_id, kind, started_at, expires_at, multiplier)
+  values (uid, p_kind, now(), now() + make_interval(hours => (it ->> 'hours')::int), 1 + (it ->> 'boostBp')::numeric / 10000);
+  return public.wallet_for(uid);
+end;
+$$;
+grant execute on function public.use_gel(text) to authenticated;

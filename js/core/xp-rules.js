@@ -87,6 +87,11 @@ export function xpForWorkout(w) {
   return Math.round(base * (hasStravaProof(w) ? PROOF_BONUS : 1));
 }
 
+/** The order sessions are taken in within a day: by date, then when they were finished, then id. */
+export const ledgerOrder = (a, b) => String(a.date).localeCompare(String(b.date))
+  || String(a.completedAt || a.gymLoggedAt || '').localeCompare(String(b.completedAt || b.gymLoggedAt || ''))
+  || String(a.id).localeCompare(String(b.id));
+
 /**
  * Every session that earns XP with the XP it actually counts for, after the
  * daily cap on app-logged gym XP: [{ w, xp, capped }]. Sessions on one day are
@@ -94,9 +99,7 @@ export function xpForWorkout(w) {
  */
 export function xpLedger(workouts) {
   const earning = (workouts || []).filter(earnsXp);
-  const order = [...earning].sort((a, b) => String(a.date).localeCompare(String(b.date))
-    || String(a.completedAt || a.gymLoggedAt || '').localeCompare(String(b.completedAt || b.gymLoggedAt || ''))
-    || String(a.id).localeCompare(String(b.id)));
+  const order = [...earning].sort(ledgerOrder);
   const used = new Map();
   const out = new Map();
   for (const w of order) {

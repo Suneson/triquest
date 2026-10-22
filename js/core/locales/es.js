@@ -453,7 +453,8 @@ es.pg = {
   "swipeHint": "Desliza o usa las flechas para ver sus otros deportes",
   "cardioFoot": "{from} – {to} · franja = tu zona de carga segura",
   "cardioBreakdown": "Reparto por estado cardio",
-  "daysN": "{n} d"
+  "daysN": "{n} d",
+  "xpGear": "+{n} XP de material y geles (solo tus niveles)"
 };
 
 es.coach = {
@@ -1889,7 +1890,16 @@ es.xp = {
   "savedNot": "Guardado. Esta sesión no ha dado XP:",
   "lbChip": "{pct}%",
   "lbAria": "El {pct}% de su XP está verificado por Strava",
-  "lbLegend": "El % de Strava es la parte de la XP de cada atleta verificada por Strava. El gimnasio apuntado en la app también cuenta, dentro de las reglas de XP."
+  "lbLegend": "El % de Strava es la parte de la XP de cada atleta verificada por Strava. El gimnasio apuntado en la app también cuenta, dentro de las reglas de XP.",
+  "lbBase": "La clasificación cuenta la XP base: el material y los geles nunca cuentan aquí.",
+  "baseN": "{n} base",
+  "gearN": "{n} material",
+  "gelN": "{n} nutrición",
+  "coinsN": {
+    "one": "+{n} moneda",
+    "other": "+{n} monedas"
+  },
+  "carbsN": "+{n} g de carbohidratos"
 };
 
 es.checkin = {
@@ -1909,6 +1919,240 @@ es.checkin = {
   "notNow": "Ahora no",
   "saved": "Gimnasio guardado. Al terminar una sesión aquí se añade el pin.",
   "noLocation": "No se pudo obtener tu ubicación. Revisa el permiso de ubicación del navegador."
+};
+
+es.gear = {
+  "title": "MATERIAL",
+  "item": {
+    "bike-wheels": {
+      "slot": "Ruedas",
+      "blurb": "Unas ruedas mejores ruedan más rápido con los mismos vatios.",
+      "t0": "Ruedas de serie",
+      "t1": "Ruedas de aluminio",
+      "t2": "Ruedas de carbono",
+      "t3": "Carbono de perfil alto"
+    },
+    "bike-aerobars": {
+      "slot": "Acoples",
+      "blurb": "Agáchate y corta el viento.",
+      "t0": "Sin acoples",
+      "t1": "Acoples de pinza",
+      "t2": "Acoples de carbono",
+      "t3": "Cockpit integrado"
+    },
+    "bike-frame": {
+      "slot": "Cuadro",
+      "blurb": "Más ligero y rígido: cada pedalada cuenta.",
+      "t0": "Cuadro de acero",
+      "t1": "Cuadro de aluminio",
+      "t2": "Cuadro de carbono",
+      "t3": "Cuadro de crono de carbono"
+    },
+    "bike-power": {
+      "slot": "Potencia",
+      "blurb": "Entrena por vatios, no por sensaciones.",
+      "t0": "Sin potenciómetro",
+      "t1": "Potenciómetro de una biela",
+      "t2": "Potenciómetro doble",
+      "t3": "Potenciómetro doble y rodillo inteligente"
+    },
+    "swim-goggles": {
+      "slot": "Gafas",
+      "blurb": "Ve la línea, encuentra la boya.",
+      "t0": "Gafas básicas",
+      "t1": "Gafas antivaho",
+      "t2": "Gafas espejadas",
+      "t3": "Gafas de competición"
+    },
+    "swim-paddles": {
+      "slot": "Palas",
+      "blurb": "Más agua por brazada, más fuerza de tracción.",
+      "t0": "Sin palas",
+      "t1": "Palas de dedos",
+      "t2": "Palas pequeñas",
+      "t3": "Palas grandes"
+    },
+    "swim-buoy": {
+      "slot": "Pull y aletas",
+      "blurb": "Aísla los brazos y luego las piernas.",
+      "t0": "Sin pull",
+      "t1": "Pull buoy",
+      "t2": "Pull y aletas",
+      "t3": "Pull, aletas y tubo"
+    },
+    "swim-wetsuit": {
+      "slot": "Neopreno",
+      "blurb": "Flota más y nada más recto en aguas abiertas.",
+      "t0": "Sin neopreno",
+      "t1": "Neopreno sin mangas",
+      "t2": "Neopreno completo",
+      "t3": "Neopreno de competición"
+    },
+    "run-shoes": {
+      "slot": "Zapatillas",
+      "blurb": "La pieza de material que todo corredor nota.",
+      "t0": "Zapatillas viejas",
+      "t1": "Zapatillas de rodaje",
+      "t2": "Zapatillas de ritmo",
+      "t3": "Zapatillas de carbono"
+    },
+    "run-watch": {
+      "slot": "Reloj",
+      "blurb": "Ritmo, pulso y parciales en la muñeca.",
+      "t0": "Sin reloj",
+      "t1": "Reloj GPS",
+      "t2": "GPS y banda de pulso",
+      "t3": "Reloj multideporte"
+    },
+    "run-kit": {
+      "slot": "Ropa",
+      "blurb": "Ropa ligera que no roza en el kilómetro 30.",
+      "t0": "Camiseta de algodón",
+      "t1": "Ropa técnica",
+      "t2": "Ropa ligera",
+      "t3": "Camiseta de competición"
+    },
+    "run-recovery": {
+      "slot": "Recuperación",
+      "blurb": "Recupera antes y vuelve a correr antes.",
+      "t0": "Sin material de recuperación",
+      "t1": "Rodillo de espuma",
+      "t2": "Pistola de masaje",
+      "t3": "Botas de presoterapia"
+    },
+    "gym-belt": {
+      "slot": "Cinturón",
+      "blurb": "Más estabilidad en las series pesadas.",
+      "t0": "Sin cinturón",
+      "t1": "Cinturón de nailon",
+      "t2": "Cinturón de cuero",
+      "t3": "Cinturón de palanca"
+    },
+    "gym-shoes": {
+      "slot": "Zapatillas",
+      "blurb": "Una base estable bajo la barra.",
+      "t0": "Zapatillas de correr",
+      "t1": "Zapatillas planas",
+      "t2": "Zapatillas de halterofilia",
+      "t3": "Zapatillas de competición"
+    },
+    "gym-sleeves": {
+      "slot": "Straps y rodilleras",
+      "blurb": "Agarre y articulaciones que aguantan la sesión.",
+      "t0": "Sin straps",
+      "t1": "Straps",
+      "t2": "Straps y rodilleras",
+      "t3": "Straps, rodilleras y muñequeras"
+    },
+    "gym-bar": {
+      "slot": "Barra",
+      "blurb": "Una barra que no resbala y discos que pesan lo que dicen.",
+      "t0": "Cualquier barra",
+      "t1": "Magnesio",
+      "t2": "Magnesio y buena barra",
+      "t3": "Barra y discos calibrados"
+    }
+  },
+  "kit": {
+    "moske-navy": "MOSKE marino",
+    "moske-sand": "MOSKE arena",
+    "moske-crimson": "MOSKE carmesí",
+    "moske-climber": "MOSKE escalador",
+    "moske-pro": "MOSKE pro negro"
+  },
+  "signIn": "Inicia sesión para montar tu material. Las monedas salen del entrenamiento que suma XP, y tu material se guarda en tu cuenta.",
+  "offline": "Estás sin conexión. Puedes mirar; para comprar hace falta conexión.",
+  "disciplines": "Disciplinas",
+  "disciplineBoost": "Mejora de material",
+  "ofCap": "de {cap} máx.",
+  "tierOf": "Nivel {n} de {of}",
+  "next": "Siguiente",
+  "maxed": "Nivel máximo",
+  "noBoost": "Sin mejora aún",
+  "needMore": "Faltan {n} monedas",
+  "buyAria": "Comprar {name} por {cost} monedas, {boost} de XP en esta disciplina",
+  "kitsNote": "Combinaciones de color para tu atleta. Cambian tu aspecto, no tu XP.",
+  "wear": "Ponerla",
+  "wearing": "Puesta",
+  "honest": "El material y los geles mejoran tus propios niveles. La clasificación cuenta la XP base, igual para todos.",
+  "bought": "Comprado.",
+  "boughtBoost": "Montado: {boost} de XP en esta disciplina.",
+  "err": {
+    "not_signed_in": "Inicia sesión para usar MATERIAL.",
+    "unknown_item": "Ese artículo no está en el taller.",
+    "starter": "Ya tienes el material de serie.",
+    "owned": "Ya lo tienes.",
+    "tier_locked": "Compra antes el nivel anterior.",
+    "insufficient": "Aún no tienes monedas suficientes.",
+    "offline": "Estás sin conexión. Para comprar hace falta conexión.",
+    "demo": "Modo demo: no se compra nada.",
+    "generic": "No ha salido bien. Inténtalo de nuevo.",
+    "fuel_full": "Ya llevas el máximo de eso.",
+    "fuel_none": "No te queda. Compra antes.",
+    "fuel_active": "Ya tienes nutrición activa.",
+    "fuel_limit": "Has llegado al límite de eso esta semana."
+  },
+  "shop": "Tienda de material",
+  "inventory": "Inventario",
+  "openShop": "Abrir la tienda de material",
+  "openInventory": "Abrir tu inventario",
+  "tab": {
+    "gear": "Material",
+    "clothes": "Ropa",
+    "fuel": "Nutrición"
+  },
+  "res": {
+    "aria": "Monedas {coins}, carbohidratos {carbs} g, cada uno guarda hasta {cap}"
+  },
+  "needCarbs": "Faltan {n} g de carbohidratos",
+  "fuelEffect": "+{pct}% de XP durante {h} h · {n} por semana",
+  "fuelFull": "Puedes llevar {n}",
+  "buyFuelAria": "Comprar {name} por {cost} gramos de carbohidratos",
+  "buyKitAria": "Comprar {name} por {cost} monedas",
+  "use": "Usar",
+  "fuelWhy": {
+    "active": "Ya tienes algo activo",
+    "limit": "Agotado esta semana",
+    "none": "No te queda"
+  },
+  "fuelOn": "{name}: +{pct}% de XP durante {h} horas",
+  "fuelActiveAria": "{name} activo: quedan {time}, +{pct}% de XP",
+  "clothesNote": "Equipación para tu atleta, con monedas. Cambia tu aspecto, no tu XP.",
+  "fuelNote": "La nutrición se compra con carbohidratos. Solo funciona una a la vez; tómala justo antes de entrenar.",
+  "toShop": "Ir a la tienda",
+  "invNoFuel": "Aún no tienes nutrición.",
+  "invNoClothes": "Aún no tienes ropa.",
+  "invNoGear": "Por ahora, solo el material de serie.",
+  "fuel": {
+    "gel": {
+      "name": "Gel energético",
+      "blurb": "El azul. Un chute rápido para una sesión dura."
+    },
+    "energy-bar": {
+      "name": "Barrita energética",
+      "blurb": "Avena y miel para una mañana larga."
+    },
+    "pasta": {
+      "name": "Plato de pasta",
+      "blurb": "Carga de hidratos para un gran día de entreno."
+    },
+    "gel-caffeine": {
+      "name": "Gel con cafeína",
+      "blurb": "El rojo: cafeína e hidratos para un esfuerzo más intenso."
+    },
+    "gel-race": {
+      "name": "Gel de carrera",
+      "blurb": "El dorado. Guárdalo para la sesión que importa."
+    },
+    "rice-cake": {
+      "name": "Pastel de arroz",
+      "blurb": "Arroz pegajoso envuelto en papel de aluminio, el tentempié de los pros."
+    },
+    "recovery-shake": {
+      "name": "Batido de recuperación",
+      "blurb": "Proteína e hidratos para volver más fuerte mañana."
+    }
+  }
 };
 
 export default es;

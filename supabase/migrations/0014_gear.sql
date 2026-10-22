@@ -1,0 +1,428 @@
+-- 0014: GEAR, the training workshop. Design and numbers: docs/GEAR.md.
+-- Mirrors js/core/gear.js, wallet.js and boosts.js; the economy constants and
+-- the catalog below are generated from gear.js (tools/gear-sql.mjs).
+--
+-- Rules this file keeps:
+--   - The server is the authority: inventory, spends and gel windows are only
+--     written by buy_gear() and use_gel(); a session's boost is stamped by a
+--     trigger from server tables and the server clock, never sent by a client.
+--   - Coins are derived: wallet = earned − spent, from the XP ledger. There is
+--     no balance column anywhere.
+--   - Ranks stays honest: leaderboard() and leaderboard_proof() are not
+--     touched. Boosts only feed your own levels (boosted_sport_xp()).
+
+-- ---- tables -------------------------------------------------------------
+
+create table if not exists public.gear_catalog (
+  id       text primary key,
+  kind     text not null check (kind in ('gear', 'kit', 'gel')),
+  sport    text,
+  slot     text,
+  tier     int,
+  cost     int not null check (cost >= 0),
+  boost_bp int not null default 0
+);
+alter table public.gear_catalog enable row level security;
+drop policy if exists gear_catalog_read on public.gear_catalog;
+create policy gear_catalog_read on public.gear_catalog for select using (true);
+grant select on public.gear_catalog to anon, authenticated;
+
+create table if not exists public.user_gear (
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  item_id     text not null references public.gear_catalog (id),
+  acquired_at timestamptz not null default now(),
+  primary key (user_id, item_id)   -- also the user_id index
+);
+alter table public.user_gear enable row level security;
+drop policy if exists user_gear_own on public.user_gear;
+create policy user_gear_own on public.user_gear for select using (user_id = auth.uid());
+grant select on public.user_gear to authenticated;
+
+create table if not exists public.coin_spends (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references auth.users (id) on delete cascade,
+  item_id    text not null references public.gear_catalog (id),
+  coins      int not null check (coins >= 0),
+  created_at timestamptz not null default now()
+);
+create index if not exists coin_spends_user on public.coin_spends (user_id);
+alter table public.coin_spends enable row level security;
+drop policy if exists coin_spends_own on public.coin_spends;
+create policy coin_spends_own on public.coin_spends for select using (user_id = auth.uid());
+grant select on public.coin_spends to authenticated;
+
+create table if not exists public.user_boosts (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references auth.users (id) on delete cascade,
+  kind       text not null check (kind in ('gel')),
+  started_at timestamptz not null,
+  expires_at timestamptz not null,
+  multiplier numeric not null,
+  created_at timestamptz not null default now(),
+  check (expires_at > started_at)
+);
+create index if not exists user_boosts_user on public.user_boosts (user_id, started_at);
+alter table public.user_boosts enable row level security;
+drop policy if exists user_boosts_own on public.user_boosts;
+create policy user_boosts_own on public.user_boosts for select using (user_id = auth.uid());
+grant select on public.user_boosts to authenticated;
+
+-- A session's boost, stamped once, the first time it earns XP.
+alter table public.workouts add column if not exists boost jsonb;
+alter table public.workouts add column if not exists first_earned_at timestamptz;
+
+-- ---- generated: constants and catalog -------------------------------------
+
+-- (generated from js/core/gear.js as it was at 0014; 0015 regenerates the current catalog)
+create or replace function public.gear_rules()
+returns jsonb language sql immutable set search_path = public as $$
+  select '{"coinsPerXp":0.5,"dailyCoinCap":120,"starterPurse":300,"tierCost":[0,100,350,850],"tierBoostBp":[0,100,200,400],"sportCapBp":1600,"gel":{"boostBp":3000,"hours":4,"perWindow":2,"windowDays":7,"graceHours":24,"cost":60,"maxHeld":3},"kitCost":250,"since":"2026-11-02"}'::jsonb;
+$$;
+
+insert into public.gear_catalog (id, kind, sport, slot, tier, cost, boost_bp) values
+  ('bike-wheels-t0', 'gear', 'bike', 'wheels', 0, 0, 0),
+  ('bike-wheels-t1', 'gear', 'bike', 'wheels', 1, 100, 100),
+  ('bike-wheels-t2', 'gear', 'bike', 'wheels', 2, 350, 200),
+  ('bike-wheels-t3', 'gear', 'bike', 'wheels', 3, 850, 400),
+  ('bike-aerobars-t0', 'gear', 'bike', 'aerobars', 0, 0, 0),
+  ('bike-aerobars-t1', 'gear', 'bike', 'aerobars', 1, 100, 100),
+  ('bike-aerobars-t2', 'gear', 'bike', 'aerobars', 2, 350, 200),
+  ('bike-aerobars-t3', 'gear', 'bike', 'aerobars', 3, 850, 400),
+  ('bike-frame-t0', 'gear', 'bike', 'frame', 0, 0, 0),
+  ('bike-frame-t1', 'gear', 'bike', 'frame', 1, 100, 100),
+  ('bike-frame-t2', 'gear', 'bike', 'frame', 2, 350, 200),
+  ('bike-frame-t3', 'gear', 'bike', 'frame', 3, 850, 400),
+  ('bike-power-t0', 'gear', 'bike', 'power', 0, 0, 0),
+  ('bike-power-t1', 'gear', 'bike', 'power', 1, 100, 100),
+  ('bike-power-t2', 'gear', 'bike', 'power', 2, 350, 200),
+  ('bike-power-t3', 'gear', 'bike', 'power', 3, 850, 400),
+  ('swim-goggles-t0', 'gear', 'swim', 'goggles', 0, 0, 0),
+  ('swim-goggles-t1', 'gear', 'swim', 'goggles', 1, 100, 100),
+  ('swim-goggles-t2', 'gear', 'swim', 'goggles', 2, 350, 200),
+  ('swim-goggles-t3', 'gear', 'swim', 'goggles', 3, 850, 400),
+  ('swim-paddles-t0', 'gear', 'swim', 'paddles', 0, 0, 0),
+  ('swim-paddles-t1', 'gear', 'swim', 'paddles', 1, 100, 100),
+  ('swim-paddles-t2', 'gear', 'swim', 'paddles', 2, 350, 200),
+  ('swim-paddles-t3', 'gear', 'swim', 'paddles', 3, 850, 400),
+  ('swim-buoy-t0', 'gear', 'swim', 'buoy', 0, 0, 0),
+  ('swim-buoy-t1', 'gear', 'swim', 'buoy', 1, 100, 100),
+  ('swim-buoy-t2', 'gear', 'swim', 'buoy', 2, 350, 200),
+  ('swim-buoy-t3', 'gear', 'swim', 'buoy', 3, 850, 400),
+  ('swim-wetsuit-t0', 'gear', 'swim', 'wetsuit', 0, 0, 0),
+  ('swim-wetsuit-t1', 'gear', 'swim', 'wetsuit', 1, 100, 100),
+  ('swim-wetsuit-t2', 'gear', 'swim', 'wetsuit', 2, 350, 200),
+  ('swim-wetsuit-t3', 'gear', 'swim', 'wetsuit', 3, 850, 400),
+  ('run-shoes-t0', 'gear', 'run', 'shoes', 0, 0, 0),
+  ('run-shoes-t1', 'gear', 'run', 'shoes', 1, 100, 100),
+  ('run-shoes-t2', 'gear', 'run', 'shoes', 2, 350, 200),
+  ('run-shoes-t3', 'gear', 'run', 'shoes', 3, 850, 400),
+  ('run-watch-t0', 'gear', 'run', 'watch', 0, 0, 0),
+  ('run-watch-t1', 'gear', 'run', 'watch', 1, 100, 100),
+  ('run-watch-t2', 'gear', 'run', 'watch', 2, 350, 200),
+  ('run-watch-t3', 'gear', 'run', 'watch', 3, 850, 400),
+  ('run-kit-t0', 'gear', 'run', 'kit', 0, 0, 0),
+  ('run-kit-t1', 'gear', 'run', 'kit', 1, 100, 100),
+  ('run-kit-t2', 'gear', 'run', 'kit', 2, 350, 200),
+  ('run-kit-t3', 'gear', 'run', 'kit', 3, 850, 400),
+  ('run-recovery-t0', 'gear', 'run', 'recovery', 0, 0, 0),
+  ('run-recovery-t1', 'gear', 'run', 'recovery', 1, 100, 100),
+  ('run-recovery-t2', 'gear', 'run', 'recovery', 2, 350, 200),
+  ('run-recovery-t3', 'gear', 'run', 'recovery', 3, 850, 400),
+  ('gym-belt-t0', 'gear', 'gym', 'belt', 0, 0, 0),
+  ('gym-belt-t1', 'gear', 'gym', 'belt', 1, 100, 100),
+  ('gym-belt-t2', 'gear', 'gym', 'belt', 2, 350, 200),
+  ('gym-belt-t3', 'gear', 'gym', 'belt', 3, 850, 400),
+  ('gym-shoes-t0', 'gear', 'gym', 'shoes', 0, 0, 0),
+  ('gym-shoes-t1', 'gear', 'gym', 'shoes', 1, 100, 100),
+  ('gym-shoes-t2', 'gear', 'gym', 'shoes', 2, 350, 200),
+  ('gym-shoes-t3', 'gear', 'gym', 'shoes', 3, 850, 400),
+  ('gym-sleeves-t0', 'gear', 'gym', 'sleeves', 0, 0, 0),
+  ('gym-sleeves-t1', 'gear', 'gym', 'sleeves', 1, 100, 100),
+  ('gym-sleeves-t2', 'gear', 'gym', 'sleeves', 2, 350, 200),
+  ('gym-sleeves-t3', 'gear', 'gym', 'sleeves', 3, 850, 400),
+  ('gym-bar-t0', 'gear', 'gym', 'bar', 0, 0, 0),
+  ('gym-bar-t1', 'gear', 'gym', 'bar', 1, 100, 100),
+  ('gym-bar-t2', 'gear', 'gym', 'bar', 2, 350, 200),
+  ('gym-bar-t3', 'gear', 'gym', 'bar', 3, 850, 400),
+  ('kit-moske-navy', 'kit', null, null, null, 250, 0),
+  ('kit-moske-sand', 'kit', null, null, null, 250, 0),
+  ('gel', 'gel', null, null, null, 60, 0)
+on conflict (id) do update set kind = excluded.kind, sport = excluded.sport, slot = excluded.slot,
+  tier = excluded.tier, cost = excluded.cost, boost_bp = excluded.boost_bp;
+
+-- ---- when a session happened ----------------------------------------------
+
+-- Same as sessionSpan() in js/core/boosts.js: Strava's UTC start plus its
+-- elapsed time; a gym log's first to last tick; else back from completed_at
+-- by the duration.
+create or replace function public.session_span(w public.workouts)
+returns table (s timestamptz, e timestamptz)
+language sql stable set search_path = public as $$
+  with a as (
+    select case when w.actual ->> 'startUtc' ~ '^\d{4}-\d{2}-\d{2}T' then (w.actual ->> 'startUtc')::timestamptz end as t0,
+           case when jsonb_typeof(w.actual -> 'elapsedSec') = 'number' and (w.actual ->> 'elapsedSec')::numeric > 0
+                then (w.actual ->> 'elapsedSec')::numeric end as el,
+           greatest(coalesce(w.duration_min, 0), 0) * 60 as dur
+  ), k as (
+    select min(x.at) as k0, max(x.at) as k1
+    from (
+      select case when st ->> 'doneAt' ~ '^\d{4}-\d{2}-\d{2}T' then (st ->> 'doneAt')::timestamptz end as at
+      from jsonb_array_elements(case when jsonb_typeof(w.exercises) = 'array' then w.exercises else '[]'::jsonb end) ex,
+           jsonb_array_elements(case when jsonb_typeof(ex -> 'sets') = 'array' then ex -> 'sets' else '[]'::jsonb end) st
+      where coalesce(st ->> 'done', 'false') = 'true'
+        and coalesce(st ->> 'kind', 'work') <> 'warmup'
+    ) x
+  )
+  select case when a.t0 is not null then a.t0
+              when public.proof_of(w) = 'app' and k.k0 is not null then k.k0
+              else w.completed_at - make_interval(secs => a.dur) end,
+         case when a.t0 is not null then a.t0 + make_interval(secs => coalesce(a.el, a.dur))
+              when public.proof_of(w) = 'app' and k.k1 is not null then k.k1
+              else w.completed_at end
+  from a, k;
+$$;
+
+-- ---- gear boost -----------------------------------------------------------
+
+-- One discipline's boost (basis points) from the gear owned at p_at, capped.
+create or replace function public.gear_bp_sport(p_user uuid, p_sport text, p_at timestamptz)
+returns int language sql stable set search_path = public as $$
+  select least((public.gear_rules() ->> 'sportCapBp')::int, coalesce(sum(c.boost_bp), 0))::int
+  from (
+    select c.slot, max(c.tier) as tier
+    from public.user_gear g join public.gear_catalog c on c.id = g.item_id
+    where g.user_id = p_user and c.kind = 'gear' and c.sport = p_sport and g.acquired_at <= p_at
+    group by c.slot
+  ) o
+  join public.gear_catalog c on c.kind = 'gear' and c.sport = p_sport and c.slot = o.slot and c.tier = o.tier;
+$$;
+
+-- gearBoost(): a brick averages bike and run (rounded down); others get none.
+create or replace function public.gear_bp_at(p_user uuid, p_type text, p_at timestamptz)
+returns int language sql stable set search_path = public as $$
+  select case
+    when p_at is null then 0
+    when p_type = 'brick' then floor((public.gear_bp_sport(p_user, 'bike', p_at) + public.gear_bp_sport(p_user, 'run', p_at)) / 2.0)::int
+    when p_type in ('bike', 'swim', 'run', 'gym') then public.gear_bp_sport(p_user, p_type, p_at)
+    else 0
+  end;
+$$;
+
+-- ---- the stamp --------------------------------------------------------------
+
+-- boostStamp(): gear owned at the end of the session; the gel windows the
+-- session overlaps, prorated, never more than one gel's worth. A gel only
+-- counts while the server sees the session within graceHours of the window
+-- closing (p_now), so a session can't be filed into an old gel later.
+create or replace function public.boost_stamp(w public.workouts, p_now timestamptz)
+returns jsonb language sql stable set search_path = public as $$
+  with sp as (select s, e from public.session_span(w)),
+  g as (
+    select coalesce(sum(
+             case
+               when sp.e <= sp.s then
+                 case when sp.s >= b.started_at and sp.s < b.expires_at then round((b.multiplier - 1) * 10000) else 0 end
+               else round(round((b.multiplier - 1) * 10000)
+                          * greatest(0, extract(epoch from (least(sp.e, b.expires_at) - greatest(sp.s, b.started_at))))
+                          / extract(epoch from (sp.e - sp.s)))
+             end), 0) as bp
+    from sp, public.user_boosts b
+    where b.user_id = w.user_id and b.kind = 'gel'
+      and p_now <= b.expires_at + make_interval(hours => (public.gear_rules() -> 'gel' ->> 'graceHours')::int)
+  )
+  select jsonb_build_object(
+    'gear_bp', public.gear_bp_at(w.user_id, w.type, (select e from sp)),
+    'gel_bp', least((public.gear_rules() -> 'gel' ->> 'boostBp')::int, coalesce((select bp from g), 0))::int);
+$$;
+
+-- Clients can't write boost or first_earned_at: the trigger keeps the stored
+-- values and stamps a session once, the first time it earns.
+create or replace function public.workouts_stamp_boost()
+returns trigger language plpgsql security invoker set search_path = public as $$
+begin
+  if tg_op = 'UPDATE' then
+    new.boost := old.boost;
+    new.first_earned_at := old.first_earned_at;
+  else
+    new.boost := null;
+    new.first_earned_at := null;
+  end if;
+  if new.first_earned_at is null and public.earns(new) then
+    new.first_earned_at := now();
+    new.boost := public.boost_stamp(new, now());
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists workouts_stamp_boost on public.workouts;
+create trigger workouts_stamp_boost before insert or update on public.workouts
+  for each row execute function public.workouts_stamp_boost();
+
+-- ---- the XP ledger, coins, wallet -----------------------------------------
+
+-- xpLedger(): each earning session with the XP it counts for after the daily
+-- cap on app-logged gym XP, taken in the order the sessions were finished.
+-- Security invoker: under RLS a caller only ever sees their own sessions.
+create or replace function public.xp_ledger(p_user uuid)
+returns table (id text, date date, type text, xp numeric, boost jsonb)
+language sql stable set search_path = public as $$
+  with e as (
+    select w.id, w.date, w.type, w.boost, public.proof_of(w) = 'app' as app, public.session_xp(w) as x,
+           coalesce(w.completed_at, case when w.extra ->> 'gymLoggedAt' ~ '^\d{4}-\d{2}-\d{2}T' then (w.extra ->> 'gymLoggedAt')::timestamptz end) as fin
+    from public.workouts w
+    where w.user_id = p_user and public.earns(w)
+  ), c as (
+    select e.*, sum(case when e.app then e.x else 0 end)
+                  over (partition by e.date order by e.fin nulls first, e.id rows unbounded preceding) as run
+    from e
+  )
+  select c.id, c.date, c.type,
+         case when c.app then greatest(0, least(c.x, 150 - (c.run - c.x))) else c.x end,
+         c.boost
+  from c;
+$$;
+
+-- coinsEarned(): the starter purse plus, per day from launch, half that day's
+-- base XP (rounded down) up to the daily cap.
+create or replace function public.coins_earned(p_user uuid)
+returns bigint language sql stable set search_path = public as $$
+  select (public.gear_rules() ->> 'starterPurse')::bigint
+       + coalesce(sum(least((public.gear_rules() ->> 'dailyCoinCap')::numeric,
+                            floor(greatest(d.x, 0) * (public.gear_rules() ->> 'coinsPerXp')::numeric))), 0)::bigint
+  from (
+    select l.date, sum(l.xp) as x from public.xp_ledger(p_user) l
+    where l.date >= (public.gear_rules() ->> 'since')::date
+    group by l.date
+  ) d;
+$$;
+
+create or replace function public.wallet_for(p_user uuid)
+returns json language sql stable set search_path = public as $$
+  with s as (select coalesce(sum(coins), 0)::bigint as spent from public.coin_spends where user_id = p_user),
+  g as (
+    select (select count(*) from public.coin_spends where user_id = p_user and item_id = 'gel')
+         - (select count(*) from public.user_boosts where user_id = p_user and kind = 'gel') as held
+  ),
+  a as (
+    select started_at, expires_at from public.user_boosts
+    where user_id = p_user and kind = 'gel' and started_at <= now() and now() < expires_at
+    order by started_at desc limit 1
+  )
+  select json_build_object(
+    'earned', public.coins_earned(p_user),
+    'spent', s.spent,
+    'balance', public.coins_earned(p_user) - s.spent,
+    'gels_held', g.held,
+    'gels_recent', (select count(*) from public.user_boosts
+                    where user_id = p_user and kind = 'gel'
+                      and started_at > now() - make_interval(days => (public.gear_rules() -> 'gel' ->> 'windowDays')::int)),
+    'active_gel', (select json_build_object('started_at', a.started_at, 'expires_at', a.expires_at) from a))
+  from s, g;
+$$;
+
+-- wallet(): yours — earned, spent, balance, gels.
+create or replace function public.wallet()
+returns json language sql stable set search_path = public as $$
+  select public.wallet_for(auth.uid());
+$$;
+grant execute on function public.wallet() to authenticated;
+
+-- Your own discipline XP with gear and gels (Profile levels and scenes).
+-- Ranks never reads this.
+create or replace function public.boosted_sport_xp(p_user uuid default auth.uid())
+returns table (type text, base bigint, boosted bigint)
+language sql stable set search_path = public as $$
+  select l.type,
+         sum(l.xp)::bigint,
+         sum(round(l.xp * (10000 + coalesce((l.boost ->> 'gear_bp')::numeric, 0))
+                        * (10000 + coalesce((l.boost ->> 'gel_bp')::numeric, 0)) / 100000000))::bigint
+  from public.xp_ledger(p_user) l
+  group by l.type;
+$$;
+grant execute on function public.boosted_sport_xp(uuid) to authenticated;
+
+-- ---- buying and using -----------------------------------------------------
+-- Errors are raised as 'gear:<code>' so the client can translate them:
+-- not_signed_in, unknown_item, starter, owned, tier_locked, insufficient,
+-- gel_full, gel_none, gel_active, gel_limit.
+
+create or replace function public.buy_gear(p_item_id text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  uid  uuid := auth.uid();
+  c    public.gear_catalog;
+  held bigint;
+  bal  bigint;
+begin
+  if uid is null then raise exception 'gear:not_signed_in' using errcode = '28000'; end if;
+  -- one purchase at a time per athlete, so two taps can't overspend
+  perform pg_advisory_xact_lock(hashtext('gear:' || uid::text));
+
+  select * into c from public.gear_catalog where id = p_item_id;
+  if not found then raise exception 'gear:unknown_item' using errcode = '22023'; end if;
+
+  if c.kind = 'gear' then
+    if c.tier = 0 then raise exception 'gear:starter' using errcode = '22023'; end if;
+    if exists (select 1 from public.user_gear where user_id = uid and item_id = c.id) then
+      raise exception 'gear:owned' using errcode = '22023';
+    end if;
+    if c.tier > 1 and not exists (
+      select 1 from public.user_gear g join public.gear_catalog p on p.id = g.item_id
+      where g.user_id = uid and p.kind = 'gear' and p.sport = c.sport and p.slot = c.slot and p.tier = c.tier - 1
+    ) then
+      raise exception 'gear:tier_locked' using errcode = '22023';
+    end if;
+  elsif c.kind = 'kit' then
+    if exists (select 1 from public.user_gear where user_id = uid and item_id = c.id) then
+      raise exception 'gear:owned' using errcode = '22023';
+    end if;
+  elsif c.kind = 'gel' then
+    held := (select count(*) from public.coin_spends where user_id = uid and item_id = 'gel')
+          - (select count(*) from public.user_boosts where user_id = uid and kind = 'gel');
+    if held >= (public.gear_rules() -> 'gel' ->> 'maxHeld')::int then
+      raise exception 'gear:gel_full' using errcode = '22023';
+    end if;
+  end if;
+
+  bal := public.coins_earned(uid) - (select coalesce(sum(coins), 0) from public.coin_spends where user_id = uid);
+  if bal < c.cost then raise exception 'gear:insufficient' using errcode = '22023'; end if;
+
+  insert into public.coin_spends (user_id, item_id, coins) values (uid, c.id, c.cost);
+  if c.kind <> 'gel' then
+    insert into public.user_gear (user_id, item_id) values (uid, c.id);
+  end if;
+  return public.wallet_for(uid);
+end;
+$$;
+grant execute on function public.buy_gear(text) to authenticated;
+
+create or replace function public.use_gel(p_kind text default 'gel')
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  uid  uuid := auth.uid();
+  r    jsonb := public.gear_rules() -> 'gel';
+  held bigint;
+begin
+  if uid is null then raise exception 'gear:not_signed_in' using errcode = '28000'; end if;
+  if p_kind is distinct from 'gel' then raise exception 'gear:unknown_item' using errcode = '22023'; end if;
+  perform pg_advisory_xact_lock(hashtext('gear:' || uid::text));
+
+  if exists (select 1 from public.user_boosts
+             where user_id = uid and kind = 'gel' and started_at <= now() and now() < expires_at) then
+    raise exception 'gear:gel_active' using errcode = '22023';
+  end if;
+  if (select count(*) from public.user_boosts
+      where user_id = uid and kind = 'gel'
+        and started_at > now() - make_interval(days => (r ->> 'windowDays')::int)) >= (r ->> 'perWindow')::int then
+    raise exception 'gear:gel_limit' using errcode = '22023';
+  end if;
+  held := (select count(*) from public.coin_spends where user_id = uid and item_id = 'gel')
+        - (select count(*) from public.user_boosts where user_id = uid and kind = 'gel');
+  if held < 1 then raise exception 'gear:gel_none' using errcode = '22023'; end if;
+
+  insert into public.user_boosts (user_id, kind, started_at, expires_at, multiplier)
+  values (uid, 'gel', now(), now() + make_interval(hours => (r ->> 'hours')::int), 1 + (r ->> 'boostBp')::numeric / 10000);
+  return public.wallet_for(uid);
+end;
+$$;
+grant execute on function public.use_gel(text) to authenticated;

@@ -145,12 +145,17 @@ export function playBadge() {
 
 // ---- XP pop ------------------------------------------------------------------
 
-/** "+40 XP" rising from a screen point. Skipped under reduced motion. */
-export function xpPop(text, x, y) {
+/** "+40 XP" rising from a screen point, with an optional muted line under it. Skipped under reduced motion. */
+export function xpPop(text, x, y, sub = '') {
   if (prefersReducedMotion()) return;
   const el = document.createElement('div');
   el.className = 'xp-pop';
   el.textContent = text;
+  if (sub) {
+    const s = document.createElement('small');
+    s.textContent = sub; // the base number and the coins, muted under the boosted one
+    el.appendChild(s);
+  }
   el.style.left = `${Math.round(x)}px`;
   el.style.top = `${Math.round(y)}px`;
   document.body.appendChild(el);

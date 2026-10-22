@@ -33,7 +33,7 @@ export function leaderboardShell(view, today) {
       <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">${t('lb.season')}</button>
       <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">${t('lb.allTime')}</button>
     </div>${countdown}
-    <p class="lb-legend muted small">${esc(t('xp.lbLegend'))}</p>
+    <p class="lb-legend muted small">${esc(t('xp.lbLegend'))} ${esc(t('xp.lbBase'))}</p>
     <div id="lb-body" aria-busy="true">${skeletonRows()}</div>`;
 }
 

@@ -453,7 +453,8 @@ en.pg = {
   "swipeHint": "Swipe or use the arrow keys for their other sports",
   "cardioFoot": "{from} – {to} · band = your safe-load zone",
   "cardioBreakdown": "Cardio status breakdown",
-  "daysN": "{n}d"
+  "daysN": "{n}d",
+  "xpGear": "+{n} XP from gear and gels (your levels only)"
 };
 
 en.coach = {
@@ -1889,7 +1890,16 @@ en.xp = {
   "savedNot": "Saved. This session didn’t earn XP:",
   "lbChip": "{pct}%",
   "lbAria": "{pct}% of their XP is verified by Strava",
-  "lbLegend": "The Strava % is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules."
+  "lbLegend": "The Strava % is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules.",
+  "lbBase": "Ranks counts base XP: gear and gels never count here.",
+  "baseN": "{n} base",
+  "gearN": "{n} gear",
+  "gelN": "{n} fuel",
+  "coinsN": {
+    "one": "+{n} coin",
+    "other": "+{n} coins"
+  },
+  "carbsN": "+{n} g carbs"
 };
 
 en.checkin = {
@@ -1909,6 +1919,240 @@ en.checkin = {
   "notNow": "Not now",
   "saved": "Gym saved. Finishing a session here adds the pin.",
   "noLocation": "Couldn’t get your location. Check the browser’s location permission."
+};
+
+en.gear = {
+  "title": "GEAR",
+  "item": {
+    "bike-wheels": {
+      "slot": "Wheels",
+      "blurb": "Better wheels roll faster for the same watts.",
+      "t0": "Stock wheels",
+      "t1": "Alloy training wheels",
+      "t2": "Carbon wheels",
+      "t3": "Deep-section carbon"
+    },
+    "bike-aerobars": {
+      "slot": "Aerobars",
+      "blurb": "Get low, cut the wind.",
+      "t0": "No aerobars",
+      "t1": "Clip-on aerobars",
+      "t2": "Carbon clip-ons",
+      "t3": "Integrated cockpit"
+    },
+    "bike-frame": {
+      "slot": "Frame",
+      "blurb": "Lighter and stiffer, every pedal stroke counts.",
+      "t0": "Steel frame",
+      "t1": "Alloy frame",
+      "t2": "Carbon frame",
+      "t3": "Carbon TT frame"
+    },
+    "bike-power": {
+      "slot": "Power",
+      "blurb": "Train by watts, not by feel.",
+      "t0": "No power meter",
+      "t1": "Single-sided power",
+      "t2": "Dual-sided power",
+      "t3": "Dual power + smart trainer"
+    },
+    "swim-goggles": {
+      "slot": "Goggles",
+      "blurb": "See the line, sight the buoy.",
+      "t0": "Basic goggles",
+      "t1": "Anti-fog goggles",
+      "t2": "Mirrored goggles",
+      "t3": "Racing goggles"
+    },
+    "swim-paddles": {
+      "slot": "Paddles",
+      "blurb": "More water per stroke builds the pull.",
+      "t0": "No paddles",
+      "t1": "Finger paddles",
+      "t2": "Small paddles",
+      "t3": "Full paddles"
+    },
+    "swim-buoy": {
+      "slot": "Buoy and fins",
+      "blurb": "Isolate the arms, then the legs.",
+      "t0": "No pull buoy",
+      "t1": "Pull buoy",
+      "t2": "Pull buoy and fins",
+      "t3": "Pull, fins and snorkel"
+    },
+    "swim-wetsuit": {
+      "slot": "Wetsuit",
+      "blurb": "Float higher, swim straighter in open water.",
+      "t0": "No wetsuit",
+      "t1": "Sleeveless wetsuit",
+      "t2": "Full wetsuit",
+      "t3": "Race wetsuit"
+    },
+    "run-shoes": {
+      "slot": "Shoes",
+      "blurb": "The one piece of kit every runner feels.",
+      "t0": "Old trainers",
+      "t1": "Daily trainers",
+      "t2": "Tempo shoes",
+      "t3": "Carbon racers"
+    },
+    "run-watch": {
+      "slot": "Watch",
+      "blurb": "Pace, heart rate and splits on your wrist.",
+      "t0": "No watch",
+      "t1": "GPS watch",
+      "t2": "GPS + heart-rate strap",
+      "t3": "Multisport watch"
+    },
+    "run-kit": {
+      "slot": "Kit",
+      "blurb": "Light kit that doesn’t chafe at kilometre 30.",
+      "t0": "Cotton T-shirt",
+      "t1": "Technical kit",
+      "t2": "Lightweight kit",
+      "t3": "Race singlet"
+    },
+    "run-recovery": {
+      "slot": "Recovery",
+      "blurb": "Recover faster, run again sooner.",
+      "t0": "No recovery kit",
+      "t1": "Foam roller",
+      "t2": "Massage gun",
+      "t3": "Compression boots"
+    },
+    "gym-belt": {
+      "slot": "Belt",
+      "blurb": "Brace harder on the heavy sets.",
+      "t0": "No belt",
+      "t1": "Nylon belt",
+      "t2": "Leather belt",
+      "t3": "Lever belt"
+    },
+    "gym-shoes": {
+      "slot": "Shoes",
+      "blurb": "A stable base under the bar.",
+      "t0": "Running trainers",
+      "t1": "Flat shoes",
+      "t2": "Lifting shoes",
+      "t3": "Competition lifters"
+    },
+    "gym-sleeves": {
+      "slot": "Straps and sleeves",
+      "blurb": "Grip and joints that last the session.",
+      "t0": "No straps",
+      "t1": "Lifting straps",
+      "t2": "Straps and knee sleeves",
+      "t3": "Straps, sleeves and wrist wraps"
+    },
+    "gym-bar": {
+      "slot": "Bar",
+      "blurb": "A bar that doesn’t slip, plates that weigh what they say.",
+      "t0": "Any bar",
+      "t1": "Chalk",
+      "t2": "Chalk and a good bar",
+      "t3": "Calibrated bar and plates"
+    }
+  },
+  "kit": {
+    "moske-navy": "MOSKE navy",
+    "moske-sand": "MOSKE sand",
+    "moske-crimson": "MOSKE crimson",
+    "moske-climber": "MOSKE climber",
+    "moske-pro": "MOSKE pro black"
+  },
+  "signIn": "Sign in to build your kit. Coins come from training that earns XP, and your gear is kept on your account.",
+  "offline": "You’re offline. You can look around; buying needs a connection.",
+  "disciplines": "Disciplines",
+  "disciplineBoost": "Gear boost",
+  "ofCap": "of {cap} max",
+  "tierOf": "Tier {n} of {of}",
+  "next": "Next",
+  "maxed": "Top tier",
+  "noBoost": "No boost yet",
+  "needMore": "{n} more coins",
+  "buyAria": "Buy {name} for {cost} coins, {boost} XP in this discipline",
+  "kitsNote": "Colourways for your athlete. They change how you look, not your XP.",
+  "wear": "Wear",
+  "wearing": "Wearing",
+  "honest": "Gear and gels boost your own levels. Ranks counts base XP, the same for everyone.",
+  "bought": "Bought.",
+  "boughtBoost": "Fitted: {boost} XP in this discipline.",
+  "err": {
+    "not_signed_in": "Sign in to use GEAR.",
+    "unknown_item": "That item isn’t in the workshop.",
+    "starter": "You already have the starter kit.",
+    "owned": "You already own that.",
+    "tier_locked": "Buy the tier below first.",
+    "insufficient": "Not enough coins yet.",
+    "offline": "You’re offline. Buying needs a connection.",
+    "demo": "Demo mode: nothing is bought.",
+    "generic": "That didn’t go through. Try again.",
+    "fuel_full": "You’re holding the most of that you can.",
+    "fuel_none": "You have none of that. Buy some first.",
+    "fuel_active": "Fuel is already running.",
+    "fuel_limit": "You’ve used your limit of that this week."
+  },
+  "shop": "Gear shop",
+  "inventory": "Inventory",
+  "openShop": "Open the gear shop",
+  "openInventory": "Open your inventory",
+  "tab": {
+    "gear": "Gear",
+    "clothes": "Clothes",
+    "fuel": "Fuel"
+  },
+  "res": {
+    "aria": "Coins {coins}, carbs {carbs} g, each stores up to {cap}"
+  },
+  "needCarbs": "{n} g more carbs",
+  "fuelEffect": "+{pct}% XP for {h} h · {n} a week",
+  "fuelFull": "You can hold {n}",
+  "buyFuelAria": "Buy {name} for {cost} grams of carbs",
+  "buyKitAria": "Buy {name} for {cost} coins",
+  "use": "Use",
+  "fuelWhy": {
+    "active": "Something is already running",
+    "limit": "Used up for this week",
+    "none": "None left"
+  },
+  "fuelOn": "{name}: +{pct}% XP for {h} hours",
+  "fuelActiveAria": "{name} running: {time} left, +{pct}% XP",
+  "clothesNote": "Kit for your athlete, bought with coins. It changes how you look, not your XP.",
+  "fuelNote": "Fuel is bought with carbs. Only one runs at a time; take it right before you train.",
+  "toShop": "Go to the shop",
+  "invNoFuel": "No fuel yet.",
+  "invNoClothes": "No clothes yet.",
+  "invNoGear": "Only the starter kit so far.",
+  "fuel": {
+    "gel": {
+      "name": "Energy gel",
+      "blurb": "The blue one. A quick hit for one hard session."
+    },
+    "energy-bar": {
+      "name": "Energy bar",
+      "blurb": "Oats and honey for a long morning."
+    },
+    "pasta": {
+      "name": "Pasta meal",
+      "blurb": "Carb-loading for a big training day."
+    },
+    "gel-caffeine": {
+      "name": "Caffeine gel",
+      "blurb": "The red one: caffeine and carbs for a sharper effort."
+    },
+    "gel-race": {
+      "name": "Race gel",
+      "blurb": "The gold one. Save it for the session that matters."
+    },
+    "rice-cake": {
+      "name": "Rice cake",
+      "blurb": "Sticky rice wrapped in foil, the pro’s pocket snack."
+    },
+    "recovery-shake": {
+      "name": "Recovery shake",
+      "blurb": "Protein and carbs to come back stronger tomorrow."
+    }
+  }
 };
 
 export default en;

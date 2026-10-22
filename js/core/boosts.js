@@ -1,7 +1,8 @@
 // boosts.js — what gear and gels add to a session's XP. Pure.
 //
-// A session is boosted by the gear owned and the gel active *when it was
-// done*, never by what you own now: buying wheels today doesn't touch last
+// A session is boosted by the gear owned and the food running *when it was
+// done*, plus a gel taken for it (a gel waits for your next workout), never
+// by what you own now: buying wheels today doesn't touch last
 // March. The server works this out once, the first time a session earns, and
 // stamps it on the row (workouts.boost = { gear_bp, gel_bp }, see
 // 0014_gear.sql). When a session carries that stamp it's used as is; the
@@ -34,14 +35,22 @@ export function gearBoost(inventory, sport, at = null) {
 
 const FUEL = GEAR_RULES.fuel.items;
 const isFuel = (b) => !!(b && FUEL[b.kind]);
+/** A gel waiting for your next workout (taken, not yet used up by a session). */
+export const isWaiting = (b) => !!(isFuel(b) && b.until_next && !b.workout_id);
+/** Food on a clock (the boost windows that are prorated). */
+const isTimed = (b) => isFuel(b) && !b.until_next;
+// a waiting gel's end is 'infinity' on the server: it runs until a workout uses it
+const endOf = (b) => (isWaiting(b) ? Infinity : ms(b.expires_at));
+/** A fuel's boost in basis points. */
+export const fuelBp = (b) => Math.round((Number(b?.multiplier) - 1) * 10000) || FUEL[b?.kind]?.boostBp || 0;
 /** The largest fuel boost: a session never gets more than one fuel's worth. */
 const FUEL_CAP_BP = Math.max(...Object.values(FUEL).map((f) => f.boostBp));
 
-/** The fuel running at `at` (ms or ISO), or null. `boosts` are user_boosts rows. One runs at a time. */
+/** The fuel on at `at` (ms or ISO): food running, or a gel waiting for your next workout; or null. One at a time. */
 export function activeFuel(boosts, at) {
   const t = typeof at === 'number' ? at : ms(at);
   if (t == null) return null;
-  return (boosts || []).find((b) => isFuel(b) && ms(b.started_at) <= t && t < ms(b.expires_at)) || null;
+  return (boosts || []).find((b) => isFuel(b) && ms(b.started_at) <= t && t < endOf(b)) || null;
 }
 /** The gel running at `at`, or null. */
 export const activeGel = (boosts, at) => {
@@ -89,31 +98,57 @@ export function sessionSpan(w) {
   return end == null ? null : [end - durMs, end];
 }
 
-/** The gel's share of a session, in basis points: boostBp × (time inside the window ÷ session time). */
+/** Food's share of a session, in basis points: boostBp × (time inside the window ÷ session time). A gel has none: it goes to one workout whole. */
 export function gelShare(gel, span) {
-  if (!gel || !span) return 0;
+  if (!gel || !span || !isTimed(gel)) return 0;
   const [s, e] = span;
-  const bp = Math.round((Number(gel.multiplier) - 1) * 10000) || FUEL[gel.kind]?.boostBp || 0;
+  const bp = fuelBp(gel);
   if (e <= s) return s >= ms(gel.started_at) && s < ms(gel.expires_at) ? bp : 0;
   const inside = Math.max(0, Math.min(e, ms(gel.expires_at)) - Math.max(s, ms(gel.started_at)));
   return Math.round(bp * inside / (e - s));
 }
 
+/** Can a waiting gel go to a session that ended at `end` (ms)? Only one that ended after, or at most graceHours before, it was taken. */
+const gelFits = (b, end) => end != null && end >= ms(b.started_at) - GEAR_RULES.fuel.graceHours * 3600e3;
+
+/**
+ * Which session each waiting gel goes to, before the server has said: the
+ * first unstamped earning session (in the order they finished) that fits it.
+ * Map of workout id → the gel. The server does the same when the session
+ * reaches it, and from then on the session's stamp says so.
+ */
+export function gelClaims(workouts, boosts) {
+  const out = new Map();
+  const waiting = (boosts || []).filter(isWaiting).sort((a, b) => ms(a.started_at) - ms(b.started_at));
+  if (!waiting.length) return out;
+  const open = (workouts || []).filter((w) => !(w?.boost && Number.isFinite(Number(w.boost.gear_bp))) && earnsXp(w))
+    .map((w) => ({ w, end: sessionSpan(w)?.[1] ?? null }))
+    .sort((a, b) => (a.end ?? 0) - (b.end ?? 0));
+  for (const g of waiting) {
+    const hit = open.find((x) => !out.has(x.w.id) && gelFits(g, x.end));
+    if (hit) out.set(hit.w.id, g);
+  }
+  return out;
+}
+
 /**
  * The stamp a session gets: { gear_bp, gel_bp }. The server's stamp when the
  * session has one; otherwise worked out from the gear owned at the end of the
- * session and the gel window it overlaps.
+ * session, the food windows it overlaps, and a waiting gel: `claims` (from
+ * gelClaims) when several sessions are being worked out together, else the
+ * first waiting gel that fits this one.
  */
-export function boostStamp(w, inventory, boosts) {
+export function boostStamp(w, inventory, boosts, claims = null) {
   if (w?.boost && Number.isFinite(Number(w.boost.gear_bp))) {
     return { gear_bp: Number(w.boost.gear_bp) || 0, gel_bp: Number(w.boost.gel_bp) || 0 };
   }
   const span = sessionSpan(w);
   const end = span ? span[1] : null;
   const gear_bp = end == null ? 0 : gearBoost(inventory, w?.type, new Date(end).toISOString());
-  // a long session can run across two back-to-back fuels; it never gets more than the biggest one's worth
-  const gel = span ? (boosts || []).filter(isFuel).reduce((n, b) => n + gelShare(b, span), 0) : 0;
-  return { gear_bp, gel_bp: Math.min(FUEL_CAP_BP, gel) };
+  // a long session can run across two back-to-back foods; it never gets more than the biggest fuel's worth
+  const food = span ? (boosts || []).reduce((n, b) => n + gelShare(b, span), 0) : 0;
+  const gel = claims ? claims.get(w?.id) : (boosts || []).filter(isWaiting).find((b) => gelFits(b, end));
+  return { gear_bp, gel_bp: Math.min(FUEL_CAP_BP, food + (gel ? fuelBp(gel) : 0)) };
 }
 
 /** Split a base XP into { base, gear, gel, total } under a stamp. */
@@ -131,14 +166,15 @@ export function applyBoost(base, stamp) {
  * `base` defaults to the session's XP on its own; pass the ledger value when
  * the gym daily cap applies.
  */
-export function boostFor(w, inventory, boosts, base = null) {
+export function boostFor(w, inventory, boosts, base = null, claims = null) {
   const b = base ?? (earnsXp(w) ? xpLedger([w])[0]?.xp || 0 : 0);
-  return applyBoost(b, boostStamp(w, inventory, boosts));
+  return applyBoost(b, boostStamp(w, inventory, boosts, claims));
 }
 
 /** Every earning session with its boosted XP, after the gym cap: [{ w, base, gear, gel, total }]. */
 export function boostedLedger(workouts, inventory, boosts) {
-  return xpLedger(workouts).map(({ w, xp }) => ({ w, ...boostFor(w, inventory, boosts, xp) }));
+  const claims = gelClaims(workouts, boosts);
+  return xpLedger(workouts).map(({ w, xp }) => ({ w, ...boostFor(w, inventory, boosts, xp, claims) }));
 }
 
 /** Boosted XP per discipline type: { bike, run, … }. Your own Profile only; never Ranks. */

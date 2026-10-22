@@ -185,12 +185,25 @@ test('fuel: one at a time, a weekly limit per kind, and you need one', { skip: !
     await db.query(`insert into public.coin_spends (user_id, item_id, coins, currency) values ($1, $2, 0, 'carbs')`, [UID, k]);
   }
   assert.equal(await code(db.query(`select public.buy_gear('gel')`)), 'fuel_full');
+  // a gel waits for the next workout: nothing else can be taken meanwhile
   assert.equal(await code(use()), 'ok');
   assert.equal(await code(use('pasta')), 'fuel_active');
-  await db.exec(`update public.user_boosts set started_at = now() - interval '5 hours', expires_at = now() - interval '1 hour'`);
+  let n = 0;
+  const ride = (startOffH) => db.query(`insert into public.workouts (id, user_id, date, type, intensity, duration_min, completed, strava_activity_id, source, actual)
+      values ($1, $2, '2026-11-10', 'bike', 'steady', 60, true, $3, 'plan', $4) returning boost`,
+    [`r${++n}`, UID, 100 + n, { startUtc: new Date(Date.now() + startOffH * H).toISOString(), elapsedSec: 3600 }]).then((r) => r.rows[0].boost);
+  const waiting = async () => Number((await db.query(`select count(*) as c from public.user_boosts where until_next and workout_id is null`)).rows[0].c);
+  // an old activity synced late (ended over graceHours before the gel) doesn't use it
+  assert.equal((await ride(-30)).gel_bp, 0);
+  assert.equal(await waiting(), 1);
+  // the next workout gets the whole gel, and the gel is then used up
+  assert.equal((await ride(-0.5)).gel_bp, 3000);
+  assert.equal(await waiting(), 0);
+  assert.equal((await db.query(`select workout_id from public.user_boosts`)).rows[0].workout_id, 'r2');
+  assert.equal((await ride(1)).gel_bp, 0, 'only one workout per gel');
   assert.equal(await code(use()), 'ok');
-  await db.exec(`update public.user_boosts set started_at = started_at - interval '5 hours', expires_at = expires_at - interval '5 hours'`);
-  assert.equal(await code(use()), 'fuel_limit');
+  await ride(0);
+  assert.equal(await code(use()), 'fuel_limit');          // two blue gels a week
   assert.equal(await code(use('pasta')), 'ok');           // another kind has its own limit
   const w = (await db.query('select public.wallet() as w')).rows[0].w;
   assert.equal(Number(w.held.gel), 1);

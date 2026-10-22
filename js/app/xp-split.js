@@ -3,7 +3,7 @@
 // "+320 XP (240 base · 64 gear · 16 gel)". Ranks only ever uses the base.
 
 import { xpStatus } from '../core/scoring.js';
-import { boostFor } from '../core/boosts.js';
+import { boostFor, gelClaims } from '../core/boosts.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { gearState } from './gear-state.js';
 
@@ -13,7 +13,8 @@ export function sessionXp(w, workouts) {
   const st = xpStatus(w, workouts || []);
   if (!(st.xp > 0)) return null;
   const g = gearState();
-  return boostFor(w, g.inventory, g.boosts, st.xp);
+  // a waiting gel goes to one session only: the first that fits it
+  return boostFor(w, g.inventory, g.boosts, st.xp, workouts ? gelClaims(workouts, g.boosts) : null);
 }
 
 /** "240 base · 64 gear · 16 gel", or '' when nothing was boosted. */

@@ -6,6 +6,7 @@ import {
 import { coinsEarned, coinDays, coinsForDay, coinsForSession, balance, gelsHeld, walletFold, earnedBySession, fuelHeld } from '../js/core/wallet.js';
 import {
   gearBoost, activeGel, canUseGel, canUseFuel, sessionSpan, gelShare, boostStamp, applyBoost, boostFor, boostedSportXp,
+  activeFuel, gelClaims, boostedLedger,
 } from '../js/core/boosts.js';
 import { computeStats } from '../js/core/scoring.js';
 
@@ -17,7 +18,8 @@ const ride = (over = {}) => ({
   strava_activity_id: 1, metrics: { distanceKm: 25 }, actual: { startUtc: iso(0), elapsedSec: 3600 }, ...over,
 });
 const own = (id, atOff) => ({ item_id: id, acquired_at: iso(atOff) });
-const gel = (startOff, hours = GEAR_RULES.gel.hours) => ({
+// a fuel row on a clock (food, or a gel from before gels waited for the next workout)
+const gel = (startOff, hours = 4) => ({
   kind: 'gel', started_at: iso(startOff), expires_at: iso(startOff + hours * H), multiplier: 1 + GEAR_RULES.gel.boostBp / 10000,
 });
 
@@ -196,4 +198,34 @@ test('fuel: one runs at a time, each kind has its own weekly limit', () => {
   assert.deepEqual(canUseFuel('gel', [bar], 1, T0), { ok: false, reason: 'active' });
   assert.equal(boostStamp(ride(), [], [bar]).gel_bp, 1500);
   assert.equal(fuelHeld([{ item_id: 'pasta' }, { item_id: 'pasta' }], [pasta], 'pasta'), 1);
+});
+
+// ---- a gel waits for the next workout ------------------------------------------
+
+const waitingGel = (startOff, over = {}) => ({
+  id: 7, kind: 'gel', started_at: iso(startOff), expires_at: 'infinity', multiplier: 1.3, until_next: true, workout_id: null, ...over,
+});
+
+test('a gel taken is on until a workout uses it, then off', () => {
+  assert.equal(activeFuel([waitingGel(-48 * H)], T0)?.kind, 'gel');
+  assert.deepEqual(canUseFuel('pasta', [waitingGel(-48 * H)], 1, T0), { ok: false, reason: 'active' });
+  const used = waitingGel(-48 * H, { workout_id: 'r1', expires_at: iso(-47 * H) });
+  assert.equal(activeFuel([used], T0), null);
+  assert.ok(GEAR_RULES.fuel.items.gel.nextWorkout && !GEAR_RULES.fuel.items.pasta.nextWorkout, 'gels wait, food runs on a clock');
+});
+
+test('the next workout gets the whole gel, one workout per gel', () => {
+  const g = waitingGel(-10 * H);
+  assert.equal(boostStamp(ride(), [], [g]).gel_bp, 3000);                    // however long after
+  assert.equal(boostStamp(ride({ actual: { startUtc: iso(-40 * H), elapsedSec: 3600 } }), [], [g]).gel_bp, 0); // long before it
+  const r1 = ride({ id: 'r1', actual: { startUtc: iso(-2 * H), elapsedSec: 3600 } });
+  const r2 = ride({ id: 'r2', actual: { startUtc: iso(0), elapsedSec: 3600 } });
+  const claims = gelClaims([r2, r1], [g]);
+  assert.equal(claims.get('r1'), g);
+  assert.equal(claims.has('r2'), false);
+  const led = boostedLedger([r1, r2], [], [g]);
+  assert.equal(led.filter((x) => x.gel > 0).length, 1);
+  // once the server has stamped a session, the gel is spent: nothing else claims it
+  assert.equal(gelClaims([r1, r2], [{ ...g, workout_id: 'r1', expires_at: iso(-H) }]).size, 0);
+  assert.equal(gelShare(g, [T0, T0 + H]), 0, 'a gel is never prorated');
 });

@@ -2015,8 +2015,8 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .gw-tab small .ic.cur-ico { color: var(--accent); }
 .gw-art img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
 
-/* the shop and the inventory are one page each: they appear and go at once,
-   and switching tab (gear, clothes, fuel, or a discipline) swaps the content
-   in place instead of replaying the layer's slide-in */
-.gear-layer > .fh-screen { animation: none; }
-.gear-layer.is-leaving { display: none; }
+/* an instant layer (the shop, the inventory) appears and goes at once, like a
+   chat thread; switching tab (gear, clothes, fuel, or a discipline) swaps the
+   content in place instead of replaying the slide-in */
+.layer.is-instant > .modal, .layer.is-instant > .fh-screen, .layer.is-instant > .modal-backdrop { animation: none; }
+.gel-chip.is-next b { font-size: var(--fs-tiny); }

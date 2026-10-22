@@ -26,6 +26,7 @@ import { langToggle } from './lang-toggle.js';
 import { t, tList, fmtDate, fmtNum } from '../core/i18n.js';
 import { planTitle } from '../core/plan-i18n.js';
 import { DISCIPLINES } from '../core/disciplines.js';
+import { gelChip } from './gel-chip.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -142,7 +143,7 @@ export const SPORT_ORDER = SWITCH.map(([s]) => s);
  * full screen; another athlete's profile embeds it (`embed`) above their stats,
  * with their levels and a read-only HUD.
  */
-function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '' }) {
+function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '', gearXp = 0 }) {
   const scene = sceneFor(sport, p.level) || sceneFor('bike', p.level);
   const still = scene.kind === 'still';
   // lighting follows the viewer's local clock: dawn, day, dusk, night
@@ -171,24 +172,31 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
     <div class="pg-hud">
       <div class="pg-hud-top">
         <span class="pg-sport-name">${svg(scene.sport, `tint-${scene.sport}`)} ${esc(scene.label)}</span>
+        ${embed ? '' : gelChip(undefined, { cls: 'in-hud' })}
         ${embed
           ? `<span class="lvl-chip" aria-label="${t('pg.levelN', { n: p.level })}">${lvl}</span>`
           : `<button class="lvl-chip is-hero" data-action="open-sport-levels" data-sport="${scene.sport}" aria-label="${t('pg.levelSeeAll', { n: p.level })}">${lvl}</button>`}
       </div>
       ${meter(p.progress, { segments: 20, label: t('pg.toLevel', { pct: Math.round(p.progress * 100), n: p.level + 1 }), key: `hud-${key}` })}
       <div class="pg-xptext">${t('pg.xpLine', { into: rollNum(p.into, `into-${key}`), span: fmtNum(p.span), toNext: rollNum(p.toNext, `next-${key}`), next: p.level + 1 })}</div>
+      ${gearXp > 0 ? `<div class="pg-xpgear">${svg('wrench')} ${t('pg.xpGear', { n: fmtNum(gearXp) })}</div>` : ''}
     </div>
   </section>`;
 }
 
 export function renderProfileGame(ctx, sport = 'bike', slide = '') {
   const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
+  // your own levels count gear and gels (docs/GEAR.md); the HUD says how much of it is gear
+  const boosted = ctx.boost?.sportXp?.[sport];
+  const p = boosted == null ? sportProgress(ctx.workouts, sport) : levelFromTotalXp(boosted);
   return sceneScreen({
     sport,
-    p: sportProgress(ctx.workouts, sport),
+    p,
     action: 'pg-sport',
     slide,
-    avatarBtn: `<button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`,
+    gearXp: boosted == null ? 0 : boosted - (ctx.boost.sportBase[sport] || 0),
+    avatarBtn: `<button class="pg-gear-btn" data-action="open-gear" aria-label="${t('gear.openAria')}">${svg('wrench')}<span>${t('gear.title')}</span></button>
+      <button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`,
   });
 }
 

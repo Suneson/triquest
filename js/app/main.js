@@ -1,7 +1,9 @@
 // main.js — bootstrap, derived state, rendering orchestration and event wiring.
 
 import * as store from './store.js';
-import { computeStats, sportProgress, xpStatus, earnsXp } from '../core/scoring.js';
+import { computeStats, xpStatus, earnsXp, levelFromTotalXp } from '../core/scoring.js';
+import { boostedLedger } from '../core/boosts.js';
+import { coinsForSession } from '../core/wallet.js';
 import { computeStreaks } from '../core/streaks.js';
 import { evaluateBadges, BADGES } from '../core/badges.js';
 import { questsFor, accountProgress, msUntilReset, formatCountdown } from '../core/quests.js';
@@ -44,6 +46,9 @@ import { DISCIPLINES } from '../core/disciplines.js';
 import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
 import { openCheckinSheet } from './checkin.js';
+import { gearState, refreshGear, onGear } from './gear-state.js';
+import { openGear } from './gear-view.js';
+import { startGelTicker } from './gel-chip.js';
 
 
 // ?safe=34 fakes an iPhone's safe areas in a desktop browser or headless
@@ -75,10 +80,30 @@ let deferredInstall = null;
 
 // ---- derived context --------------------------------------------------------
 
+// Your own XP with gear and gels (docs/GEAR.md): per discipline, and the
+// account total. Ranks never sees these; they feed your levels and scenes.
+function boostedXp(workouts, acctBase) {
+  const gear = gearState();
+  const rows = boostedLedger(workouts, gear.inventory, gear.boosts);
+  const byId = new Map();
+  const sportXp = {};
+  const sportBase = {};
+  let total = 0;
+  for (const r of rows) {
+    byId.set(r.w.id, r);
+    sportXp[r.w.type] = (sportXp[r.w.type] || 0) + r.total;
+    sportBase[r.w.type] = (sportBase[r.w.type] || 0) + r.base;
+    total += r.total;
+  }
+  const acct = { ...levelFromTotalXp(total + acctBase.questXp), trainingXp: total, baseTrainingXp: acctBase.trainingXp, questXp: acctBase.questXp };
+  return { byId, sportXp, sportBase, acct };
+}
+
 function buildCtx() {
   const today = todayISO();
   const workouts = store.getWorkouts();
   const settings = store.getSettings();
+  const boost = boostedXp(workouts, accountProgress(workouts, settings, today));
   return {
     today,
     workouts,
@@ -88,7 +113,8 @@ function buildCtx() {
     settings,
     unlockedBadges: store.getState().unlockedBadges,
     quests: questsFor(today, workouts, settings),
-    acct: accountProgress(workouts, settings, today),
+    acct: boost.acct,
+    boost,
     ui: { weekOpen: appState.weekOpen, questsOpen: appState.questsOpen },
   };
 }
@@ -136,7 +162,7 @@ function snapshot(ctx) {
     verified: new Set(ctx.workouts.filter(isVerifiedW).map((w) => w.id)),
     quests: new Set(ctx.quests.filter((q) => q.done).map((q) => q.id)),
     questDay: ctx.today,
-    levels: Object.fromEntries(SPORTS.map((s) => [s, sportProgress(ctx.workouts, s).level])),
+    levels: Object.fromEntries(SPORTS.map((s) => [s, levelFromTotalXp(ctx.boost.sportXp[s] || 0).level])),
   };
 }
 
@@ -152,7 +178,12 @@ function feedbackMoments(ctx) {
   fresh.slice(0, 3).forEach((w, i) => setTimeout(() => {
     const el = document.querySelector(`[data-id="${CSS.escape(w.id)}"]`);
     const r = el?.getBoundingClientRect();
-    xpPop(`+${xpStatus(w, ctx.workouts).xp} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3);
+    // the boosted number flies; the base and the coins it earned sit underneath
+    const b = ctx.boost.byId.get(w.id);
+    const base = xpStatus(w, ctx.workouts).xp;
+    const coins = coinsForSession(w, ctx.workouts);
+    const sub = [b && b.total !== base ? t('xp.baseN', { n: base }) : '', coins ? t('xp.coinsN', { n: coins }) : ''].filter(Boolean).join(' · ');
+    xpPop(`+${b ? b.total : base} XP`, r ? r.left + r.width / 2 : window.innerWidth / 2, r ? r.top + 12 : window.innerHeight / 3, sub);
     playComplete();
   }, 300 + i * 500));
 
@@ -413,6 +444,7 @@ function onClick(e) {
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;
+    case 'open-gear': openGear(buildCtx(), appState.pgSport); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
       if (confirm(t('main.signOutConfirm'))) { auth.signOut(); closeAllLayers(); }
@@ -785,7 +817,7 @@ function openWorkoutDetail(id) {
 }
 function openSportLevels(sport) {
   if (!sport) return;
-  const level = sportProgress(store.getWorkouts(), sport).level;
+  const level = levelFromTotalXp(buildCtx().boost.sportXp[sport] || 0).level;
   const root = openLayer('levels');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(t('main.levelsAria', { sport: (DISCIPLINES[sport] || DISCIPLINES.other).label }))}">
@@ -884,7 +916,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); } else { stopSocial(); stopRoom(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); } else { stopSocial(); stopRoom(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();
@@ -1017,6 +1049,10 @@ async function boot() {
   onSwipe(document.getElementById('view'), (dir) => setPgSport(nextSport(SPORT_ORDER, appState.pgSport, dir)), {
     when: () => appState.tab === 'progress' && !hasLayers(),
   });
+
+  // gear and gels: re-render when the server copy changes; a gel running out redraws too
+  onGear(() => render());
+  startGelTicker(() => render());
 
   if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); startRoom(); });
   else { startSocial().then(() => paintBell()); startRoom(); } // demo mode

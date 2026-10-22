@@ -453,7 +453,8 @@ es.pg = {
   "swipeHint": "Desliza o usa las flechas para ver sus otros deportes",
   "cardioFoot": "{from} – {to} · franja = tu zona de carga segura",
   "cardioBreakdown": "Reparto por estado cardio",
-  "daysN": "{n} d"
+  "daysN": "{n} d",
+  "xpGear": "+{n} XP de material y geles (solo tus niveles)"
 };
 
 es.coach = {
@@ -1889,7 +1890,15 @@ es.xp = {
   "savedNot": "Guardado. Esta sesión no ha dado XP:",
   "lbChip": "{pct}%",
   "lbAria": "El {pct}% de su XP está verificado por Strava",
-  "lbLegend": "El % de Strava es la parte de la XP de cada atleta verificada por Strava. El gimnasio apuntado en la app también cuenta, dentro de las reglas de XP."
+  "lbLegend": "El % de Strava es la parte de la XP de cada atleta verificada por Strava. El gimnasio apuntado en la app también cuenta, dentro de las reglas de XP.",
+  "lbBase": "La clasificación cuenta la XP base: el material y los geles nunca cuentan aquí.",
+  "baseN": "{n} base",
+  "gearN": "{n} material",
+  "gelN": "{n} gel",
+  "coinsN": {
+    "one": "+{n} moneda",
+    "other": "+{n} monedas"
+  }
 };
 
 es.checkin = {
@@ -2049,6 +2058,52 @@ es.gear = {
   },
   "gel": {
     "name": "Gel energético"
+  },
+  "openAria": "Abrir MATERIAL, el taller de entrenamiento",
+  "balanceAria": "Saldo: {n} monedas",
+  "signIn": "Inicia sesión para montar tu material. Las monedas salen del entrenamiento que suma XP, y tu material se guarda en tu cuenta.",
+  "offline": "Estás sin conexión. Puedes mirar; para comprar hace falta conexión.",
+  "disciplines": "Disciplinas",
+  "disciplineBoost": "Mejora de material",
+  "ofCap": "de {cap} máx.",
+  "tierOf": "Nivel {n} de {of}",
+  "next": "Siguiente",
+  "maxed": "Nivel máximo",
+  "noBoost": "Sin mejora aún",
+  "needMore": "Faltan {n} monedas",
+  "buyAria": "Comprar {name} por {cost} monedas, {boost} de XP en esta disciplina",
+  "consumables": "Geles",
+  "gelBlurb": "+{pct}% de XP en cada sesión durante {h} horas desde que lo tomas. {n} por semana.",
+  "useGel": "Tomar un gel",
+  "buyGelAria": "Comprar un gel por {cost} monedas",
+  "gelFull": "Puedes llevar {n}",
+  "gelWhy": {
+    "active": "Ya tienes uno activo",
+    "limit": "Ya has usado dos esta semana"
+  },
+  "gelActiveAria": "Gel activo: quedan {time}, +{pct}% de XP",
+  "gelOn": "Gel activo: +{pct}% de XP durante {h} horas",
+  "kits": "Colores de equipación",
+  "kitsNote": "Combinaciones de color para tu atleta. Cambian tu aspecto, no tu XP.",
+  "wear": "Ponerla",
+  "wearing": "Puesta",
+  "honest": "El material y los geles mejoran tus propios niveles. La clasificación cuenta la XP base, igual para todos.",
+  "bought": "Comprado.",
+  "boughtBoost": "Montado: {boost} de XP en esta disciplina.",
+  "err": {
+    "not_signed_in": "Inicia sesión para usar MATERIAL.",
+    "unknown_item": "Ese artículo no está en el taller.",
+    "starter": "Ya tienes el material de serie.",
+    "owned": "Ya lo tienes.",
+    "tier_locked": "Compra antes el nivel anterior.",
+    "insufficient": "Aún no tienes monedas suficientes.",
+    "gel_full": "Ya llevas el máximo de geles.",
+    "gel_none": "No tienes geles. Compra uno antes.",
+    "gel_active": "Ya tienes un gel activo.",
+    "gel_limit": "Has usado dos geles en los últimos siete días.",
+    "offline": "Estás sin conexión. Para comprar hace falta conexión.",
+    "demo": "Modo demo: no se compra nada.",
+    "generic": "No ha salido bien. Inténtalo de nuevo."
   }
 };
 

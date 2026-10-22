@@ -453,7 +453,8 @@ en.pg = {
   "swipeHint": "Swipe or use the arrow keys for their other sports",
   "cardioFoot": "{from} – {to} · band = your safe-load zone",
   "cardioBreakdown": "Cardio status breakdown",
-  "daysN": "{n}d"
+  "daysN": "{n}d",
+  "xpGear": "+{n} XP from gear and gels (your levels only)"
 };
 
 en.coach = {
@@ -1889,7 +1890,15 @@ en.xp = {
   "savedNot": "Saved. This session didn’t earn XP:",
   "lbChip": "{pct}%",
   "lbAria": "{pct}% of their XP is verified by Strava",
-  "lbLegend": "The Strava % is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules."
+  "lbLegend": "The Strava % is the share of an athlete’s XP verified by Strava. Gym sessions logged in the app count too, within the XP rules.",
+  "lbBase": "Ranks counts base XP: gear and gels never count here.",
+  "baseN": "{n} base",
+  "gearN": "{n} gear",
+  "gelN": "{n} gel",
+  "coinsN": {
+    "one": "+{n} coin",
+    "other": "+{n} coins"
+  }
 };
 
 en.checkin = {
@@ -2049,6 +2058,52 @@ en.gear = {
   },
   "gel": {
     "name": "Energy gel"
+  },
+  "openAria": "Open GEAR, the training workshop",
+  "balanceAria": "Balance: {n} coins",
+  "signIn": "Sign in to build your kit. Coins come from training that earns XP, and your gear is kept on your account.",
+  "offline": "You’re offline. You can look around; buying needs a connection.",
+  "disciplines": "Disciplines",
+  "disciplineBoost": "Gear boost",
+  "ofCap": "of {cap} max",
+  "tierOf": "Tier {n} of {of}",
+  "next": "Next",
+  "maxed": "Top tier",
+  "noBoost": "No boost yet",
+  "needMore": "{n} more coins",
+  "buyAria": "Buy {name} for {cost} coins, {boost} XP in this discipline",
+  "consumables": "Gels",
+  "gelBlurb": "+{pct}% XP on every session for {h} hours from when you take it. {n} a week.",
+  "useGel": "Take a gel",
+  "buyGelAria": "Buy a gel for {cost} coins",
+  "gelFull": "You can hold {n}",
+  "gelWhy": {
+    "active": "One is already running",
+    "limit": "Two used this week"
+  },
+  "gelActiveAria": "Gel running: {time} left, +{pct}% XP",
+  "gelOn": "Gel on: +{pct}% XP for {h} hours",
+  "kits": "Kit colours",
+  "kitsNote": "Colourways for your athlete. They change how you look, not your XP.",
+  "wear": "Wear",
+  "wearing": "Wearing",
+  "honest": "Gear and gels boost your own levels. Ranks counts base XP, the same for everyone.",
+  "bought": "Bought.",
+  "boughtBoost": "Fitted: {boost} XP in this discipline.",
+  "err": {
+    "not_signed_in": "Sign in to use GEAR.",
+    "unknown_item": "That item isn’t in the workshop.",
+    "starter": "You already have the starter kit.",
+    "owned": "You already own that.",
+    "tier_locked": "Buy the tier below first.",
+    "insufficient": "Not enough coins yet.",
+    "gel_full": "You’re holding the most gels you can.",
+    "gel_none": "You have no gels. Buy one first.",
+    "gel_active": "A gel is already running.",
+    "gel_limit": "You’ve used two gels in the last seven days.",
+    "offline": "You’re offline. Buying needs a connection.",
+    "demo": "Demo mode: nothing is bought.",
+    "generic": "That didn’t go through. Try again."
   }
 };
 

@@ -1,6 +1,6 @@
 # GEAR: the training workshop (economy design)
 
-Status: **Phase 1 built, Phase 2 SQL written (not yet applied).** Phase 0 was
+Status: **Phases 1–4 built. 0014 applied live (as 0014_gear_a–d), and strava-sync and strava-webhook redeployed with the UTC start (v5).** Phase 0 was
 signed off with the recommended answer to every question in §9: a free
 starter plus three bought tiers, Recovery instead of run hydration, a +30%
 gel for 4 h, a +16% cap, coins from launch with a 300 purse, and T3 at 850.
@@ -347,7 +347,16 @@ of whatever they could already fake, and none of it reaches Ranks. The list:
   connector**, so after your sign-off on the SQL I can apply it with
   `apply_migration`. As in 0013, statements containing `DROP`, `DELETE` or
   `REVOKE` stall the connector and are split into separate steps.
-- **Phases 3 to 5:** as briefed.
+- **Phases 3 and 4 (built):**
+  - `js/app/gear-state.js`: the server copy, cached for offline browsing; buy and gel calls; demo mode plays the rules locally.
+  - `js/app/gear-view.js`: the GEAR layer.
+  - `js/app/gel-chip.js`: the draining gel countdown on the Profile HUD, Home and the workshop.
+  - `js/app/xp-split.js`: "+154 XP (114 base · 5 gear · 35 gel)" on session cards, the session detail and the gym finish view, which also shows coins.
+  - The XP pop flies the boosted number with the base and coins under it.
+  - Profile levels, the account level and the level-up moments use boosted XP.
+  - The Ranks legend says gear doesn't count there.
+  - Screens are in `docs/gear/after/`; clips of a purchase, a gel and a boosted session are in `docs/gear/clips/`.
+- **Phase 5:** as briefed.
 - **Phase 5b, kit colours by palette swap:** the ten per-level characters stay
   as they are.
   - Gear that changes the silhouette (frame, wheels, aerobars, wetsuit,

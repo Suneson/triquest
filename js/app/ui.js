@@ -17,6 +17,8 @@ import { sessionLine, dayLine, raceOn } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
 import { t, fmtDate, fmtNum, capFirst } from '../core/i18n.js';
 import { planTitle, planNotes, planWord, planItem } from '../core/plan-i18n.js';
+import { sessionXp, splitText } from './xp-split.js';
+import { gelChip } from './gel-chip.js';
 
 export { DISCIPLINES, INTENSITIES };
 
@@ -276,9 +278,13 @@ export function proofBadges(w, workouts) {
 function xpLine(w, workouts) {
   if (!w.completed) return '';
   const st = xpStatus(w, workouts || []);
-  if (st.reason) return `<p class="xp-line ${st.reason === 'cap' ? 'is-cap' : 'is-off'}">${svg('warn')} ${esc(t(`xp.reason.${st.reason}`))}</p>`;
-  if (proofOf(w) === 'strava') return `<p class="xp-line is-ok">${svg('check')} ${t('xp.verified')}</p>`;
-  return '';
+  const b = sessionXp(w, workouts);
+  const split = splitText(b);
+  // your number, with the base it came from whenever gear or a gel added to it
+  const earned = b ? `<p class="xp-line is-earned">${svg('xp')} <b>+${fmtNum(b.total)} XP</b>${split ? ` <small>(${esc(split)})</small>` : ''}</p>` : '';
+  if (st.reason) return `${st.reason === 'cap' ? earned : ''}<p class="xp-line ${st.reason === 'cap' ? 'is-cap' : 'is-off'}">${svg('warn')} ${esc(t(`xp.reason.${st.reason}`))}</p>`;
+  if (proofOf(w) === 'strava') return `${earned}<p class="xp-line is-ok">${svg('check')} ${t('xp.verified')}</p>`;
+  return earned;
 }
 
 export function sessionCard(w, units, { isNext = false, workouts = null } = {}) {
@@ -294,7 +300,16 @@ export function sessionCard(w, units, { isNext = false, workouts = null } = {}) 
       ${km ? `<div class="bm"><span class="bm-ico">${svg('route')}</span><b>${fmtNum(km, { maximumFractionDigits: 1 })}</b><small>${units === 'imperial' ? 'mi' : 'km'}</small></div>` : ''}
       <div class="bm"><span class="bm-ico">${svg('flame')}</span><b>${kcalEst(w)}</b><small>kcal</small></div>
     </div>
+    ${bentoXp(w, workouts)}
   </article>`;
+}
+
+// a finished session's XP on its card: the boosted number, the base under it
+function bentoXp(w, workouts) {
+  const b = workouts ? sessionXp(w, workouts) : null;
+  if (!b) return '';
+  const split = splitText(b);
+  return `<p class="bento-xp"><b class="data-num">+${fmtNum(b.total)} XP</b>${split ? `<small>${esc(split)}</small>` : ''}</p>`;
 }
 
 // ---- expanded detail (modal) ------------------------------------------------
@@ -424,7 +439,7 @@ function homeDateHeader(ctx) {
   const weekday = capFirst(fmtDate(d, { weekday: 'long' }));
   const label = fmtDate(d, { day: 'numeric', month: 'long' });
   return `<div class="home-date"><small>${esc(t('ui.todayEyebrow', { weekday }))}</small><h2>${esc(label)}</h2>
-    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="${t('ui.openCalendar')}">${svg('calendar')}<span class="jr-label">${t('ui.calendar')}</span></button></div>`;
+    <button class="btn jr-btn" data-action="tab" data-tab="journal" aria-label="${t('ui.openCalendar')}">${svg('calendar')}<span class="jr-label">${t('ui.calendar')}</span></button>${gelChip(undefined, { cls: 'on-home' })}</div>`;
 }
 
 // A scaled-down one-line preview of tomorrow — never more than today + tomorrow.

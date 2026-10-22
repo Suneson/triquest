@@ -18,6 +18,8 @@ import { cuesFor, poseSvgFor } from '../core/poses.js';
 import { openPicker, openNameSheet } from './gym-picker.js';
 import { haptic } from './haptics.js';
 import { xpStatus } from '../core/scoring.js';
+import { coinsForSession } from '../core/wallet.js';
+import { sessionXp, splitText } from './xp-split.js';
 import { enableDragSort } from './drag-sort.js';
 import { openExerciseHistory } from './gym-history.js';
 import { morph } from './vt.js';
@@ -259,8 +261,13 @@ function setRow(w, ex, i, s, j, label, prevSet, timed, sw, isPR = false, cursorC
 /** Shown in the sheet after Finish. */
 export function finishView(w, workouts = []) {
   const st = xpStatus(w, workouts);
+  // the boosted number lands; the base, gear, gel and the coins it earned sit under it
+  const b = sessionXp(w, workouts);
+  const split = splitText(b);
+  const coins = coinsForSession(w, workouts);
+  const extra = [split, coins ? t('xp.coinsN', { n: coins }) : ''].filter(Boolean).join(' · ');
   const earned = st.xp > 0
-    ? dialogue({ text: t('gym.savedEarned'), body: `<span class="xp-land">+${st.xp} XP</span>${st.capped ? `<p class="xp-line is-cap">${esc(t('xp.reason.cap'))}</p>` : ''}`, cls: 'coach-say gl-done' })
+    ? dialogue({ text: t('gym.savedEarned'), body: `<span class="xp-land">+${b ? b.total : st.xp} XP</span>${extra ? `<small class="xp-land-sub">${esc(extra)}</small>` : ''}${st.capped ? `<p class="xp-line is-cap">${esc(t('xp.reason.cap'))}</p>` : ''}`, cls: 'coach-say gl-done' })
     : dialogue({ text: t('xp.savedNot'), body: `<p class="xp-line is-off">${esc(t(`xp.reason.${st.reason || 'sets'}`))}</p>`, cls: 'coach-say gl-done' });
   const sum = sessionSummary(w, Date.parse(w.gymLoggedAt) || Date.now());
   const dur = w.gymDurationSec != null ? w.gymDurationSec : sum.durationSec;

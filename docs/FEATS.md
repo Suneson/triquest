@@ -1,6 +1,6 @@
-# Feats and trophies (design for sign-off)
+# Feats and trophies
 
-Status: **Phase 0, waiting for sign-off.** Nothing is built yet. Every number here
+Status: **Phase 0 signed off (2026-10-22): option A for gym, with the check-in required; manual activities stop earning XP; season names to come.** Phase 1 (the engine and the SQL) is next. Every number here
 goes into one constants block in `js/core/feats.js`, and the SQL copy
 (`0018_feats.sql`) is generated from it, as `tools/gear-sql.mjs` does for GEAR.
 
@@ -15,7 +15,7 @@ trophy on the sport's board, and the big ones unlock a wearable item.
 
 | Rule | Detail |
 | --- | --- |
-| **Strava only** | The session has a Strava activity (`strava_activity_id`). App-logged sessions never unlock a performance feat. The gym strength feats are the one open question, see §5. |
+| **Strava only** | The session has a Strava activity (`strava_activity_id`). App-logged sessions never unlock a performance feat, with one labelled exception: the gym strength feats (§5). |
 | **No manual entries** | Strava lets you type an activity in by hand (`manual: true`). Those never count. Today `hasStravaProof()` accepts them for XP; see §7. |
 | **No machines for speed or distance** | Treadmill runs (`VirtualRun`, `trainer`), indoor rides (`VirtualRide`, `trainer`) and e-bikes (`EBikeRide`) don't count for run, bike or cross feats. They still earn XP as before. |
 | **Not on a planned rest day** | A session on a planned rest day (`js/core/rest.js`) never counts toward a feat. The server stamps this once, when the session first earns (`workouts.on_rest_day`, like `boost`), so editing the plan afterwards can't change it. |
@@ -103,9 +103,9 @@ the same idea, already verified by Strava. It means one climb done in one effort
 | --- | --- | --- | --- | --- |
 | `gym-25` | 1 | 25 sessions that earned XP | once | — |
 | `gym-100` | 3 | 100 sessions that earned XP | once | — |
-| `gym-bench-1` | 2 | Bench press ≥ 1.0 × bodyweight, a completed set of 1–5 reps | once | — |
-| `gym-squat-15` | 3 | Back squat ≥ 1.5 × bodyweight, 1–5 reps | once | — |
-| `gym-dead-2` | 3 | Deadlift ≥ 2.0 × bodyweight, 1–5 reps | once | — |
+| `gym-bench-1` | 2 | Bench press ≥ 1.0 × bodyweight, a completed set of 1–5 reps, in a session with the gym check-in | once | — |
+| `gym-squat-15` | 3 | Back squat ≥ 1.5 × bodyweight, 1–5 reps, with the check-in | once | — |
+| `gym-dead-2` | 3 | Deadlift ≥ 2.0 × bodyweight, 1–5 reps, with the check-in | once | — |
 | (all three) | — | The strength trio | — | **Lifting singlet** |
 
 The session-count feats are consistency, not performance, so any session that
@@ -168,33 +168,28 @@ review, never rejected.
 
 ### Seasons
 
-- **Four seasons a year**, by calendar quarter. Proposed names, with the year:
-  - Alisio (Jan–Mar)
-  - Calima (Apr–Jun)
-  - Teide (Jul–Sep)
-  - Atlántico (Oct–Dec)
-- **A feat's item comes in that season's colourway.** Earn the sub-20 kit in Calima 2027 and you get the Calima 2027 colourway, which never returns. You keep it forever; only the chance to earn that colourway closes.
+- **Four seasons a year**, by calendar quarter. The id is the quarter (`2026-Q4`); the names come later, and are one line each in the locale files.
+- **A feat's item comes in that season's colourway.** Earn the sub-20 kit in 2027-Q2 and you get that season's colourway, which never returns. You keep it forever; only the chance to earn that colourway closes.
 - **Where it's recorded:** the season goes on `user_feats.season`.
 - **Repeatable feats:** they can be earned once in each season, and each earning adds a mark to the trophy.
 - **One-off feats** (a sub-20 5 km) are earned once ever; the season only decides the colourway.
 
 ---
 
-## 5. Gym strength feats and rule 3: your call
+## 5. Gym strength feats: logged, and checked in
 
-Rule 3 says performance feats come from Strava only. But Strava doesn't carry
-lifts: a `WeightTraining` activity has a duration and nothing else. So a
-bodyweight bench can only come from a session logged in the app. Two ways out:
+Strava doesn't carry lifts, so the three strength feats are the one exception to
+"Strava only". **Decided: option A, with the gym check-in made mandatory for
+them.**
 
-| Option | What it means |
-| --- | --- |
-| **A. Allow logged lifts, clearly labelled (my recommendation)** | <ul><li>The three strength feats read app-logged sessions that pass the gym rules in `docs/XP.md`, plus the extra bounds in §3: bodyweight, the jump check and lift history.</li><li>The trophy and the shop plate say **"logged"**, not "verified".</li><li>They pay only the singlet, and never count in a challenge.</li></ul> |
-| **B. Drop them for v1** | The gym board shows only session counts until a watch or a video check can prove a lift. |
-
-Option A keeps the gym board worth looking at. The worst case is someone lying
-to themselves for a singlet, which nobody else's standing depends on.
-
----
+- **The session:** an app-logged session that passes every gym rule in `docs/XP.md`, and the bounds in §3 (bodyweight, the jump check and lift history).
+- **The check-in is required.**
+  - The session must carry the gym check-in pin (`gymCheckin: true`), so you must have saved your gym's location and been there when you finished.
+  - Without the check-in turned on, the trophy case says "turn on the gym check-in to go for this one".
+  - The check-in stays optional for XP. Making it mandatory for XP would change Ranks for everyone who lifts without it; that's a separate decision.
+- **The label.** The trophy and the shop plate say **"logged"**, not "verified".
+- **The reward:** only the lifting singlet.
+- **Never in challenges.** Gym isn't a challenge sport at all (docs/CHALLENGES.md §1).
 
 ## 6. A month for a 5-hour athlete and a 12-hour athlete
 
@@ -244,7 +239,7 @@ launch.
 1. **Manual Strava activities earn XP today.**
    - The problem: `hasStravaProof()` only checks that there is a Strava id, and a hand-typed Strava activity has one.
    - The fix: Phase 1 stores `manual`, and feats and challenges refuse it.
-   - Your call: whether manual activities should also stop earning XP. That changes Ranks, so it's your decision. I recommend yes, from a date forward, like the gym rule.
+   - **Decided:** manual activities stop earning XP from the day 0018 goes live (`MANUAL_SINCE`), like the gym rule; earlier ones keep their XP.
 2. **Two app accounts can link the same Strava athlete.** `strava_accounts.athlete_id` isn't unique. Challenges need it to be (one person, one account). Phase 1 adds a unique index, after checking the live table has no duplicates.
 
 ---

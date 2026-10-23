@@ -712,10 +712,13 @@ language sql stable security definer set search_path = public as $$
   order by 12 desc, abs(g.net_a_to_b) desc;
 $$;
 
-grant execute on function public.create_challenge(jsonb), public.join_challenge(uuid), public.decline_challenge(uuid),
-  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.challenge_people(date), public.resolve_due(), public.admin_pair_flags() to authenticated;
-revoke execute on function public.create_challenge(jsonb), public.join_challenge(uuid), public.decline_challenge(uuid),
-  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.challenge_people(date), public.resolve_due(), public.admin_pair_flags() from anon;
+-- PUBLIC holds execute by default, so the lockdown revokes it there too
 revoke execute on function public.resolve_challenge(uuid), public.challenge_cancel_now(public.challenges, text),
   public.challenge_join_now(public.challenges, uuid), public.post_card(uuid, text, uuid, text),
   public.stake_block(uuid, int, uuid[]) from public, anon, authenticated;
+revoke execute on function public.create_challenge(jsonb), public.join_challenge(uuid), public.decline_challenge(uuid),
+  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.challenge_people(date), public.resolve_due(),
+  public.admin_pair_flags(), public.challenge_visible(uuid, uuid) from public, anon;
+grant execute on function public.create_challenge(jsonb), public.join_challenge(uuid), public.decline_challenge(uuid),
+  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.challenge_people(date), public.resolve_due(),
+  public.admin_pair_flags(), public.challenge_visible(uuid, uuid) to authenticated;

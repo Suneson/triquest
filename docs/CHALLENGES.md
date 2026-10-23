@@ -1,7 +1,7 @@
 # Challenges and stakes
 
 Status: **Phase 0 signed off (2026-10-22) with the changes in §12. Phases 4–6 built (2026-10-23): the engine
-(`js/core/challenges.js`), the SQL (`0019_challenges.sql`, written and tested, not yet applied) and the screens
+(`js/core/challenges.js`), the SQL (`0019_challenges.sql`, live since 2026-10-23, settled hourly by `0020_challenges_cron.sql`) and the screens
 (`challenges-view.js`).** Every number lives in
 one constants block (`CHALLENGE_RULES` in `js/core/challenges.js`), and the SQL copy is
 generated from it.

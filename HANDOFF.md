@@ -203,6 +203,13 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - **Challenge app:** `challenges-state.js` (server copy, realtime, demo) and `challenges-view.js` (list, challenge layer, join sheet, new challenge). Cards post into the Room; the composer's flag button starts one. A result you haven't been told about is emitted once as `onChallenges('settled', …)` (seen ids in `moske-ch-seen`, per account); `main.js` toasts it with `settleText()`.
 - **Demo hooks (?demo=1 only):** `demoUnlock()` in `feats-state.js` wins a held-back feat (Half marathon); `demoSettle()` in `challenges-state.js` settles the running demo challenge. The clips in `docs/feats/clips/` (feat-unlock, board-open, challenge-settle) are recorded with them.
 
+## The long loop (Oct 2026, `feature/long-loop`)
+- **Design and numbers:** `docs/LOOP.md`. Art to make: `docs/gear/LOOP-ART.md`.
+- **Workshop:** `js/core/workshop.js` holds the bays, placing jobs, the queue moving up, cancel refunds and quadrant level. `0022_workshop.sql` is the server copy (`buy_gear` queues gear and props; `workshop()`, `workshop_cancel()`, `workshop_skip()`). `tests/workshop-sql.test.js` checks parity. 0022 is not applied yet.
+- **Props:** `PROPS` in `js/core/scenes.js`, drawn by `profile-game.js`. Stand-in art comes from `tools/draw-props.mjs`.
+- **App:** `gear-state.js` holds the jobs, the server clock offset, `onWorkshopFinish`, and the shop dot (`unseenFinished`). `gear-view.js` has the workshop card and the Base tab.
+- **Demo:** `?demo=1` has a fitting job, a queued one and two finished props.
+
 ## ⚠️ Gotchas
 - **Bump SW `CACHE` + add new JS to ASSETS** every asset change, else stale.
 - Connector `deploy_edge_function` needs **self-contained** files (inline shared code; can't `../_shared` import). Repo keeps `_shared/` for CLI parity.

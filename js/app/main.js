@@ -46,12 +46,14 @@ import { DISCIPLINES } from '../core/disciplines.js';
 import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
 import { openCheckinSheet } from './checkin.js';
-import { gearState, refreshGear, onGear } from './gear-state.js';
+import { gearState, refreshGear, onGear, onWorkshopFinish } from './gear-state.js';
+import { gearById } from '../core/gear.js';
+import { propById } from '../core/scenes.js';
 import { refreshFeats, onFeats } from './feats-state.js';
 import { openTrophyCase, featWonText } from './feats-view.js';
 import { refreshChallenges, stopChallenges, onChallenges } from './challenges-state.js';
 import { settleText } from './challenges-view.js';
-import { openGear, openInventory } from './gear-view.js';
+import { openGear, openInventory, openShop } from './gear-view.js';
 import { startGelTicker } from './gel-chip.js';
 
 
@@ -449,6 +451,7 @@ function onClick(e) {
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;
     case 'open-gear': openGear(buildCtx(), appState.pgSport); break;
+    case 'open-base': openShop(buildCtx(), { tab: 'base', sport: el.dataset.sport || appState.pgSport }); break;
     case 'open-inventory': openInventory(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
     case 'ai-onboard': startAIPlan(); break;
@@ -1060,6 +1063,18 @@ async function boot() {
 
   // gear and gels: re-render when the server copy changes; a gel running out redraws too
   onGear(() => render());
+  // the workshop finished something: the stamp lands (once per job), then the toast
+  onWorkshopFinish((jobs) => {
+    const names = jobs.map((j) => gearById(j.item_id)?.name || propById(j.item_id)?.name).filter(Boolean);
+    if (!names.length) return;
+    const j = jobs[0];
+    if (firstStamp(`ws:${j.id}:${j.finishes_at}`)) {
+      stampRecord({ name: names[0], prs: [], kicker: t('loop.ws.fitted'), icon: 'wrench', target: document.querySelector('.pg-scene-btn.is-shop') });
+    }
+    toast(`<b>${t('loop.ws.fittedToast')}</b><br>${names.map(esc).join(' · ')}`, { icon: svg('wrench') });
+    haptic('record');
+    render();
+  });
   // a feat just won: say so, then redraw the board
   onFeats((fresh) => {
     for (const a of fresh.slice(0, 3)) {

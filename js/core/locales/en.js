@@ -2099,7 +2099,7 @@ en.gear = {
   "openInventory": "Open your inventory",
   "tab": {
     "gear": "Gear",
-    "clothes": "Clothes",
+    "clothes": "Kit",
     "fuel": "Fuel"
   },
   "res": {
@@ -2563,6 +2563,129 @@ en.chx = {
     "share": "That's more than half your coins.",
     "week": "That would take you past 300 coins staked this week.",
     "pair": "You've already staked against one of them this week (or three times this month)."
+  }
+};
+
+// ---- the long loop: workshop, base, props (docs/LOOP.md) ----
+en.gear.tab["base"] = "Base";
+en.gear.err["in_workshop"] = "That’s already in the workshop.";
+en.gear.err["has_next"] = "Take the tier above it out of the queue first.";
+en.gear.err["no_job"] = "That job isn’t in your workshop.";
+en.gear.err["job_done"] = "That job has already finished.";
+en.gear.err["not_fitting"] = "A gel only finishes the job being fitted now.";
+en.loop = {
+  "ws": {
+    "title": "Workshop",
+    "bays": {
+      "one": "{n} bay",
+      "other": "{n} bays"
+    },
+    "bay": "Bay {n}",
+    "free": "Free. Whatever you buy next starts here at once.",
+    "leftWord": "left",
+    "skip": "Finish with a gel",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "removeAria": "Remove {name} from the queue",
+    "needGel": "A gel finishes the job now. You have none in your bag.",
+    "queue": "Waiting for a bay",
+    "startsAt": "Starts at {time} · bay {bay}",
+    "fittedAt": "Fitted at {time}",
+    "rules": "Removing a job that hasn’t started is free. Cancelling mid-fit gives everything back the first time, then {pct}%.",
+    "fittingCard": "In the workshop:",
+    "queuedCard": "Queued: starts at {time}",
+    "fitsIn": "Fits in {time}",
+    "h": "{h} h",
+    "min": "{m} min",
+    "hMin": "{h} h {m} min",
+    "startedToast": "In the bay now. Ready at {time}.",
+    "queuedToast": "Queued: starts at {start}, ready at {time}.",
+    "cancelFull": "Stop fitting it? You get all {n} coins back.",
+    "cancelPart": "Stop fitting it? You get {n} of the {cost} coins back.",
+    "cancelled": "Out of the workshop. {n} coins back.",
+    "fitted": "Fitted",
+    "fittedToast": "Ready in the workshop",
+    "readyN": {
+      "one": "{n} thing is ready",
+      "other": "{n} things are ready"
+    }
+  },
+  "quad": {
+    "bike": "Velodrome",
+    "run": "Track",
+    "swim": "Pool",
+    "gym": "Gym hall",
+    "lv": "LV {n}",
+    "aria": "{name}, level {n}. Open what you can build here",
+    "toNext": {
+      "one": "{n} build point to level {lv}",
+      "other": "{n} build points to level {lv}"
+    },
+    "top": "Fully built",
+    "note": "This level grows with what you build here, not with XP. A quiet month costs it nothing."
+  },
+  "prop": {
+    "built": "Built",
+    "points": {
+      "one": "+{n} build point",
+      "other": "+{n} build points"
+    },
+    "buyAria": "Build {name} for {cost} coins",
+    "glows": "Lights up at dusk"
+  }
+};
+en.prop = {
+  "bike-rack": {
+    "name": "Bike rack",
+    "blurb": "Somewhere for the bikes that isn’t the floor."
+  },
+  "bike-stand": {
+    "name": "Workstand",
+    "blurb": "Clamps the frame so the mechanic stops kneeling."
+  },
+  "bike-tent": {
+    "name": "Team tent",
+    "blurb": "Shade, a folding chair and the race-day feel."
+  },
+  "bike-lights": {
+    "name": "Floodlights",
+    "blurb": "The yard stays open after dark."
+  },
+  "run-water": {
+    "name": "Water station",
+    "blurb": "Cups on a table, the way a race does it."
+  },
+  "run-gate": {
+    "name": "Timing gate",
+    "blurb": "Every lap through it gets a time."
+  },
+  "run-stand": {
+    "name": "Spectator stand",
+    "blurb": "Three rows of seats and somebody always on them."
+  },
+  "run-lights": {
+    "name": "Track lights",
+    "blurb": "Evening intervals, lit."
+  },
+  "swim-reel": {
+    "name": "Lane-rope reel",
+    "blurb": "Lane ropes out for the serious sets."
+  },
+  "swim-clock": {
+    "name": "Pace clock",
+    "blurb": "The big sweep hand every club pool has."
+  },
+  "swim-stand": {
+    "name": "Poolside stand",
+    "blurb": "Seats for the gala you’ll host one day."
+  },
+  "gym-chalk": {
+    "name": "Chalk bowl",
+    "blurb": "Grip for the heavy days."
+  },
+  "gym-sound": {
+    "name": "Sound system",
+    "blurb": "Your playlist, loud enough."
   }
 };
 

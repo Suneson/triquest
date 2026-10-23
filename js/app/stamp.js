@@ -28,13 +28,13 @@ const reduced = () => document.body.classList.contains('rm') || matchMedia('(pre
  * Stamp a record plaque. `target` is the element it settles into (the set's
  * PR tick). Returns false when it didn't animate (reduced motion, no API).
  */
-export function stampRecord({ name, prs, target }) {
+export function stampRecord({ name, prs, target, kicker = t('rt.newRecord'), icon = 'trophy' }) {
   if (reduced() || !document.body.animate) return false;
   const wrap = document.createElement('div');
   wrap.className = 'stamp-wrap';
   wrap.setAttribute('aria-hidden', 'true');
   wrap.innerHTML = `<div class="stamp-plaque">
-      <span class="stamp-k">${svg('trophy')} ${t('rt.newRecord')}</span>
+      <span class="stamp-k">${svg(icon)} ${esc(kicker)}</span>
       <b>${esc(name)}</b>
       <small>${prs.map((p) => esc(p.label)).join(' · ')}</small>
     </div>${'<i class="stamp-dust"></i>'.repeat(6)}`;

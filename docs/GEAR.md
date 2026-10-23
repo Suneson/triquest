@@ -549,3 +549,10 @@ by `featItemsOwned()`), in the colourway of the season you won it. The gran
 fondo and Iron kits are cycling kits the rider wears
 (`bikelvl6_char--kit-gran-fondo.webp`, `--kit-iron.webp`, made with
 `tools/kit-recolor.py`). Feats never pay coins or carbs. See docs/FEATS.md §4.
+
+## 14. The workshop (Oct 2026)
+
+From `0022_workshop.sql`, a gear tier is no longer yours the moment it's bought:
+- **Fitting:** it's paid at once and fitted in the workshop (10 min / 1 h / 4 h for tiers 1–3). Its boost counts from the finish.
+- **Instant items:** kits and fuel are unchanged.
+- **Rules:** queueing, bays, refunds and finishing with a gel are in `docs/LOOP.md` §1.

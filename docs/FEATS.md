@@ -1,6 +1,8 @@
 # Feats and trophies
 
 Status: **Phase 1 live (2026-10-23).** 0018 applied as 0018_feats_a–f; strava-sync and strava-webhook v6 import best efforts and segments and run `award_feats` after every sync. The engine is `js/core/feats.js` (tests: `tests/feats.test.js`), the server copy `supabase/migrations/0018_feats.sql` (parity: `tests/feats-sql.test.js`). The first live attempt used temp tables, which the connector couldn't apply, so the engine was rewritten to hold the history in an array; a leftover `feat_tri_pick(date, text, numeric)` from that attempt is live, unused and revoked, and can be dropped any time.
+
+**Phases 2 and 3 built (2026-10-23):** the trophy board in each scene (`js/app/feats-view.js`), the trophy case, items only feats give in the shop and inventory (`FEAT_ITEMS` in `js/core/gear.js`, ownership from `featItemsOwned()`), seasonal colourways (`seasonHue()`), and the gran fondo and Iron kits on the level-6 rider. Art to make: `docs/gear/NEW-ART.md`.
 goes into one constants block in `js/core/feats.js`, and the SQL copy
 (`0018_feats.sql`) is generated from it, as `tools/gear-sql.mjs` does for GEAR.
 

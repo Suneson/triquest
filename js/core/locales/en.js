@@ -2296,4 +2296,68 @@ en.feat = {
   }
 };
 
+en.feat.ui = {
+  "title": "Trophies",
+  "sports": "Sports",
+  "sport": {
+    "bike": "Bike",
+    "swim": "Swim",
+    "run": "Run",
+    "gym": "Gym",
+    "cross": "Cross"
+  },
+  "boardAria": "Trophy board: {n} of {total} feats won. Open the trophy case",
+  "ofWon": "of {total} won",
+  "check": "Check now",
+  "signedOut": "Signed out: this is what your sessions would win. Sign in and the server awards them.",
+  "honest": "Only sessions recorded on Strava count, never typed in or on a machine (lifts: logged in the app, with the gym check-in). Impossible numbers are ignored quietly.",
+  "km": "{n} km",
+  "m": "{n} m",
+  "kmh": "{n} km/h",
+  "rest": "{n}% rest",
+  "per100": "{t} /100 m",
+  "kg": "{n} kg",
+  "sessions": "{n} sessions",
+  "weeks": "{n} weeks",
+  "reward": "Unlocks: {item}",
+  "rewardTrio": "With the other two lifts: {item}",
+  "logged": "Logged",
+  "strava": "Strava",
+  "whole": "whole activity",
+  "session": "See the session",
+  "nearAria": "Your best {best}, target {target}",
+  "best": "Your best: {best} · target {target}",
+  "notYet": "No qualifying session yet.",
+  "needsTitle": "For the strength feats",
+  "bodyweight": "Bodyweight (kg)",
+  "saveWeight": "Save",
+  "weightLogged": "Last logged {date}. A lift is compared with the heaviest weight you logged in the 30 days before it.",
+  "weightWhy": "Log your bodyweight: a lift is compared with the heaviest weight you logged in the 30 days before it.",
+  "weightSaved": "Bodyweight saved: {kg} kg",
+  "checkinOn": "The gym check-in is on: sessions at your gym carry the pin.",
+  "checkinOff": "Strength feats need the gym check-in pin.",
+  "checkinTurnOn": "Turn it on",
+  "won": "Feat unlocked",
+  "itemsTitle": "Earned, not bought",
+  "itemsNote": "These can't be bought. Each comes from a feat, in the colours of the season you win it, and that colourway never comes back.",
+  "itemHow": "Earn it:",
+  "itemWon": "Won, in that season's colours",
+  "itemOwned": "Yours",
+  "itemLocked": "Earned, never bought",
+  "itemLockedLogged": "Earned with logged lifts"
+};
+en.featItem = {
+  "kit-run-sub20": "Sub-20 run kit",
+  "kit-gran-fondo": "Gran fondo cycling kit",
+  "kit-iron": "Iron kit",
+  "trisuit-limited": "Limited trisuit",
+  "singlet-lifting": "Lifting singlet",
+  "shirt-finisher": "Finisher shirt",
+  "cap-run": "MOSKE run cap",
+  "cap-climber": "Climber's cap",
+  "cap-training": "MOSKE training cap",
+  "frame-olympic": "Olympic frame badge",
+  "frame-race": "Race-number frame badge"
+};
+
 export default en;

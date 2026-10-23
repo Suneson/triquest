@@ -426,6 +426,34 @@ gold glyph on a gold plinth. Locked: a `--shade` silhouette with a 1px
 `--line-soft` outline. Tapping one fills the line under the shelves with its
 name, state and how to earn it (`aria-live`).
 
+### Trophy board (Profile scene)
+A physical object in each sport's diorama, at the scene's `board` hotspot
+(`js/core/scenes.js`, % of the art, at least 9% in from the sides because
+stills crop on narrow phones). Until its art lands it's a framed pixel board:
+gold frame (`--accent`), a trophy glyph and the number of that sport's feats
+won. Pressed, it sinks onto its edge (3px, no transition). A light glint
+crosses it every 7s in 14 steps; reduced motion removes it. Your own scene
+only; another athlete's embedded scene has no board.
+
+### Trophy case
+An instant layer (no slide, like the shop) opened from the board. Sport tabs in
+one row of five (Bike, Swim, Run, Gym, Cross). Each feat is a framed card:
+- **Won:** gold frame, the trophy in its tier's metal (bronze, silver, gold),
+  turned to the season's colourway, the number in `--font-data` at `--fs-d2`,
+  the date, the proof tag, and *See the session*.
+- **Not yet:** `--line-soft` frame, a silhouette, the exact target and a
+  12-cell meter of how close your best has come ("Your best: 21:14 · target
+  20:00").
+
+Gym adds the bodyweight field and the check-in line on top.
+
+### Earned plate (shop and inventory)
+An item only a feat gives sits in the clothes tab under *Earned, not bought*:
+- **Locked:** a silhouette, the feat that unlocks it spelled out, and a lock
+  line instead of a price. There is never a buy button.
+- **Won:** the item in its season's colourway, with the season as a tag. A
+  cycling kit gets *Wear*.
+
 ### Telemetry charts (Fitness hub)
 Lines are stepped (hold, then jump) on a 2px grid; markers are 4px squares (8px
 for the latest); bars are blocks with a 2px gap; bands are dashed outlines with

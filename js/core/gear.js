@@ -13,6 +13,7 @@
 // no boost. A gel is the one consumable.
 
 import { t } from './i18n.js';
+import { FEATS, TRIO } from './feats.js';
 
 /** Sessions and missions dated before this earn nothing (everyone starts with the purse). */
 export const GEAR_SINCE = '2026-10-22';
@@ -186,6 +187,8 @@ export const kitArt = (id) => `icons/Pixelart/GEAR/${id}.png`;
  */
 const L6 = 'icons/Pixelart/BIKE/CHARACTERS/bikelvl6_char.webp';
 export const KIT_SPRITES = {
+  'kit-gran-fondo': [L6],
+  'kit-iron': [L6],
   'kit-moske-sand': [L6],
   'kit-moske-crimson': [L6],
   'kit-moske-climber': [L6],
@@ -248,3 +251,33 @@ export function nextTier(inventory, sport, slot) {
 
 /** Kits owned (any time). */
 export const ownedKits = (inventory) => KITS.filter((k) => (inventory || []).some((r) => r?.item_id === k.id));
+
+/**
+ * Items you can only earn: a feat's reward (docs/FEATS.md §4). Never in the
+ * server's gear_catalog, so buy_gear() can't sell them; the shop shows each as
+ * a locked plate with its condition. Owned when the feat is (featItemsOwned()
+ * in feats.js), in the colourway of the season it was won.
+ *   wearable: a cycling kit the rider can wear (a recoloured sprite exists)
+ */
+export const FEAT_ITEMS = [
+  { id: 'kit-run-sub20', kind: 'kit', sport: 'run' },
+  { id: 'kit-gran-fondo', kind: 'kit', sport: 'bike', wearable: true },
+  { id: 'kit-iron', kind: 'kit', sport: 'bike', wearable: true },
+  { id: 'trisuit-limited', kind: 'kit', sport: 'swim' },
+  { id: 'singlet-lifting', kind: 'kit', sport: 'gym' },
+  { id: 'shirt-finisher', kind: 'shirt', sport: 'run' },
+  { id: 'cap-run', kind: 'cap', sport: 'run' },
+  { id: 'cap-climber', kind: 'cap', sport: 'bike' },
+  { id: 'cap-training', kind: 'cap', sport: 'cross' },
+  { id: 'frame-olympic', kind: 'frame', sport: 'cross' },
+  { id: 'frame-race', kind: 'frame', sport: 'cross' },
+].map((it) => Object.defineProperties({
+  ...it,
+  source: 'feat',
+  // the feats that unlock it (the singlet needs all three lifts)
+  feats: it.id === TRIO.reward ? [...TRIO.feats] : FEATS.filter((f) => f.reward === it.id).map((f) => f.id),
+}, {
+  name: { enumerable: true, get: () => t(`featItem.${it.id}`) },
+  art: { enumerable: true, get: () => `icons/Pixelart/FEATS/items/${it.id}.png` },
+}));
+export const featItemById = (id) => FEAT_ITEMS.find((i) => i.id === id) || null;

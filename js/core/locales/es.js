@@ -2296,4 +2296,68 @@ es.feat = {
   }
 };
 
+es.feat.ui = {
+  "title": "Trofeos",
+  "sports": "Deportes",
+  "sport": {
+    "bike": "Bici",
+    "swim": "Nadar",
+    "run": "Correr",
+    "gym": "Gym",
+    "cross": "Combinado"
+  },
+  "boardAria": "Tablón de trofeos: {n} de {total} logros. Abrir la vitrina",
+  "ofWon": "de {total} conseguidos",
+  "check": "Comprobar",
+  "signedOut": "Sin sesión iniciada: esto es lo que ganarían tus entrenos. Inicia sesión y el servidor te los da.",
+  "honest": "Solo cuentan los entrenos grabados en Strava, nunca metidos a mano ni en máquina (pesas: registradas en la app, con el check-in del gimnasio). Los números imposibles se ignoran sin más.",
+  "km": "{n} km",
+  "m": "{n} m",
+  "kmh": "{n} km/h",
+  "rest": "{n}% de descanso",
+  "per100": "{t} /100 m",
+  "kg": "{n} kg",
+  "sessions": "{n} sesiones",
+  "weeks": "{n} semanas",
+  "reward": "Desbloquea: {item}",
+  "rewardTrio": "Con los otros dos levantamientos: {item}",
+  "logged": "Registrado",
+  "strava": "Strava",
+  "whole": "actividad completa",
+  "session": "Ver el entreno",
+  "nearAria": "Tu mejor marca {best}, objetivo {target}",
+  "best": "Tu mejor marca: {best} · objetivo {target}",
+  "notYet": "Todavía no hay ningún entreno que cuente.",
+  "needsTitle": "Para los logros de fuerza",
+  "bodyweight": "Peso corporal (kg)",
+  "saveWeight": "Guardar",
+  "weightLogged": "Último registro: {date}. Cada levantamiento se compara con el peso más alto que registraste en los 30 días anteriores.",
+  "weightWhy": "Registra tu peso: cada levantamiento se compara con el peso más alto que registraste en los 30 días anteriores.",
+  "weightSaved": "Peso guardado: {kg} kg",
+  "checkinOn": "El check-in del gimnasio está activado: los entrenos en tu gimnasio llevan el pin.",
+  "checkinOff": "Los logros de fuerza necesitan el pin del check-in del gimnasio.",
+  "checkinTurnOn": "Activarlo",
+  "won": "Logro conseguido",
+  "itemsTitle": "Se ganan, no se compran",
+  "itemsNote": "No se pueden comprar. Cada uno sale de un logro, con los colores de la temporada en que lo consigues, y esos colores no vuelven.",
+  "itemHow": "Cómo se gana:",
+  "itemWon": "Ganado, con los colores de esa temporada",
+  "itemOwned": "Tuyo",
+  "itemLocked": "Se gana, nunca se compra",
+  "itemLockedLogged": "Se gana con pesas registradas"
+};
+es.featItem = {
+  "kit-run-sub20": "Equipación sub-20 de carrera",
+  "kit-gran-fondo": "Equipación ciclista Gran Fondo",
+  "kit-iron": "Equipación Iron",
+  "trisuit-limited": "Trimono edición limitada",
+  "singlet-lifting": "Maillot de halterofilia",
+  "shirt-finisher": "Camiseta de finisher",
+  "cap-run": "Gorra de carrera MOSKE",
+  "cap-climber": "Gorra de escalador",
+  "cap-training": "Gorra de entreno MOSKE",
+  "frame-olympic": "Marco olímpico",
+  "frame-race": "Marco de dorsal"
+};
+
 export default es;

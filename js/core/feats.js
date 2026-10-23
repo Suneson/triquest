@@ -444,3 +444,43 @@ export function nearMiss(f, workouts) {
   const unit = { distance: 'km', time: 'sec', climb: 'm', speed: 'kmh', segment: 'm', steady: 'ratio', pace: 'sec100' }[f.kind];
   return { best, target, unit, whole };
 }
+
+// ---- what feats give: items, and the season's colourway --------------------------
+
+/**
+ * The items a history of awards has earned: [{ id, season, featId }].
+ * A feat's reward comes in the season of its first earning (that season's
+ * colourway, kept for good); the lifting singlet needs all three lifts and
+ * comes in the season the last of them was won.
+ * `awards`: [{ featId, season }] (user_feats rows or evaluateFeats().awards).
+ */
+export function featItemsOwned(awards) {
+  const first = new Map();
+  for (const a of (awards || []).slice().sort((x, y) => String(x.season).localeCompare(String(y.season)))) {
+    if (!first.has(a.featId)) first.set(a.featId, a.season);
+  }
+  const out = [];
+  for (const f of FEATS) {
+    if (f.reward && first.has(f.id)) out.push({ id: f.reward, season: first.get(f.id), featId: f.id });
+  }
+  if (TRIO.feats.every((id) => first.has(id))) {
+    const season = TRIO.feats.map((id) => first.get(id)).sort().pop();
+    out.push({ id: TRIO.reward, season, featId: TRIO.feats[TRIO.feats.length - 1] });
+  }
+  return out;
+}
+
+/**
+ * A season's colourway as a hue turn in degrees: every season gets its own
+ * and none comes back (consecutive seasons sit 137° apart around the wheel).
+ * The first season keeps the item's own colours.
+ */
+export function seasonHue(season) {
+  const m = String(season).match(/^(\d{4})-Q([1-4])$/);
+  if (!m) return 0;
+  const n = (Number(m[1]) - 2026) * 4 + Number(m[2]) - 4; // 2026-Q4 = 0
+  return ((n * 137) % 360 + 360) % 360;
+}
+
+/** Feats of one sport (or 'cross'), in catalog order. */
+export const featsFor = (sport) => FEATS.filter((f) => f.sport === sport);

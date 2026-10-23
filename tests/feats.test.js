@@ -191,3 +191,32 @@ test('the near-miss line: how close you are', () => {
   assert.equal(nearMiss(featById('run-month-100'), ws).best, 15);
   assert.ok(FEATS_SINCE <= D(0));
 });
+
+test('items: a feat pays its reward in the season it was won; the trio pays the singlet', async () => {
+  const { featItemsOwned, seasonHue } = await import('../js/core/feats.js');
+  const { FEAT_ITEMS, featItemById, KIT_SPRITES, kitSprite } = await import('../js/core/gear.js');
+  const { sceneFor, SCENE_SPORTS } = await import('../js/core/scenes.js');
+  const owned = featItemsOwned([
+    { featId: 'run-5k-20', season: '2027-Q2' }, { featId: 'run-5k-20', season: '2026-Q4' },
+    { featId: 'gym-bench-1', season: '2026-Q4' }, { featId: 'gym-squat-15', season: '2027-Q1' },
+    { featId: 'run-10k', season: '2026-Q4' },
+  ]);
+  assert.deepEqual(owned.map((o) => [o.id, o.season]), [['kit-run-sub20', '2026-Q4']]);
+  const trio = featItemsOwned(['gym-bench-1', 'gym-squat-15', 'gym-dead-2'].map((featId, i) => ({ featId, season: `2027-Q${i + 1}` })));
+  assert.deepEqual(trio.map((o) => [o.id, o.season]), [['singlet-lifting', '2027-Q3']]);
+  // every reward in the catalog is a feat item, and none has a price
+  for (const f of FEATS) if (f.reward) assert.ok(featItemById(f.reward), f.reward);
+  assert.ok(FEAT_ITEMS.every((i) => i.source === 'feat' && !('cost' in i) && i.feats.length));
+  // wearable kits have a rider sprite
+  for (const i of FEAT_ITEMS.filter((x) => x.wearable)) assert.ok(KIT_SPRITES[i.id], i.id);
+  assert.ok(kitSprite('icons/Pixelart/BIKE/CHARACTERS/bikelvl6_char.webp', 'kit-iron').endsWith('--kit-iron.webp'));
+  // colourways: the first season keeps the colours; no two of the next three years repeat
+  assert.equal(seasonHue('2026-Q4'), 0);
+  const hues = Array.from({ length: 12 }, (_, i) => seasonHue(`${2027 + Math.floor(i / 4)}-Q${(i % 4) + 1}`));
+  assert.equal(new Set(hues).size, 12);
+  // every scene has a board inside its art
+  for (const s of SCENE_SPORTS) {
+    const b = sceneFor(s, 1).board;
+    assert.ok(b && b.x >= 0 && b.y >= 0 && b.x + b.w <= 100 && b.y + b.h <= 100, s);
+  }
+});

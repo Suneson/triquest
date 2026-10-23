@@ -47,6 +47,8 @@ import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
 import { openCheckinSheet } from './checkin.js';
 import { gearState, refreshGear, onGear } from './gear-state.js';
+import { refreshFeats, onFeats } from './feats-state.js';
+import { openTrophyCase, featWonText } from './feats-view.js';
 import { openGear, openInventory } from './gear-view.js';
 import { startGelTicker } from './gel-chip.js';
 
@@ -446,6 +448,7 @@ function onClick(e) {
     case 'pg-profile': openFitnessHub(buildCtx()); break;
     case 'open-gear': openGear(buildCtx(), appState.pgSport); break;
     case 'open-inventory': openInventory(); break;
+    case 'open-trophies': openTrophyCase(el.dataset.sport); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
       if (confirm(t('main.signOutConfirm'))) { auth.signOut(); closeAllLayers(); }
@@ -917,7 +920,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); refreshGear(); } else { stopSocial(); stopRoom(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); } else { stopSocial(); stopRoom(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();
@@ -1053,6 +1056,15 @@ async function boot() {
 
   // gear and gels: re-render when the server copy changes; a gel running out redraws too
   onGear(() => render());
+  // a feat just won: say so, then redraw the board
+  onFeats((fresh) => {
+    for (const a of fresh.slice(0, 3)) {
+      const text = featWonText(a);
+      if (text) toast(text, { icon: svg('trophy') });
+    }
+    if (fresh.length) haptic('levelUp');
+    render();
+  });
   startGelTicker(() => render());
 
   if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); startRoom(); });

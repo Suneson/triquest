@@ -45,6 +45,8 @@ export async function syncNow() {
   const out = await res.json();
   // a new activity may have used up a waiting gel: read the fuel again
   import('./gear-state.js').then((m) => m.refreshGear()).catch(() => {});
+  // …and may have won a feat (the sync already asked the server to award it)
+  import('./feats-state.js').then((m) => m.refreshFeats()).catch(() => {});
   return out;
 }
 

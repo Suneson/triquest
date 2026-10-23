@@ -30,7 +30,7 @@ export const CHALLENGE_RULES = {
   payouts: { winner: [100], top2: [65, 35], top3: [50, 30, 20] },
   // stakes (coins only)
   maxStake: 150,
-  maxStakeShareBp: 2000,   // at most 20% of your balance on one challenge
+  maxStakeShareBp: 5000,   // at most 50% of your balance on one challenge
   weeklyStakeCap: 300,     // coins staked in any 7 days
   minAccountDays: 14,      // before staking at all
   minVerified: 6,          // Strava sessions that earned XP in the last 30 days

@@ -2560,7 +2560,7 @@ es.chx = {
     "age": "Las apuestas se abren 14 días después de registrarte.",
     "verified": "Para apostar necesitas 6 entrenos de Strava en los últimos 30 días.",
     "balance": "No tienes monedas suficientes.",
-    "share": "Eso es más del 20% de tus monedas.",
+    "share": "Eso es más de la mitad de tus monedas.",
     "week": "Con esto pasarías de 300 monedas apostadas esta semana.",
     "pair": "Esta semana ya apostaste contra alguno de ellos (o tres veces este mes)."
   }

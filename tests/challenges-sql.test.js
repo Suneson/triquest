@@ -170,8 +170,12 @@ test('the guards: age, history, share, the week, the pair, full, closed, refusal
   const free = await create(db, U.ben, { stake: 0, kind: 'xp', sport: 'any' });
   await as(db, U.new);
   assert.equal(await code(db.query('select public.join_challenge($1)', [free])), 'ok');
-  // more than 20% of the balance, more than the cap
-  assert.equal(await code(create(db, U.caro, { stake: 100 })), 'share');
+  // more than half the balance (Caro spends down to 150 first), more than the cap
+  const spend = (await coins(db, U.caro)) - 150;
+  await db.query('insert into public.coin_spends (user_id, item_id, coins) select $1, id, $2 from public.gear_catalog limit 1', [U.caro, spend]);
+  assert.equal(await coins(db, U.caro), 150);
+  assert.equal(await code(create(db, U.caro, { stake: 76 })), 'share');
+  assert.equal(await code(create(db, U.caro, { stake: 8, kind: 'xp', sport: 'any', ends_on: day(3) })), 'ok', 'half or less is fine, in any whole number');
   assert.equal(await code(create(db, U.caro, { stake: 151 })), 'stake');
   // the pair: Ana and Ben already share a staked challenge this week
   await as(db, U.ben); await db.query('select public.join_challenge($1)', [id]);

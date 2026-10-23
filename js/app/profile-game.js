@@ -12,7 +12,8 @@ import { sessionLoad, acwr, weekHours } from '../core/load.js';
 import { svg } from '../core/icons.js';
 import { rollNum } from './motion.js';
 import { esc, mondayOf, meter, stillCorners } from './ui.js';
-import { sceneFor, backdropCss, timeOfDay } from '../core/scenes.js';
+import { sceneFor, backdropCss, timeOfDay, propsFor } from '../core/scenes.js';
+import { quadrantLevel } from '../core/workshop.js';
 import { addDays, parseISO, shortLabel, todayISO } from '../core/dates.js';
 import { currentUser } from './auth.js';
 import * as store from './store.js';
@@ -29,7 +30,7 @@ import { DISCIPLINES } from '../core/disciplines.js';
 import { gelChip } from './gel-chip.js';
 import { resourceBars } from './gear-view.js';
 import { kitSprite, featItemById } from '../core/gear.js';
-import { gearState } from './gear-state.js';
+import { gearState, gearEnabled, unseenFinished } from './gear-state.js';
 import { trophyBoard } from './feats-view.js';
 import { ownsFeatItem } from './feats-state.js';
 
@@ -103,16 +104,35 @@ function sceneFx(fx = {}, tod = 'day') {
   return out;
 }
 
-function stillStage(scene, tod, board = '') {
+// ---- props you built (docs/LOOP.md §2) -------------------------------------------
+// Drawn over the art by the scene's anchors: 'back' ones under the athlete
+// layer, 'front' ones over it, both under the time-of-day tint so they're lit
+// like the rest of the scene. Floodlights glow from dusk.
+function propsHtml(sport, tod) {
+  const owned = new Set(gearState().inventory.map((r) => r.item_id));
+  const mine = propsFor(sport).filter((p) => owned.has(p.id));
+  const one = (p) => `<img class="pg-prop" src="${esc(p.art)}" width="128" height="128" alt="" aria-hidden="true" loading="lazy"
+      style="--x:${pct(p.anchor.x)};--y:${pct(p.anchor.y)};--w:${pct(p.anchor.w)}">`;
+  const lit = tod === 'dusk' || tod === 'night';
+  return {
+    back: mine.filter((p) => p.z === 'back').map(one).join(''),
+    front: mine.filter((p) => p.z === 'front').map(one).join(''),
+    glow: lit ? mine.filter((p) => p.glow).map((p) => `<i class="pg-prop-glow" aria-hidden="true" style="--x:${pct(p.anchor.x)};--y:${pct(p.anchor.y)};--w:${pct(p.anchor.w)}"></i>`).join('') : '',
+  };
+}
+
+function stillStage(scene, tod, board = '', props = { back: '', front: '', glow: '' }) {
   const e = scene.entry;
   const corners = stillCorners(e);
   return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--bands:${backdropCss(e.backdrop)}">
     <div class="pg-art">
       ${e.plate && e.char
         ? `<img class="pg-still-img" src="${esc(e.plate)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(t('pg.sceneAlt', { sport: scene.label, n: scene.artLevel }))}">
-      <img class="pg-still-img pg-still-char" src="${esc(e.char)}" width="${e.w}" height="${e.h}" alt="" aria-hidden="true">`
-        : `<img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(t('pg.sceneAlt', { sport: scene.label, n: scene.artLevel }))}">`}
+      ${props.back}<img class="pg-still-img pg-still-char" src="${esc(e.char)}" width="${e.w}" height="${e.h}" alt="" aria-hidden="true">`
+        : `<img class="pg-still-img" src="${esc(e.src)}" width="${e.w}" height="${e.h}" fetchpriority="high" alt="${esc(t('pg.sceneAlt', { sport: scene.label, n: scene.artLevel }))}">${props.back}`}
+      ${props.front}
       <div class="pg-tod" aria-hidden="true"></div>
+      ${props.glow}
       <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx, tod)}</div>
       ${corners}
       ${board}
@@ -120,13 +140,16 @@ function stillStage(scene, tod, board = '') {
   </div></div>`;
 }
 
-function layeredWorld(scene, tod, kit = null, board = '') {
+function layeredWorld(scene, tod, kit = null, board = '', props = { back: '', front: '', glow: '' }) {
   const e = scene.entry;
   return `<div class="pg-world">
       <img class="pg-layer pg-bg" src="${esc(e.bg)}" alt="" aria-hidden="true">
       <img class="pg-layer pg-platform" src="${esc(e.platform)}" alt="" aria-hidden="true">
+      ${props.back}
       <img class="pg-char" src="${esc(kitSprite(e.char, kit))}" alt=""${esc(t('pg.charAlt', { sport: scene.label, n: scene.artLevel }))}">
+      ${props.front}
       <div class="pg-tod" aria-hidden="true"></div>
+      ${props.glow}
       ${tod === 'night' ? `<div class="pg-fx" aria-hidden="true">${starsFx({ x: 4, y: 3, w: 92, h: 22 })}</div>` : ''}
       ${board}
     </div>`;
@@ -160,6 +183,8 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
   const key = embed ? `ap-${scene.sport}` : scene.sport;
   // your own scene carries the trophy board (another athlete's doesn't)
   const board = embed ? '' : trophyBoard(scene.sport, scene.board);
+  // and what you've built in it
+  const props = embed ? undefined : propsHtml(scene.sport, tod);
 
   const sportBtn = ([s, key]) => {
     const label = t(`sport.${key}`);
@@ -171,7 +196,7 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
 
   return `
   <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}${embed ? ' pg-embed' : ''}" style="${bd}" data-pg-swipe>
-    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod, board) : layeredWorld(scene, tod, kit, board)}</div>
+    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod, board, props) : layeredWorld(scene, tod, kit, board, props)}</div>
     ${extras}
 
     <div class="pg-topbar">
@@ -211,8 +236,24 @@ export function renderProfileGame(ctx, sport = 'bike', slide = '') {
     // coins and carbs top right; the inventory bottom left and the shop bottom right of the scene
     extras: `${resourceBars(ctx.workouts, { cls: 'on-scene' })}
       <button class="pg-scene-btn is-inv" data-action="open-inventory" aria-label="${t('gear.openInventory')}"><img src="icons/Pixelart/GEAR/btn-inventory.png" width="128" height="128" alt=""></button>
-      <button class="pg-scene-btn is-shop" data-action="open-gear" aria-label="${t('gear.openShop')}"><img src="icons/Pixelart/GEAR/btn-shop.png" width="128" height="128" alt=""></button>`,
+      ${quadPlate(sport)}
+      ${shopButton()}`,
   });
+}
+
+// the shop button, with a dot when something in the workshop has finished since you looked
+function shopButton() {
+  const ready = unseenFinished().length;
+  const label = ready ? `${t('gear.openShop')}. ${t('loop.ws.readyN', { n: ready })}` : t('gear.openShop');
+  return `<button class="pg-scene-btn is-shop" data-action="open-gear" aria-label="${esc(label)}"><img src="icons/Pixelart/GEAR/btn-shop.png" width="128" height="128" alt="">${ready ? `<i class="pg-dot data-num" aria-hidden="true">${ready}</i>` : ''}</button>`;
+}
+
+// the quadrant's level: what you've built here, not your XP (docs/LOOP.md §2.3)
+function quadPlate(sport) {
+  if (!gearEnabled()) return '';
+  const q = quadrantLevel(sport, gearState().inventory);
+  return `<button class="pg-quad" data-action="open-base" data-sport="${sport}" aria-label="${esc(t('loop.quad.aria', { name: t(`loop.quad.${sport}`), n: q.level }))}">
+    <span>${esc(t(`loop.quad.${sport}`))}</span><b class="data-num">${t('loop.quad.lv', { n: q.level })}</b></button>`;
 }
 
 // a kit you bought, or a feat kit you won that the rider can wear

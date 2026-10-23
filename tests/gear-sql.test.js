@@ -160,7 +160,7 @@ test('buying: tiers in order, each currency checked, errors the client can trans
   const w1 = await buy('bike-wheels-t1');                // coins 300 → 200
   assert.equal(Number(w1.coins), GEAR_RULES.starterPurse - 100);
   assert.equal(Number(w1.carbs), GEAR_RULES.starterCarbs);
-  assert.equal(await code(buy('bike-wheels-t1')), 'owned');
+  assert.equal(await code(buy('bike-wheels-t1')), 'in_workshop', 'gear is fitted in the workshop first (0022)');
   assert.equal(await code(buy('bike-wheels-t2')), 'insufficient');
   const w2 = await buy('gel');                           // carbs 200 → 80
   assert.equal(Number(w2.carbs), GEAR_RULES.starterCarbs - GEAR_RULES.fuel.items.gel.cost);

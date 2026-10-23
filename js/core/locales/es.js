@@ -2566,4 +2566,127 @@ es.chx = {
   }
 };
 
+// ---- the long loop: workshop, base, props (docs/LOOP.md) ----
+es.gear.tab["base"] = "Base";
+es.gear.err["in_workshop"] = "Eso ya está en el taller.";
+es.gear.err["has_next"] = "Saca antes de la cola el nivel de encima.";
+es.gear.err["no_job"] = "Ese trabajo no está en tu taller.";
+es.gear.err["job_done"] = "Ese trabajo ya ha terminado.";
+es.gear.err["not_fitting"] = "Un gel solo termina el trabajo que se está montando ahora.";
+es.loop = {
+  "ws": {
+    "title": "Taller",
+    "bays": {
+      "one": "{n} puesto",
+      "other": "{n} puestos"
+    },
+    "bay": "Puesto {n}",
+    "free": "Libre. Lo próximo que compres empieza aquí al momento.",
+    "leftWord": "restantes",
+    "skip": "Terminar con un gel",
+    "cancel": "Cancelar",
+    "remove": "Quitar",
+    "removeAria": "Quitar {name} de la cola",
+    "needGel": "Un gel termina el trabajo ya. No llevas ninguno.",
+    "queue": "Esperando puesto",
+    "startsAt": "Empieza a las {time} · puesto {bay}",
+    "fittedAt": "Montado a las {time}",
+    "rules": "Quitar un trabajo que no ha empezado es gratis. Cancelar a medio montar te lo devuelve todo la primera vez; después, el {pct} %.",
+    "fittingCard": "En el taller:",
+    "queuedCard": "En cola: empieza a las {time}",
+    "fitsIn": "Se monta en {time}",
+    "h": "{h} h",
+    "min": "{m} min",
+    "hMin": "{h} h {m} min",
+    "startedToast": "Ya en el puesto. Listo a las {time}.",
+    "queuedToast": "En cola: empieza a las {start}, listo a las {time}.",
+    "cancelFull": "¿Dejar de montarlo? Recuperas las {n} monedas.",
+    "cancelPart": "¿Dejar de montarlo? Recuperas {n} de las {cost} monedas.",
+    "cancelled": "Fuera del taller. Te devolvemos {n} monedas.",
+    "fitted": "Montado",
+    "fittedToast": "Listo en el taller",
+    "readyN": {
+      "one": "{n} cosa lista",
+      "other": "{n} cosas listas"
+    }
+  },
+  "quad": {
+    "bike": "Velódromo",
+    "run": "Pista",
+    "swim": "Piscina",
+    "gym": "Sala",
+    "lv": "NV {n}",
+    "aria": "{name}, nivel {n}. Ver lo que puedes construir aquí",
+    "toNext": {
+      "one": "{n} punto de obra para el nivel {lv}",
+      "other": "{n} puntos de obra para el nivel {lv}"
+    },
+    "top": "Completo",
+    "note": "Este nivel sube con lo que construyes aquí, no con la XP. Un mes tranquilo no le quita nada."
+  },
+  "prop": {
+    "built": "Construido",
+    "points": {
+      "one": "+{n} punto de obra",
+      "other": "+{n} puntos de obra"
+    },
+    "buyAria": "Construir {name} por {cost} monedas",
+    "glows": "Se enciende al anochecer"
+  }
+};
+es.prop = {
+  "bike-rack": {
+    "name": "Aparcabicis",
+    "blurb": "Un sitio para las bicis que no sea el suelo."
+  },
+  "bike-stand": {
+    "name": "Soporte de taller",
+    "blurb": "Sujeta el cuadro para que el mecánico deje de arrodillarse."
+  },
+  "bike-tent": {
+    "name": "Carpa de equipo",
+    "blurb": "Sombra, una silla plegable y ambiente de carrera."
+  },
+  "bike-lights": {
+    "name": "Focos",
+    "blurb": "El patio sigue abierto de noche."
+  },
+  "run-water": {
+    "name": "Avituallamiento",
+    "blurb": "Vasos en una mesa, como en las carreras."
+  },
+  "run-gate": {
+    "name": "Arco de cronometraje",
+    "blurb": "Cada vuelta que pasa por debajo tiene tiempo."
+  },
+  "run-stand": {
+    "name": "Grada",
+    "blurb": "Tres filas de asientos y siempre alguien mirando."
+  },
+  "run-lights": {
+    "name": "Focos de pista",
+    "blurb": "Series al atardecer, con luz."
+  },
+  "swim-reel": {
+    "name": "Carrete de corcheras",
+    "blurb": "Corcheras puestas para las series serias."
+  },
+  "swim-clock": {
+    "name": "Reloj de ritmo",
+    "blurb": "La aguja grande que tiene toda piscina de club."
+  },
+  "swim-stand": {
+    "name": "Grada de piscina",
+    "blurb": "Asientos para el trofeo que organizarás algún día."
+  },
+  "gym-chalk": {
+    "name": "Cuenco de magnesio",
+    "blurb": "Agarre para los días pesados."
+  },
+  "gym-sound": {
+    "name": "Equipo de música",
+    "blurb": "Tu lista, a buen volumen."
+  }
+};
+
 export default es;

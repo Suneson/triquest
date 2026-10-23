@@ -2560,7 +2560,7 @@ en.chx = {
     "age": "Staking opens 14 days after you sign up.",
     "verified": "Staking needs 6 Strava sessions in the last 30 days.",
     "balance": "You don't have enough coins.",
-    "share": "That's more than 20% of your coins.",
+    "share": "That's more than half your coins.",
     "week": "That would take you past 300 coins staked this week.",
     "pair": "You've already staked against one of them this week (or three times this month)."
   }

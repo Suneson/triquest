@@ -244,7 +244,7 @@ and a trophy on the board if a feat falls inside them.
 | Constant | Value | Why |
 | --- | --- | --- |
 | `maxStake` | **150 coins** | About half a week's coins at 5 h; under a third at 12 h |
-| `maxStakeShare` | **20%** of your balance when you join | Nobody empties their wallet on one challenge |
+| `maxStakeShare` | **50%** of your balance when you join (20% until 2026-10-23) | Nobody empties their wallet on one challenge |
 | `weeklyStakeCap` | **300 coins** staked in any rolling 7 days | About a week's coins at 5 h. Stops chasing losses |
 | `minAccountDays` | **14 days** since sign-up | A fresh account can't stake |
 | `minVerified` | **6 Strava-verified sessions in the last 30 days** | Proves a real, training account (and costs an alt real training) |
@@ -325,7 +325,7 @@ by which rule, and which sessions decided it.
 From the month model in docs/FEATS.md §6 (five hours a week earns about 920 coins a month,
 twelve hours about 2,150):
 
-- **At the maximum:** a 5 h athlete staking 150 every week (they'd hit the 20% share
+- **At the maximum:** a 5 h athlete staking 150 every week (they'd hit the 50% share
   first unless their balance is ≥ 750) puts about 600 a month at risk, about 65% of what they earn.
   - Even losing every challenge, their balance still grows, slowly.
   - A **typical** month of two challenges at 50 stays a side game.
@@ -335,7 +335,7 @@ twelve hours about 2,150):
 ## 12. Decided at sign-off (2026-10-22)
 
 1. **Track fee: 5%**, burned.
-2. **Stake caps as proposed:** 150 per challenge, 20% of balance, 300 a week, the pair cooldown.
+2. **Stake caps as proposed:** 150 per challenge, 50% of balance (was 20%), 300 a week, the pair cooldown.
 3. **No-shows forfeit to the pot.** The caps hold the alt funnel to about 135 coins a week per pair, and the admin flag watches for it.
 4. **Payouts respect the 10,000 storage cap.** The join sheet warns when a win would overflow.
 5. **Up to 5 people** per challenge, with a choice of payouts (§4b).

@@ -317,7 +317,7 @@ export function openNewChallenge() {
             <label class="field chn-wide"><span>${t('chx.f.segmentName')}</span><input name="segmentName" maxlength="60" autocomplete="off" value="${esc(f.segmentName)}"></label>` : ''}
           <label class="field"><span>${t('chx.f.start')}</span><input type="date" name="starts_on" min="${addDays(today, 1)}" max="${addDays(today, CHALLENGE_RULES.maxStartAheadDays)}" value="${esc(f.starts_on)}"></label>
           <label class="field"><span>${t('chx.f.days')}</span><input type="number" name="days" min="1" max="${CHALLENGE_RULES.maxWindowDays}" value="${esc(f.days)}"></label>
-          <label class="field"><span>${t('chx.f.stake', { max: CHALLENGE_RULES.maxStake })}</span><input type="number" name="stake" min="0" max="${CHALLENGE_RULES.maxStake}" step="10" value="${esc(f.stake)}"></label>
+          <label class="field"><span>${t('chx.f.stake', { max: CHALLENGE_RULES.maxStake })}</span><input type="number" name="stake" min="0" max="${CHALLENGE_RULES.maxStake}" step="1" inputmode="numeric" value="${esc(f.stake)}"></label>
           <label class="field"><span>${t('chx.f.payout')}</span><select name="payout">${Object.keys(CHALLENGE_RULES.payouts).map((p) => opt(p, t(`chx.payout.${p}`), f.payout)).join('')}</select></label>
           <label class="field chn-wide"><span>${t('chx.f.who')}</span><select name="visibility">${opt('room', t('chx.who.room'), f.visibility)}${opt('direct', t('chx.who.direct'), f.visibility)}</select></label>
         </div>

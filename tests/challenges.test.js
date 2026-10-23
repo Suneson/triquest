@@ -108,7 +108,7 @@ test('what a challenge may be, and who may stake', () => {
   assert.equal(stakeBlock(0, { ...me, accountDays: 1 }), null, 'a free challenge needs none of this');
   assert.equal(stakeBlock(100, { ...me, accountDays: 10 }), 'age');
   assert.equal(stakeBlock(100, { ...me, verified30: 2 }), 'verified');
-  assert.equal(stakeBlock(100, { ...me, balance: 400 }), 'share');
+  assert.equal(stakeBlock(100, { ...me, balance: 180 }), 'share');
   assert.equal(stakeBlock(100, { ...me, stakedWeek: 250 }), 'week');
   assert.equal(stakeBlock(100, { ...me, balance: 50 }), 'balance');
   assert.equal(stakeBlock(100, { ...me, pairs: new Map([['ben', { week: 1, month: 1 }]]) }, ['ben']), 'pair');

@@ -2360,4 +2360,35 @@ es.featItem = {
   "frame-race": "Marco de dorsal"
 };
 
+// challenges (js/core/challenges.js, docs/CHALLENGES.md)
+es.ch = {
+  "rule": {
+    "distance": "Más kilómetros {sport}",
+    "xp": "Más XP base {sport}",
+    "sessions": "Más días {sport}",
+    "fastest": "El {dist} más rápido ({sport})",
+    "longest": "El entreno {sport} más largo, hasta {target}",
+    "climb": "Más metros de desnivel {sport}",
+    "segment": "El más rápido en el segmento {segment}"
+  },
+  "sportWord": {
+    "any": "entrenando",
+    "run": "corriendo",
+    "bike": "en bici",
+    "swim": "nadando"
+  },
+  "dist": {
+    "5k": "5 km",
+    "10k": "10 km",
+    "half": "media maratón",
+    "20k": "20 km",
+    "40k": "40 km",
+    "1k": "1 km"
+  },
+  "minutes": "{n} min",
+  "payWinner": "el ganador se lo lleva todo",
+  "payPlaces": "premio a los primeros {split}",
+  "ruleLine": "{what}, {when}, solo Strava · {pay}"
+};
+
 export default es;

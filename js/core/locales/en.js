@@ -2360,4 +2360,35 @@ en.featItem = {
   "frame-race": "Race-number frame badge"
 };
 
+// challenges (js/core/challenges.js, docs/CHALLENGES.md)
+en.ch = {
+  "rule": {
+    "distance": "Most {sport} kilometres",
+    "xp": "Most base XP from {sport}",
+    "sessions": "Most days with {sport}",
+    "fastest": "Fastest {dist} ({sport})",
+    "longest": "Longest {sport} session, counted up to {target}",
+    "climb": "Most metres climbed {sport}",
+    "segment": "Fastest on the segment {segment}"
+  },
+  "sportWord": {
+    "any": "training",
+    "run": "running",
+    "bike": "riding",
+    "swim": "swimming"
+  },
+  "dist": {
+    "5k": "5 km",
+    "10k": "10 km",
+    "half": "half marathon",
+    "20k": "20 km",
+    "40k": "40 km",
+    "1k": "1 km"
+  },
+  "minutes": "{n} min",
+  "payWinner": "winner takes all",
+  "payPlaces": "top places paid {split}",
+  "ruleLine": "{what}, {when}, Strava only · {pay}"
+};
+
 export default en;

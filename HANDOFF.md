@@ -199,7 +199,8 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - **Server:** `0018_feats.sql` (applied as 0018_feats_a–f) runs the same rules. `feat_eval(user)` works them out; `award_feats(user)` writes `user_feats`, and runs after every Strava sync and webhook. `tests/feats-sql.test.js` checks JS and SQL agree.
 - **Strava data:** activities now keep `distanceM`, `movingSec`, `sportType`, `manual`, `trainer`, `maxSpeedKmh`, `workoutType`, and (from the detailed activity) `bestEfforts` and `segments`. Hand-typed activities earn no XP from `MANUAL_SINCE`.
 - **App:** `feats-state.js` (server copy, demo, signed-out fallback) and `feats-view.js` (the board in each scene, the trophy case). Items only feats give are `FEAT_ITEMS` in `gear.js`. Art to make: `docs/gear/NEW-ART.md`.
-- **Challenges** (Phases 4–6) are designed in `docs/CHALLENGES.md`, not built yet.
+- **Challenges:** rules, scoring, ceilings and the escrow `settle()` in `js/core/challenges.js` (design: `docs/CHALLENGES.md`). `0019_challenges.sql` runs the same (tables `challenges`, `challenge_participants`, `challenge_results`, `coin_moves`; `create_challenge`, `join_challenge`, `decline_challenge`, `cancel_challenge`, `resolve_challenge`, `resolve_due`). Stakes and payouts are `coin_moves` rows folded into the wallet by `wallet_fold`. `tests/challenges-sql.test.js` checks parity and that settlement never makes coins. **0019 is not applied yet**, and `resolve_due` needs a pg_cron schedule once it is (the app also calls it on every refresh).
+- **Challenge app:** `challenges-state.js` (server copy, realtime, demo) and `challenges-view.js` (list, challenge layer, join sheet, new challenge). Cards post into the Room; the composer's flag button starts one.
 
 ## ⚠️ Gotchas
 - **Bump SW `CACHE` + add new JS to ASSETS** every asset change, else stale.

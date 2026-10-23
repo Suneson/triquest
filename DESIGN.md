@@ -454,6 +454,25 @@ An item only a feat gives sits in the clothes tab under *Earned, not bought*:
 - **Won:** the item in its season's colourway, with the season as a tag. A
   cycling kit gets *Wear*.
 
+### Challenge card (Room and Challenges)
+A challenge travels as a card, never as a plain message. In the Room it's a
+card row (`rm-card`) posted by the server, not the sender: the sport glyph, the
+rule in one line ("Most riding km, Tue 20 Oct – Mon 26 Oct"), the stake as a
+coin chip in `--font-data`, who's in, and one action (*Join*, *See it*). A
+settled card shows the winner and the payout instead. Cards obey the room's
+caps (3 a day each, 6 open in the room).
+
+The challenge layer (slides like any layer) shows *When*, *Stake*, *Pot* and
+*Who's in* as a 2×2 grid, then standings: place in the accent colour, name,
+score right-aligned in `--font-data`. A score held by a ceiling carries a small
+*ceiling reached* tag; nobody with no session has a place. *How it works* is a
+closed disclosure under it.
+
+Joining a staked challenge is never one tap: a sheet spells out the stake, the
+fee, the payout split and the refund rules, and *Join* stays disabled until
+*I'm sure* is ticked. A stake the server would refuse is said before the sheet,
+in words, not as a disabled button. Coins never show a money symbol.
+
 ### Telemetry charts (Fitness hub)
 Lines are stepped (hold, then jump) on a 2px grid; markers are 4px squares (8px
 for the latest); bars are blocks with a 2px gap; bands are dashed outlines with

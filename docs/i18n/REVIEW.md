@@ -98,3 +98,14 @@ and `npm test` will tell you if a placeholder went missing.
 | Finisher shirt | Camiseta de finisher | Camiseta de meta |
 | Earned, not bought | Se ganan, no se compran | |
 | Half marathon | Media maratón | Medio maratón |
+
+## Challenges (added with the challenges, 2026-10-23)
+
+| English | Now | Alternatives |
+| --- | --- | --- |
+| Challenge | Reto | Desafío |
+| Stake | Apuesta | Entrada, Puesta |
+| Pot | Bote | Fondo |
+| Fee (burned) | Comisión (se quema) | Tasa |
+| Ceiling reached | Tope alcanzado | Límite alcanzado |
+| Winner takes all | El ganador se lo lleva todo | Todo para el primero |

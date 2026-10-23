@@ -302,6 +302,17 @@ begin
 end;
 $$;
 
+-- the people in every challenge you can see, with names (profiles are private)
+create or replace function public.challenge_people(p_since date)
+returns table (challenge_id uuid, user_id uuid, status text, stake int, display_name text, avatar text)
+language sql stable security definer set search_path = public as $$
+  select p.challenge_id, p.user_id, p.status, p.stake, coalesce(pf.display_name, 'Athlete'), pf.settings ->> 'avatar'
+  from public.challenge_participants p
+  join public.challenges c on c.id = p.challenge_id
+  left join public.profiles pf on pf.id = p.user_id
+  where c.ends_on >= p_since and public.challenge_visible(c.id);
+$$;
+
 -- ---- the guards (stakeBlock() in challenges.js) -------------------------------------------
 
 -- Why this athlete can't stake p_stake now, or null: age | verified | balance | share | week | pair
@@ -702,9 +713,9 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 grant execute on function public.create_challenge(jsonb), public.join_challenge(uuid), public.decline_challenge(uuid),
-  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.resolve_due(), public.admin_pair_flags() to authenticated;
+  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.challenge_people(date), public.resolve_due(), public.admin_pair_flags() to authenticated;
 revoke execute on function public.create_challenge(jsonb), public.join_challenge(uuid), public.decline_challenge(uuid),
-  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.resolve_due(), public.admin_pair_flags() from anon;
+  public.cancel_challenge(uuid), public.challenge_standings(uuid), public.challenge_people(date), public.resolve_due(), public.admin_pair_flags() from anon;
 revoke execute on function public.resolve_challenge(uuid), public.challenge_cancel_now(public.challenges, text),
   public.challenge_join_now(public.challenges, uuid), public.post_card(uuid, text, uuid, text),
   public.stake_block(uuid, int, uuid[]) from public, anon, authenticated;

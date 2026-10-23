@@ -49,6 +49,7 @@ import { openCheckinSheet } from './checkin.js';
 import { gearState, refreshGear, onGear } from './gear-state.js';
 import { refreshFeats, onFeats } from './feats-state.js';
 import { openTrophyCase, featWonText } from './feats-view.js';
+import { refreshChallenges, stopChallenges } from './challenges-state.js';
 import { openGear, openInventory } from './gear-view.js';
 import { startGelTicker } from './gel-chip.js';
 
@@ -630,6 +631,8 @@ function openSettings() {
         <button type="button" class="row-btn" data-set-do="checkin">${svg('pin')} <span>${t('checkin.settingsLabel')}</span><span class="spacer"></span><b>${s.gymCheckin ? t('checkin.stateOn') : t('checkin.stateOff')}</b></button>
         <label class="toggle"><span>${svg('sound')} ${t('main.sound')}</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
         <label class="toggle"><span>${svg('motion')} ${t('main.reduceMotion')}</span><input type="checkbox" data-set="reduceMotion" ${s.reduceMotion ? 'checked' : ''}></label>
+        <label class="toggle"><span>${svg('flag')} ${t('chx.directSetting')}</span><input type="checkbox" data-set="directChallenges" ${s.directChallenges === false ? '' : 'checked'}></label>
+        <p class="muted small">${t('chx.directSettingNote')}</p>
         <label class="field"><span>${t('main.units')}</span><select data-set="units"><option value="metric" ${s.units === 'metric' ? 'selected' : ''}>${t('main.metric')}</option><option value="imperial" ${s.units === 'imperial' ? 'selected' : ''}>${t('main.imperial')}</option></select></label>
         <label class="field"><span>${t('main.weekStarts')}</span><select data-set="weekStart"><option value="1" ${s.weekStart === 1 ? 'selected' : ''}>${t('main.monday')}</option><option value="0" ${s.weekStart === 0 ? 'selected' : ''}>${t('main.sunday')}</option></select></label>
 
@@ -920,7 +923,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); } else { stopSocial(); stopRoom(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); } else { stopSocial(); stopRoom(); stopChallenges(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();

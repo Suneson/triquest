@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v70';
+const CACHE = 'triquest-v71';
 const ASSETS = [
   './',
   './index.html',
@@ -107,7 +107,9 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache (GitHub Pages sends max-age=600),
+  // so a new version never precaches the old files
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -125,9 +127,13 @@ self.addEventListener('fetch', (e) => {
 
   // Network-first for same-origin app code so updates always apply when online;
   // cache is the offline fallback. (Avoids the stale-asset trap of cache-first.)
+  // no-cache revalidates with the server every time (a cheap 304 when nothing
+  // changed), so a deploy applies on the next load instead of up to 10 min later.
+  // A navigation can't be re-made with options; it revalidates on reload anyway.
   if (sameOrigin) {
+    const net = request.mode === 'navigate' ? fetch(request) : fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' });
     e.respondWith(
-      fetch(request)
+      net
         .then((res) => {
           if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(request, copy)); }
           return res;

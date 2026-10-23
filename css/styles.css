@@ -2020,3 +2020,162 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
    content in place instead of replaying the slide-in */
 .layer.is-instant > .modal, .layer.is-instant > .fh-screen, .layer.is-instant > .modal-backdrop { animation: none; }
 .gel-chip.is-next b { font-size: var(--fs-tiny); }
+
+/* ---- FEATS: the trophy board in the scene, the trophy case (docs/FEATS.md) ---------------- */
+/* The board stands in the diorama at its manifest hotspot (% of the art), so it
+   scales and moves with the picture. Until its art lands it's a framed pixel
+   board: a gold trophy and how many of the sport's feats you've won. It sinks
+   onto its edge when pressed, and a glint crosses it every few seconds so it
+   reads as something to tap without nagging. */
+.pg-board { --b: var(--accent); --eo: 5px; position: absolute; z-index: 4;
+  left: var(--x); top: var(--y); width: var(--w); height: var(--h); min-width: 44px; min-height: 44px;
+  padding: 0; background: var(--bg-2); color: var(--accent); overflow: hidden; cursor: pointer;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--shade); }
+.pg-board-face { position: absolute; inset: 0; display: grid; place-items: center; grid-template-rows: 1fr auto; padding: 4px 0; }
+.pg-board-face .ic { width: 55%; height: auto; max-height: 70%; align-self: end; }
+.pg-board-face b { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--fg); line-height: 1; }
+.pg-board:active { transform: translateY(3px); --eo: 2px; background: var(--bg-4); }
+.pg-board:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+.pg-board-glint { position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none;
+  background: linear-gradient(90deg, transparent 0 40%, rgba(242,245,252,.35) 40% 60%, transparent 60%);
+  animation: board-glint 7s steps(14, end) infinite; }
+@keyframes board-glint { 0%, 80% { left: -40%; } 100% { left: 120%; } }
+body.rm .pg-board-glint { display: none; }
+
+/* the waiting gel in the scene's HUD: the tank and the boost; the words are in the shop and inventory */
+.gel-chip.is-next.in-hud b { display: none; }
+
+/* the trophy case */
+.tc-screen > .tc-tabs { margin: 0 16px var(--sp-group); width: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tc-tabs .pg-sport { min-width: 0; padding-inline: 2px; }
+.tc-tabs .pg-sport span { font-size: var(--fs-tiny); overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tc-screen > .tc-count, .tc-screen > .tc-needs, .tc-screen > .gw-note { margin: 0 16px var(--sp-group); }
+.tc-count { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); }
+.tc-count b { font-family: var(--font-display); font-size: var(--fs-d2); color: var(--accent); }
+.tc-count .btn { margin-left: auto; }
+.tc-screen > .tc-grid { margin: 0 16px var(--sp-section); display: grid; gap: var(--sp-group); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 600px) { .tc-screen > .tc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tc-card { --b: var(--line-soft); --e: var(--shade); --eo: 6px; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 14px; background: var(--bg-2); margin: 2px 2px 6px;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--e); }
+.tc-card.is-won { --b: var(--accent); }
+.tc-trophy { position: relative; width: 64px; height: 64px; display: grid; place-items: center; background: var(--bg-3); color: var(--muted); }
+.tc-trophy .ic { width: 40px; height: 40px; }
+.tc-card.is-won .tc-trophy { color: var(--accent); filter: hue-rotate(var(--hue, 0deg)); }
+.tc-card.is-won.tier-1 .tc-trophy { color: #C9925A; }   /* bronze */
+.tc-card.is-won.tier-2 .tc-trophy { color: #C7D0DC; }   /* silver */
+.tc-card.is-locked .tc-trophy .ic { opacity: .3; filter: grayscale(1) brightness(.6); } /* a silhouette of what's to come */
+.tc-times { position: absolute; right: 2px; bottom: 2px; font-family: var(--font-display); font-size: var(--fs-tiny); color: var(--fg); background: var(--shade); padding: 1px 3px; }
+.tc-body { display: grid; gap: 6px; min-width: 0; }
+.tc-name { font-family: var(--font-display); font-size: var(--fs-d3); margin: 0; }
+.tc-card.is-locked .tc-name { color: var(--muted); }
+.tc-blurb { margin: 0; color: var(--muted); font-size: var(--fs-small); }
+.tc-won { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.tc-won b { font-family: var(--font-data); font-size: var(--fs-d2); color: var(--fg); }
+.tc-date { color: var(--muted); font-size: var(--fs-small); }
+.tc-near { display: grid; gap: 6px; }
+.tc-best { margin: 0; font-size: var(--fs-small); color: var(--muted); }
+.tc-best b { color: var(--fg); font-family: var(--font-data); }
+.tc-best.is-none { font-style: normal; }
+.tc-reward { margin: 0; color: var(--accent); font-size: var(--fs-small); display: flex; gap: 6px; align-items: center; }
+.tc-reward .ic { width: 14px; height: 14px; flex: none; }
+.tc-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tc-foot .btn { margin: 2px 2px 6px auto; }
+.tc-tag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-tiny); color: var(--steel); text-transform: uppercase; letter-spacing: .04em; }
+.tc-tag .ic { width: 12px; height: 12px; }
+.tc-tag.is-logged { color: var(--info); }
+.tc-needs { display: grid; gap: 8px; }
+.tc-bw { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+.tc-bw .field { flex: 1 1 140px; margin: 0; }
+.tc-bw .btn { margin: 2px 2px 6px; }
+
+/* items only a feat gives: a locked plate in the shop, the season's colours once won */
+.gw-feat-h { margin: var(--sp-section) 0 var(--sp-group); }
+.gw-art.is-feat { color: var(--accent); --b: var(--accent); }
+.gw-feat-item.is-locked .gw-art.is-feat .ic { opacity: .3; filter: grayscale(1) brightness(.6); }
+.gw-feat-item.is-won .gw-art.is-feat { filter: hue-rotate(var(--hue, 0deg)); }
+.gw-feat-how { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: var(--fs-small); color: var(--muted); }
+.gw-feat-how b { color: var(--fg); }
+
+/* a narrow phone: the sport name gives way first, so the boost chip and the level chip stay whole */
+.pg-hud-top > .pg-sport-name { min-width: 0; flex: 1 1 auto; overflow: hidden; white-space: nowrap; }
+.pg-hud-top > .gel-chip, .pg-hud-top > .lvl-chip { flex: none; }
+.pg-hud { grid-template-columns: minmax(0, 1fr); } /* the 20-cell meter must not set the HUD's width */
+
+/* ---- CHALLENGES (docs/CHALLENGES.md) -------------------------------------------------------- */
+/* the card: in General and in the list, drawn from the challenge's live state */
+.chc { --b: var(--accent); --e: var(--shade); --eo: 6px; display: grid; gap: 8px; padding: 12px 14px; background: var(--bg-2); margin: 2px 2px 6px; cursor: pointer;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--e); }
+.chc:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+.chc.phase-settled, .chc.phase-cancelled { --b: var(--line-soft); }
+.chc.phase-running, .chc.phase-resolving { --b: var(--info); }
+.chc-head { display: flex; align-items: center; gap: 8px; }
+.chc-ico { width: 28px; height: 28px; display: grid; place-items: center; background: var(--bg-3); color: var(--accent); flex: none; }
+.chc-ico .ic { width: 18px; height: 18px; }
+.chc-kind { font-family: var(--font-display); font-size: var(--fs-small); text-transform: uppercase; letter-spacing: .04em; }
+.chc-phase { margin-left: auto; font-size: var(--fs-tiny); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.chc-rule { margin: 0; font-size: var(--fs-small); color: var(--fg); }
+.chc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: var(--fs-small); color: var(--muted); }
+.chc-meta .cur-amt { margin-left: 4px; }
+.chc-free { color: var(--good); }
+.chc-faces { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.chc-faces small { margin-left: 6px; font-family: var(--font-data); }
+.chc-face { width: 22px; height: 22px; display: grid; place-items: center; background: var(--bg-4); color: var(--fg); font-style: normal; font-size: var(--fs-tiny); font-family: var(--font-display); }
+.chc-foot { display: flex; justify-content: flex-end; }
+.chc-foot .btn { margin: 2px 2px 6px; }
+.chc-state { font-size: var(--fs-small); color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.chc-state .ic { width: 14px; height: 14px; }
+.chc-state.is-in { color: var(--good); }
+.chc-state.is-won { color: var(--accent); font-family: var(--font-display); }
+.chc.is-missing { display: flex; gap: 8px; align-items: center; padding: 12px; color: var(--muted); background: var(--bg-2); }
+.chc-trophy { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--bg-2); color: var(--accent); font-size: var(--fs-small); }
+.chc-trophy .ic { width: 28px; height: 28px; flex: none; }
+.chc-trophy b { color: var(--fg); }
+.chc-trophy span { color: var(--muted); }
+
+/* in General: a card sits full width under its poster's name */
+.rm-msg.rm-card { display: block; padding: 0 2px; }
+.rm-card-head { display: flex; gap: 8px; align-items: baseline; margin: 0 4px 6px; font-size: var(--fs-small); color: var(--muted); }
+.rm-card .rm-menu, .rm-card select { float: right; }
+.rm-ch-bar { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.rm-ch-btn { flex: none; min-width: 44px; padding-inline: 10px; }
+
+/* the list, the challenge, the new-challenge form */
+.ch-screen > .ch-new-row, .ch-screen > .gw-row, .cho-screen > section, .cho-screen > .cho-acts, .cho-screen > .cho-rules, .cho-screen > .gw-note,
+.chn-screen > .gw-row, .chn-screen > .chn-form { margin: 0 16px var(--sp-section); }
+.chc-list { display: grid; gap: var(--sp-group); }
+.cho-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 12px 0 0; }
+.cho-facts dt { font-size: var(--fs-tiny); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.cho-facts dd { margin: 2px 0 0; }
+.cho-acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.cho-acts .btn { margin: 2px 2px 6px; }
+.cho-rules summary { cursor: pointer; color: var(--steel); }
+.cho-rules ul, .ch-terms { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: var(--fs-small); }
+.ch-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ch-board li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--bg-2); }
+.ch-board li.is-me { background: var(--bg-3); }
+.ch-place { font-family: var(--font-display); color: var(--accent); text-align: center; }
+.ch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-score { font-family: var(--font-data); text-align: right; }
+.ch-cut { color: var(--info); font-size: var(--fs-tiny); }
+.ch-block { margin: 0; color: var(--danger); font-size: var(--fs-small); display: flex; gap: 6px; align-items: center; }
+.ch-block .ic { width: 14px; height: 14px; flex: none; }
+.chn-sugs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.chn-sug { --b: var(--line-soft); --eo: 5px; display: flex; gap: 8px; align-items: center; padding: 10px; background: var(--bg-2); color: var(--fg); text-align: left; margin: 2px 2px 6px; min-height: 44px;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--shade); }
+.chn-sug:active { transform: translateY(3px); --eo: 2px; }
+.chn-sug .ic { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.chn-sug b { font-size: var(--fs-small); font-weight: 600; }
+.chn-form { display: grid; gap: 12px; }
+.chn-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.chn-grid .field { margin: 0; min-width: 0; }
+.chn-wide { grid-column: 1 / -1; }
+.chn-friends { border: 0; padding: 0; margin: 0; }
+.chn-friends legend { font-size: var(--fs-small); color: var(--muted); }
+.chn-preview { display: grid; gap: 8px; padding: 12px; background: var(--bg-3); }
+.ch-join { max-width: 420px; display: grid; gap: 12px; }
+.ch-join-h { display: flex; gap: 8px; align-items: center; font-family: var(--font-display); font-size: var(--fs-d3); margin: 0; }
+.ch-join-acts { justify-content: flex-end; gap: 10px; }
+.ch-sure { padding: 8px 0; }
+.rm-compose { grid-template-columns: 48px minmax(0, 1fr) 48px; }
+.rm-compose .rm-offline { grid-column: 1 / -1; }
+.rm-ch-btn { margin: 2px 2px 6px; }

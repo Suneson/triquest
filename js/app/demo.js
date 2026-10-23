@@ -132,5 +132,8 @@ export function demoRoom(now = Date.now()) {
   ];
   const messages = lines.map(([user_id, body, min], i) => ({ id: 1000 + i, user_id, body, client_id: null, created_at: ago(min), deleted_at: null }));
   messages.splice(9, 0, { id: 1100, user_id: 'd-04', body: '', client_id: null, created_at: ago(88), deleted_at: ago(80) });
+  // two cards the server would have posted: an open challenge, and a trophy won inside a settled one
+  messages.push({ id: 1200, user_id: 'd-12', body: 'trophy', client_id: null, created_at: ago(60), deleted_at: null, challenge_id: 'demo-done', feat_id: 'run-10k' });
+  messages.push({ id: 1201, user_id: 'd-11', body: 'challenge', client_id: null, created_at: ago(20), deleted_at: null, challenge_id: 'demo-open', feat_id: null });
   return { authors, messages, blocked: [], isAdmin: false };
 }

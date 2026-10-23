@@ -426,6 +426,53 @@ gold glyph on a gold plinth. Locked: a `--shade` silhouette with a 1px
 `--line-soft` outline. Tapping one fills the line under the shelves with its
 name, state and how to earn it (`aria-live`).
 
+### Trophy board (Profile scene)
+A physical object in each sport's diorama, at the scene's `board` hotspot
+(`js/core/scenes.js`, % of the art, at least 9% in from the sides because
+stills crop on narrow phones). Until its art lands it's a framed pixel board:
+gold frame (`--accent`), a trophy glyph and the number of that sport's feats
+won. Pressed, it sinks onto its edge (3px, no transition). A light glint
+crosses it every 7s in 14 steps; reduced motion removes it. Your own scene
+only; another athlete's embedded scene has no board.
+
+### Trophy case
+An instant layer (no slide, like the shop) opened from the board. Sport tabs in
+one row of five (Bike, Swim, Run, Gym, Cross). Each feat is a framed card:
+- **Won:** gold frame, the trophy in its tier's metal (bronze, silver, gold),
+  turned to the season's colourway, the number in `--font-data` at `--fs-d2`,
+  the date, the proof tag, and *See the session*.
+- **Not yet:** `--line-soft` frame, a silhouette, the exact target and a
+  12-cell meter of how close your best has come ("Your best: 21:14 · target
+  20:00").
+
+Gym adds the bodyweight field and the check-in line on top.
+
+### Earned plate (shop and inventory)
+An item only a feat gives sits in the clothes tab under *Earned, not bought*:
+- **Locked:** a silhouette, the feat that unlocks it spelled out, and a lock
+  line instead of a price. There is never a buy button.
+- **Won:** the item in its season's colourway, with the season as a tag. A
+  cycling kit gets *Wear*.
+
+### Challenge card (Room and Challenges)
+A challenge travels as a card, never as a plain message. In the Room it's a
+card row (`rm-card`) posted by the server, not the sender: the sport glyph, the
+rule in one line ("Most riding km, Tue 20 Oct – Mon 26 Oct"), the stake as a
+coin chip in `--font-data`, who's in, and one action (*Join*, *See it*). A
+settled card shows the winner and the payout instead. Cards obey the room's
+caps (3 a day each, 6 open in the room).
+
+The challenge layer (slides like any layer) shows *When*, *Stake*, *Pot* and
+*Who's in* as a 2×2 grid, then standings: place in the accent colour, name,
+score right-aligned in `--font-data`. A score held by a ceiling carries a small
+*ceiling reached* tag; nobody with no session has a place. *How it works* is a
+closed disclosure under it.
+
+Joining a staked challenge is never one tap: a sheet spells out the stake, the
+fee, the payout split and the refund rules, and *Join* stays disabled until
+*I'm sure* is ticked. A stake the server would refuse is said before the sheet,
+in words, not as a disabled button. Coins never show a money symbol.
+
 ### Telemetry charts (Fitness hub)
 Lines are stepped (hold, then jump) on a 2px grid; markers are 4px squares (8px
 for the latest); bars are blocks with a 2px gap; bands are dashed outlines with

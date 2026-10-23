@@ -28,8 +28,10 @@ import { planTitle } from '../core/plan-i18n.js';
 import { DISCIPLINES } from '../core/disciplines.js';
 import { gelChip } from './gel-chip.js';
 import { resourceBars } from './gear-view.js';
-import { kitSprite } from '../core/gear.js';
+import { kitSprite, featItemById } from '../core/gear.js';
 import { gearState } from './gear-state.js';
+import { trophyBoard } from './feats-view.js';
+import { ownsFeatItem } from './feats-state.js';
 
 // Circular avatar slot: uploaded photo if set, otherwise the initial letter.
 function avatarInner(ctx, initial) {
@@ -101,7 +103,7 @@ function sceneFx(fx = {}, tod = 'day') {
   return out;
 }
 
-function stillStage(scene, tod) {
+function stillStage(scene, tod, board = '') {
   const e = scene.entry;
   const corners = stillCorners(e);
   return `<div class="pg-stage-wrap"><div class="pg-stage" style="--ar:${e.w} / ${e.h};--bands:${backdropCss(e.backdrop)}">
@@ -113,11 +115,12 @@ function stillStage(scene, tod) {
       <div class="pg-tod" aria-hidden="true"></div>
       <div class="pg-fx" aria-hidden="true">${sceneFx(e.fx, tod)}</div>
       ${corners}
+      ${board}
     </div>
   </div></div>`;
 }
 
-function layeredWorld(scene, tod, kit = null) {
+function layeredWorld(scene, tod, kit = null, board = '') {
   const e = scene.entry;
   return `<div class="pg-world">
       <img class="pg-layer pg-bg" src="${esc(e.bg)}" alt="" aria-hidden="true">
@@ -125,6 +128,7 @@ function layeredWorld(scene, tod, kit = null) {
       <img class="pg-char" src="${esc(kitSprite(e.char, kit))}" alt=""${esc(t('pg.charAlt', { sport: scene.label, n: scene.artLevel }))}">
       <div class="pg-tod" aria-hidden="true"></div>
       ${tod === 'night' ? `<div class="pg-fx" aria-hidden="true">${starsFx({ x: 4, y: 3, w: 92, h: 22 })}</div>` : ''}
+      ${board}
     </div>`;
 }
 
@@ -154,6 +158,8 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
   const indoor = scene.sport === 'gym' || scene.sport === 'swim';
   const bd = still ? `--bd-top:${edgeColor(scene.entry.backdrop, 0)};--bd-bot:${edgeColor(scene.entry.backdrop, -1)}` : '';
   const key = embed ? `ap-${scene.sport}` : scene.sport;
+  // your own scene carries the trophy board (another athlete's doesn't)
+  const board = embed ? '' : trophyBoard(scene.sport, scene.board);
 
   const sportBtn = ([s, key]) => {
     const label = t(`sport.${key}`);
@@ -165,7 +171,7 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
 
   return `
   <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}${embed ? ' pg-embed' : ''}" style="${bd}" data-pg-swipe>
-    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod) : layeredWorld(scene, tod, kit)}</div>
+    <div class="pg-scene ${slide ? `pg-slide-${slide}` : ''}">${still ? stillStage(scene, tod, board) : layeredWorld(scene, tod, kit, board)}</div>
     ${extras}
 
     <div class="pg-topbar">
@@ -209,7 +215,9 @@ export function renderProfileGame(ctx, sport = 'bike', slide = '') {
   });
 }
 
-const ownedKit = (id) => (id && gearState().inventory.some((r) => r.item_id === id) ? id : null);
+// a kit you bought, or a feat kit you won that the rider can wear
+const ownedKit = (id) => (id && (gearState().inventory.some((r) => r.item_id === id)
+  || (featItemById(id)?.wearable && ownsFeatItem(id))) ? id : null);
 
 // ---- decluttered avatar modal (core stats only) -----------------------------
 

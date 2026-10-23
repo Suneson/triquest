@@ -27,6 +27,11 @@ export const GYM = {
   dailyCap: 150,       // gym XP from the app per day
 };
 
+/** A Strava activity typed in by hand (`actual.manual`) earns nothing from this date (docs/FEATS.md §7). */
+export const MANUAL_SINCE = '2026-10-23';
+/** Is this a hand-typed Strava activity that no longer earns? */
+export const manualRefused = (w) => !!(w && w.actual?.manual === true && String(w.date) >= MANUAL_SINCE);
+
 /** Strava-verified sessions earn this much more. */
 export const PROOF_BONUS = 1.1;
 
@@ -73,7 +78,7 @@ export function gymVerdict(w) {
 }
 
 /** Does this session earn XP at all? */
-export const earnsXp = (w) => !!(w && w.completed && proofOf(w) && gymVerdict(w).ok);
+export const earnsXp = (w) => !!(w && w.completed && proofOf(w) && !manualRefused(w) && gymVerdict(w).ok);
 
 /** The XP a session is worth on its own (before the daily gym cap). */
 export function xpForWorkout(w) {
@@ -120,6 +125,7 @@ export function xpLedger(workouts) {
 export function xpStatus(w, workouts) {
   if (!w?.completed) return { xp: 0, reason: null, capped: false };
   if (!proofOf(w)) return { xp: 0, reason: 'proof', capped: false };
+  if (manualRefused(w)) return { xp: 0, reason: 'manual', capped: false };
   const v = gymVerdict(w);
   if (!v.ok) return { xp: 0, reason: v.reason, capped: false };
   const row = xpLedger(workouts && workouts.includes(w) ? workouts : [...(workouts || []), w]).find((r) => r.w === w);

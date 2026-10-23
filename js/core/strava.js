@@ -40,8 +40,55 @@ export function actualsFromActivity(activity) {
     avgWatts: num(activity.average_watts),
     avgCadence: num(activity.average_cadence),
     calories: num(activity.calories) ?? num(activity.kilojoules),
+    // what feats and challenges need to tell a real effort from bad data
+    // (docs/FEATS.md §1): exact distance and time, the kind of activity, and
+    // whether it was typed in by hand or done on a machine
+    distanceM: num(activity.distance) != null ? Math.round(activity.distance) : null,
+    movingSec: num(activity.moving_time),
+    sportType: activity.sport_type || activity.type || null,
+    manual: activity.manual === true,
+    trainer: activity.trainer === true,
+    maxSpeedKmh: num(activity.max_speed) != null ? Math.round(activity.max_speed * 36) / 10 : null,
+    workoutType: num(activity.workout_type),
+    ...effortsFromActivity(activity),
   };
   return actual;
+}
+
+// Strava's best-effort names → the distances feats and challenges use
+export const BEST_EFFORT_KEYS = { '5k': '5k', '10k': '10k', 'Half-Marathon': 'half', '30k': '30k', Marathon: 'marathon' };
+export const MAX_SEGMENTS = 60;
+
+/**
+ * Best efforts and segment efforts, present only on a *detailed* activity
+ * (GET /activities/{id}; the activity list never carries them):
+ *   detail: true, bestEfforts: { '5k': sec, … }, segments: [{ id, sec, cat, gainM, m }]
+ * Nothing for a summary, so a later summary never wipes a detail out.
+ */
+export function effortsFromActivity(a) {
+  if (!a || !(Array.isArray(a.segment_efforts) || Array.isArray(a.best_efforts))) return {};
+  const bestEfforts = {};
+  for (const e of a.best_efforts || []) {
+    const k = BEST_EFFORT_KEYS[e?.name];
+    const sec = Number(e?.elapsed_time);
+    if (k && sec > 0 && !(bestEfforts[k] <= sec)) bestEfforts[k] = sec;
+  }
+  const best = new Map();
+  for (const e of a.segment_efforts || []) {
+    const id = Number(e?.segment?.id);
+    const sec = Number(e?.elapsed_time);
+    if (!id || !(sec > 0) || best.get(id)?.sec <= sec) continue;
+    const g = e.segment;
+    best.set(id, {
+      id, sec,
+      cat: Number(g.climb_category) || 0,
+      gainM: Number.isFinite(g.elevation_high - g.elevation_low) ? Math.round(g.elevation_high - g.elevation_low) : 0,
+      m: Math.round(Number(g.distance) || 0),
+    });
+  }
+  // the hardest climbs first, so the cap never drops an HC
+  const segments = [...best.values()].sort((x, y) => y.cat - x.cat || y.gainM - x.gainM).slice(0, MAX_SEGMENTS);
+  return { detail: true, bestEfforts, segments };
 }
 
 /**

@@ -194,6 +194,14 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - `tools/gap-audit.mjs <width>` checks the 16px minimum between framed boxes. `tools/phase-a.cli.js` is the screenshot run for `playwright-cli` (WebKit isn't installed in the cloud sandbox, so it uses Chromium with the iPhone 15 device profile).
 - Coach art: `icons/trainer/portrait.png` (96×96) and `full.png` (109×189), keyed and downscaled from `icons/trainer/source/`. `COACH` in `js/core/scenes.js`.
 
+## Feats and trophies (Oct 2026, `feature/feats-and-challenges`)
+- **Rules:** `js/core/feats.js` holds 33 feats as data, their sanity bounds, `evaluateFeats()` and `nearMiss()`. Design and numbers: `docs/FEATS.md`.
+- **Server:** `0018_feats.sql` (applied as 0018_feats_a–f) runs the same rules. `feat_eval(user)` works them out; `award_feats(user)` writes `user_feats`, and runs after every Strava sync and webhook. `tests/feats-sql.test.js` checks JS and SQL agree.
+- **Strava data:** activities now keep `distanceM`, `movingSec`, `sportType`, `manual`, `trainer`, `maxSpeedKmh`, `workoutType`, and (from the detailed activity) `bestEfforts` and `segments`. Hand-typed activities earn no XP from `MANUAL_SINCE`.
+- **App:** `feats-state.js` (server copy, demo, signed-out fallback) and `feats-view.js` (the board in each scene, the trophy case). Items only feats give are `FEAT_ITEMS` in `gear.js`. Art to make: `docs/gear/NEW-ART.md`.
+- **Challenges:** rules, scoring, ceilings and the escrow `settle()` in `js/core/challenges.js` (design: `docs/CHALLENGES.md`). `0019_challenges.sql` runs the same (tables `challenges`, `challenge_participants`, `challenge_results`, `coin_moves`; `create_challenge`, `join_challenge`, `decline_challenge`, `cancel_challenge`, `resolve_challenge`, `resolve_due`). Stakes and payouts are `coin_moves` rows folded into the wallet by `wallet_fold`. `tests/challenges-sql.test.js` checks parity and that settlement never makes coins. Applied live 2026-10-23 as 0019_challenges_a–g; `0020_challenges_cron.sql` runs `resolve_due` hourly at :17 (the app also calls it on every refresh).
+- **Challenge app:** `challenges-state.js` (server copy, realtime, demo) and `challenges-view.js` (list, challenge layer, join sheet, new challenge). Cards post into the Room; the composer's flag button starts one.
+
 ## ⚠️ Gotchas
 - **Bump SW `CACHE` + add new JS to ASSETS** every asset change, else stale.
 - Connector `deploy_edge_function` needs **self-contained** files (inline shared code; can't `../_shared` import). Repo keeps `_shared/` for CLI parity.

@@ -3,6 +3,9 @@
 // the author's avatar, @username, level and time; tap the author for their
 // profile. Each message's ⋮ holds Report and Block (and Remove for your own,
 // or for an admin). A blocked author's messages fold to "Message hidden".
+// A challenge is a card, not a bubble: a real row the server posted, drawn
+// from the challenge's live state, so it updates in place as people join,
+// while it runs and when it settles (challenges-view.js).
 
 import { esc, dialogue } from './ui.js';
 import { svg } from '../core/icons.js';
@@ -17,6 +20,8 @@ import {
   blockUser, unblockUser, author, markRoomRead,
 } from './room.js';
 import { t, fmtDate } from '../core/i18n.js';
+import { challengeCard, trophyCard, openChallenge, openChallenges, openNewChallenge } from './challenges-view.js';
+import { challengeById, challengesState, onChallenges, refreshChallenges, challengesEnabled } from './challenges-state.js';
 
 const GROUP_MS = 5 * 60000; // messages from one person within 5 min sit under one header
 let mounted = null;          // { root, view, observer }
@@ -64,6 +69,16 @@ function listHtml() {
     if (m.kind === 'removed' || m.kind === 'hidden') {
       return `${sep}<li class="rm-msg rm-note ${m.mine ? 'mine' : ''}"><p>${m.kind === 'removed' ? t('room.removed') : esc(t('room.hidden', { name: nameOf(a) }))}</p>${menu(m, a)}</li>`;
     }
+    // a card the server posted: a challenge (live) or a trophy won inside one
+    if (m.challenge_id || m.feat_id) {
+      const c = m.challenge_id ? challengeById(m.challenge_id) : null;
+      if (m.challenge_id && !c && challengesEnabled() && !challengesState().ready) refreshChallenges();
+      const card = m.feat_id ? trophyCard(m.feat_id, nameOf(a)) : challengeCard(c, { compact: true });
+      return `${sep}<li class="rm-msg rm-card ${m.mine ? 'mine' : 'theirs'}" data-mid="${m.id}">
+        <div class="rm-card-head"><button class="rm-name" data-rm="profile" data-uid="${esc(m.user_id)}">${esc(nameOf(a))}</button>
+          <time datetime="${esc(m.created_at)}">${esc(chatTime(m.created_at))}</time></div>
+        ${card}${menu(m, a)}</li>`;
+    }
     const lvl = levelFromTotalXp(Number(a?.xp) || 0).level;
     const head = m.mine || cont ? '' : `<div class="rm-head">
         <button class="rm-name" data-rm="profile" data-uid="${esc(m.user_id)}">${esc(nameOf(a))}</button>
@@ -101,9 +116,11 @@ function draw() {
   }
   if (!st.ready) { root.innerHTML = skeleton(); return; }
   root.innerHTML = `
+    <div class="rm-ch-bar"><button class="btn tiny ghost" data-rm="challenges">${svg('flag')} ${t('chx.title')}</button></div>
     <ol class="rm-msgs" id="rm-msgs" aria-live="polite" aria-label="${t('room.aria')}">${listHtml()}</ol>
     <form class="ch-compose rm-compose" data-rm-form autocomplete="off">
       ${st.offline ? `<p class="rm-offline" role="status">${svg('cloud')} ${t('room.offline')}</p>` : ''}
+      <button class="btn ghost rm-ch-btn" type="button" data-rm="challenge" aria-label="${t('chx.newAria')}" ${st.offline ? 'disabled' : ''}>${svg('flag')}</button>
       <textarea class="ch-in" name="body" rows="1" maxlength="500" placeholder="${t('room.ph')}" aria-label="${t('room.phAria')}" ${st.offline ? 'disabled' : ''}>${esc(draft)}</textarea>
       <button class="btn primary ch-send" type="submit" aria-label="${t('room.send')}" ${st.offline ? 'disabled' : ''}>${svg('send')}</button>
     </form>`;
@@ -164,6 +181,8 @@ function openReport(id) {
 
 function wire(root) {
   root.onclick = async (e) => {
+    const card = e.target.closest('[data-ch-open]');
+    if (card) { openChallenge(card.dataset.chOpen); return; }
     const b = e.target.closest('[data-rm]');
     if (!b) return;
     const act = b.dataset.rm;
@@ -175,6 +194,8 @@ function wire(root) {
       const m = roomState().messages.find((x) => x.pending && x.client_id === b.dataset.cid);
       if (m) sendRoom(m.body, { retryOf: m.client_id });
     } else if (act === 'discard') discardRoom(b.dataset.cid);
+    else if (act === 'challenge') openNewChallenge();
+    else if (act === 'challenges') openChallenges();
     else if (act === 'reload') { startRoom(); draw(); }
   };
   root.onchange = async (e) => {
@@ -206,6 +227,7 @@ function wire(root) {
     e.target.style.height = `${Math.min(140, e.target.scrollHeight)}px`;
   };
   root.onkeydown = (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.chc[data-ch-open]')) { e.preventDefault(); openChallenge(e.target.dataset.chOpen); return; }
     if (e.key === 'Enter' && !e.shiftKey && e.target.matches('.rm-compose textarea') && !('ontouchstart' in window)) {
       e.preventDefault(); e.target.form.requestSubmit();
     }
@@ -225,6 +247,8 @@ export function mountRoom(root, view) {
       if (why === 'load' || why === 'error' || why === 'online' || why === 'offline' || why === 'stop') { draw(); if (why === 'load') { toEnd(); markRoomRead(); } }
       else if (why !== 'read' && why !== 'older') refreshList();
     });
+    // the cards follow their challenges
+    onChallenges(() => { if (mounted?.root.isConnected) refreshList(); });
   }
   const st = roomState();
   if (!st.ready) startRoom();

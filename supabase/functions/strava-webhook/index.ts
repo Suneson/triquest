@@ -65,4 +65,7 @@ async function handleEvent(event: any) {
   if (!token) return;
   const activity = await fetchActivity(token, event.object_id);
   await matchAndWrite(admin, userId, activity);
+  // a new or changed activity may win a feat (0018_feats.sql)
+  const { error } = await admin.rpc("award_feats", { p_user: userId });
+  if (error) console.error("award_feats", userId, error.message);
 }

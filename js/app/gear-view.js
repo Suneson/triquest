@@ -18,8 +18,10 @@ import { haptic } from './haptics.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import {
-  SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, CATALOG, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
+  SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, CATALOG, FEAT_ITEMS, featItemById, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
 } from '../core/gear.js';
+import { featById, seasonHue } from '../core/feats.js';
+import { featItems } from './feats-state.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
 import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear } from './gear-state.js';
 import { gelChip, pctBp } from './gel-chip.js';
@@ -143,6 +145,28 @@ function fuelCard(f, s, w, { mode, fresh }) {
   </article>`;
 }
 
+// an item only a feat gives: a locked plate in the shop with its condition
+// spelled out, or (once won) the item in the colourway of its season
+const FEAT_ITEM_ICON = { kit: 'user', shirt: 'user', cap: 'star', frame: 'medal' };
+function featItemCard(it, won, worn) {
+  const feats = it.feats.map(featById).filter(Boolean);
+  const how = feats.map((f) => `<li><b>${esc(f.name)}</b> ${esc(f.blurb)}</li>`).join('');
+  const logged = feats.some((f) => f.logged);
+  const act = won && it.wearable
+    ? `<button class="btn tiny ${worn ? 'primary' : ''}" data-gear-wear="${it.id}" aria-pressed="${worn}">${worn ? t('gear.wearing') : t('gear.wear')}</button>`
+    : won ? `<span class="gw-need">${t('feat.ui.itemOwned')}</span>`
+      : `<span class="gw-need">${svg('lock')} ${t(logged ? 'feat.ui.itemLockedLogged' : 'feat.ui.itemLocked')}</span>`;
+  return `<article class="gw-card gw-feat-item${won ? ' is-won' : ' is-locked'}" data-feat-item="${it.id}"${won ? ` style="--hue:${seasonHue(won.season)}deg"` : ''}>
+    <span class="gw-art is-feat" aria-hidden="true">${svg(FEAT_ITEM_ICON[it.kind] || 'trophy')}${won ? `<i class="gw-tier">${esc(won.season)}</i>` : ''}</span>
+    <div class="gw-body">
+      <h3 class="gw-slot">${esc(it.name)}</h3>
+      <p class="gw-cur">${t(won ? 'feat.ui.itemWon' : 'feat.ui.itemHow')}</p>
+      <ul class="gw-feat-how">${how}</ul>
+    </div>
+    <div class="gw-foot"><div class="gw-act">${act}</div></div>
+  </article>`;
+}
+
 function kitCard(k, owned, worn, coins, mode) {
   let act;
   if (owned) {
@@ -248,8 +272,12 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
     } else if (view === 'clothes') {
       const owned = new Set(ownedKits(s.inventory).map((k) => k.id));
       const worn = store.getSettings().kit || null;
+      const wonItems = new Map(featItems().map((i) => [i.id, i]));
       panel = `<p class="gw-note">${t('gear.clothesNote')}</p>
-        <div class="gw-grid" role="tabpanel">${KITS.map((k) => kitCard(k, owned.has(k.id), worn === k.id, w.coins, 'shop')).join('')}</div>`;
+        <div class="gw-grid" role="tabpanel">${KITS.map((k) => kitCard(k, owned.has(k.id), worn === k.id, w.coins, 'shop')).join('')}</div>
+        <h3 class="gw-row-h gw-feat-h">${svg('trophy')} ${t('feat.ui.itemsTitle')}</h3>
+        <p class="gw-note">${t('feat.ui.itemsNote')}</p>
+        <div class="gw-grid">${FEAT_ITEMS.map((it) => featItemCard(it, wonItems.get(it.id), worn === it.id)).join('')}</div>`;
     } else {
       panel = `<p class="gw-note">${t('gear.fuelNote')}</p>${gelChip(s.boosts, { cls: 'gw-gel-top' })}
         <div class="gw-grid" role="tabpanel">${FUELS.map((f) => fuelCard(f, s, w, { mode: 'shop', fresh: fresh === f.id })).join('')}</div>`;
@@ -290,6 +318,7 @@ export function openInventory() {
     const w = walletNow(workouts);
     const fuels = FUELS.filter((f) => (w.held[f.id] || 0) > 0);
     const kits = ownedKits(s.inventory);
+    const won = featItems();
     const worn = store.getSettings().kit || null;
     const gearRows = SPORTS.map((sport) => {
       const rows = SLOTS[sport].map((slot) => ({ slot, tier: ownedTier(s.inventory, sport, slot) })).filter((r) => r.tier > 0);
@@ -308,7 +337,7 @@ export function openInventory() {
         <section class="gw-row" aria-labelledby="inv-fuel"><h3 id="inv-fuel" class="gw-row-h">${svg('gel')} ${t('gear.tab.fuel')}</h3>
           ${fuels.length ? `<div class="gw-grid">${fuels.map((f) => fuelCard(f, s, w, { mode: 'inventory' })).join('')}</div>` : empty(t('gear.invNoFuel'), 'fuel')}</section>
         <section class="gw-row" aria-labelledby="inv-clothes"><h3 id="inv-clothes" class="gw-row-h">${svg('user')} ${t('gear.tab.clothes')}</h3>
-          ${kits.length ? `<div class="gw-grid">${kits.map((k) => kitCard(k, true, worn === k.id, w.coins, 'inventory')).join('')}</div>` : empty(t('gear.invNoClothes'), 'clothes')}</section>
+          ${kits.length || won.length ? `<div class="gw-grid">${kits.map((k) => kitCard(k, true, worn === k.id, w.coins, 'inventory')).join('')}${won.map((i) => featItemCard(featItemById(i.id), i, worn === i.id)).join('')}</div>` : empty(t('gear.invNoClothes'), 'clothes')}</section>
         <section class="gw-row" aria-labelledby="inv-gear"><h3 id="inv-gear" class="gw-row-h">${svg('wrench')} ${t('gear.tab.gear')}</h3>
           ${gearRows ? `<ul class="inv-list">${gearRows}</ul>` : empty(t('gear.invNoGear'), 'gear')}</section>`,
     });

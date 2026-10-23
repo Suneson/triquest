@@ -113,18 +113,36 @@ const bike = Array.from({ length: 10 }, (_, i) => ({
   char: `${ART}/BIKE/CHARACTERS/bikelvl${i + 1}_char.webp`,
 }));
 
+// ---- The trophy board ----------------------------------------------------------
+// Where each sport's board stands in its diorama (docs/FEATS.md, Phase 2): a
+// hotspot in % of the still (or of the bike world), on a patch of wall or
+// ground the level-1 art leaves empty, and at least 9% in from the sides: a
+// still is cropped left and right on a narrow phone. A level may carry its own `board` when
+// its art moves things about; otherwise the sport's applies. When the board
+// art lands (docs/gear/NEW-ART.md) it is drawn into the same box.
+//   run   by the old billboard at the track's edge
+//   swim  on the tiled wall behind the lifeguard chair
+//   gym   on the back wall, left of the windows
+//   bike  among the trees, beside the tyre pile
+const BOARDS = {
+  run: { x: 10, y: 24, w: 15, h: 16 },
+  swim: { x: 10, y: 4, w: 15, h: 15 },
+  gym: { x: 10, y: 9, w: 14, h: 14 },
+  bike: { x: 14, y: 36, w: 14, h: 8 },
+};
+
 export const SCENES = {
-  bike: { kind: 'layered', get label() { return t('sport.cycling'); }, levels: bike },
-  run: { kind: 'still', get label() { return t('sport.running'); }, levels: run },
-  gym: { kind: 'still', get label() { return t('sport.gym'); }, levels: gym },
-  swim: { kind: 'still', get label() { return t('sport.swimming'); }, levels: swim },
+  bike: { kind: 'layered', get label() { return t('sport.cycling'); }, levels: bike, board: BOARDS.bike },
+  run: { kind: 'still', get label() { return t('sport.running'); }, levels: run, board: BOARDS.run },
+  gym: { kind: 'still', get label() { return t('sport.gym'); }, levels: gym, board: BOARDS.gym },
+  swim: { kind: 'still', get label() { return t('sport.swimming'); }, levels: swim, board: BOARDS.swim },
 };
 
 export const SCENE_SPORTS = ['bike', 'swim', 'run', 'gym'];
 
 /**
  * Scene entry for a sport at a level. Clamps to the highest real art.
- * @returns {{sport, kind, label, level, artLevel, maxArt, entry} | null}
+ * @returns {{sport, kind, label, level, artLevel, maxArt, entry, board} | null}
  */
 export function sceneFor(sport, level) {
   const s = SCENES[sport];
@@ -132,7 +150,8 @@ export function sceneFor(sport, level) {
   const real = Math.max(1, Math.floor(Number(level)) || 1);
   const maxArt = s.levels.length;
   const artLevel = Math.min(real, maxArt);
-  return { sport, kind: s.kind, label: s.label, level: real, artLevel, maxArt, entry: s.levels[artLevel - 1] };
+  const entry = s.levels[artLevel - 1];
+  return { sport, kind: s.kind, label: s.label, level: real, artLevel, maxArt, entry, board: entry.board || s.board };
 }
 
 /** Every art file the manifest references (for tests and precaching). */

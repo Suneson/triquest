@@ -538,3 +538,14 @@ Food (rice cake, energy bar, pasta, recovery shake) still runs for its hours.
 - **No filing old sessions into it.** A session that ended more than `graceHours` (24 h) before you took the gel can't use it, so an old activity synced late doesn't eat it. Taking a gel just after a ride, before Strava has synced it, still counts.
 - **Where it happens.** The stamp trigger (`workouts_stamp_boost`, now security definer with execute revoked, so it can close the gel row) adds the gel when a session first earns. The client's `gelClaims()` (js/core/boosts.js) gives the same answer for instant feedback until the server's stamp arrives. After a Strava sync, the app reads the fuel again.
 - Migration: `0017_gel_next_workout.sql` (adds `until_next` and `workout_id`). Rows from before keep their clock.
+
+## 13. Items only a feat gives (added with the feats)
+
+The clothes tab has a second shelf, *Earned, not bought*: eleven items
+(`FEAT_ITEMS` in `js/core/gear.js`, `source: 'feat'`). They are never in the
+server's `gear_catalog`, so `buy_gear()` refuses them as an unknown item and no
+coins can reach them. You own one when you've won its feat (`user_feats`, read
+by `featItemsOwned()`), in the colourway of the season you won it. The gran
+fondo and Iron kits are cycling kits the rider wears
+(`bikelvl6_char--kit-gran-fondo.webp`, `--kit-iron.webp`, made with
+`tools/kit-recolor.py`). Feats never pay coins or carbs. See docs/FEATS.md §4.

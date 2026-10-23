@@ -1876,6 +1876,7 @@ es.ai = {
 es.xp = {
   "reason": {
     "proof": "No cuenta: vincúlala en Strava para ganar XP.",
+    "manual": "No cuenta: esta actividad de Strava se metió a mano, no se grabó.",
     "sets": "No cuenta: marca al menos 3 series efectivas.",
     "timestamps": "No cuenta: hay series marcadas sin hora.",
     "tooFast": "No cuenta: las series se marcaron demasiado rápido para ser una sesión.",
@@ -2156,6 +2157,404 @@ es.gear = {
       "name": "Batido de recuperación",
       "blurb": "Proteína e hidratos para volver más fuerte mañana."
     }
+  }
+};
+
+// feats (js/core/feats.js, docs/FEATS.md)
+es.feat = {
+  "run-10k": {
+    "name": "10 km corriendo",
+    "blurb": "Diez kilómetros del tirón."
+  },
+  "run-5k-25": {
+    "name": "5 km en menos de 25",
+    "blurb": "Cinco kilómetros en 25:00 o menos."
+  },
+  "run-5k-22": {
+    "name": "5 km en menos de 22",
+    "blurb": "Cinco kilómetros en 22:00 o menos."
+  },
+  "run-5k-20": {
+    "name": "5 km sub-20",
+    "blurb": "Cinco kilómetros por debajo de 20 minutos. La que todos persiguen."
+  },
+  "run-10k-50": {
+    "name": "10 km en menos de 50",
+    "blurb": "Diez kilómetros en 50:00 o menos."
+  },
+  "run-10k-45": {
+    "name": "10 km en menos de 45",
+    "blurb": "Diez kilómetros en 45:00 o menos."
+  },
+  "run-half": {
+    "name": "Media maratón",
+    "blurb": "21,1 km en una sola carrera."
+  },
+  "run-30k": {
+    "name": "30 km corriendo",
+    "blurb": "Treinta kilómetros en una sola carrera."
+  },
+  "run-marathon": {
+    "name": "Maratón",
+    "blurb": "42,2 km en una sola carrera."
+  },
+  "run-month-50": {
+    "name": "Mes de 50 km",
+    "blurb": "Cincuenta kilómetros corriendo en un mes natural."
+  },
+  "run-month-100": {
+    "name": "Mes de 100 km",
+    "blurb": "Cien kilómetros corriendo en un mes natural."
+  },
+  "bike-50": {
+    "name": "Salida de 50 km",
+    "blurb": "Cincuenta kilómetros en una salida."
+  },
+  "bike-100": {
+    "name": "Centenaria",
+    "blurb": "Cien kilómetros en una salida."
+  },
+  "bike-160": {
+    "name": "Gran fondo",
+    "blurb": "160 km en una salida."
+  },
+  "bike-climb-2000": {
+    "name": "Día de 2.000 m",
+    "blurb": "Dos mil metros de desnivel en una salida."
+  },
+  "bike-40kph": {
+    "name": "A 40 por hora",
+    "blurb": "Veinte kilómetros o más a 40 km/h de media en movimiento."
+  },
+  "bike-hc": {
+    "name": "Fuera de categoría",
+    "blurb": "Un puerto HC entero de un tirón."
+  },
+  "bike-month-200": {
+    "name": "Mes de 200 km",
+    "blurb": "Doscientos kilómetros en bici en un mes natural."
+  },
+  "bike-month-500": {
+    "name": "Mes de 500 km",
+    "blurb": "Quinientos kilómetros en bici en un mes natural."
+  },
+  "swim-1k": {
+    "name": "1 km nadando",
+    "blurb": "Un kilómetro en un solo entreno de natación."
+  },
+  "swim-1k-steady": {
+    "name": "Kilómetro seguido",
+    "blurb": "Un kilómetro casi sin pararte en la pared."
+  },
+  "swim-2k": {
+    "name": "2 km nadando",
+    "blurb": "Dos kilómetros en un solo entreno."
+  },
+  "swim-1k-145": {
+    "name": "Ritmo 1:45",
+    "blurb": "Un kilómetro o más a 1:45 los 100 m."
+  },
+  "swim-month-10": {
+    "name": "Mes de 10 km",
+    "blurb": "Diez kilómetros nadando en un mes natural."
+  },
+  "gym-25": {
+    "name": "25 sesiones",
+    "blurb": "Veinticinco sesiones de gimnasio que dieron XP."
+  },
+  "gym-100": {
+    "name": "100 sesiones",
+    "blurb": "Cien sesiones de gimnasio que dieron XP."
+  },
+  "gym-bench-1": {
+    "name": "Press con tu peso",
+    "blurb": "Press de banca con tu peso corporal, de 1 a 5 repeticiones."
+  },
+  "gym-squat-15": {
+    "name": "Sentadilla 1,5×",
+    "blurb": "Sentadilla con vez y media tu peso corporal."
+  },
+  "gym-dead-2": {
+    "name": "Peso muerto doble",
+    "blurb": "Peso muerto con el doble de tu peso corporal."
+  },
+  "cross-four-weeks": {
+    "name": "Cuatro de cuatro",
+    "blurb": "Correr, bici, nadar y gimnasio todas las semanas durante cuatro semanas."
+  },
+  "cross-olympic-day": {
+    "name": "Día olímpico",
+    "blurb": "Nadar 1,5 km, 40 km en bici y correr 10 km el mismo día."
+  },
+  "cross-iron-day": {
+    "name": "Día Ironman",
+    "blurb": "Nadar 3,8 km, 180 km en bici y correr 42,2 km el mismo día."
+  },
+  "cross-race": {
+    "name": "Día de carrera",
+    "blurb": "Una carrera de verdad, planificada y marcada como carrera en Strava."
+  }
+};
+
+es.feat.ui = {
+  "title": "Trofeos",
+  "sports": "Deportes",
+  "sport": {
+    "bike": "Bici",
+    "swim": "Nadar",
+    "run": "Correr",
+    "gym": "Gym",
+    "cross": "Combinado"
+  },
+  "boardAria": "Tablón de trofeos: {n} de {total} logros. Abrir la vitrina",
+  "ofWon": "de {total} conseguidos",
+  "check": "Comprobar",
+  "signedOut": "Sin sesión iniciada: esto es lo que ganarían tus entrenos. Inicia sesión y el servidor te los da.",
+  "honest": "Solo cuentan los entrenos grabados en Strava, nunca metidos a mano ni en máquina (pesas: registradas en la app, con el check-in del gimnasio). Los números imposibles se ignoran sin más.",
+  "km": "{n} km",
+  "m": "{n} m",
+  "kmh": "{n} km/h",
+  "rest": "{n}% de descanso",
+  "per100": "{t} /100 m",
+  "kg": "{n} kg",
+  "sessions": "{n} sesiones",
+  "weeks": "{n} semanas",
+  "reward": "Desbloquea: {item}",
+  "rewardTrio": "Con los otros dos levantamientos: {item}",
+  "logged": "Registrado",
+  "strava": "Strava",
+  "whole": "actividad completa",
+  "session": "Ver el entreno",
+  "nearAria": "Tu mejor marca {best}, objetivo {target}",
+  "best": "Tu mejor marca: {best} · objetivo {target}",
+  "notYet": "Todavía no hay ningún entreno que cuente.",
+  "needsTitle": "Para los logros de fuerza",
+  "bodyweight": "Peso corporal (kg)",
+  "saveWeight": "Guardar",
+  "weightLogged": "Último registro: {date}. Cada levantamiento se compara con el peso más alto que registraste en los 30 días anteriores.",
+  "weightWhy": "Registra tu peso: cada levantamiento se compara con el peso más alto que registraste en los 30 días anteriores.",
+  "weightSaved": "Peso guardado: {kg} kg",
+  "checkinOn": "El check-in del gimnasio está activado: los entrenos en tu gimnasio llevan el pin.",
+  "checkinOff": "Los logros de fuerza necesitan el pin del check-in del gimnasio.",
+  "checkinTurnOn": "Activarlo",
+  "won": "Logro conseguido",
+  "itemsTitle": "Se ganan, no se compran",
+  "itemsNote": "No se pueden comprar. Cada uno sale de un logro, con los colores de la temporada en que lo consigues, y esos colores no vuelven.",
+  "itemHow": "Cómo se gana:",
+  "itemWon": "Ganado, con los colores de esa temporada",
+  "itemOwned": "Tuyo",
+  "itemLocked": "Se gana, nunca se compra",
+  "itemLockedLogged": "Se gana con pesas registradas"
+};
+es.featItem = {
+  "kit-run-sub20": "Equipación sub-20 de carrera",
+  "kit-gran-fondo": "Equipación ciclista Gran Fondo",
+  "kit-iron": "Equipación Iron",
+  "trisuit-limited": "Trimono edición limitada",
+  "singlet-lifting": "Maillot de halterofilia",
+  "shirt-finisher": "Camiseta de finisher",
+  "cap-run": "Gorra de carrera MOSKE",
+  "cap-climber": "Gorra de escalador",
+  "cap-training": "Gorra de entreno MOSKE",
+  "frame-olympic": "Marco olímpico",
+  "frame-race": "Marco de dorsal"
+};
+
+// challenges (js/core/challenges.js, docs/CHALLENGES.md)
+es.ch = {
+  "rule": {
+    "distance": "Más kilómetros {sport}",
+    "xp": "Más XP base {sport}",
+    "sessions": "Más días {sport}",
+    "fastest": "El {dist} más rápido ({sport})",
+    "longest": "El entreno {sport} más largo, hasta {target}",
+    "climb": "Más metros de desnivel {sport}",
+    "segment": "El más rápido en el segmento {segment}"
+  },
+  "sportWord": {
+    "any": "entrenando",
+    "run": "corriendo",
+    "bike": "en bici",
+    "swim": "nadando"
+  },
+  "dist": {
+    "5k": "5 km",
+    "10k": "10 km",
+    "half": "media maratón",
+    "20k": "20 km",
+    "40k": "40 km",
+    "1k": "1 km"
+  },
+  "minutes": "{n} min",
+  "payWinner": "el ganador se lo lleva todo",
+  "payPlaces": "premio a los primeros {split}",
+  "ruleLine": "{what}, {when}, solo Strava · {pay}"
+};
+
+// the challenge screens (js/app/challenges-view.js)
+es.chx = {
+  "title": "Retos",
+  "new": "Nuevo reto",
+  "newAria": "Publicar un reto",
+  "you": "Tú",
+  "athlete": "Atleta",
+  "signIn": "Inicia sesión para retar a otros atletas.",
+  "loading": "Cargando…",
+  "none": "Aún no hay retos. Publica el primero.",
+  "honest": "Solo monedas, nunca se compran ni se cobran. Solo cuentan entrenos grabados en Strava, nunca en un día de descanso planificado, nunca gimnasio.",
+  "sec": {
+    "invites": "Retos para ti",
+    "live": "Abiertos y en marcha",
+    "done": "Terminados"
+  },
+  "gone": "Este reto ya no está disponible.",
+  "kind": {
+    "distance": "Más distancia",
+    "xp": "Más XP",
+    "sessions": "Más entrenos",
+    "fastest": "El más rápido",
+    "longest": "El entreno más largo",
+    "climb": "Más desnivel",
+    "segment": "Rey del segmento"
+  },
+  "sport": {
+    "any": "Cualquiera (correr, bici, nadar)",
+    "run": "Carrera",
+    "bike": "Ciclismo",
+    "swim": "Natación"
+  },
+  "phase": {
+    "open": "Abierto",
+    "running": "En marcha",
+    "resolving": "Resolviéndose",
+    "settled": "Resuelto",
+    "cancelled": "Cancelado"
+  },
+  "cardAria": "Reto: {rule}. Abrirlo",
+  "stake": "Apuesta",
+  "pot": "Bote",
+  "free": "Gratis, sin apuesta",
+  "inN": "{n} de {max} dentro",
+  "youreIn": "Estás dentro",
+  "full": "Completo",
+  "joinFor": "Entrar · {n} monedas",
+  "joinFree": "Entrar",
+  "settled": "Resuelto",
+  "wonCoins": "Ganaste {n} monedas",
+  "trophyBy": "{name} ganó un trofeo en este reto",
+  "noShow": "sin entreno",
+  "xp": "{n} XP",
+  "days": {
+    "one": "{n} día",
+    "other": "{n} días"
+  },
+  "result": "Resultado",
+  "void": "Anulado: nadie entrenó, todas las apuestas se devolvieron",
+  "potLine": "Bote {pot} · comisión {fee} (se quema) · premio {prize} · {burned} quemadas en total",
+  "cancelled": "Cancelado por quien lo creó. Todas las apuestas se devolvieron enteras.",
+  "cancelledFew": "Cancelado: menos de dos personas entraron antes del inicio. Todas las apuestas se devolvieron enteras.",
+  "standings": "Clasificación",
+  "cut": "tope alcanzado",
+  "lowerWins": "Gana el más bajo",
+  "higherWins": "Gana el más alto",
+  "endsOn": "termina el {date}",
+  "settlesOn": "se resuelve el {date} (los entrenos que Strava sincronice tarde cuentan)",
+  "when": "Cuándo",
+  "who": {
+    "room": "Cualquiera en General",
+    "direct": "Amigos que elijo"
+  },
+  "whoIn": "Quién está",
+  "howItWorks": "Cómo funciona",
+  "term": {
+    "strava": "Solo cuentan entrenos grabados en Strava: nunca metidos a mano, nunca en un día de descanso planificado, nunca gimnasio.",
+    "noShow": "Si no tienes ningún entreno válido en el plazo, pierdes tu apuesta, que va al bote.",
+    "ties": "Los empates comparten los puestos que ocupan. Los puestos con premio que nadie alcanza se reparten entre los demás.",
+    "fee": "El {fee}% del bote es la comisión y desaparece.",
+    "cap": "Lo que ganas cuenta como ingreso: si tu almacén de 10.000 monedas está lleno, el resto se pierde.",
+    "refuse": "Puedes rechazar cualquier reto, o salirte antes de que empiece y recuperar tu apuesta. No cuesta nada."
+  },
+  "cancel": "Cancelar el reto",
+  "cancelConfirm": "¿Cancelar este reto? Todas las apuestas se devuelven enteras.",
+  "cancelledToast": "Reto cancelado. Todas las apuestas se devolvieron.",
+  "leave": "Salir",
+  "leaveRefund": "Salir y recuperar mi apuesta",
+  "decline": "Rechazar",
+  "left": "Hecho. No perdiste nada.",
+  "joinTitle": "Entrar en este reto",
+  "sure": "Apuesto {n} monedas y he leído cómo funciona",
+  "notNow": "Ahora no",
+  "stakeN": "Apostar {n} monedas",
+  "joined": "Estás dentro. ¡A por ello!",
+  "suggestions": "Sugerencias",
+  "custom": "O créalo a tu manera",
+  "tpl": {
+    "weekend-long": "Salida larga del finde",
+    "fast-5k": "El 5 km más rápido",
+    "km-week": "Semana de kilómetros",
+    "consistent": "El más constante",
+    "xp-sprint": "Sprint de XP",
+    "climb-month": "Desnivel del mes",
+    "segment-king": "Rey del segmento"
+  },
+  "f": {
+    "kind": "Reto",
+    "sport": "Deporte",
+    "dist": "Distancia",
+    "target": "Cuenta hasta (minutos, máx. {max})",
+    "segment": "Enlace al segmento de Strava",
+    "segmentName": "Nombre del segmento (opcional)",
+    "start": "Empieza",
+    "days": "Días (1–28)",
+    "stake": "Apuesta en monedas (0–{max})",
+    "payout": "Premios",
+    "who": "Quién puede entrar",
+    "friends": "Invita a hasta {n} amigos"
+  },
+  "payout": {
+    "winner": "El ganador se lo lleva todo",
+    "top2": "1.º 65% · 2.º 35%",
+    "top3": "1.º 50% · 2.º 30% · 3.º 20%"
+  },
+  "noFriends": "Primero añade amigos (en Ranking o Chat).",
+  "stakeNote": "Todo el que entra apuesta {n} monedas. El {fee}% del bote se quema como comisión.",
+  "post": "Publicar el reto",
+  "postStake": "Publicar y apostar {n} monedas",
+  "posted": "Reto publicado en General",
+  "sent": "Reto enviado",
+  "directSetting": "Dejar que mis amigos me reten directamente",
+  "directSettingNote": "Desactivado: nadie puede enviarte un reto. Puedes seguir entrando en los de General.",
+  "err": {
+    "not_signed_in": "Inicia sesión primero.",
+    "offline": "Estás sin conexión. Los retos la necesitan.",
+    "generic": "Algo ha fallado. Inténtalo otra vez.",
+    "kind": "Elige un tipo de reto.",
+    "sport": "Ese deporte no admite este tipo de reto (y el gimnasio nunca entra).",
+    "window": "Un reto dura de 1 a 28 días.",
+    "start": "Tiene que empezar mañana o después, como mucho dentro de 14 días.",
+    "stake": "La apuesta va de 0 a 150 monedas.",
+    "payout": "Elige cómo se reparten los premios.",
+    "dist": "Elige una distancia.",
+    "target": "Pon un objetivo que el deporte permita.",
+    "segment": "Pega el enlace de un segmento de Strava.",
+    "invitees": "Invita de 1 a 4 amigos.",
+    "no_direct": "Uno de ellos no acepta retos directos.",
+    "open_max": "Ya tienes 2 retos abiertos.",
+    "room_day": "Hoy ya has publicado 3 retos. Prueba mañana.",
+    "room_full": "General ya tiene 6 retos abiertos.",
+    "full": "Este reto está completo.",
+    "closed": "Ya ha empezado: no se puede entrar.",
+    "joined": "Ya estás dentro.",
+    "not_invited": "Este reto es solo para amigos invitados.",
+    "not_found": "Este reto ya no está disponible.",
+    "creator": "Lo creaste tú: cancélalo.",
+    "not_yours": "Solo quien lo creó puede cancelarlo.",
+    "age": "Las apuestas se abren 14 días después de registrarte.",
+    "verified": "Para apostar necesitas 6 entrenos de Strava en los últimos 30 días.",
+    "balance": "No tienes monedas suficientes.",
+    "share": "Eso es más del 20% de tus monedas.",
+    "week": "Con esto pasarías de 300 monedas apostadas esta semana.",
+    "pair": "Esta semana ya apostaste contra alguno de ellos (o tres veces este mes)."
   }
 };
 

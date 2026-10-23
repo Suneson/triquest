@@ -84,3 +84,28 @@ and `npm test` will tell you if a placeholder went missing.
 - The coach speaks like a Spanish coach would: "A por ello", "Levanta el pie", "Que salga limpio".
 - The welcome card says "Bienvenido a MOSKE". If you'd rather avoid the gendered form, "Te damos la bienvenida a MOSKE" works.
 - "Corredor", "Ciclista", "Nadador" in the wizard are masculine forms used generically; "Triatleta" is neutral. Alternatives: "Corro", "Pedaleo", "Nado".
+
+## Feats and trophies (added with the feats, 2026-10-23)
+
+| English | Now | Alternatives |
+| --- | --- | --- |
+| Feat | Logro | Hazaña, Proeza |
+| Trophies (case title) | Trofeos | Vitrina de trofeos (cut off at 320px) |
+| Trophy board | Tablón de trofeos | Panel de trofeos |
+| Trisuit | Trimono | Mono de triatlón |
+| Lifting singlet | Maillot de halterofilia | Body de halterofilia |
+| Cross (feats across sports) | Combi | Combinado, Multideporte |
+| Finisher shirt | Camiseta de finisher | Camiseta de meta |
+| Earned, not bought | Se ganan, no se compran | |
+| Half marathon | Media maratón | Medio maratón |
+
+## Challenges (added with the challenges, 2026-10-23)
+
+| English | Now | Alternatives |
+| --- | --- | --- |
+| Challenge | Reto | Desafío |
+| Stake | Apuesta | Entrada, Puesta |
+| Pot | Bote | Fondo |
+| Fee (burned) | Comisión (se quema) | Tasa |
+| Ceiling reached | Tope alcanzado | Límite alcanzado |
+| Winner takes all | El ganador se lo lleva todo | Todo para el primero |

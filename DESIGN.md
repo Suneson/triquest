@@ -432,7 +432,10 @@ A physical object in each sport's diorama, at the scene's `board` hotspot
 stills crop on narrow phones). Until its art lands it's a framed pixel board:
 gold frame (`--accent`), a trophy glyph and the number of that sport's feats
 won. Pressed, it sinks onto its edge (3px, no transition). A light glint
-crosses it every 7s in 14 steps; reduced motion removes it. Your own scene
+crosses it every 7s in 14 steps (transform only); reduced motion removes it.
+When a feat is won, the board of that sport flashes three times in hard steps
+(an accent overlay, opacity only) beside the *Feat unlocked* toast; reduced
+motion keeps the toast and drops the flash. Your own scene
 only; another athlete's embedded scene has no board.
 
 ### Trophy case
@@ -472,6 +475,14 @@ Joining a staked challenge is never one tap: a sheet spells out the stake, the
 fee, the payout split and the refund rules, and *Join* stays disabled until
 *I'm sure* is ticked. A stake the server would refuse is said before the sheet,
 in words, not as a disabled button. Coins never show a money symbol.
+
+When a challenge you're in settles, one toast says it: where you finished and
+what came back ("Settled: you finished 2 of 4 and won 68 coins"), or that a
+void or a cancellation returned your stake. A win also plays the accept sound
+and haptic. Each result is said once per device.
+
+Toasts sit above layers (`.toast-wrap` z-index 10200, over `.modal-root`
+10000), so anything said while a layer is open is seen.
 
 ### Telemetry charts (Fitness hub)
 Lines are stepped (hold, then jump) on a 2px grid; markers are 4px squares (8px

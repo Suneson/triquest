@@ -2441,6 +2441,13 @@ en.chx = {
   "joinFree": "Join",
   "settled": "Settled",
   "wonCoins": "Won {n} coins",
+  "toast": {
+    "won": "Settled: you finished {place} of {of} and won {n} coins.",
+    "placed": "Settled: you finished {place} of {of}. Your stake went to the pot.",
+    "noShow": "Settled: no session of yours counted, so your stake went to the pot.",
+    "void": "Nobody had a session that counted. Every stake came back.",
+    "cancelled": "Cancelled before it started. Your stake came back."
+  },
   "trophyBy": "{name} won a trophy in this challenge",
   "noShow": "no session",
   "xp": "{n} XP",
@@ -2504,6 +2511,7 @@ en.chx = {
     "target": "Counts up to (minutes, max {max})",
     "segment": "Strava segment link",
     "segmentName": "Segment name (optional)",
+    "segmentPh": "strava.com/segments/123456…",
     "start": "Starts",
     "days": "Days (1–28)",
     "stake": "Stake in coins (0–{max})",

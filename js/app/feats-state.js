@@ -9,7 +9,7 @@
 import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { isDemo } from './demo.js';
-import { evaluateFeats, featItemsOwned } from '../core/feats.js';
+import { evaluateFeats, featItemsOwned, featById } from '../core/feats.js';
 import * as store from './store.js';
 
 const KEY = 'moske-feats';
@@ -43,13 +43,16 @@ const DEMO = [
   { featId: 'swim-2k', season: '2026-Q4', value: 2.2, date: '2026-11-02' },
   { featId: 'cross-four-weeks', season: '2026-Q4', value: 4, date: '2026-11-22' },
 ].map((a) => ({ workoutId: null, whole: false, logged: false, ...a }));
+// held back so a review (and the clips) can watch one being won: demoUnlock()
+const DEMO_NEXT = [{ featId: 'run-half', season: '2026-Q4', value: 21.3, date: '2026-11-15', workoutId: null, whole: false, logged: false }];
+let demoWon = [];
 
 /** Can this device ask the server for feats (signed in, or demo)? */
 export const featsSynced = () => isDemo() || (SYNC_ENABLED && !!currentUser());
 
 /** Your awards: [{ featId, season, workoutId, value, date, whole, logged }]. */
 export function featAwards() {
-  if (isDemo()) return DEMO;
+  if (isDemo()) return [...DEMO, ...demoWon];
   const uid = currentUser()?.id || null;
   if (uid && SYNC_ENABLED) return state.uid === uid ? state.rows : [];
   // signed out: the same rules, worked out here
@@ -62,7 +65,21 @@ export const featItems = () => featItemsOwned(featAwards());
 export const ownsFeatItem = (id) => featItems().some((i) => i.id === id);
 
 export function onFeats(fn) { listeners.add(fn); return () => listeners.delete(fn); }
-const emit = (fresh = []) => listeners.forEach((fn) => { try { fn(fresh); } catch (e) { console.error(e); } });
+// the sports a feat was just won in, for a few seconds: the board flashes once
+let fresh = { at: 0, sports: new Set() };
+export const justWon = (sport) => Date.now() - fresh.at < 4000 && (fresh.sports.has(sport) || fresh.sports.has('cross'));
+const emit = (won = []) => {
+  if (won.length) fresh = { at: Date.now(), sports: new Set(won.map((a) => featById(a.featId)?.sport).filter(Boolean)) };
+  listeners.forEach((fn) => { try { fn(won); } catch (e) { console.error(e); } });
+};
+
+/** ?demo=1 only: win the held-back feat now, as a sync would. */
+export function demoUnlock() {
+  if (!isDemo() || demoWon.length) return [];
+  demoWon = DEMO_NEXT;
+  emit(demoWon);
+  return demoWon;
+}
 
 let inflight = null;
 /**
@@ -82,9 +99,9 @@ export function refreshFeats() {
       if (all.error) throw all.error;
       state = { uid, rows: (all.data || []).map(fromRow), at: Date.now() };
       save(state);
-      const fresh = (won.data || []).map(fromRow);
-      emit(fresh);
-      return fresh;
+      const got = (won.data || []).map(fromRow);
+      emit(got);
+      return got;
     } catch (e) {
       console.warn('feats refresh failed', e);
       return [];

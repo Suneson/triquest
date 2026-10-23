@@ -23,6 +23,14 @@ import { t, fmtDate } from '../core/i18n.js';
 import { challengeCard, trophyCard, openChallenge, openChallenges, openNewChallenge } from './challenges-view.js';
 import { challengeById, challengesState, onChallenges, refreshChallenges, challengesEnabled } from './challenges-state.js';
 
+// a card whose challenge isn't loaded yet asks once (not once per card, per redraw)
+let asked = false;
+const askForChallenges = () => {
+  if (asked || !challengesEnabled() || challengesState().ready) return;
+  asked = true;
+  queueMicrotask(() => refreshChallenges().finally(() => { asked = false; }));
+};
+
 const GROUP_MS = 5 * 60000; // messages from one person within 5 min sit under one header
 let mounted = null;          // { root, view, observer }
 let draft = '';
@@ -72,7 +80,7 @@ function listHtml() {
     // a card the server posted: a challenge (live) or a trophy won inside one
     if (m.challenge_id || m.feat_id) {
       const c = m.challenge_id ? challengeById(m.challenge_id) : null;
-      if (m.challenge_id && !c && challengesEnabled() && !challengesState().ready) refreshChallenges();
+      if (m.challenge_id && !c) askForChallenges();
       const card = m.feat_id ? trophyCard(m.feat_id, nameOf(a)) : challengeCard(c, { compact: true });
       return `${sep}<li class="rm-msg rm-card ${m.mine ? 'mine' : 'theirs'}" data-mid="${m.id}">
         <div class="rm-card-head"><button class="rm-name" data-rm="profile" data-uid="${esc(m.user_id)}">${esc(nameOf(a))}</button>

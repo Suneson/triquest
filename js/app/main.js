@@ -28,7 +28,7 @@ import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-rou
 import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi, chatMode } from './chat.js';
 import { startRoom, stopRoom } from './room.js';
 import { startSocial, stopSocial, refreshSocial } from './social.js';
-import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
+import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, playAccept, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
@@ -49,7 +49,8 @@ import { openCheckinSheet } from './checkin.js';
 import { gearState, refreshGear, onGear } from './gear-state.js';
 import { refreshFeats, onFeats } from './feats-state.js';
 import { openTrophyCase, featWonText } from './feats-view.js';
-import { refreshChallenges, stopChallenges } from './challenges-state.js';
+import { refreshChallenges, stopChallenges, onChallenges } from './challenges-state.js';
+import { settleText } from './challenges-view.js';
 import { openGear, openInventory } from './gear-view.js';
 import { startGelTicker } from './gel-chip.js';
 
@@ -1067,6 +1068,15 @@ async function boot() {
     }
     if (fresh.length) haptic('levelUp');
     render();
+  });
+  // a challenge you're in just settled: where you came, and what came back
+  onChallenges((why, done) => {
+    if (why !== 'settled') return;
+    for (const d of done.slice(0, 3)) {
+      const text = settleText(d);
+      if (text) toast(text, { icon: svg(d.row?.payout ? 'coin' : 'flag') });
+    }
+    if (done.some((d) => d.row?.payout && d.result.outcome === 'settled')) { playAccept(); haptic('record'); }
   });
   startGelTicker(() => render());
 

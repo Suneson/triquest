@@ -15,7 +15,7 @@ import { svg } from '../core/icons.js';
 import { t, fmtNum, fmtDate } from '../core/i18n.js';
 import { FEATS, featsFor, featById, nearMiss, seasonHue, TRIO } from '../core/feats.js';
 import { featItemById } from '../core/gear.js';
-import { featAwards, featsSynced, refreshFeats, onFeats } from './feats-state.js';
+import { featAwards, featsSynced, refreshFeats, onFeats, justWon } from './feats-state.js';
 import { openCheckinSheet, checkinOn } from './checkin.js';
 import { busy } from './motion.js';
 import { toast } from './effects.js';
@@ -43,7 +43,7 @@ export function trophyBoard(sport, box) {
   const feats = [...featsFor(sport), ...featsFor('cross')];
   const won = wonByFeat();
   const n = feats.filter((f) => won.has(f.id)).length;
-  return `<button class="pg-board" data-action="open-trophies" data-sport="${esc(sport)}"
+  return `<button class="pg-board${justWon(sport) ? ' is-fresh' : ''}" data-action="open-trophies" data-sport="${esc(sport)}"
       style="--x:${pct(box.x)};--y:${pct(box.y)};--w:${pct(box.w)};--h:${pct(box.h)}"
       aria-label="${esc(t('feat.ui.boardAria', { n, total: feats.length }))}">
       <span class="pg-board-face" aria-hidden="true">${svg('trophy')}<b class="data-num">${n}</b></span>
@@ -138,7 +138,7 @@ function gymNeeds() {
     <h3 id="tc-needs-h" class="gw-row-h">${svg('gym')} ${t('feat.ui.needsTitle')}</h3>
     <form class="tc-bw" data-tc-bw>
       <label class="field"><span>${t('feat.ui.bodyweight')}</span>
-        <input type="number" name="weight" min="30" max="250" step="0.1" inputmode="decimal" value="${last ? esc(last.weight) : ''}" required></label>
+        <input type="number" name="weight" min="30" max="250" step="0.1" inputmode="decimal" autocomplete="off" value="${last ? esc(last.weight) : ''}" required></label>
       <button class="btn tiny primary" type="submit">${t('feat.ui.saveWeight')}</button>
     </form>
     <p class="gw-note">${last ? t('feat.ui.weightLogged', { date: esc(fmtDate(last.date, { day: 'numeric', month: 'short' })) }) : t('feat.ui.weightWhy')}</p>
@@ -160,7 +160,7 @@ export function openTrophyCase(sport = 'run') {
     const n = feats.filter((f) => won.has(f.id)).length;
     const tabs = `<div class="pg-sports gw-sports tc-tabs" role="tablist" aria-label="${t('feat.ui.sports')}">${CASE_SPORTS.map((s) => {
       const on = s === current;
-      return `<button class="pg-sport ${on ? 'active' : ''}" role="tab" aria-selected="${on}" data-tc-sport="${s}">${svg(s === 'cross' ? 'brick' : s)}<span>${t(`feat.ui.sport.${s}`)}</span></button>`;
+      return `<button class="pg-sport ${on ? 'active' : ''}" role="tab" id="tc-tab-${s}" aria-selected="${on}" aria-controls="tc-panel" tabindex="${on ? 0 : -1}" data-tc-sport="${s}">${svg(s === 'cross' ? 'brick' : s)}<span>${t(`feat.ui.sport.${s}`)}</span></button>`;
     }).join('')}</div>`;
     const top = root.querySelector('.fh-screen')?.scrollTop || 0;
     root.innerHTML = `<div class="fh-screen gw-screen tc-screen" role="dialog" aria-modal="true" aria-labelledby="tc-title">
@@ -170,7 +170,7 @@ export function openTrophyCase(sport = 'run') {
         ${featsSynced() ? `<button class="btn tiny ghost" data-tc-refresh>${svg('sync')} ${t('feat.ui.check')}</button>` : ''}</p>
       ${featsSynced() ? '' : `<p class="gw-note">${t('feat.ui.signedOut')}</p>`}
       ${current === 'gym' ? gymNeeds() : ''}
-      <div class="tc-grid">${feats.map((f) => featCard(f, won.get(f.id), workouts)).join('')}</div>
+      <div class="tc-grid" role="tabpanel" id="tc-panel" aria-labelledby="tc-tab-${current}">${feats.map((f) => featCard(f, won.get(f.id), workouts)).join('')}</div>
       <p class="gw-note gw-honest">${svg('check')} ${t('feat.ui.honest')}</p>
     </div>`;
     if (top) root.querySelector('.fh-screen').scrollTop = top;
@@ -179,7 +179,7 @@ export function openTrophyCase(sport = 'run') {
   off = onFeats(() => { if (root.isConnected) draw(); });
   root.onclick = async (e) => {
     const tab = e.target.closest('[data-tc-sport]');
-    if (tab) { current = tab.dataset.tcSport; draw(); return; }
+    if (tab) { current = tab.dataset.tcSport; draw(); root.querySelector(`#tc-tab-${current}`)?.focus({ preventScroll: true }); return; }
     const r = e.target.closest('[data-tc-refresh]');
     if (r) {
       await busy(r, refreshFeats);
@@ -187,6 +187,16 @@ export function openTrophyCase(sport = 'run') {
       return;
     }
     if (e.target.closest('[data-tc-checkin]')) { openCheckinSheet({ onChange: () => { if (root.isConnected) draw(); } }); }
+  };
+  // arrow keys move between the sport tabs (one tab stop, as a tablist should be)
+  root.onkeydown = (e) => {
+    if (!e.target.matches('[data-tc-sport]') || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const i = CASE_SPORTS.indexOf(current);
+    const n = CASE_SPORTS.length;
+    current = CASE_SPORTS[e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : (i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n];
+    draw();
+    root.querySelector(`#tc-tab-${current}`)?.focus();
   };
   root.onsubmit = (e) => {
     const form = e.target.closest('[data-tc-bw]');

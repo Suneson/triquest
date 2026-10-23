@@ -2441,6 +2441,13 @@ es.chx = {
   "joinFree": "Entrar",
   "settled": "Resuelto",
   "wonCoins": "Ganaste {n} monedas",
+  "toast": {
+    "won": "Cerrado: quedaste {place}.º de {of} y ganaste {n} monedas.",
+    "placed": "Cerrado: quedaste {place}.º de {of}. Tu apuesta fue al bote.",
+    "noShow": "Cerrado: ninguna sesión tuya contó, así que tu apuesta fue al bote.",
+    "void": "Nadie tuvo una sesión que contara. Se devolvieron todas las apuestas.",
+    "cancelled": "Se canceló antes de empezar. Se te devolvió la apuesta."
+  },
   "trophyBy": "{name} ganó un trofeo en este reto",
   "noShow": "sin entreno",
   "xp": "{n} XP",
@@ -2504,6 +2511,7 @@ es.chx = {
     "target": "Cuenta hasta (minutos, máx. {max})",
     "segment": "Enlace al segmento de Strava",
     "segmentName": "Nombre del segmento (opcional)",
+    "segmentPh": "strava.com/segments/123456…",
     "start": "Empieza",
     "days": "Días (1–28)",
     "stake": "Apuesta en monedas (0–{max})",

@@ -19,7 +19,30 @@ const listeners = new Set();
 let channel = null;
 
 export const onChallenges = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
-const emit = (why) => listeners.forEach((fn) => { try { fn(why); } catch (e) { console.error(e); } });
+const emit = (why, data) => listeners.forEach((fn) => { try { fn(why, data); } catch (e) { console.error(e); } });
+
+// Results you've already been told about, per account on this device. A result
+// that appears later (settled while the app was open, or since you last
+// looked) is said once, as 'settled'. The first read on a device only records.
+const SEEN_KEY = 'moske-ch-seen';
+let demoSeen = null; // demo results are remembered for the session only
+function seenFor(uid) {
+  if (isDemo()) return demoSeen;
+  try { const all = JSON.parse(localStorage.getItem(SEEN_KEY)) || {}; return Array.isArray(all[uid]) ? new Set(all[uid]) : null; } catch { return null; }
+}
+function saveSeen(uid, ids) {
+  if (isDemo()) { demoSeen = ids; return; }
+  try { const all = JSON.parse(localStorage.getItem(SEEN_KEY)) || {}; all[uid] = [...ids].slice(-200); localStorage.setItem(SEEN_KEY, JSON.stringify(all)); } catch { /* private mode */ }
+}
+function announceResults({ quiet = false } = {}) {
+  const uid = me();
+  if (!uid) return;
+  const mine = state.results.filter((r) => state.people.some((p) => p.challenge_id === r.challenge_id && p.user_id === uid && p.status === 'joined'));
+  const seen = seenFor(uid);
+  const fresh = seen ? mine.filter((r) => !seen.has(r.challenge_id)) : [];
+  saveSeen(uid, new Set([...(seen || []), ...mine.map((r) => r.challenge_id)]));
+  if (fresh.length && !quiet) emit('settled', fresh.map((r) => ({ challenge: challengeById(r.challenge_id), result: r, row: r.rows?.find((x) => x.user === uid) || null })));
+}
 
 export const challengesEnabled = () => isDemo() || (SYNC_ENABLED && !!currentUser());
 export const me = () => (isDemo() ? 'demo-me' : currentUser()?.id || null);
@@ -70,11 +93,27 @@ function demoState() {
   return { ready: true, list, people, results, standings, error: null };
 }
 
+/** ?demo=1 only: settle the running demo challenge now, as the server would (top 3: 114 / 68 / 45). */
+export function demoSettle() {
+  if (!isDemo() || !state.ready) return;
+  const c = challengeById('demo-run');
+  if (!c || c.state === 'settled') return;
+  c.state = 'settled';
+  state.results.push({ challenge_id: 'demo-run', outcome: 'settled', pot: 240, fee: 12, prize: 228, burned: 13, rule: {}, rows: [
+    { user: 'd-11', stake: 60, score: 15120, place: 1, payout: 114 }, { user: 'demo-me', stake: 60, score: 13240, place: 2, payout: 68 },
+    { user: 'd-14', stake: 60, score: 9650, place: 3, payout: 45 }, { user: 'd-12', stake: 60, score: null, place: null, payout: 0 }] });
+  emit('load');
+  announceResults();
+}
+
 // ---- reading -------------------------------------------------------------------------
 
-/** Read everything again (and settle anything that's due). */
-export async function refreshChallenges() {
-  if (isDemo()) { if (!state.ready) { state = demoState(); emit('load'); } return state; }
+/**
+ * Read everything again (and settle anything that's due). quiet: after your own
+ * action (a cancel says so itself), results are recorded without a toast.
+ */
+export async function refreshChallenges({ quiet = false } = {}) {
+  if (isDemo()) { if (!state.ready) { state = demoState(); emit('load'); announceResults(); } return state; }
   if (!challengesEnabled()) return state;
   try {
     const c = await client();
@@ -96,6 +135,7 @@ export async function refreshChallenges() {
     };
     subscribe(c);
     emit('load');
+    announceResults({ quiet });
   } catch (e) {
     state = { ...state, ready: true, error: String(e?.message || e) };
     emit('error');
@@ -142,7 +182,7 @@ async function call(fn, args) {
   const c = await client();
   const { data, error } = await c.rpc(fn, args);
   if (error) throw error;
-  await refreshChallenges();
+  await refreshChallenges({ quiet: true });
   refreshGear(); // a stake or a refund moved coins
   return data;
 }

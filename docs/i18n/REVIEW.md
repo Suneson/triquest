@@ -109,3 +109,5 @@ and `npm test` will tell you if a placeholder went missing.
 | Fee (burned) | Comisión (se quema) | Tasa |
 | Ceiling reached | Tope alcanzado | Límite alcanzado |
 | Winner takes all | El ganador se lo lleva todo | Todo para el primero |
+| Settled (toast) | Cerrado | Resuelto, Terminado |
+| You finished 2nd of 4 | Quedaste 2.º de 4 | Acabaste en el puesto 2 de 4 |

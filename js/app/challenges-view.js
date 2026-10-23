@@ -68,7 +68,8 @@ export function challengeCard(c, { compact = false } = {}) {
   let act;
   if (phase === 'open' && mine === 'joined') act = `<span class="chc-state is-in">${svg('check')} ${t('chx.youreIn')}</span>`;
   else if (phase === 'open' && people.length >= CHALLENGE_RULES.maxParticipants) act = `<span class="chc-state">${t('chx.full')}</span>`;
-  else if (phase === 'open') act = `<button class="btn tiny primary" data-ch-open="${esc(c.id)}">${c.stake ? t('chx.joinFor', { n: fmtNum(c.stake) }) : t('chx.joinFree')}</button>`;
+  // the whole card is the button, so its call to action is a look, not a second control inside it
+  else if (phase === 'open') act = `<span class="btn tiny primary chc-cta">${c.stake ? t('chx.joinFor', { n: fmtNum(c.stake) }) : t('chx.joinFree')}</span>`;
   else if (phase === 'settled' && myRow) act = `<span class="chc-state ${myRow.payout ? 'is-won' : ''}">${myRow.payout ? t('chx.wonCoins', { n: fmtNum(myRow.payout) }) : t('chx.settled')}</span>`;
   else act = `<span class="chc-state">${t(`chx.phase.${phase}`)}</span>`;
   const faces = people.slice(0, 5).map((p) => `<i class="chc-face" title="${esc(p.display_name || '')}">${esc((p.display_name || '?').charAt(0).toUpperCase())}</i>`).join('');
@@ -90,6 +91,18 @@ export function trophyCard(featId, who) {
   const f = featById(featId);
   if (!f) return '';
   return `<div class="chc-trophy">${svg(f.tier >= 3 ? 'trophy' : 'medal')}<span><b>${esc(t('chx.trophyBy', { name: who }))}</b><br>${esc(f.name)} · ${esc(f.blurb)}</span></div>`;
+}
+
+/** One toast line for a challenge you were in that just settled (or was voided or cancelled). */
+export function settleText({ challenge, result, row }) {
+  const what = esc(challenge ? t(`chx.kind.${challenge.kind}`) : t('chx.title'));
+  if (result.outcome === 'cancelled') return `<b>${what}</b><br>${t('chx.toast.cancelled')}`;
+  if (result.outcome === 'void') return `<b>${what}</b><br>${t('chx.toast.void')}`;
+  if (!row || row.place == null) return `<b>${what}</b><br>${t('chx.toast.noShow')}`;
+  const of = result.rows?.length || 0;
+  return row.payout
+    ? `<b>${what}</b><br>${t('chx.toast.won', { place: fmtNum(row.place), of: fmtNum(of), n: fmtNum(row.payout) })}`
+    : `<b>${what}</b><br>${t('chx.toast.placed', { place: fmtNum(row.place), of: fmtNum(of) })}`;
 }
 
 // ---- the list --------------------------------------------------------------------------
@@ -286,6 +299,9 @@ export function openNewChallenge() {
     const friends = accepted();
     const block = c.stake ? stakeBlock(c.stake, myStakeFacts()) : null;
     const top = root.querySelector('.fh-screen')?.scrollTop || 0;
+    // the form is redrawn on every change: keep keyboard focus where it was
+    const had = document.activeElement && root.contains(document.activeElement) ? document.activeElement : null;
+    const focusKey = had?.name ? `[name="${had.name}"]${had.name === 'inv' ? `[value="${had.value}"]` : ''}` : null;
     root.innerHTML = `<div class="fh-screen gw-screen chn-screen" role="dialog" aria-modal="true" aria-labelledby="chn-title">
       ${sheetHead({ lead: 'back', icon: 'plus', title: t('chx.new'), id: 'chn-title', action: '' })}
       <section class="gw-row" aria-labelledby="chn-sug"><h3 id="chn-sug" class="gw-row-h">${t('chx.suggestions')}</h3>
@@ -297,8 +313,8 @@ export function openNewChallenge() {
           <label class="field"><span>${t('chx.f.sport')}</span><select name="sport">${KINDS[f.kind].map((s) => opt(s, t(`chx.sport.${s}`), f.sport)).join('')}</select></label>
           ${f.kind === 'fastest' ? `<label class="field"><span>${t('chx.f.dist')}</span><select name="dist">${dists.map((d) => opt(d, t(`ch.dist.${d}`), f.dist)).join('')}</select></label>` : ''}
           ${f.kind === 'longest' ? `<label class="field"><span>${t('chx.f.target', { max: CHALLENGE_RULES.longestMaxMin[f.sport] })}</span><input type="number" name="targetMin" min="10" max="${CHALLENGE_RULES.longestMaxMin[f.sport]}" step="5" value="${esc(f.targetMin)}"></label>` : ''}
-          ${f.kind === 'segment' ? `<label class="field chn-wide"><span>${t('chx.f.segment')}</span><input name="segment" inputmode="url" placeholder="strava.com/segments/123456" value="${esc(f.segment)}"></label>
-            <label class="field chn-wide"><span>${t('chx.f.segmentName')}</span><input name="segmentName" maxlength="60" value="${esc(f.segmentName)}"></label>` : ''}
+          ${f.kind === 'segment' ? `<label class="field chn-wide"><span>${t('chx.f.segment')}</span><input name="segment" inputmode="url" autocomplete="off" spellcheck="false" placeholder="${esc(t('chx.f.segmentPh'))}" value="${esc(f.segment)}"></label>
+            <label class="field chn-wide"><span>${t('chx.f.segmentName')}</span><input name="segmentName" maxlength="60" autocomplete="off" value="${esc(f.segmentName)}"></label>` : ''}
           <label class="field"><span>${t('chx.f.start')}</span><input type="date" name="starts_on" min="${addDays(today, 1)}" max="${addDays(today, CHALLENGE_RULES.maxStartAheadDays)}" value="${esc(f.starts_on)}"></label>
           <label class="field"><span>${t('chx.f.days')}</span><input type="number" name="days" min="1" max="${CHALLENGE_RULES.maxWindowDays}" value="${esc(f.days)}"></label>
           <label class="field"><span>${t('chx.f.stake', { max: CHALLENGE_RULES.maxStake })}</span><input type="number" name="stake" min="0" max="${CHALLENGE_RULES.maxStake}" step="10" value="${esc(f.stake)}"></label>
@@ -319,6 +335,7 @@ export function openNewChallenge() {
       </form>
     </div>`;
     if (top) root.querySelector('.fh-screen').scrollTop = top;
+    if (focusKey) root.querySelector(focusKey)?.focus({ preventScroll: true });
   };
 
   root.onclick = (e) => {

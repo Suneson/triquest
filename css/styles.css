@@ -451,7 +451,7 @@ input[type=checkbox]:checked::after {
 
 /* ---- toasts: dialogue boxes above the tab bar ------------------------------------------------------------- */
 .toast-wrap {
-  position: fixed; left: 0; right: 0; bottom: calc(var(--tabs-h) + 12px); z-index: 9500;
+  position: fixed; left: 0; right: 0; bottom: calc(var(--tabs-h) + 12px); z-index: 10200; /* above layers (.modal-root 10000), below fly-chips and stamps */
   display: grid; gap: 10px; justify-items: center; pointer-events: none; padding: 0 16px;
 }
 .toast {
@@ -2036,11 +2036,17 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .pg-board-face b { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--fg); line-height: 1; }
 .pg-board:active { transform: translateY(3px); --eo: 2px; background: var(--bg-4); }
 .pg-board:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
-.pg-board-glint { position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none;
+.pg-board-glint { position: absolute; top: 0; bottom: 0; left: 0; width: 30%; pointer-events: none; transform: translateX(-134%);
   background: linear-gradient(90deg, transparent 0 40%, rgba(242,245,252,.35) 40% 60%, transparent 60%);
   animation: board-glint 7s steps(14, end) infinite; }
-@keyframes board-glint { 0%, 80% { left: -40%; } 100% { left: 120%; } }
+@keyframes board-glint { 0%, 80% { transform: translateX(-134%); } 100% { transform: translateX(400%); } }
+@media (hover: hover) { .pg-board:hover { background: var(--bg-3); } .chc:hover { background: var(--bg-3); } .chn-sug:hover { background: var(--bg-3); } }
 body.rm .pg-board-glint { display: none; }
+/* a feat just won: the board flashes three times (stepped), then rests */
+.pg-board.is-fresh::after { content: ''; position: absolute; inset: 0; background: var(--accent); opacity: 0; pointer-events: none;
+  animation: board-won .24s steps(1, end) 6 alternate; }
+@keyframes board-won { 0% { opacity: 0; } 100% { opacity: .55; } }
+body.rm .pg-board.is-fresh::after { animation: none; }
 
 /* the waiting gel in the scene's HUD: the tank and the boost; the words are in the shop and inventory */
 .gel-chip.is-next.in-hud b { display: none; }

@@ -2768,6 +2768,12 @@ es.prop["gym-cabinet"] = { "name": "Vitrina de trofeos", "blurb": "Puertas de cr
 
 // ---- el complejo unificado (docs/COMPOUND.md) ----
 es.cp = {
+  "lvl": "Nivel {n}",
+  "coinsAria": "{n} monedas",
+  "carbsAria": "{n} g de carbohidratos",
+  "staminaAria": "Energía {n} de {max}. Se recarga sola, un punto por minuto",
+  "roomsAria": "Salas",
+  "nav": { "bike": "Ciclismo", "pool": "Natación", "run": "Carrera", "gym": "Gimnasio", "locker": "Vestuario y recuperación" },
   "room": { "gym": "Gimnasio", "pool": "Piscina", "bike": "Sala de bici", "run": "Sala de carrera", "locker": "Vestuario" },
   "item": { "coffee-machine": "Cafetera", "smart-bike": "Tu bici", "smart-trainer": "Rodillo inteligente" },
   "roledesc": "editor de la base",
@@ -2785,14 +2791,6 @@ es.cp = {
     "occupied": "Ya hay algo ahí."
   },
   "nudge": { "+u": "Mover una casilla a la derecha", "-u": "Mover una casilla a la izquierda", "+v": "Mover una casilla hacia delante", "-v": "Mover una casilla hacia atrás" },
-  "zoom": "Zoom",
-  "zoomIn": "Acercar",
-  "zoomOut": "Alejar",
-  "zoomFit": "Ver toda la base",
-  "actsAria": "Base",
-  "rooms": "Salas",
-  "roomsTitle": "Salas de tu base",
-  "roomsNote": "Una sala por cada disciplina que entrenas, más el vestuario. Tus objetos y todo lo construido siguen siendo tuyos aunque ocultes una sala.",
   "needOne": "Deja al menos una sala."
 };
 

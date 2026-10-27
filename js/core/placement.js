@@ -12,7 +12,7 @@
 //
 //   point(u, v) = back + (right - back) · u / cols + (left - back) · v / rows
 //
-// Nothing here touches the DOM; compound-view.js draws it.
+// Nothing here touches the DOM; diorama-view.js draws it.
 
 const ART = 'icons/Pixelart/NEW';
 
@@ -29,9 +29,7 @@ const floor = (back, right, left, cols = 8, rows = 8, blocked = []) => ({ back, 
  *   back/right/left  floor corners in % of the art (x, y)
  *   cols × rows      tiles along u × v
  *   blocked          [u0, v0, u1, v1) boxes nothing may stand on (the pool's water)
- * Tiles are the same size in every room once the compound maps each room onto
- * its block (compound-geometry.js): 8 per block side, so the wide locker,
- * two blocks long, has 8 × 16.
+ * Each square room's floor is an 8 × 8 grid (the wide locker, two rooms long, 8 × 16).
  */
 export const ROOM_GEOMETRY = {
   gym: floor([51, 37], [97, 64], [3, 64]),

@@ -109,6 +109,37 @@ const DRAW = {
     for (const x of [10, 22]) { k.disc(x, 12, 3, C.grey); k.disc(x, 12, 1, C.steel); k.disc(x, 21, 4, C.grey); k.disc(x, 21, 2, C.steel2); }
     k.rect(5, 6, 22, 1, C.grey); k.set(13, 26, C.gold); k.set(25, 26, C.gold);
   },
+  // rare props, built from blueprints (collections.js): gold and a little grander
+  'bike-podium': (k) => {
+    k.rect(3, 20, 9, 9, C.steel); k.rect(3, 20, 9, 1, C.mist);     // 2nd
+    k.rect(12, 14, 9, 15, C.gold); k.rect(12, 14, 9, 1, C.gold3);  // 1st
+    k.rect(21, 23, 9, 6, C.oat); k.rect(21, 23, 9, 1, C.gold3);    // 3rd
+    k.rect(15, 19, 3, 5, C.gold2); k.rect(6, 23, 3, 3, C.steel2); k.rect(24, 25, 3, 2, C.oat2);
+    k.disc(16, 8, 3, C.gold); k.rect(14, 11, 5, 1, C.gold2); k.set(16, 8, C.gold3);
+  },
+  'run-statue': (k) => {
+    k.rect(8, 25, 16, 4, C.steel2); k.rect(9, 24, 14, 1, C.mist);
+    k.disc(17, 5, 2, C.gold);
+    k.line(17, 8, 15, 15, C.gold); k.line(16, 8, 14, 15, C.gold2);
+    k.line(16, 9, 21, 12, C.gold); k.line(16, 9, 11, 11, C.gold);
+    k.line(15, 15, 20, 19, C.gold); k.line(20, 19, 19, 24, C.gold);
+    k.line(14, 15, 11, 20, C.gold2); k.line(11, 20, 8, 21, C.gold2);
+    k.set(18, 5, C.gold3);
+  },
+  'swim-blocks': (k) => {
+    k.rect(6, 22, 20, 7, C.blue); k.rect(6, 22, 20, 1, C.sky);
+    k.rect(9, 12, 14, 10, C.gold2); k.rect(8, 10, 16, 3, C.gold); k.rect(8, 10, 16, 1, C.gold3);
+    k.rect(14, 15, 4, 4, C.white); k.set(15, 16, C.ink); k.set(16, 17, C.ink);
+    k.rect(10, 13, 1, 9, C.gold); k.rect(21, 13, 1, 9, C.gold);
+  },
+  'gym-cabinet': (k) => {
+    k.rect(6, 3, 20, 26, C.oat2); k.rect(7, 4, 18, 24, C.navy);
+    k.rect(7, 12, 18, 1, C.oat); k.rect(7, 20, 18, 1, C.oat);
+    k.rect(15, 4, 1, 24, C.oat2);
+    for (const [x, y] of [[10, 8], [20, 8], [11, 16], [20, 16], [10, 24]]) { k.rect(x - 1, y - 2, 3, 2, C.gold); k.set(x, y, C.gold2); k.rect(x - 1, y + 1, 3, 1, C.gold2); }
+    k.rect(8, 5, 2, 3, C.sky); k.rect(17, 5, 2, 3, C.sky);
+    k.set(14, 16, C.gold3); k.set(17, 16, C.gold3);
+  },
 };
 function lights(k) {
   k.rect(15, 8, 2, 20, C.steel2); k.rect(12, 27, 8, 2, C.steel2);

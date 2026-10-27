@@ -8,16 +8,18 @@ import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { isDemo } from './demo.js';
 import { walletFold, fuelHeld } from '../core/wallet.js';
-import { gearById, GEAR_RULES, KITS, FUELS, fuelById, currencyOf, tierId } from '../core/gear.js';
+import { gearById, GEAR_RULES, GEAR_SINCE, KITS, FUELS, fuelById, currencyOf, tierId } from '../core/gear.js';
 import { withFitted, jobPhase, placeJob, fitMinutes, cancelRefund, reflow, WORKSHOP_RULES } from '../core/workshop.js';
 import { propById } from '../core/scenes.js';
-import { canUseFuel } from '../core/boosts.js';
+import { canUseFuel, starRow } from '../core/boosts.js';
+import { collectionAwards, sportLevel } from '../core/collections.js';
 import { t } from '../core/i18n.js';
 
 const KEY = 'moske-gear';
 // jobs, bays and offset come from workshop() (0022): offset is the server's clock
 // minus this device's, so countdowns follow the server however the phone is set
-const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0 };
+// blueprints (rare props built) and prestige (stars) come from 0023 (docs/LOOP.md §4)
+const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [] };
 const listeners = new Set();
 
 function load() {
@@ -34,7 +36,7 @@ let state = load();
 // inventory and the boosted numbers can be reviewed without an account
 function demoState() {
   const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
-  const inventory = ['bike-wheels-t1', 'bike-wheels-t2', 'bike-frame-t1', 'bike-aerobars-t1', 'run-shoes-t1', 'gym-belt-t1', 'kit-moske-navy', 'kit-moske-sand']
+  const inventory = ['bike-wheels-t1', 'bike-wheels-t2', 'bike-frame-t1', 'bike-aerobars-t1', 'bike-power-t1', 'run-shoes-t1', 'gym-belt-t1', 'kit-moske-navy', 'kit-moske-sand']
     .map((item_id, i) => ({ item_id, acquired_at: ago(24 * 30 - i) }));
   // ?demo=1&gel=0 starts with no fuel running (to review taking one)
   let gelOn = true;
@@ -53,7 +55,9 @@ function demoState() {
     { id: 3, item_id: 'bike-wheels-t3', cost: 850, bay: 1, started_at: min(-50), finishes_at: min(190), state: 'queued' },
     { id: 4, item_id: 'bike-rack', cost: 180, bay: 1, started_at: min(190), finishes_at: min(220), state: 'queued' },
   ];
-  return { uid: 'demo', inventory, spends, boosts, quests: [], wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now() };
+  // twenty missions done since the start: twenty fragments towards a rare prop (24)
+  const quests = Array.from({ length: 20 }, (_, i) => ({ day: GEAR_SINCE, quest_id: `demo-${i}` }));
+  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [] };
 }
 
 /** Can this device talk to the workshop at all (signed in, or demo)? */
@@ -76,8 +80,18 @@ export const serverNow = () => Date.now() + (Number(rawState().offset) || 0);
  */
 export function gearState() {
   const s = rawState();
-  return { ...s, inventory: withFitted(s.inventory, s.jobs, serverNow()) };
+  return { ...s, inventory: [...withFitted(s.inventory, s.jobs, serverNow()), ...loopRows(s)] };
 }
+
+// rare props you built and prestige stars, as inventory rows: the scene draws
+// the props, the quadrant counts them, and gearBoost() adds the stars
+const loopRows = (s) => [
+  ...(s.blueprints || []).map((b) => ({ item_id: b.item_id, acquired_at: b.built_at })),
+  ...(s.prestige || []).map((p) => starRow(p.sport, p.star, p.created_at)),
+];
+
+/** A sport's level from its boosted XP, after any prestige resets: { level, …, stars, artLevel }. */
+export const sportLevelOf = (sport, xp) => sportLevel(xp, rawState().prestige, sport);
 
 export function onGear(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 const emit = () => {
@@ -145,12 +159,14 @@ export async function refreshGear() {
     const t0 = Date.now();
     const ws = await c.rpc('workshop');
     const t1 = Date.now();
-    const [inv, sp, bo, qc, wa] = await Promise.all([
+    const [inv, sp, bo, qc, wa, bp, pr] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
       c.from('quest_completions').select('day, quest_id'),
       c.rpc('wallet'),
+      c.from('user_blueprints').select('item_id, fragments, built_at'),
+      c.from('user_prestige').select('sport, star, xp_at, created_at'),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -158,7 +174,9 @@ export async function refreshGear() {
     const w = ws.error ? null : ws.data;
     const offset = w?.now ? Date.parse(w.now) - (t0 + t1) / 2 : 0;
     state = { uid, inventory: inv.data || [], spends: sp.data || [], boosts: bo.data || [], quests: qc.data || [], wallet: wa.data || null,
-      jobs: w?.jobs || [], bays: w?.bays || WORKSHOP_RULES.bays, offset: Number.isFinite(offset) ? offset : 0, at: Date.now() };
+      jobs: w?.jobs || [], bays: w?.bays || WORKSHOP_RULES.bays, offset: Number.isFinite(offset) ? offset : 0, at: Date.now(),
+      // before 0023 is live these tables aren't there: nothing built, no stars
+      blueprints: bp.error ? [] : bp.data || [], prestige: pr.error ? [] : pr.data || [] };
     save(state);
     emit();
   } catch (e) {
@@ -179,6 +197,17 @@ export function gearError(e) {
 // can be reviewed without an account (nothing is stored or sent)
 function demoCall(fn, args) {
   const s = rawState();
+  if (fn === 'build_blueprint') {
+    s.blueprints.push({ item_id: args.p_item, fragments: 24, built_at: new Date().toISOString() });
+    listeners.forEach((f) => f(s));
+    return s;
+  }
+  if (fn === 'prestige') {
+    const star = s.prestige.filter((p) => p.sport === args.p_sport).length + 1;
+    s.prestige.push({ sport: args.p_sport, star, xp_at: args.xp, created_at: new Date().toISOString() });
+    listeners.forEach((f) => f(s));
+    return s;
+  }
   if (fn === 'workshop_cancel' || fn === 'workshop_skip') return demoJob(fn, args, s);
   const owned = (id) => s.inventory.some((r) => r.item_id === id);
   const now = new Date().toISOString();
@@ -257,6 +286,10 @@ export const useGel = () => useFuel('gel');
 export const cancelJob = (id) => call('workshop_cancel', { p_job: id });
 /** Finish the job being fitted now with a gel of this kind. */
 export const skipJob = (id, kind) => call('workshop_skip', { p_job: id, p_kind: kind });
+/** Build a rare prop from blueprint fragments (docs/LOOP.md §4.2). */
+export const buildBlueprint = (id) => call('build_blueprint', { p_item: id });
+/** Reset a discipline's level for a star (§4.3). `xp` is only for demo mode; the server reads its own. */
+export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_sport: sport, xp }) : call('prestige', { p_sport: sport }));
 
 /**
  * Your coins and carbs: the server's wallet when there is one; otherwise
@@ -266,7 +299,7 @@ export const skipJob = (id, kind) => call('workshop_skip', { p_job: id, p_kind: 
 export function walletNow(workouts) {
   const s = gearState();
   const w = s.wallet;
-  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends });
+  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory) });
   const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id, s.jobs)]));
   return {
     coins: Number(w ? w.coins : local.coins) || 0,

@@ -127,3 +127,17 @@ and `npm test` will tell you if a placeholder went missing.
 | Lane-rope reel | Carrete de corcheras | |
 | Kit (shop tab, was "Clothes") | Ropa | Equipación |
 | LV (quadrant level) | NV | Niv. |
+
+## The long loop: home base, collections, blueprints, prestige (added 2026-10-27)
+
+| English | Now | Alternatives |
+| --- | --- | --- |
+| Your base | Tu base | Tu campamento |
+| Quadrant | Zona | Cuadrante |
+| Collection / set (Bronze set) | Colección / juego (Juego de bronce) | Set, conjunto |
+| Blueprint | Plano | Diseño |
+| Fragment | Fragmento | Pieza |
+| Work towards this | Ir a por esta | Marcar como objetivo |
+| Prestige | Prestigio | |
+| Reset for a star | Reiniciar por una estrella | Volver a empezar |
+| Gold starting block | Poyete de oro | Plataforma de salida de oro |

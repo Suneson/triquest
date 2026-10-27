@@ -18,7 +18,9 @@ import {
 import { leaderboardShell, loadLeaderboard, athleteByUid } from './leaderboard.js';
 import { shopShell, loadShop } from './shop.js';
 import { openPublicProfile } from './profile.js';
-import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER } from './profile-game.js';
+import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER, avatarButton } from './profile-game.js';
+import { renderBase, wireBase } from './base-view.js';
+import { PRESTIGE, canPrestige } from '../core/collections.js';
 import { onSwipe, nextSport } from './swipe.js';
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
@@ -34,7 +36,7 @@ import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { openSeasonPath } from './game.js';
-import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName } from './nav.js';
+import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName, openRoute, leaveRoute } from './nav.js';
 import { haptic } from './haptics.js';
 import { enablePull } from './pull.js';
 import { morph } from './vt.js';
@@ -46,7 +48,7 @@ import { DISCIPLINES } from '../core/disciplines.js';
 import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
 import { openCheckinSheet } from './checkin.js';
-import { gearState, refreshGear, onGear, onWorkshopFinish } from './gear-state.js';
+import { gearState, refreshGear, onGear, onWorkshopFinish, sportLevelOf, takePrestige, gearError, gearEnabled } from './gear-state.js';
 import { gearById } from '../core/gear.js';
 import { propById } from '../core/scenes.js';
 import { refreshFeats, onFeats } from './feats-state.js';
@@ -73,6 +75,7 @@ const appState = {
   lbView: 'season',
   journalDate: null, // ISO date selected in the Journal strip (null = today)
   pgSport: 'bike',   // which sport the Profile scene shows
+  pgView: 'base',    // the Profile tab lands on the home base; 'scene' is one sport's scene (docs/LOOP.md §3)
   pgSlide: '',       // 'left' / 'right': the next scene slides in from that side
   weekOpen: localStorage.getItem('moske-week-open') === '1', // Home's week strip, opened
   questsOpen: false, // cleared quests unfolded (this session only)
@@ -168,7 +171,8 @@ function snapshot(ctx) {
     verified: new Set(ctx.workouts.filter(isVerifiedW).map((w) => w.id)),
     quests: new Set(ctx.quests.filter((q) => q.done).map((q) => q.id)),
     questDay: ctx.today,
-    levels: Object.fromEntries(SPORTS.map((s) => [s, levelFromTotalXp(ctx.boost.sportXp[s] || 0).level])),
+    // after a prestige reset the level counts from the reset (a reset is never a "level-up")
+    levels: Object.fromEntries(SPORTS.map((s) => [s, sportLevelOf(s, ctx.boost.sportXp[s] || 0).level])),
   };
 }
 
@@ -277,6 +281,9 @@ function render() {
   } else if (appState.tab === 'shop') {
     view.innerHTML = shopShell();
     loadShop();
+  } else if (appState.tab === 'progress' && appState.pgView === 'base') {
+    view.innerHTML = renderBase(ctx, avatarButton(ctx));
+    wireBase(view);
   } else if (appState.tab === 'progress') {
     view.innerHTML = renderProfileGame(ctx, appState.pgSport, appState.pgSlide);
     appState.pgSlide = '';
@@ -327,6 +334,23 @@ function setPgSport(sport) {
   render();
 }
 
+// The home base → one sport's scene and back. The scene is a route, so the
+// system back, Escape and the edge swipe return to the base like a layer.
+function enterScene(sport) {
+  if (!SPORT_ORDER.includes(sport)) return;
+  appState.pgSport = sport;
+  appState.pgSlide = '';
+  try { localStorage.setItem('moske-pg-sport', sport); } catch { /* private mode */ }
+  appState.pgView = 'scene';
+  openRoute('pg-scene', { onClose: () => { appState.pgView = 'base'; if (appState.tab === 'progress') render(); } });
+  render();
+}
+function leaveScene() {
+  leaveRoute('pg-scene');
+  appState.pgView = 'base';
+  render();
+}
+
 // Scene motion is pure CSS; this only pauses it while the page is hidden.
 function startScene(view) {
   const screen = view.querySelector('.pg-screen');
@@ -338,8 +362,10 @@ document.addEventListener('visibilitychange', () => {
 
 // Level-up sheet: the previous level's art wipes away to reveal the new one.
 function openLevelUp(sport, level) {
-  const before = sceneFor(sport, level - 1);
-  const after = sceneFor(sport, level);
+  // after a prestige reset the scenery stays where it was: no new art to reveal
+  const stars = sportLevelOf(sport, buildCtx().boost.sportXp[sport] || 0).stars;
+  const before = sceneFor(sport, stars ? Math.max(level, PRESTIGE.level) : level - 1);
+  const after = sceneFor(sport, stars ? Math.max(level, PRESTIGE.level) : level);
   if (!after) return;
   const art = (s) => (s.kind === 'still' ? s.entry.src : s.entry.char);
   const ar = after.kind === 'still' ? `${after.entry.w} / ${after.entry.h}` : '768 / 624';
@@ -418,7 +444,7 @@ function onClick(e) {
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
-      if (appState.tab === 'progress') autoStravaSync(); // silent background pull
+      if (appState.tab === 'progress') { appState.pgView = 'base'; autoStravaSync(); } // lands on the base; silent background pull
       withTabTransition(from, appState.tab, () => {
         render();
         // each tab comes back where you left it; the calendar opens on today's row
@@ -450,8 +476,10 @@ function onClick(e) {
     case 'open-sport-levels': openSportLevels(el.dataset.sport); break;
     case 'open-lightbox': openLightbox(el.dataset.src, el.dataset.sport); break;
     case 'pg-profile': openFitnessHub(buildCtx()); break;
-    case 'open-gear': openGear(buildCtx(), appState.pgSport); break;
-    case 'open-base': openShop(buildCtx(), { tab: 'base', sport: el.dataset.sport || appState.pgSport }); break;
+    case 'open-gear': openGear(buildCtx(), el.dataset.sport || appState.pgSport); break;
+    case 'open-base': openShop(buildCtx(), { tab: 'base', sport: el.dataset.sport || appState.pgSport, focus: el.dataset.bp ? 'bp' : '' }); break;
+    case 'enter-scene': enterScene(el.dataset.sport); break;
+    case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
     case 'ai-onboard': startAIPlan(); break;
@@ -828,17 +856,53 @@ function openWorkoutDetail(id) {
 }
 function openSportLevels(sport) {
   if (!sport) return;
-  const level = levelFromTotalXp(buildCtx().boost.sportXp[sport] || 0).level;
+  const xp = buildCtx().boost.sportXp[sport] || 0;
+  const lv = sportLevelOf(sport, xp);
   const root = openLayer('levels');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(t('main.levelsAria', { sport: (DISCIPLINES[sport] || DISCIPLINES.other).label }))}">
       ${sheetHead({ icon: 'star', title: t('main.levels'), closeAttr: 'data-wd-close' })}
-      <div class="modal-body">${sportLevelCarousel(sport, level)}</div>
+      <div class="modal-body">${sportLevelCarousel(sport, lv.artLevel)}${prestigePanel(sport, xp)}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
+  root.querySelector('[data-prestige]')?.addEventListener('click', async (e) => {
+    const name = (DISCIPLINES[sport] || DISCIPLINES.other).label;
+    if (!confirm(t('loop.prestige.confirm', { sport: name, lv: PRESTIGE.level, pct: PRESTIGE.bonusBp / 100 }))) return;
+    await busy(e.currentTarget, async () => {
+      try {
+        await takePrestige(sport, xp);
+        haptic('levelUp');
+        toast(`<b>${t('loop.prestige.done', { sport: esc(name) })}</b>`, { icon: svg('star') });
+        closeLayer(root);
+        render();
+      } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
+    });
+  });
   // Centre the current-level frame in the swipeable strip.
   const cur = root.querySelector('.lvl-frame.is-current');
   if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
+// Prestige (docs/LOOP.md §4.3): only here, in the levels sheet you opened, and
+// only once you've reached the level or hold a star. Opt-in, said plainly,
+// never suggested anywhere else.
+function prestigePanel(sport, xp) {
+  if (!gearEnabled()) return '';
+  const lv = sportLevelOf(sport, xp);
+  if (!lv.stars && lv.level < PRESTIGE.level) return '';
+  const can = canPrestige(xp, gearState().prestige, sport);
+  const name = (DISCIPLINES[sport] || DISCIPLINES.other).label;
+  const stars = Array.from({ length: PRESTIGE.maxStars }, (_, i) => `<i class="${i < lv.stars ? 'on' : ''}">★</i>`).join('');
+  const foot = can.ok
+    ? `<button class="btn ghost" data-prestige>${svg('star')} ${t('loop.prestige.button', { sport: esc(name) })}</button>`
+    : `<p class="gw-note">${can.reason === 'max' ? t('loop.prestige.max') : t('loop.prestige.next', { lv: PRESTIGE.level, n: lv.level })}</p>`;
+  return `<section class="pr-panel" aria-labelledby="pr-h">
+    <h3 id="pr-h" class="gw-row-h">${svg('star')} ${t('loop.prestige.title')}</h3>
+    <p class="pr-stars" role="img" aria-label="${esc(t('loop.prestige.starsAria', { n: lv.stars }))}">${stars}</p>
+    <p class="gw-note">${t('loop.prestige.what', { sport: esc(name), lv: PRESTIGE.level, pct: PRESTIGE.bonusBp / 100 })}</p>
+    <p class="gw-note">${t('loop.prestige.keeps')}</p>
+    ${foot}
+  </section>`;
 }
 
 // Fullscreen immersive lightbox for a single level frame. Tapping anywhere fades it out.
@@ -1058,7 +1122,7 @@ async function boot() {
   });
   // Profile tab: swipe left / right to change sport, as well as the four buttons
   onSwipe(document.getElementById('view'), (dir) => setPgSport(nextSport(SPORT_ORDER, appState.pgSport, dir)), {
-    when: () => appState.tab === 'progress' && !hasLayers(),
+    when: () => appState.tab === 'progress' && appState.pgView === 'scene' && !document.querySelector('.layer'),
   });
 
   // gear and gels: re-render when the server copy changes; a gel running out redraws too

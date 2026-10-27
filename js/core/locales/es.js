@@ -2689,4 +2689,81 @@ es.prop = {
   }
 };
 
+// ---- el ciclo largo, fases 3 y 4: base, colecciones, planos, prestigio (docs/LOOP.md) ----
+es.gear.err["fragments_short"] = "Aún no tienes fragmentos suficientes para esa pieza.";
+es.gear.err["prestige_level"] = "Esa disciplina aún no tiene el nivel para una estrella.";
+es.gear.err["prestige_max"] = "Esa disciplina ya tiene todas las estrellas.";
+es.loop.base = {
+  "title": "Tu base",
+  "islandAria": "Tus cuatro zonas",
+  "quadAria": "{sport}: {quad} nivel {q}, nivel de deporte {n}, {won} de {total} logros. Entrar",
+  "buildingAria": "Construyendo {name}",
+  "lvl": "NV {n}",
+  "hint": "Toca una zona para entrar.",
+  "back": "Volver a tu base",
+  "next": "Lo siguiente",
+  "building": "En el taller",
+  "workshopFree": "No hay nada en marcha. El taller está libre.",
+  "more": {
+    "one": "+{n} más",
+    "other": "+{n} más"
+  },
+  "afford": "Monedas",
+  "canBuy": {
+    "one": "{n} cosa que puedes construir ya",
+    "other": "{n} cosas que puedes construir ya"
+  },
+  "short": "{name}: te faltan {n} monedas",
+  "feat": "El logro más cerca"
+};
+es.loop.col = {
+  "title": "Colecciones",
+  "note": "Todas las piezas de una disciplina en un nivel completan ese juego: un premio único en monedas y una placa en su tablón.",
+  "bronze": "Juego de bronce",
+  "silver": "Juego de plata",
+  "gold": "Juego de oro",
+  "aria": "{set}: {n} de {of} piezas",
+  "bonus": "Premio al completarlo: {n} monedas",
+  "paid": "{n} monedas cobradas · {date}",
+  "boardAria": {
+    "one": "{n} placa de juego",
+    "other": "{n} placas de juego"
+  }
+};
+es.loop.bp = {
+  "title": "Planos",
+  "note": "Cada misión que completas vale {n} fragmento. Elige una pieza rara como objetivo; cuando tengas suficientes, constrúyela. Nada es al azar.",
+  "have": "Fragmentos: {n}",
+  "price": {
+    "one": "{n} fragmento",
+    "other": "{n} fragmentos"
+  },
+  "aim": "Ir a por esta",
+  "aiming": "tu objetivo",
+  "progress": "{n} de {of} fragmentos",
+  "left": "Faltan {n}",
+  "ready": "Lista para construir",
+  "pickOne": "Elige una pieza rara como objetivo",
+  "build": "Construir",
+  "builtToast": "Construida con su plano. Ya está en tu escena."
+};
+es.loop.prestige = {
+  "title": "Prestigio",
+  "starsAria": {
+    "one": "{n} estrella de prestigio",
+    "other": "{n} estrellas de prestigio"
+  },
+  "what": "Opcional. Vuelve {sport} al nivel 1 a cambio de una estrella en su tablón y un +{pct}% en cada sesión de {sport} a partir de entonces. Puedes hacerlo en el nivel {lv}.",
+  "keeps": "Tu escenario, equipo, objetos, logros, monedas y Ranking quedan exactamente igual. Si nunca lo haces, no cambia nada.",
+  "button": "Reiniciar {sport} por una estrella",
+  "confirm": "¿Volver {sport} al nivel 1? Conservas tu escenario, equipo, logros y Ranking, y ganas una estrella y un +{pct}% en las sesiones de {sport} desde ahora. No se puede deshacer.",
+  "done": "{sport}: una estrella nueva en el tablón.",
+  "next": "Tu próxima estrella será posible en el nivel {lv}. Estás en el nivel {n}.",
+  "max": "Todas las estrellas conseguidas."
+};
+es.prop["bike-podium"] = { "name": "Podio de oro", "blurb": "Tres escalones, el de arriba dorado. Construido con su plano." };
+es.prop["run-statue"] = { "name": "Estatua del corredor", "blurb": "Un corredor dorado en plena zancada junto a la pista. Construida con su plano." };
+es.prop["swim-blocks"] = { "name": "Poyete de oro", "blurb": "El poyete de salida de las finales. Construido con su plano." };
+es.prop["gym-cabinet"] = { "name": "Vitrina de trofeos", "blurb": "Puertas de cristal, tiradores dorados y sitio para más. Construida con su plano." };
+
 export default es;

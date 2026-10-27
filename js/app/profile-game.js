@@ -12,7 +12,7 @@ import { sessionLoad, acwr, weekHours } from '../core/load.js';
 import { svg } from '../core/icons.js';
 import { rollNum } from './motion.js';
 import { esc, mondayOf, meter, stillCorners } from './ui.js';
-import { sceneFor, backdropCss, timeOfDay, propsFor } from '../core/scenes.js';
+import { sceneFor, backdropCss, timeOfDay, scenePropsFor } from '../core/scenes.js';
 import { quadrantLevel } from '../core/workshop.js';
 import { addDays, parseISO, shortLabel, todayISO } from '../core/dates.js';
 import { currentUser } from './auth.js';
@@ -30,7 +30,7 @@ import { DISCIPLINES } from '../core/disciplines.js';
 import { gelChip } from './gel-chip.js';
 import { resourceBars } from './gear-view.js';
 import { kitSprite, featItemById } from '../core/gear.js';
-import { gearState, gearEnabled, unseenFinished } from './gear-state.js';
+import { gearState, gearEnabled, unseenFinished, sportLevelOf } from './gear-state.js';
 import { trophyBoard } from './feats-view.js';
 import { ownsFeatItem } from './feats-state.js';
 
@@ -108,9 +108,10 @@ function sceneFx(fx = {}, tod = 'day') {
 // Drawn over the art by the scene's anchors: 'back' ones under the athlete
 // layer, 'front' ones over it, both under the time-of-day tint so they're lit
 // like the rest of the scene. Floodlights glow from dusk.
-function propsHtml(sport, tod) {
+export function propsHtml(sport, tod) {
   const owned = new Set(gearState().inventory.map((r) => r.item_id));
-  const mine = propsFor(sport).filter((p) => owned.has(p.id));
+  // rare props (built from blueprints) stand in the scene like the rest
+  const mine = scenePropsFor(sport).filter((p) => owned.has(p.id));
   const one = (p) => `<img class="pg-prop" src="${esc(p.art)}" width="128" height="128" alt="" aria-hidden="true" loading="lazy"
       style="--x:${pct(p.anchor.x)};--y:${pct(p.anchor.y)};--w:${pct(p.anchor.w)}">`;
   const lit = tod === 'dusk' || tod === 'night';
@@ -173,8 +174,10 @@ export const SPORT_ORDER = SWITCH.map(([s]) => s);
  * full screen; another athlete's profile embeds it (`embed`) above their stats,
  * with their levels and a read-only HUD.
  */
-function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '', gearXp = 0, kit = null, extras = '' }) {
-  const scene = sceneFor(sport, p.level) || sceneFor('bike', p.level);
+function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = '', gearXp = 0, kit = null, extras = '', lead = '' }) {
+  // the scenery follows the highest level reached, so a prestige reset keeps it (docs/LOOP.md §4.3)
+  const art = p.artLevel ?? p.level;
+  const scene = sceneFor(sport, art) || sceneFor('bike', art);
   const still = scene.kind === 'still';
   // lighting follows the viewer's local clock: dawn, day, dusk, night
   const tod = timeOfDay(new Date().getHours());
@@ -192,7 +195,7 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
     return `<button class="pg-sport ${on ? 'active' : ''}" data-action="${action}" data-sport="${s}"${on ? ' aria-current="true"' : ''}>
        ${svg(s)}<span>${label}</span></button>`;
   };
-  const lvl = `LVL ${rollNum(p.level, `lvl-${key}`)}`;
+  const lvl = `LVL ${rollNum(p.level, `lvl-${key}`)}${p.stars ? `<span class="lvl-stars" aria-hidden="true">${'★'.repeat(p.stars)}</span>` : ''}`;
 
   return `
   <section class="pg-screen ${still ? 'pg-still' : ''} tod-${tod}${indoor ? ' indoor' : ''}${embed ? ' pg-embed' : ''}" style="${bd}" data-pg-swipe>
@@ -200,6 +203,7 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
     ${extras}
 
     <div class="pg-topbar">
+      ${lead}
       <div class="pg-sports" role="group" aria-label="${t('pg.sportGroup')}">${SWITCH.map(sportBtn).join('')}</div>
       ${avatarBtn}
     </div>
@@ -219,18 +223,26 @@ function sceneScreen({ sport, p, action, avatarBtn = '', embed = false, slide = 
   </section>`;
 }
 
-export function renderProfileGame(ctx, sport = 'bike', slide = '') {
+/** The round avatar that opens the Fitness hub (the scene and the base both carry it). */
+export function avatarButton(ctx) {
   const initial = esc((athleteName() || 'A').charAt(0).toUpperCase());
-  // your own levels count gear and gels (docs/GEAR.md); the HUD says how much of it is gear
+  return `<button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`;
+}
+
+export function renderProfileGame(ctx, sport = 'bike', slide = '') {
+  // your own levels count gear and gels (docs/GEAR.md); the HUD says how much of it is gear.
+  // A prestige reset counts the level from the reset; the stars ride on the level chip.
   const boosted = ctx.boost?.sportXp?.[sport];
-  const p = boosted == null ? sportProgress(ctx.workouts, sport) : levelFromTotalXp(boosted);
+  const p = sportLevelOf(sport, boosted ?? sportProgress(ctx.workouts, sport).totalXp);
   return sceneScreen({
     sport,
     p,
     action: 'pg-sport',
     slide,
     gearXp: boosted == null ? 0 : boosted - (ctx.boost.sportBase[sport] || 0),
-    avatarBtn: `<button class="pg-avatar" data-action="pg-profile" aria-label="${t('pg.openProfile')}">${avatarInner(ctx, initial)}</button>`,
+    avatarBtn: avatarButton(ctx),
+    // back to the home base (the system back does the same)
+    lead: `<button class="pg-home" data-action="pg-base" aria-label="${esc(t('loop.base.back'))}">${svg('home')}</button>`,
     // the kit you wear shows on the character where a recoloured sprite exists
     kit: ownedKit(ctx.settings?.kit),
     // coins and carbs top right; the inventory bottom left and the shop bottom right of the scene

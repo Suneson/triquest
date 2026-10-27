@@ -167,6 +167,27 @@ const PROP_BY_ID = new Map(PROPS.map((p) => [p.id, p]));
 export const propById = (id) => PROP_BY_ID.get(id) || null;
 export const propsFor = (sport) => PROPS.filter((p) => p.sport === sport);
 
+// Rare props: never sold. Each is built from blueprint fragments (one per
+// mission completed, collections.js), and the player chooses which to work
+// towards. Drawn like any prop; worth more to the quadrant level.
+//   fragments  the price, shown before you start
+const rare = (id, sport, fragments, points, anchor, z = 'back') => ({
+  id, sport, fragments, points, anchor, z, glow: false, rare: true,
+  get name() { return t(`prop.${id}.name`); },
+  get blurb() { return t(`prop.${id}.blurb`); },
+  art: `${ART}/PROPS/${id}.png`,
+});
+export const RARE_PROPS = [
+  rare('bike-podium', 'bike', 24, 5, { x: 76, y: 58, w: 11 }),
+  rare('run-statue', 'run', 24, 5, { x: 12, y: 58, w: 10 }, 'front'),
+  rare('swim-blocks', 'swim', 24, 5, { x: 76, y: 64, w: 10 }, 'front'),
+  rare('gym-cabinet', 'gym', 24, 5, { x: 12, y: 42, w: 9 }),
+];
+const RARE_BY_ID = new Map(RARE_PROPS.map((p) => [p.id, p]));
+export const rareById = (id) => RARE_BY_ID.get(id) || null;
+/** Everything that can stand in a sport's scene: the props you buy and the rare ones. */
+export const scenePropsFor = (sport) => [...propsFor(sport), ...RARE_PROPS.filter((p) => p.sport === sport)];
+
 export const SCENES = {
   bike: { kind: 'layered', get label() { return t('sport.cycling'); }, levels: bike, board: BOARDS.bike },
   run: { kind: 'still', get label() { return t('sport.running'); }, levels: run, board: BOARDS.run },

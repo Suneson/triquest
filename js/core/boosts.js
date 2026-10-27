@@ -13,6 +13,7 @@
 // Boosts are for your own levels and scenes only. Ranks uses base XP.
 
 import { SLOTS, GEAR_RULES, ownedTier } from './gear.js';
+import { PRESTIGE } from './collections.js';
 import { earnsXp, xpLedger, proofOf } from './xp-rules.js';
 
 const ms = (s) => {
@@ -30,7 +31,20 @@ export function gearBoost(inventory, sport, at = null) {
   const slots = SLOTS[sport];
   if (!slots) return 0;
   const sum = slots.reduce((n, slot) => n + GEAR_RULES.tierBoostBp[ownedTier(inventory, sport, slot, at)], 0);
-  return Math.min(GEAR_RULES.sportCapBp, sum);
+  return Math.min(GEAR_RULES.sportCapBp, sum) + starBp(inventory, sport, at);
+}
+
+/**
+ * Prestige stars (docs/LOOP.md §4.3) ride in the inventory as
+ * `prestige:<sport>:<n>` rows from the moment they were taken; each adds
+ * PRESTIGE.bonusBp on top of the gear cap.
+ */
+export const starRow = (sport, star, at) => ({ item_id: `prestige:${sport}:${star}`, acquired_at: at });
+function starBp(inventory, sport, at) {
+  const atMs = at == null ? Infinity : ms(at);
+  const n = (inventory || []).filter((r) => String(r?.item_id || '').startsWith(`prestige:${sport}:`)
+    && (atMs === Infinity || (ms(r.acquired_at) ?? Infinity) <= atMs)).length;
+  return n * PRESTIGE.bonusBp;
 }
 
 const FUEL = GEAR_RULES.fuel.items;

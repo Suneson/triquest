@@ -69,10 +69,11 @@ const spendAmount = (s) => Number(s?.amount ?? s?.coins) || 0;
 
 /**
  * Both balances, with the storage cap applied in time order (a challenge
- * payout is an earning, so it can overflow a full store like any other):
+ * payout or a collection bonus is an earning, so it can overflow a full store
+ * like any other):
  * { coins, carbs, earned: { coins, carbs }, spent: { coins, carbs }, lost: { coins, carbs } }.
  */
-export function walletFold({ workouts = [], quests = [], spends = [], moves = [] } = {}) {
+export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [] } = {}) {
   const ev = [];
   for (const d of coinDays(workouts)) ev.push({ at: `${d.date}T00:00:00.000Z`, rank: 0, key: d.date, coins: d.coins, carbs: d.carbs });
   for (const q of questRewards(quests)) ev.push({ at: `${q.day}T00:00:00.000Z`, rank: 1, key: q.quest_id, coins: q.coins, carbs: q.carbs });
@@ -87,6 +88,10 @@ export function walletFold({ workouts = [], quests = [], spends = [], moves = []
     const t = Date.parse(m?.created_at);
     const at = Number.isFinite(t) ? new Date(t).toISOString() : '9999-12-31T00:00:00.000Z';
     ev.push({ at, rank: 3, key: String(m?.id ?? i).padStart(12, '0'), coins: Number(m?.coins) || 0, carbs: 0 });
+  });
+  // collection set bonuses (collections.js), from the moment the set completed
+  (awards || []).forEach((a) => {
+    ev.push({ at: new Date(Date.parse(a.at)).toISOString(), rank: 4, key: `${a.sport}:${a.tier}`, coins: Number(a.coins) || 0, carbs: 0 });
   });
   ev.sort((a, b) => a.at.localeCompare(b.at) || a.rank - b.rank || a.key.localeCompare(b.key));
   const cap = GEAR_RULES.storageCap;

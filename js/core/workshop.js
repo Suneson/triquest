@@ -15,7 +15,7 @@
 // The functions here are the same rules as the SQL, so tests can check both.
 
 import { gearById, SLOTS, ownedTier } from './gear.js';
-import { propById, PROPS } from './scenes.js';
+import { propById, scenePropsFor } from './scenes.js';
 
 export const WORKSHOP_RULES = {
   fitMin: [0, 10, 60, 240],      // a gear tier's fitting time, by tier (minutes)
@@ -115,11 +115,11 @@ export const skipsOf = (jobs, kind) => (jobs || []).filter((j) => j.skipped_with
 /** Points a quadrant level needs, from level 1 up. */
 export const QUADRANT_STEPS = [0, 2, 5, 9, 14, 20, 27];
 
-/** Build points in a sport: every gear tier owned counts one, every prop its points. */
+/** Build points in a sport: every gear tier owned counts one, every prop (rare ones too) its points. */
 export function quadrantPoints(sport, inventory) {
   const tiers = (SLOTS[sport] || []).reduce((n, slot) => n + ownedTier(inventory, sport, slot), 0);
   const owned = new Set((inventory || []).map((r) => r.item_id));
-  return tiers + PROPS.filter((p) => p.sport === sport && owned.has(p.id)).reduce((n, p) => n + p.points, 0);
+  return tiers + scenePropsFor(sport).filter((p) => owned.has(p.id)).reduce((n, p) => n + p.points, 0);
 }
 
 /** { level, points, next, toNext } — next is the points the next level needs (null at the top). */

@@ -38,7 +38,20 @@ Keep the base of the object at the bottom of the canvas so it stands on the grou
 | `icons/Pixelart/PROPS/gym-chalk.png` | a steel chalk bowl on a pedestal, heaped with white lifting chalk | Gym floor |
 | `icons/Pixelart/PROPS/gym-sound.png` | a pair of black PA speakers on a small amp, round grey speaker cones, one gold status light | Gym mezzanine |
 
+## Rare pieces (Phase 4, built from blueprints)
+
+Rarer than the props, so each should look a little grander, with more gold.
+
+| File | Prompt (after the style line) | Purpose |
+| --- | --- | --- |
+| `icons/Pixelart/PROPS/bike-podium.png` | a three-step race podium, the top step gold with a small gold cup on it, second step silver, third bronze | Cycling yard: built from 24 fragments |
+| `icons/Pixelart/PROPS/run-statue.png` | a gold statue of a runner mid-stride on a grey stone plinth | Track: by the cones |
+| `icons/Pixelart/PROPS/swim-blocks.png` | a gold swimming starting block with a white number plate, standing on a blue tiled edge | Pool deck: by the pool edge |
+| `icons/Pixelart/PROPS/gym-cabinet.png` | a wooden trophy cabinet with glass doors and three shelves of small gold cups | Gym mezzanine |
+
+Collection frames and plaques are drawn in CSS from the gear art you already have, so they need nothing new.
+
 ## Later phases
 
-Mission boards, club crests, season plates, collection frames, climb plaques and
-race medals are added here as their phases are built.
+Mission boards, club crests, season plates, climb plaques and race medals are
+added here as their phases are built.

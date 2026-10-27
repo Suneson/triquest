@@ -15,6 +15,9 @@ import { svg } from '../core/icons.js';
 import { t, fmtNum, fmtDate } from '../core/i18n.js';
 import { FEATS, featsFor, featById, nearMiss, seasonHue, TRIO } from '../core/feats.js';
 import { featItemById } from '../core/gear.js';
+import { collectionsFor, starsIn } from '../core/collections.js';
+import { featProgress } from '../core/base.js';
+import { gearState, gearEnabled } from './gear-state.js';
 import { featAwards, featsSynced, refreshFeats, onFeats, justWon } from './feats-state.js';
 import { openCheckinSheet, checkinOn } from './checkin.js';
 import { busy } from './motion.js';
@@ -43,10 +46,16 @@ export function trophyBoard(sport, box) {
   const feats = [...featsFor(sport), ...featsFor('cross')];
   const won = wonByFeat();
   const n = feats.filter((f) => won.has(f.id)).length;
+  // a plaque for each completed gear set, and a star for each prestige (docs/LOOP.md §4)
+  const s = gearEnabled() ? gearState() : null;
+  const sets = s ? collectionsFor(sport, s.inventory).filter((c) => c.done) : [];
+  const stars = s ? starsIn(s.prestige, sport).length : 0;
+  const extra = [sets.length ? t('loop.col.boardAria', { n: sets.length }) : '', stars ? t('loop.prestige.starsAria', { n: stars }) : ''].filter(Boolean).join('. ');
   return `<button class="pg-board${justWon(sport) ? ' is-fresh' : ''}" data-action="open-trophies" data-sport="${esc(sport)}"
       style="--x:${pct(box.x)};--y:${pct(box.y)};--w:${pct(box.w)};--h:${pct(box.h)}"
-      aria-label="${esc(t('feat.ui.boardAria', { n, total: feats.length }))}">
+      aria-label="${esc(t('feat.ui.boardAria', { n, total: feats.length }) + (extra ? `. ${extra}` : ''))}">
       <span class="pg-board-face" aria-hidden="true">${svg('trophy')}<b class="data-num">${n}</b></span>
+      ${sets.length || stars ? `<span class="pg-board-plaques" aria-hidden="true">${sets.map((c) => `<i class="is-t${c.tier}"></i>`).join('')}${stars ? `<b>${'★'.repeat(stars)}</b>` : ''}</span>` : ''}
       <i class="pg-board-glint" aria-hidden="true"></i>
     </button>`;
 }
@@ -77,11 +86,7 @@ export function featValue(f, v) {
 }
 
 /** How far toward the target, 0–1 (times and paces are lower-is-better). */
-function progressOf(f, nm) {
-  if (!nm || nm.target == null) return 0;
-  if (['time', 'pace', 'steady'].includes(f.kind)) return Math.max(0, Math.min(1, nm.target / nm.best));
-  return Math.max(0, Math.min(1, nm.best / nm.target));
-}
+const progressOf = featProgress;
 
 // ---- the trophy case ------------------------------------------------------------------
 

@@ -16,16 +16,17 @@ import { rollNum, animateIn, busy } from './motion.js';
 import { toast, playAccept } from './effects.js';
 import { haptic } from './haptics.js';
 import { svg } from '../core/icons.js';
-import { t, fmtNum, fmtTime } from '../core/i18n.js';
+import { t, fmtNum, fmtTime, fmtDate } from '../core/i18n.js';
 import {
   SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, CATALOG, FEAT_ITEMS, featItemById, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
 } from '../core/gear.js';
 import { featById, seasonHue } from '../core/feats.js';
 import { featItems } from './feats-state.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
-import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen } from './gear-state.js';
+import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen, buildBlueprint } from './gear-state.js';
 import { jobPhase, jobFor, cancelRefund, fitMinutes, quadrantLevel, WORKSHOP_RULES } from '../core/workshop.js';
-import { propsFor, propById } from '../core/scenes.js';
+import { propsFor, propById, rareById, RARE_PROPS } from '../core/scenes.js';
+import { collectionsFor, blueprintState, COLLECTION_RULES } from '../core/collections.js';
 import { gelChip, pctBp } from './gel-chip.js';
 import { SWITCH } from './profile-game.js';
 import * as store from './store.js';
@@ -100,7 +101,7 @@ export function fitText(min) {
   const h = Math.floor(min / 60); const m = min % 60;
   return h ? (m ? t('loop.ws.hMin', { h, m }) : t('loop.ws.h', { h })) : t('loop.ws.min', { m });
 }
-const itemName = (id) => gearById(id)?.name || propById(id)?.name || id;
+const itemName = (id) => gearById(id)?.name || propById(id)?.name || rareById(id)?.name || id;
 function itemTile(id) {
   const g = gearById(id);
   if (g) return artTile(g.sport, g.slot, g.tier);
@@ -211,6 +212,69 @@ function quadHead(sport, inventory) {
     <small>${q.next == null ? t('loop.quad.top') : t('loop.quad.toNext', { n: q.toNext, lv: q.level + 1 })}</small>
     <p class="gw-note">${t('loop.quad.note')}</p>
   </div>`;
+}
+
+// ---- collections and blueprints (docs/LOOP.md §4) --------------------------------------
+
+const SET_NAME = ['', 'bronze', 'silver', 'gold'];
+
+/** A sport's three sets as frames: empty from the start, each slot filling in as you fit it. */
+function collectionRow(sport, inventory) {
+  const frames = collectionsFor(sport, inventory).map((c) => {
+    const cells = c.slots.map(({ slot, done }) => {
+      const g = gearById(tierId(sport, slot, c.tier));
+      return done
+        ? `<span class="col-cell is-on"><img src="${esc(g.art)}" width="128" height="128" loading="lazy" alt=""></span>`
+        : `<span class="col-cell" title="${esc(g.slotName)}">${svg(SLOT_ICON[`${sport}-${slot}`] || sport)}</span>`;
+    }).join('');
+    const state = c.done
+      ? `<p class="col-paid">${svg('check')} ${t('loop.col.paid', { n: fmtNum(c.coins), date: esc(fmtDateShort(c.at)) })}</p>`
+      : `<p class="col-bonus">${t('loop.col.bonus', { n: fmtNum(c.coins) })}</p>`;
+    return `<article class="col-frame is-${SET_NAME[c.tier]}${c.done ? ' is-done' : ''}" aria-label="${esc(t('loop.col.aria', { set: t(`loop.col.${SET_NAME[c.tier]}`), n: c.have, of: c.slots.length }))}">
+      <header><span class="col-plaque">${t(`loop.col.${SET_NAME[c.tier]}`)}</span><b class="data-num">${c.have}/${c.slots.length}</b></header>
+      <div class="col-cells" aria-hidden="true">${cells}</div>
+      ${state}
+    </article>`;
+  }).join('');
+  return `<section class="col-row" aria-labelledby="col-h">
+    <h3 id="col-h" class="gw-row-h">${svg('medal')} ${t('loop.col.title')}</h3>
+    <p class="gw-note">${t('loop.col.note')}</p>
+    <div class="col-frames">${frames}</div>
+  </section>`;
+}
+const fmtDateShort = (iso) => fmtDate(iso, { day: 'numeric', month: 'short' });
+
+/** Every rare prop, its price in fragments, and the one you're working towards. */
+function blueprintRow(s) {
+  const target = store.getSettings().bpTarget || null;
+  const bp = blueprintState(s.quests, s.blueprints, target);
+  const cards = RARE_PROPS.map((p) => {
+    const built = bp.built.has(p.id);
+    const on = bp.target?.id === p.id;
+    const sportName = t(`sport.${SWITCH.find(([x]) => x === p.sport)[1]}`);
+    let act;
+    if (built) act = `<p class="gw-max">${svg('check')} ${t('loop.prop.built')}</p>`;
+    else if (bp.free >= p.fragments) act = `<div class="gw-act"><button class="btn tiny primary" data-bp-build="${p.id}"${online() ? '' : ' disabled'}>${svg('wrench')} ${t('loop.bp.build')}</button></div>`;
+    else if (on) {
+      act = `${meter(bp.free / p.fragments, { segments: 12, cls: 'bp-meter', label: t('loop.bp.progress', { n: bp.free, of: p.fragments }) })}
+        <p class="gw-need">${t('loop.bp.left', { n: `<b class="data-num">${p.fragments - bp.free}</b>` })}</p>`;
+    } else act = `<div class="gw-act"><button class="btn tiny" data-bp-target="${p.id}" aria-pressed="false">${svg('target')} ${t('loop.bp.aim')}</button></div>`;
+    return `<article class="gw-card gw-prop bp-card${built ? ' is-owned' : ''}${on ? ' is-target' : ''}" data-rare="${p.id}">
+      ${imgTile(p.art, built ? '✓' : String(p.fragments), 'is-prop is-rare')}
+      <div class="gw-body">
+        <h3 class="gw-slot">${esc(p.name)}</h3>
+        <p class="gw-cur">${svg(p.sport, `tint-${p.sport}`)} ${esc(sportName)} · ${t('loop.prop.points', { n: p.points })}</p>
+        <p class="gw-blurb">${esc(p.blurb)}</p>
+        <p class="gw-cur">${svg('scroll')} ${t('loop.bp.price', { n: p.fragments })}${on ? ` · <b>${t('loop.bp.aiming')}</b>` : ''}</p>
+      </div>
+      <div class="gw-foot">${act}</div>
+    </article>`;
+  }).join('');
+  return `<section class="bp-row" id="bp-row" aria-labelledby="bp-h">
+    <h3 id="bp-h" class="gw-row-h">${svg('scroll')} ${t('loop.bp.title')} <small class="bp-have">${t('loop.bp.have', { n: `<b class="data-num">${bp.free}</b>` })}</small></h3>
+    <p class="gw-note">${t('loop.bp.note', { n: COLLECTION_RULES.fragmentPerMission })}</p>
+    <div class="gw-grid">${cards}</div>
+  </section>`;
 }
 
 const skCard = (i) => `<article class="gw-card is-sk" style="--sk-i:${i}" aria-hidden="true">
@@ -385,7 +449,7 @@ async function handleCommon(e, draw, onBought) {
 const SHOP_TABS = [['gear', 'wrench'], ['base', 'flag'], ['clothes', 'user'], ['fuel', 'gel']];
 
 /** Open the shop: tab 'gear' (by discipline), 'base' (props), 'clothes' or 'fuel'. */
-export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
+export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {}) {
   let off = null;
   const root = openLayer('shop-gear', { className: 'gear-layer', instant: true, onClose: () => { off?.(); clearInterval(tick); } });
   let current = SLOTS[sport] ? sport : 'bike';
@@ -412,7 +476,8 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
           : SLOTS[current].map((slot) => gearCard(current, slot, s.inventory, w.coins, fresh === slot, s)).join('')}</div>`;
     } else if (view === 'base') {
       panel = `${sportTabs(current)}${quadHead(current, s.inventory)}
-        <div class="gw-grid" role="tabpanel">${propsFor(current).map((p) => propCard(p, s, w)).join('')}</div>`;
+        <div class="gw-grid" role="tabpanel">${propsFor(current).map((p) => propCard(p, s, w)).join('')}</div>
+        ${collectionRow(current, s.inventory)}${blueprintRow(s)}`;
     } else if (view === 'clothes') {
       const owned = new Set(ownedKits(s.inventory).map((k) => k.id));
       const worn = store.getSettings().kit || null;
@@ -457,9 +522,27 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
     if (tb) { view = tb.dataset.gearTab; draw(); return; }
     const sp = e.target.closest('[data-gear-sport]');
     if (sp) { current = sp.dataset.gearSport; draw(); return; }
+    const aim = e.target.closest('[data-bp-target]');
+    if (aim) { store.setSetting('bpTarget', aim.dataset.bpTarget); haptic('tick'); draw(); return; }
+    const build = e.target.closest('[data-bp-build]');
+    if (build) {
+      const id = build.dataset.bpBuild;
+      await busy(build, async () => {
+        try {
+          await buildBlueprint(id);
+          if (store.getSettings().bpTarget === id) store.setSetting('bpTarget', null);
+          playAccept();
+          haptic('levelUp');
+          toast(`<b>${esc(rareById(id).name)}</b><br>${t('loop.bp.builtToast')}`, { icon: svg('scroll') });
+        } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
+      });
+      draw();
+      return;
+    }
     await handleCommon(e, draw, (id) => { fresh = gearById(id)?.slot || (fuelById(id) ? id : null); });
   };
   draw();
+  if (focus === 'bp') root.querySelector('#bp-row')?.scrollIntoView({ block: 'start' });
   if (gearEnabled()) refreshGear().then(() => { if (root.isConnected) draw(); });
   return root;
 }

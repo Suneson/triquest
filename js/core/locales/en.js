@@ -2689,4 +2689,81 @@ en.prop = {
   }
 };
 
+// ---- the long loop, phases 3 and 4: home base, collections, blueprints, prestige (docs/LOOP.md) ----
+en.gear.err["fragments_short"] = "Not enough fragments for that one yet.";
+en.gear.err["prestige_level"] = "That discipline isn’t at the level for a star yet.";
+en.gear.err["prestige_max"] = "That discipline already has every star.";
+en.loop.base = {
+  "title": "Your base",
+  "islandAria": "Your four quadrants",
+  "quadAria": "{sport}: {quad} level {q}, sport level {n}, {won} of {total} feats. Go in",
+  "buildingAria": "Building {name}",
+  "lvl": "LVL {n}",
+  "hint": "Tap a quadrant to go in.",
+  "back": "Back to your base",
+  "next": "What’s next",
+  "building": "In the workshop",
+  "workshopFree": "Nothing building. The workshop is free.",
+  "more": {
+    "one": "+{n} more",
+    "other": "+{n} more"
+  },
+  "afford": "Coins",
+  "canBuy": {
+    "one": "{n} thing you can build now",
+    "other": "{n} things you can build now"
+  },
+  "short": "{name}: {n} coins to go",
+  "feat": "Closest feat"
+};
+en.loop.col = {
+  "title": "Collections",
+  "note": "Every slot of a discipline at a tier completes that set: a one-off coin bonus and a plaque on its board.",
+  "bronze": "Bronze set",
+  "silver": "Silver set",
+  "gold": "Gold set",
+  "aria": "{set}: {n} of {of} pieces",
+  "bonus": "Bonus when complete: {n} coins",
+  "paid": "{n} coins paid · {date}",
+  "boardAria": {
+    "one": "{n} set plaque",
+    "other": "{n} set plaques"
+  }
+};
+en.loop.bp = {
+  "title": "Blueprints",
+  "note": "Every mission you complete is {n} fragment. Choose a rare piece to work towards; when you have enough, build it. Nothing is random.",
+  "have": "Fragments: {n}",
+  "price": {
+    "one": "{n} fragment",
+    "other": "{n} fragments"
+  },
+  "aim": "Work towards this",
+  "aiming": "your target",
+  "progress": "{n} of {of} fragments",
+  "left": "{n} to go",
+  "ready": "Ready to build",
+  "pickOne": "Choose a rare piece to work towards",
+  "build": "Build",
+  "builtToast": "Built from its blueprint. It’s in your scene now."
+};
+en.loop.prestige = {
+  "title": "Prestige",
+  "starsAria": {
+    "one": "{n} prestige star",
+    "other": "{n} prestige stars"
+  },
+  "what": "Optional. Reset {sport} to level 1 for a star on its board and +{pct}% on every {sport} session from then on. You can do it at level {lv}.",
+  "keeps": "Your scenery, gear, props, feats, coins and Ranks stay exactly as they are. Nothing changes if you never do it.",
+  "button": "Reset {sport} for a star",
+  "confirm": "Reset {sport} to level 1? You keep your scenery, gear, feats and Ranks, and gain a star and +{pct}% on {sport} sessions from now on. This can’t be undone.",
+  "done": "{sport}: a new star on the board.",
+  "next": "Your next star is possible at level {lv}. You’re level {n}.",
+  "max": "Every star taken."
+};
+en.prop["bike-podium"] = { "name": "Gold podium", "blurb": "Three steps, the top one gold. Built from its blueprint." };
+en.prop["run-statue"] = { "name": "Runner statue", "blurb": "A gold runner mid-stride by the track. Built from its blueprint." };
+en.prop["swim-blocks"] = { "name": "Gold starting block", "blurb": "The block the finals start from. Built from its blueprint." };
+en.prop["gym-cabinet"] = { "name": "Trophy cabinet", "blurb": "Glass doors, gold handles, room for more. Built from its blueprint." };
+
 export default en;

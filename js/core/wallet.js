@@ -116,7 +116,8 @@ export function walletFold({ workouts = [], quests = [], spends = [], moves = []
 /** Balance from what was earned and the spends [{ coins }] (one currency, no cap). */
 export const balance = (earned, spends) => earned - (spends || []).reduce((n, s) => n + spendAmount(s), 0);
 
-/** Fuel of one kind bought and not yet used. */
-export const fuelHeld = (spends, boosts, kind) =>
-  (spends || []).filter((s) => s?.item_id === kind).length - (boosts || []).filter((b) => b?.kind === kind).length;
-export const gelsHeld = (spends, boosts) => fuelHeld(spends, boosts, 'gel');
+/** Fuel of one kind bought and not yet used (taken, or spent finishing a workshop job). */
+export const fuelHeld = (spends, boosts, kind, jobs = []) =>
+  (spends || []).filter((s) => s?.item_id === kind).length - (boosts || []).filter((b) => b?.kind === kind).length
+  - (jobs || []).filter((j) => j?.skipped_with === kind).length;
+export const gelsHeld = (spends, boosts, jobs) => fuelHeld(spends, boosts, 'gel', jobs);

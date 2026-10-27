@@ -11,19 +11,21 @@
 
 import { openLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
-import { esc, dialogue } from './ui.js';
+import { esc, dialogue, meter } from './ui.js';
 import { rollNum, animateIn, busy } from './motion.js';
 import { toast, playAccept } from './effects.js';
 import { haptic } from './haptics.js';
 import { svg } from '../core/icons.js';
-import { t, fmtNum } from '../core/i18n.js';
+import { t, fmtNum, fmtTime } from '../core/i18n.js';
 import {
   SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, CATALOG, FEAT_ITEMS, featItemById, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
 } from '../core/gear.js';
 import { featById, seasonHue } from '../core/feats.js';
 import { featItems } from './feats-state.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
-import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear } from './gear-state.js';
+import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen } from './gear-state.js';
+import { jobPhase, jobFor, cancelRefund, fitMinutes, quadrantLevel, WORKSHOP_RULES } from '../core/workshop.js';
+import { propsFor, propById } from '../core/scenes.js';
 import { gelChip, pctBp } from './gel-chip.js';
 import { SWITCH } from './profile-game.js';
 import * as store from './store.js';
@@ -85,14 +87,90 @@ function buyButton(item, cur, have, label) {
       aria-label="${esc(label)}">${price(item.cost, cur)}</button>`;
 }
 
-function gearCard(sport, slot, inv, coins, fresh) {
+// ---- the workshop (docs/LOOP.md §1) ----------------------------------------------------
+
+/** "2:14:05" / "9:05": what's left, by the server's clock. */
+export function clockLeft(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+}
+/** "10 min" / "4 h" / "1 h 30 min": a fitting time. */
+export function fitText(min) {
+  const h = Math.floor(min / 60); const m = min % 60;
+  return h ? (m ? t('loop.ws.hMin', { h, m }) : t('loop.ws.h', { h })) : t('loop.ws.min', { m });
+}
+const itemName = (id) => gearById(id)?.name || propById(id)?.name || id;
+function itemTile(id) {
+  const g = gearById(id);
+  if (g) return artTile(g.sport, g.slot, g.tier);
+  const p = propById(id);
+  return p ? imgTile(p.art, '', 'is-prop') : '';
+}
+// the gel kinds you hold that can finish a job, cheapest first
+const skipKind = (w) => WORKSHOP_RULES.skipKinds.find((k) => (w.held[k] || 0) > 0) || null;
+
+/** The workshop: each bay with what it's fitting, the queue behind, and what just finished. */
+function workshopCard(s, w) {
+  const now = serverNow();
+  const jobs = (s.jobs || []).filter((j) => j.state !== 'cancelled');
+  const bays = Math.max(1, s.bays || 1);
+  const bayRows = Array.from({ length: bays }, (_, i) => {
+    const bay = i + 1;
+    const on = jobs.find((j) => j.bay === bay && jobPhase(j, now) === 'fitting');
+    if (!on) return `<div class="ws-bay is-free"><span class="ws-bay-n">${t('loop.ws.bay', { n: bay })}</span><p>${t('loop.ws.free')}</p></div>`;
+    const start = Date.parse(on.started_at); const end = Date.parse(on.finishes_at);
+    const f = Math.min(1, Math.max(0, (now - start) / Math.max(1, end - start)));
+    const kind = skipKind(w);
+    const back = cancelRefund(on, s.jobs, now).refund;
+    return `<div class="ws-bay is-busy">
+      <span class="ws-bay-n">${t('loop.ws.bay', { n: bay })}</span>
+      ${itemTile(on.item_id)}
+      <div class="ws-body">
+        <b>${esc(itemName(on.item_id))}</b>
+        <span class="ws-left"><span data-ws-left="${end}" class="data-num">${clockLeft(end - now)}</span> ${t('loop.ws.leftWord')}</span>
+        <span class="ws-bar" aria-hidden="true" data-ws-bar="${start}:${end}" style="--f:${f.toFixed(3)}"><i></i></span>
+      </div>
+      <div class="ws-acts">
+        <button class="btn tiny primary" data-ws-skip="${on.id}" data-kind="${kind || ''}"${kind && online() ? '' : ' disabled'}>${svg('gel')} ${t('loop.ws.skip')}</button>
+        <button class="btn tiny ghost" data-ws-cancel="${on.id}" data-refund="${back}" data-cost="${on.cost}"${online() ? '' : ' disabled'}>${t('loop.ws.cancel')}</button>
+      </div>
+      ${kind ? '' : `<p class="ws-note">${t('loop.ws.needGel')}</p>`}
+    </div>`;
+  }).join('');
+  const waiting = jobs.filter((j) => jobPhase(j, now) === 'waiting').sort((a, b) => Date.parse(a.started_at) - Date.parse(b.started_at));
+  const done = jobs.filter((j) => jobPhase(j, now) === 'done' && now - Date.parse(j.finishes_at) < 24 * 3600e3);
+  const queue = waiting.length ? `<ol class="ws-queue" aria-label="${esc(t('loop.ws.queue'))}">${waiting.map((j) => `<li>
+      ${itemTile(j.item_id)}<span><b>${esc(itemName(j.item_id))}</b><small>${t('loop.ws.startsAt', { time: fmtTime(j.started_at), bay: j.bay })}</small></span>
+      <button class="btn tiny ghost" data-ws-cancel="${j.id}" data-refund="${j.cost}" data-cost="${j.cost}" aria-label="${esc(t('loop.ws.removeAria', { name: itemName(j.item_id) }))}"${online() ? '' : ' disabled'}>${t('loop.ws.remove')}</button></li>`).join('')}</ol>` : '';
+  const fitted = done.length ? `<ul class="ws-done">${done.map((j) => `<li>${svg('check')} <b>${esc(itemName(j.item_id))}</b> <small>${t('loop.ws.fittedAt', { time: fmtTime(j.finishes_at) })}</small></li>`).join('')}</ul>` : '';
+  return `<section class="ws-card" aria-labelledby="ws-h">
+    <h3 id="ws-h" class="gw-row-h">${svg('wrench')} ${t('loop.ws.title')} <small>${t('loop.ws.bays', { n: bays })}</small></h3>
+    ${bayRows}${queue}${fitted}
+    <p class="ws-note">${t('loop.ws.rules', { pct: WORKSHOP_RULES.cancelRefundBp / 100 })}</p>
+  </section>`;
+}
+
+/** What a shop card says about an item in the workshop (or null when it isn't). */
+function inWorkshop(s, id) {
+  const j = jobFor(s.jobs, id, serverNow());
+  if (!j) return null;
+  const end = Date.parse(j.finishes_at);
+  return jobPhase(j, serverNow()) === 'fitting'
+    ? `<p class="gw-inws">${svg('wrench')} ${t('loop.ws.fittingCard')} <span data-ws-left="${end}" class="data-num">${clockLeft(end - serverNow())}</span></p>`
+    : `<p class="gw-inws">${svg('clock')} ${t('loop.ws.queuedCard', { time: fmtTime(j.started_at) })}</p>`;
+}
+
+function gearCard(sport, slot, inv, coins, fresh, s) {
   const tier = ownedTier(inv, sport, slot);
   const cur = gearById(tierId(sport, slot, tier));
   const next = nextTier(inv, sport, slot);
+  const ws = next && s ? inWorkshop(s, next.id) : null;
   const foot = !next
     ? `<p class="gw-max">${svg('star')} ${t('gear.maxed')}</p>`
     : `<div class="gw-next"><span class="gw-next-k">${t('gear.next')}</span><b>${esc(next.name)}</b><span class="gw-boost">${pctBp(next.boostBp)}</span></div>
-       <div class="gw-act">${buyButton(next, 'coins', coins, t('gear.buyAria', { name: next.name, cost: next.cost, boost: pctBp(next.boostBp) }))}</div>`;
+       ${ws || `<p class="gw-fit">${svg('clock')} ${t('loop.ws.fitsIn', { time: fitText(fitMinutes(next.id)) })}</p>
+       <div class="gw-act">${buyButton(next, 'coins', coins, t('gear.buyAria', { name: next.name, cost: next.cost, boost: pctBp(next.boostBp) }))}</div>`}`;
   return `<article class="gw-card${fresh ? ' is-bought' : ''}" data-slot="${slot}">
     ${artTile(sport, slot, tier, { locked: tier === 0, fresh })}
     <div class="gw-body">
@@ -103,6 +181,36 @@ function gearCard(sport, slot, inv, coins, fresh) {
     </div>
     <div class="gw-foot">${foot}</div>
   </article>`;
+}
+
+/** A prop for the base: built, in the workshop, or its price and fitting time. */
+function propCard(p, s, w) {
+  const owned = s.inventory.some((r) => r.item_id === p.id);
+  const ws = owned ? null : inWorkshop(s, p.id);
+  const act = owned ? `<p class="gw-max">${svg('check')} ${t('loop.prop.built')}</p>`
+    : ws || `<p class="gw-fit">${svg('clock')} ${t('loop.ws.fitsIn', { time: fitText(p.fitMin) })} · ${t('loop.prop.points', { n: p.points })}</p>
+      <div class="gw-act">${buyButton(p, 'coins', w.coins, t('loop.prop.buyAria', { name: p.name, cost: p.cost }))}</div>`;
+  return `<article class="gw-card gw-prop${owned ? ' is-owned' : ''}" data-prop="${p.id}">
+    ${imgTile(p.art, owned ? '✓' : '', 'is-prop')}
+    <div class="gw-body">
+      <h3 class="gw-slot">${esc(p.name)}</h3>
+      <p class="gw-blurb">${esc(p.blurb)}</p>
+      ${p.glow ? `<p class="gw-cur">${svg('bolt')} ${t('loop.prop.glows')}</p>` : ''}
+    </div>
+    <div class="gw-foot">${act}</div>
+  </article>`;
+}
+
+/** The quadrant's level, and what the next one takes. */
+function quadHead(sport, inventory) {
+  const q = quadrantLevel(sport, inventory);
+  const name = t(`loop.quad.${sport}`);
+  return `<div class="quad-head">
+    <span class="quad-name">${esc(name)}</span><b class="quad-lv data-num">${t('loop.quad.lv', { n: q.level })}</b>
+    ${meter(q.next == null ? 1 : q.points / q.next, { segments: 12, cls: 'quad-meter', label: q.next == null ? t('loop.quad.top') : t('loop.quad.toNext', { n: q.toNext, lv: q.level + 1 }) })}
+    <small>${q.next == null ? t('loop.quad.top') : t('loop.quad.toNext', { n: q.toNext, lv: q.level + 1 })}</small>
+    <p class="gw-note">${t('loop.quad.note')}</p>
+  </div>`;
 }
 
 const skCard = (i) => `<article class="gw-card is-sk" style="--sk-i:${i}" aria-hidden="true">
@@ -147,7 +255,6 @@ function fuelCard(f, s, w, { mode, fresh }) {
 
 // an item only a feat gives: a locked plate in the shop with its condition
 // spelled out, or (once won) the item in the colourway of its season
-const FEAT_ITEM_ICON = { kit: 'user', shirt: 'user', cap: 'star', frame: 'medal' };
 function featItemCard(it, won, worn) {
   const feats = it.feats.map(featById).filter(Boolean);
   const how = feats.map((f) => `<li><b>${esc(f.name)}</b> ${esc(f.blurb)}</li>`).join('');
@@ -157,7 +264,7 @@ function featItemCard(it, won, worn) {
     : won ? `<span class="gw-need">${t('feat.ui.itemOwned')}</span>`
       : `<span class="gw-need">${svg('lock')} ${t(logged ? 'feat.ui.itemLockedLogged' : 'feat.ui.itemLocked')}</span>`;
   return `<article class="gw-card gw-feat-item${won ? ' is-won' : ' is-locked'}" data-feat-item="${it.id}"${won ? ` style="--hue:${seasonHue(won.season)}deg"` : ''}>
-    <span class="gw-art is-feat" aria-hidden="true">${svg(FEAT_ITEM_ICON[it.kind] || 'trophy')}${won ? `<i class="gw-tier">${esc(won.season)}</i>` : ''}</span>
+    <span class="gw-art is-feat has-img" aria-hidden="true"><img src="${esc(it.art)}" width="256" height="256" loading="lazy" alt="">${won ? `<i class="gw-tier">${esc(won.season)}</i>` : ''}</span>
     <div class="gw-body">
       <h3 class="gw-slot">${esc(it.name)}</h3>
       <p class="gw-cur">${t(won ? 'feat.ui.itemWon' : 'feat.ui.itemHow')}</p>
@@ -205,11 +312,18 @@ async function handleCommon(e, draw, onBought) {
       try {
         await buyItem(id);
         const g = gearById(id);
-        const name = g?.name || KITS.find((k) => k.id === id)?.name || fuelById(id)?.name || id;
+        const name = g?.name || propById(id)?.name || KITS.find((k) => k.id === id)?.name || fuelById(id)?.name || id;
         onBought?.(id);
         playAccept();
         haptic('record');
-        toast(`<b>${esc(name)}</b><br>${g ? t('gear.boughtBoost', { boost: pctBp(g.boostBp) }) : t('gear.bought')}`, { icon: svg(fuelById(id) ? 'gel' : 'stall') });
+        // gear and props go to the workshop: say when they'll be ready
+        const job = jobFor(gearState().jobs, id, serverNow());
+        const line = job
+          ? (jobPhase(job, serverNow()) === 'fitting'
+            ? t('loop.ws.startedToast', { time: fmtTime(job.finishes_at) })
+            : t('loop.ws.queuedToast', { start: fmtTime(job.started_at), time: fmtTime(job.finishes_at) }))
+          : g ? t('gear.boughtBoost', { boost: pctBp(g.boostBp) }) : t('gear.bought');
+        toast(`<b>${esc(name)}</b><br>${line}`, { icon: svg(fuelById(id) ? 'gel' : job ? 'wrench' : 'stall') });
       } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
     });
     draw();
@@ -229,6 +343,33 @@ async function handleCommon(e, draw, onBought) {
     draw();
     return true;
   }
+  const skip = e.target.closest('[data-ws-skip]');
+  if (skip) {
+    await busy(skip, async () => {
+      try {
+        await skipJob(Number(skip.dataset.wsSkip), skip.dataset.kind);
+        haptic('levelUp');
+      } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
+    });
+    draw();
+    return true;
+  }
+  const cancel = e.target.closest('[data-ws-cancel]');
+  if (cancel) {
+    const refund = Number(cancel.dataset.refund); const cost = Number(cancel.dataset.cost);
+    const job = gearState().jobs.find((j) => j.id === Number(cancel.dataset.wsCancel));
+    // mid-fit cancels ask first and say what comes back; removing a queued job is free and needs no question
+    if (job && jobPhase(job, serverNow()) === 'fitting'
+      && !confirm(refund < cost ? t('loop.ws.cancelPart', { n: fmtNum(refund), cost: fmtNum(cost) }) : t('loop.ws.cancelFull', { n: fmtNum(refund) }))) return true;
+    await busy(cancel, async () => {
+      try {
+        await cancelJob(Number(cancel.dataset.wsCancel));
+        toast(t('loop.ws.cancelled', { n: fmtNum(refund) }), { icon: svg('coin') });
+      } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
+    });
+    draw();
+    return true;
+  }
   const wear = e.target.closest('[data-gear-wear]');
   if (wear) {
     const id = wear.dataset.gearWear;
@@ -241,12 +382,12 @@ async function handleCommon(e, draw, onBought) {
 
 // ---- the shop --------------------------------------------------------------------------
 
-const SHOP_TABS = [['gear', 'wrench'], ['clothes', 'user'], ['fuel', 'gel']];
+const SHOP_TABS = [['gear', 'wrench'], ['base', 'flag'], ['clothes', 'user'], ['fuel', 'gel']];
 
-/** Open the shop: tab 'gear' (by discipline), 'clothes' or 'fuel'. */
+/** Open the shop: tab 'gear' (by discipline), 'base' (props), 'clothes' or 'fuel'. */
 export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
   let off = null;
-  const root = openLayer('shop-gear', { className: 'gear-layer', instant: true, onClose: () => off?.() });
+  const root = openLayer('shop-gear', { className: 'gear-layer', instant: true, onClose: () => { off?.(); clearInterval(tick); } });
   let current = SLOTS[sport] ? sport : 'bike';
   let view = tab;
   let fresh = null;
@@ -268,7 +409,10 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
           <small>${t('gear.ofCap', { cap: pctBp(GEAR_RULES.sportCapBp) })}</small>
           <span class="gw-cap" style="--f:${(boost / GEAR_RULES.sportCapBp).toFixed(3)}" aria-hidden="true"><i></i></span></div>
         <div class="gw-grid" role="tabpanel"${loading ? ' aria-busy="true"' : ''}>${loading ? [0, 1, 2, 3].map(skCard).join('')
-          : SLOTS[current].map((slot) => gearCard(current, slot, s.inventory, w.coins, fresh === slot)).join('')}</div>`;
+          : SLOTS[current].map((slot) => gearCard(current, slot, s.inventory, w.coins, fresh === slot, s)).join('')}</div>`;
+    } else if (view === 'base') {
+      panel = `${sportTabs(current)}${quadHead(current, s.inventory)}
+        <div class="gw-grid" role="tabpanel">${propsFor(current).map((p) => propCard(p, s, w)).join('')}</div>`;
     } else if (view === 'clothes') {
       const owned = new Set(ownedKits(s.inventory).map((k) => k.id));
       const worn = store.getSettings().kit || null;
@@ -285,10 +429,27 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike' } = {}) {
     shell(root, {
       title: t('gear.shop'), icon: 'stall', id: 'gw-title', workouts,
       body: `${online() ? '' : `<p class="gw-offline" id="gw-offline" role="status">${svg('cloud')} ${t('gear.offline')}</p>`}
-        ${tabs}${panel}<p class="gw-note gw-honest">${svg('trophy')} ${t('gear.honest')}</p>`,
+        ${tabs}${['gear', 'base'].includes(view) && (s.jobs || []).some((j) => j.state !== 'cancelled') ? workshopCard(s, w) : ''}${panel}<p class="gw-note gw-honest">${svg('trophy')} ${t('gear.honest')}</p>`,
     });
     fresh = null;
+    markWorkshopSeen();
   };
+  // the countdowns tick by the server's clock; a finish redraws (and asks the server)
+  const tick = setInterval(() => {
+    if (!root.isConnected) { clearInterval(tick); return; }
+    const now = serverNow();
+    let finished = false;
+    root.querySelectorAll('[data-ws-left]').forEach((el) => {
+      const left = Number(el.dataset.wsLeft) - now;
+      if (left <= 0) finished = true;
+      el.textContent = clockLeft(left);
+    });
+    root.querySelectorAll('[data-ws-bar]').forEach((el) => {
+      const [a, b] = el.dataset.wsBar.split(':').map(Number);
+      el.style.setProperty('--f', Math.min(1, Math.max(0, (now - a) / Math.max(1, b - a))).toFixed(3));
+    });
+    if (finished) { draw(); if (gearEnabled()) refreshGear(); }
+  }, 1000);
 
   off = onGear(() => { if (root.isConnected) draw(); });
   root.onclick = async (e) => {

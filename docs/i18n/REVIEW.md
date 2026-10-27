@@ -111,3 +111,19 @@ and `npm test` will tell you if a placeholder went missing.
 | Winner takes all | El ganador se lo lleva todo | Todo para el primero |
 | Settled (toast) | Cerrado | Resuelto, Terminado |
 | You finished 2nd of 4 | Quedaste 2.º de 4 | Acabaste en el puesto 2 de 4 |
+
+## The long loop: workshop and base (added 2026-10-23)
+
+| English | Now | Alternatives |
+| --- | --- | --- |
+| Workshop | Taller | |
+| Bay (workshop slot) | Puesto | Banco, Box |
+| Build points | Puntos de obra | Puntos de construcción |
+| Velodrome (bike quadrant) | Velódromo | |
+| Gym hall | Sala | Gimnasio |
+| Water station | Avituallamiento | Puesto de agua |
+| Timing gate | Arco de cronometraje | Arco de meta |
+| Spectator stand | Grada | |
+| Lane-rope reel | Carrete de corcheras | |
+| Kit (shop tab, was "Clothes") | Ropa | Equipación |
+| LV (quadrant level) | NV | Niv. |

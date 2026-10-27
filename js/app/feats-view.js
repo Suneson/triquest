@@ -94,7 +94,8 @@ function featCard(f, wins, workouts) {
   // where the proof comes from: Strava, or (lifts) the app's log; a session count takes any session that earned
   const labels = f.kind === 'count' ? []
     : [f.logged ? `<span class="tc-tag is-logged">${t('feat.ui.logged')}</span>` : `<span class="tc-tag">${svg('check')} ${t('feat.ui.strava')}</span>`];
-  const icon = svg(f.tier >= 3 ? 'trophy' : 'medal');
+  // each feat has its own painted trophy (docs/gear/ART-STYLE.md); not yet won, it shows as a silhouette
+  const icon = `<img src="icons/Pixelart/FEATS/${esc(f.id)}.png" width="256" height="256" loading="lazy" alt="">`;
   if (wins?.length) {
     const first = wins.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
     const times = wins.length > 1 ? `<span class="tc-times data-num">×${wins.length}</span>` : '';

@@ -1969,7 +1969,7 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .pg-scene-btn:active img { filter: brightness(.85); }
 
 /* shop tabs: what each costs is on the tab */
-.gw-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gw-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .gw-tab { --b: var(--line-soft); --e: var(--shade); --eo: 6px; display: grid; justify-items: center; gap: 4px; padding: 8px 4px; background: var(--bg-2); color: var(--muted);
   font: 700 12px/1 var(--font-display); text-transform: uppercase; margin: 2px 2px 4px; min-height: 64px; position: relative;
   box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--e); }
@@ -2185,3 +2185,84 @@ body.rm .pg-board.is-fresh::after { animation: none; }
 .rm-compose { grid-template-columns: 48px minmax(0, 1fr) 48px; }
 .rm-compose .rm-offline { grid-column: 1 / -1; }
 .rm-ch-btn { margin: 2px 2px 6px; }
+
+/* ---- THE LONG LOOP: workshop, base, props (docs/LOOP.md) ------------------------------- */
+/* props you built, drawn into the diorama by the scene's anchors; never tappable,
+   so the board, the buttons and the swipe keep working under them */
+.pg-prop { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: auto; pointer-events: none;
+  image-rendering: pixelated; z-index: 2; }
+.pg-world .pg-prop { z-index: 2; }
+/* floodlights at dusk and night: a stepped pool of light under the lamp head */
+.pg-prop-glow { position: absolute; left: calc(var(--x) - var(--w)); top: var(--y); width: calc(var(--w) * 3); aspect-ratio: 1 / 1.4;
+  pointer-events: none; z-index: 3; mix-blend-mode: screen;
+  background: radial-gradient(ellipse 12% 6% at 50% 6%, rgba(255, 244, 200, .95) 0 99%, transparent 100%),
+    radial-gradient(ellipse 50% 42% at 50% 10%, rgba(255, 224, 138, .38) 0 30%, rgba(255, 224, 138, .16) 30% 60%, transparent 60%); }
+.tod-dusk .pg-prop-glow { opacity: .6; }
+/* the quadrant level: a plate between the inventory and the shop */
+.pg-quad { --b: var(--line-soft); --eo: 5px; position: absolute; z-index: 9; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabs-h) + var(--pg-hud-h) + 62px); display: flex; gap: 8px; align-items: center; min-height: 44px; padding: 6px 12px;
+  background: var(--bg-2); color: var(--fg); white-space: nowrap;
+  box-shadow: 0 -4px 0 -2px var(--b), 0 4px 0 -2px var(--b), -4px 0 0 -2px var(--b), 4px 0 0 -2px var(--b), 0 var(--eo) 0 -2px var(--shade); }
+.pg-quad span { font-family: var(--font-display); font-size: var(--fs-tiny); text-transform: uppercase; color: var(--muted); }
+.pg-quad b { color: var(--accent); }
+.pg-quad:active { transform: translate(-50%, 3px); --eo: 2px; background: var(--bg-4); }
+.pg-quad:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+@media (hover: hover) { .pg-quad:hover { background: var(--bg-3); } }
+/* something finished in the workshop: a count on the shop button */
+.pg-dot { position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; padding: 0 4px; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); font-size: var(--fs-tiny); font-style: normal;
+  box-shadow: 0 0 0 2px var(--bg); }
+
+/* the workshop card in the shop */
+.ws-card { display: grid; gap: 10px; padding: 12px; background: var(--bg-2); margin: 2px 2px 6px;
+  box-shadow: 0 -4px 0 -2px var(--line-soft), 0 4px 0 -2px var(--line-soft), -4px 0 0 -2px var(--line-soft), 4px 0 0 -2px var(--line-soft); }
+.ws-card .gw-row-h small { margin-left: auto; font-family: var(--font-body); text-transform: none; font-size: var(--fs-tiny); }
+.ws-bay { display: grid; grid-template-columns: 18px 64px minmax(0, 1fr); grid-template-areas: "n art body" "n acts acts" "n note note";
+  gap: 8px 10px; align-items: center; padding: 8px; background: var(--bg-3); }
+.ws-bay.is-free { grid-template-columns: 18px minmax(0, 1fr); grid-template-areas: "n free"; }
+.ws-bay.is-free p { grid-area: free; margin: 0; font-size: var(--fs-small); color: var(--muted); }
+.ws-bay-n { grid-area: n; align-self: stretch; display: grid; place-items: center; writing-mode: vertical-rl; transform: rotate(180deg);
+  font-family: var(--font-display); font-size: var(--fs-tiny); color: var(--muted); text-transform: uppercase; }
+.ws-bay .gw-art { grid-area: art; width: 64px; height: 64px; }
+.ws-body { grid-area: body; display: grid; gap: 4px; min-width: 0; }
+.ws-body b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-left { font-size: var(--fs-small); color: var(--muted); }
+.ws-left .data-num { color: var(--fg); }
+/* stepped progress: 24 hard steps, no smooth fill */
+.ws-bar { display: block; height: 8px; background: var(--bg-4); }
+.ws-bar i { display: block; height: 100%; width: calc(round(down, var(--f) * 24, 1) / 24 * 100%); background: var(--accent); }
+@supports not (width: calc(round(down, 1.5, 1) * 1%)) { .ws-bar i { width: calc(var(--f) * 100%); } }
+.ws-acts { grid-area: acts; display: flex; flex-wrap: wrap; gap: 8px; }
+.ws-note { margin: 0; font-size: var(--fs-tiny); color: var(--muted); }
+.ws-bay .ws-note { grid-area: note; }
+.ws-card > .ws-note { grid-column: auto; }
+.ws-queue, .ws-done { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ws-queue li { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.ws-queue .gw-art { grid-area: auto; width: 40px; height: 40px; }
+.ws-queue .gw-tier { display: none; }
+.ws-queue span { display: grid; min-width: 0; }
+.ws-queue b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-small); }
+.ws-queue small, .ws-done small { color: var(--muted); font-size: var(--fs-tiny); }
+.ws-done li { display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--ok, var(--accent)); }
+.ws-done b { color: var(--fg); }
+.gw-inws, .gw-fit { margin: 0; display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--muted); }
+.gw-inws { color: var(--accent); }
+.gw-inws .data-num { color: var(--fg); }
+.gw-art.is-prop img, .gw-prop .gw-art img { image-rendering: pixelated; }
+/* the base: the quadrant's level and the props you can build */
+.quad-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 12px; background: var(--bg-2); }
+.quad-name { font-family: var(--font-display); text-transform: uppercase; font-size: var(--fs-d3); }
+.quad-lv { color: var(--accent); }
+.quad-head .meter, .quad-head small, .quad-head .gw-note { grid-column: 1 / -1; }
+.quad-head small { color: var(--muted); font-size: var(--fs-tiny); }
+/* four shop tabs (gear, base, clothes, fuel): the labels fit at 320px */
+.gw-tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 360px) { .gw-tab span { font-size: 10px; letter-spacing: 0; } .gw-tabs { gap: 6px; } }
+
+/* ---- PAINTED ITEM ART (docs/gear/ART-STYLE.md) --------------------------------------------
+   Gear, fuel, currencies, clothes, trophies and feat items are painted, not pixel
+   art: they scale smoothly. The scenes and props stay pixel art (img default). */
+img[src*="Pixelart/GEAR/"], img[src*="Pixelart/FEATS/"] { image-rendering: auto !important; }
+.tc-trophy img { width: 56px; height: 56px; object-fit: contain; }
+.tc-card.is-locked .tc-trophy img { opacity: .35; filter: grayscale(1) brightness(.55); } /* a silhouette of what's to come */
+.gw-feat-item.is-locked .gw-art.is-feat img { opacity: .35; filter: grayscale(1) brightness(.55); }

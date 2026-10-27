@@ -131,6 +131,42 @@ const BOARDS = {
   bike: { x: 14, y: 36, w: 14, h: 8 },
 };
 
+// ---- Props: what you build into a scene (docs/LOOP.md §2) -------------------------
+// Bought with coins, fitted in the workshop (workshop.js), then drawn over the
+// art. Each sits on a patch of the level-1 art the athlete, the board and the
+// motion overlays leave free, at least 9% in from the sides.
+//   slot    one prop per slot (the server keys ownership by id)
+//   anchor  % of the art (or of the bike world): x, y = top-left, w = width;
+//           the height follows the art's own aspect
+//   z       'back' draws under the athlete layer and the fx, 'front' over them
+//   glow    lit at dusk and night (the scene's time of day)
+//   points  what it adds to the quadrant level
+//   fitMin  minutes in the workshop
+const prop = (id, sport, slot, cost, fitMin, points, anchor, z = 'back', glow = false) => ({
+  id, sport, slot, cost, fitMin, points, anchor, z, glow,
+  get name() { return t(`prop.${id}.name`); },
+  get blurb() { return t(`prop.${id}.blurb`); },
+  art: `${ART}/PROPS/${id}.png`,
+});
+export const PROPS = [
+  prop('bike-rack', 'bike', 'rack', 180, 30, 2, { x: 29, y: 56, w: 11 }),
+  prop('bike-stand', 'bike', 'stand', 260, 45, 2, { x: 68, y: 46, w: 9 }),
+  prop('bike-tent', 'bike', 'tent', 450, 120, 3, { x: 58, y: 29, w: 15 }),
+  prop('bike-lights', 'bike', 'lights', 600, 180, 4, { x: 79, y: 38, w: 8 }, 'back', true),
+  prop('run-water', 'run', 'water', 180, 30, 2, { x: 28, y: 70, w: 9 }),
+  prop('run-gate', 'run', 'gate', 350, 90, 3, { x: 58, y: 27, w: 13 }),
+  prop('run-stand', 'run', 'stand', 450, 120, 3, { x: 64, y: 70, w: 14 }, 'front'),
+  prop('run-lights', 'run', 'lights', 600, 180, 4, { x: 74, y: 31, w: 8 }, 'back', true),
+  prop('swim-reel', 'swim', 'reel', 180, 30, 2, { x: 26, y: 70, w: 10 }, 'front'),
+  prop('swim-clock', 'swim', 'clock', 300, 60, 3, { x: 46, y: 6, w: 10 }),
+  prop('swim-stand', 'swim', 'stand', 450, 120, 3, { x: 12, y: 52, w: 12 }),
+  prop('gym-chalk', 'gym', 'chalk', 150, 30, 2, { x: 34, y: 60, w: 6 }, 'front'),
+  prop('gym-sound', 'gym', 'sound', 400, 90, 3, { x: 22, y: 30, w: 9 }),
+];
+const PROP_BY_ID = new Map(PROPS.map((p) => [p.id, p]));
+export const propById = (id) => PROP_BY_ID.get(id) || null;
+export const propsFor = (sport) => PROPS.filter((p) => p.sport === sport);
+
 export const SCENES = {
   bike: { kind: 'layered', get label() { return t('sport.cycling'); }, levels: bike, board: BOARDS.bike },
   run: { kind: 'still', get label() { return t('sport.running'); }, levels: run, board: BOARDS.run },

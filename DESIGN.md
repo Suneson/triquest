@@ -484,6 +484,26 @@ and haptic. Each result is said once per device.
 Toasts sit above layers (`.toast-wrap` z-index 10200, over `.modal-root`
 10000), so anything said while a layer is open is seen.
 
+### Workshop card (Gear shop)
+Sits at the top of the shop's Gear and Base tabs whenever something is in the
+workshop. One row per bay:
+- the bay number set vertically;
+- the item's tile;
+- its name, a countdown in `--font-data`, and a stepped progress bar (24 hard steps, no smooth fill);
+- *Finish with a gel* (primary) and *Cancel* (ghost) underneath.
+
+Cancelling mid-fit asks first and says what comes back; removing a queued job
+doesn't ask, because it's free. The waiting queue lists under the bays with
+*Remove*, and today's finished jobs with a check. Countdowns follow the server's
+clock and are not announced to screen readers every second.
+
+### Scene props and the quadrant plate (Profile scene)
+Props are drawn into the diorama, never as UI: no frame, no hover, not
+tappable. Floodlights carry a stepped pool of warm light at dusk and night
+only. The quadrant plate ("VELODROME LV 3") sits between the inventory and shop
+buttons; it opens the shop's Base tab. A finished job puts a gold count on the
+shop button until the shop is opened.
+
 ### Telemetry charts (Fitness hub)
 Lines are stepped (hold, then jump) on a 2px grid; markers are 4px squares (8px
 for the latest); bars are blocks with a 2px gap; bands are dashed outlines with

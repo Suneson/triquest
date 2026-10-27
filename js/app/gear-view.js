@@ -255,7 +255,6 @@ function fuelCard(f, s, w, { mode, fresh }) {
 
 // an item only a feat gives: a locked plate in the shop with its condition
 // spelled out, or (once won) the item in the colourway of its season
-const FEAT_ITEM_ICON = { kit: 'user', shirt: 'user', cap: 'star', frame: 'medal' };
 function featItemCard(it, won, worn) {
   const feats = it.feats.map(featById).filter(Boolean);
   const how = feats.map((f) => `<li><b>${esc(f.name)}</b> ${esc(f.blurb)}</li>`).join('');
@@ -265,7 +264,7 @@ function featItemCard(it, won, worn) {
     : won ? `<span class="gw-need">${t('feat.ui.itemOwned')}</span>`
       : `<span class="gw-need">${svg('lock')} ${t(logged ? 'feat.ui.itemLockedLogged' : 'feat.ui.itemLocked')}</span>`;
   return `<article class="gw-card gw-feat-item${won ? ' is-won' : ' is-locked'}" data-feat-item="${it.id}"${won ? ` style="--hue:${seasonHue(won.season)}deg"` : ''}>
-    <span class="gw-art is-feat" aria-hidden="true">${svg(FEAT_ITEM_ICON[it.kind] || 'trophy')}${won ? `<i class="gw-tier">${esc(won.season)}</i>` : ''}</span>
+    <span class="gw-art is-feat has-img" aria-hidden="true"><img src="${esc(it.art)}" width="256" height="256" loading="lazy" alt="">${won ? `<i class="gw-tier">${esc(won.season)}</i>` : ''}</span>
     <div class="gw-body">
       <h3 class="gw-slot">${esc(it.name)}</h3>
       <p class="gw-cur">${t(won ? 'feat.ui.itemWon' : 'feat.ui.itemHow')}</p>

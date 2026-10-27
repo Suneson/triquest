@@ -2258,3 +2258,11 @@ body.rm .pg-board.is-fresh::after { animation: none; }
 /* four shop tabs (gear, base, clothes, fuel): the labels fit at 320px */
 .gw-tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 360px) { .gw-tab span { font-size: 10px; letter-spacing: 0; } .gw-tabs { gap: 6px; } }
+
+/* ---- PAINTED ITEM ART (docs/gear/ART-STYLE.md) --------------------------------------------
+   Gear, fuel, currencies, clothes, trophies and feat items are painted, not pixel
+   art: they scale smoothly. The scenes and props stay pixel art (img default). */
+img[src*="Pixelart/GEAR/"], img[src*="Pixelart/FEATS/"] { image-rendering: auto !important; }
+.tc-trophy img { width: 56px; height: 56px; object-fit: contain; }
+.tc-card.is-locked .tc-trophy img { opacity: .35; filter: grayscale(1) brightness(.55); } /* a silhouette of what's to come */
+.gw-feat-item.is-locked .gw-art.is-feat img { opacity: .35; filter: grayscale(1) brightness(.55); }

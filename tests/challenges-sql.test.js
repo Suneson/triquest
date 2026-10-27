@@ -105,11 +105,13 @@ test('escrow: stakes in, a win out, the fee burned, balances stay derived', { sk
   await backdate(db, id, -6, -3);
   await put(db, U.ana, [st(day(-5), 'run', 12, 60)]);
   await put(db, U.ben, [st(day(-4), 'run', 8, 45)]);
+  // those sessions earn coins of their own once they fall after GEAR_SINCE: count from here
+  const mid = { ana: await coins(db, U.ana), ben: await coins(db, U.ben) };
   assert.equal((await db.query('select public.resolve_challenge($1) as s', [id])).rows[0].s, 'settled');
   const r = (await db.query('select * from public.challenge_results where challenge_id = $1', [id])).rows[0];
   assert.deepEqual([r.pot, r.fee, r.prize, r.burned], [150, 7, 143, 7]);
-  assert.equal(await coins(db, U.ana), before.ana - 50 + 143);
-  assert.equal(await coins(db, U.ben), before.ben - 50);
+  assert.equal(await coins(db, U.ana), mid.ana + 143);
+  assert.equal(await coins(db, U.ben), mid.ben);
   assert.equal(await coins(db, U.caro), before.caro - 50, 'a no-show loses the stake to the pot');
   // the same money as settle() in the client
   const rows = r.rows.map((x) => ({ user: x.user, score: x.score == null ? null : Number(x.score) }));
@@ -117,7 +119,7 @@ test('escrow: stakes in, a win out, the fee burned, balances stay derived', { sk
   for (const x of r.rows) assert.equal(x.payout, js.payouts.get(x.user));
   // settling twice changes nothing
   assert.equal((await db.query('select public.resolve_challenge($1) as s', [id])).rows[0].s, 'settled');
-  assert.equal(await coins(db, U.ana), before.ana - 50 + 143);
+  assert.equal(await coins(db, U.ana), mid.ana + 143);
 });
 
 test('escrow: a tie splits, a void refunds, too few cancels, leaving refunds', { skip: !PGlite && 'PGlite not installed' }, async () => {
@@ -128,8 +130,11 @@ test('escrow: a tie splits, a void refunds, too few cancels, leaving refunds', {
   const tie = await create(db, U.ana, { kind: 'sessions', sport: 'any', payout: 'top2', stake: 40 });
   await as(db, U.ben); await db.query('select public.join_challenge($1)', [tie]);
   await backdate(db, tie, -6, -3);
+  // what the sessions themselves earn (nothing before GEAR_SINCE), so the escrow sums stay exact
+  const pre = { ana: await coins(db, U.ana), ben: await coins(db, U.ben) };
   await put(db, U.ana, [st(day(-5), 'run', 5, 30)]);
   await put(db, U.ben, [st(day(-5), 'run', 5, 30)]);
+  const earned = { ana: (await coins(db, U.ana)) - pre.ana, ben: (await coins(db, U.ben)) - pre.ben };
   await db.query('select public.resolve_challenge($1)', [tie]);
   const t = (await db.query('select * from public.challenge_results where challenge_id = $1', [tie])).rows[0];
   assert.deepEqual([t.pot, t.fee, t.prize, t.rows.map((x) => x.payout)], [80, 4, 76, [38, 38]]);
@@ -150,8 +155,8 @@ test('escrow: a tie splits, a void refunds, too few cancels, leaving refunds', {
   await db.query('select public.decline_challenge($1)', [leave]);
   await as(db, U.ana); await db.query('select public.cancel_challenge($1)', [leave]);
   // in the end: Ana and Ben each lost 2 coins to the tie's fee; everything else came back
-  assert.equal(await coins(db, U.ana), start.ana - 40 + 38);
-  assert.equal(await coins(db, U.ben), start.ben - 40 + 38);
+  assert.equal(await coins(db, U.ana), start.ana - 40 + 38 + earned.ana);
+  assert.equal(await coins(db, U.ben), start.ben - 40 + 38 + earned.ben);
   assert.equal(await coins(db, U.caro), start.caro);
   // no coin ever appears from nowhere: payouts + refunds never exceed stakes
   const m = (await db.query(`select kind, sum(coins)::int as s from public.coin_moves group by kind`)).rows;

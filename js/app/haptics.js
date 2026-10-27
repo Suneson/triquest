@@ -12,6 +12,9 @@ const PATTERNS = {
   levelUp: [60, 50, 60, 50, 160], // a level up
   request: [60, 40, 60],      // a friend request or notification arrived
   message: [40],              // a new message
+  select: [10],               // an item picked up in the compound
+  place: [18, 30, 36],        // an item set down on a free tile
+  refuse: [40, 40, 40],       // an item dropped where it can't stand
 };
 
 const off = () => { try { return localStorage.getItem('moske-haptics') === 'off'; } catch { return false; } };

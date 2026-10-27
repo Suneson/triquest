@@ -19,7 +19,10 @@ import { leaderboardShell, loadLeaderboard, athleteByUid } from './leaderboard.j
 import { shopShell, loadShop } from './shop.js';
 import { openPublicProfile } from './profile.js';
 import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER, avatarButton } from './profile-game.js';
-import { renderBase, wireBase } from './base-view.js';
+import { openWhatNext } from './base-view.js';
+import { renderCompound, wireCompound, compoundDisciplines, resetCompound } from './compound-view.js';
+import { DISCIPLINES as ROOMS, SPORT_OF } from '../core/placement.js';
+import { refreshPlacements, onPlacements } from './placement-state.js';
 import { PRESTIGE, canPrestige } from '../core/collections.js';
 import { onSwipe, nextSport } from './swipe.js';
 import { openOnboarding } from './onboarding.js';
@@ -282,8 +285,8 @@ function render() {
     view.innerHTML = shopShell();
     loadShop();
   } else if (appState.tab === 'progress' && appState.pgView === 'base') {
-    view.innerHTML = renderBase(ctx, avatarButton(ctx));
-    wireBase(view);
+    view.innerHTML = renderCompound(ctx, avatarButton(ctx));
+    wireCompound(view, ctx);
   } else if (appState.tab === 'progress') {
     view.innerHTML = renderProfileGame(ctx, appState.pgSport, appState.pgSlide);
     appState.pgSlide = '';
@@ -444,7 +447,7 @@ function onClick(e) {
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
       localStorage.setItem('moske-tab', appState.tab);
-      if (appState.tab === 'progress') { appState.pgView = 'base'; autoStravaSync(); } // lands on the base; silent background pull
+      if (appState.tab === 'progress') { appState.pgView = 'base'; resetCompound(); autoStravaSync(); } // lands on the base; silent background pull
       withTabTransition(from, appState.tab, () => {
         render();
         // each tab comes back where you left it; the calendar opens on today's row
@@ -479,6 +482,8 @@ function onClick(e) {
     case 'open-gear': openGear(buildCtx(), el.dataset.sport || appState.pgSport); break;
     case 'open-base': openShop(buildCtx(), { tab: 'base', sport: el.dataset.sport || appState.pgSport, focus: el.dataset.bp ? 'bp' : '' }); break;
     case 'enter-scene': enterScene(el.dataset.sport); break;
+    case 'open-next': openWhatNext(buildCtx()); break;
+    case 'open-rooms': openRooms(); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
@@ -661,6 +666,7 @@ function openSettings() {
         ${accountSectionHtml()}
         ${langToggle()}
         <button type="button" class="row-btn" data-set-do="checkin">${svg('pin')} <span>${t('checkin.settingsLabel')}</span><span class="spacer"></span><b>${s.gymCheckin ? t('checkin.stateOn') : t('checkin.stateOff')}</b></button>
+        ${roomsToggles()}
         <label class="toggle"><span>${svg('sound')} ${t('main.sound')}</span><input type="checkbox" data-set="sound" ${s.sound ? 'checked' : ''}></label>
         <label class="toggle"><span>${svg('motion')} ${t('main.reduceMotion')}</span><input type="checkbox" data-set="reduceMotion" ${s.reduceMotion ? 'checked' : ''}></label>
         <label class="toggle"><span>${svg('flag')} ${t('chx.directSetting')}</span><input type="checkbox" data-set="directChallenges" ${s.directChallenges === false ? '' : 'checked'}></label>
@@ -721,6 +727,7 @@ function openSettings() {
     packing[el.dataset.packPreset] = el.value.split(',').map((x) => x.trim()).filter(Boolean);
     store.setSetting('packing', packing);
   }));
+  wireRoomsToggles(root);
   root.querySelectorAll('[data-set-do]').forEach((b) => b.addEventListener('click', () => {
     const act = b.dataset.setDo;
     if (act === 'export') doExport();
@@ -881,6 +888,33 @@ function openSportLevels(sport) {
   // Centre the current-level frame in the swipeable strip.
   const cur = root.querySelector('.lvl-frame.is-current');
   if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
+// The rooms in your compound (docs/COMPOUND.md): one per discipline you train.
+// The same choice sits in Settings; at least one stays on.
+function roomsToggles() {
+  const on = new Set(compoundDisciplines(store.getWorkouts()));
+  return `<fieldset class="cp-rooms"><legend>${t('cp.roomsTitle')}</legend>
+    ${ROOMS.map((r) => `<label class="toggle"><span>${svg(SPORT_OF[r])} ${t(`cp.room.${r}`)}</span><input type="checkbox" data-disc="${r}" ${on.has(r) ? 'checked' : ''}></label>`).join('')}
+    <p class="muted small">${t('cp.roomsNote')}</p></fieldset>`;
+}
+function wireRoomsToggles(root) {
+  root.querySelectorAll('[data-disc]').forEach((box) => box.addEventListener('change', () => {
+    const picked = [...root.querySelectorAll('[data-disc]')].filter((b) => b.checked).map((b) => b.dataset.disc);
+    if (!picked.length) { box.checked = true; toast(t('cp.needOne')); return; }
+    store.setSetting('disciplines', picked);
+    haptic('tick');
+  }));
+}
+function openRooms() {
+  const root = openLayer('rooms');
+  root.innerHTML = `<div class="modal-backdrop" data-rooms-close></div>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rooms-h">
+      ${sheetHead({ icon: 'home', title: t('cp.rooms'), id: 'rooms-h', closeAttr: 'data-rooms-close' })}
+      <div class="modal-body">${roomsToggles()}</div>
+    </div>`;
+  root.querySelectorAll('[data-rooms-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
+  wireRoomsToggles(root);
 }
 
 // Prestige (docs/LOOP.md §4.3): only here, in the levels sheet you opened, and
@@ -1127,6 +1161,9 @@ async function boot() {
 
   // gear and gels: re-render when the server copy changes; a gel running out redraws too
   onGear(() => render());
+  // where your compound items stand, from the server (another device may have moved them)
+  onPlacements(() => { if (appState.tab === 'progress') render(); });
+  refreshPlacements();
   // the workshop finished something: the stamp lands (once per job), then the toast
   onWorkshopFinish((jobs) => {
     const names = jobs.map((j) => gearById(j.item_id)?.name || propById(j.item_id)?.name).filter(Boolean);

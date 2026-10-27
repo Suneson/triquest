@@ -421,6 +421,8 @@ export function openOnboarding({ onDone } = {}) {
         ? [{ title: s.raceName || t(goal ? `ob.goal.${goal.id}.name` : `ob.eco.${eco.id}.name`), date: s.raceDate }] : [];
       if (events.length) store.setSetting('events', events);
       store.setSetting('ftp', s.ftp);
+      // the rooms of your compound follow the sports you chose (docs/COMPOUND.md)
+      store.setSetting('disciplines', sportsOf().map((x) => ({ Swimming: 'pool', Cycling: 'bike', Running: 'run', Gym: 'gym' })[x]).filter(Boolean));
       if (gymInPlay()) store.setSetting('gymSplit', normalizeSplit(s.split));
 
       // the new plan replaces the old one from this week's Monday on: what is

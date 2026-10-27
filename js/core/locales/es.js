@@ -2766,4 +2766,34 @@ es.prop["run-statue"] = { "name": "Estatua del corredor", "blurb": "Un corredor 
 es.prop["swim-blocks"] = { "name": "Poyete de oro", "blurb": "El poyete de salida de las finales. Construido con su plano." };
 es.prop["gym-cabinet"] = { "name": "Vitrina de trofeos", "blurb": "Puertas de cristal, tiradores dorados y sitio para más. Construida con su plano." };
 
+// ---- el complejo unificado (docs/COMPOUND.md) ----
+es.cp = {
+  "room": { "gym": "Gimnasio", "pool": "Piscina", "bike": "Sala de bici", "run": "Sala de carrera", "locker": "Vestuario" },
+  "item": { "coffee-machine": "Cafetera", "smart-bike": "Tu bici", "smart-trainer": "Rodillo inteligente" },
+  "roledesc": "editor de la base",
+  "vpAria": "Tu base. Arrastra para moverte, pellizca o usa los botones para hacer zoom. Toca un objeto para cogerlo.",
+  "roomAlt": "{room}, nivel {n}",
+  "roomAria": "{room}, nivel {n}, nivel de obra {q}. Abrir sus niveles",
+  "lockerAria": "Vestuario, nivel {n}. Abrir tu inventario",
+  "itemAria": "{name} en {room}. Tócalo para cogerlo",
+  "itemSelAria": "{name}, cogido. Arrástralo, usa las flechas o las teclas de flecha; Escape para soltarlo",
+  "selHint": "{name}: arrástralo o toca una flecha",
+  "placed": "{name} movido a {room}",
+  "why": {
+    "bounds": "No puede atravesar una pared.",
+    "blocked": "Ahí no: es agua.",
+    "occupied": "Ya hay algo ahí."
+  },
+  "nudge": { "+u": "Mover una casilla a la derecha", "-u": "Mover una casilla a la izquierda", "+v": "Mover una casilla hacia delante", "-v": "Mover una casilla hacia atrás" },
+  "zoom": "Zoom",
+  "zoomIn": "Acercar",
+  "zoomOut": "Alejar",
+  "zoomFit": "Ver toda la base",
+  "actsAria": "Base",
+  "rooms": "Salas",
+  "roomsTitle": "Salas de tu base",
+  "roomsNote": "Una sala por cada disciplina que entrenas, más el vestuario. Tus objetos y todo lo construido siguen siendo tuyos aunque ocultes una sala.",
+  "needOne": "Deja al menos una sala."
+};
+
 export default es;

@@ -29,8 +29,9 @@ const floor = (back, right, left, cols = 8, rows = 8, blocked = []) => ({ back, 
  *   back/right/left  floor corners in % of the art (x, y)
  *   cols × rows      tiles along u × v
  *   blocked          [u0, v0, u1, v1) boxes nothing may stand on (the pool's water)
- * Tiles are the same size in every room (about 67 px of a 1000-px column), so
- * the wide locker, drawn two columns wide, has more of them.
+ * Tiles are the same size in every room once the compound maps each room onto
+ * its block (compound-geometry.js): 8 per block side, so the wide locker,
+ * two blocks long, has 8 × 16.
  */
 export const ROOM_GEOMETRY = {
   gym: floor([51, 37], [97, 64], [3, 64]),
@@ -38,7 +39,7 @@ export const ROOM_GEOMETRY = {
   bike: floor([49, 39], [97, 67], [3, 67]),
   run: floor([51, 45], [96, 70], [5, 70]),
   'locker-square': floor([50, 37], [97, 63], [3, 63]),
-  'locker-landscape': floor([69, 30], [98, 54], [2, 71], 10, 22),
+  'locker-landscape': floor([69, 30], [98, 54], [2, 71], 8, 16),
 };
 
 /** Art size of each room shape (px of the exported WebP), for laying the compound out. */
@@ -214,10 +215,3 @@ export function resolvePlacements(layout, items, saved = {}) {
 
 /** Draw order: further back first (u + v), then left to right. */
 export const depthOf = (item, p) => (p.u + p.v + (item.w + item.h) / 2) * 10;
-
-/**
- * How much each row of rooms tucks under the row above (a fraction of the
- * upper row's height), so the upper rooms' front curb sits on the lower
- * rooms' back-wall rim with no gap.
- */
-export const ROW_TUCK = 0.08;

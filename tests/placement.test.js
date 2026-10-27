@@ -70,11 +70,8 @@ test('placing: walls and edges, the pool, other items', () => {
   assert.equal(canPlace('gym', 'gym', trainer, 0, 1, placed).ok, true, 'another room is another floor');
   assert.equal(canPlace('bike', 'bike', coffee, 1, 1, placed).ok, true, 'an item never blocks itself');
   // the wide locker has its own shape
-  assert.equal(canPlace('locker-landscape', 'locker', coffee, 9, 21).ok, true);
-  assert.equal(canPlace('locker-landscape', 'locker', coffee, 10, 0).reason, 'bounds');
-  // the same tile size everywhere: a tile spans about the same share of a column
-  const span = (key, w) => { const c = boxCorners(key, 0, 0, 1, 1); return (c[1].x - c[3].x) * w / 100; };
-  assert.ok(Math.abs(span('gym', 1000) - span('locker-landscape', 2000)) < 6, 'tiles match between rooms');
+  assert.equal(canPlace('locker-landscape', 'locker', coffee, 7, 15).ok, true);
+  assert.equal(canPlace('locker-landscape', 'locker', coffee, 8, 0).reason, 'bounds');
 });
 
 test('the gifts and the trainer; a spot for each, kept when it still fits', () => {

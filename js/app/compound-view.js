@@ -14,16 +14,22 @@
 //   or arrow keys     the arrow keys; Escape puts it down)
 //   tap the floor     deselects
 //
-// The geometry and the rules are js/core/placement.js; positions are kept by
-// placement-state.js. Under reduced motion nothing bounces, lifts or springs.
+// The rooms are blocks of one building (js/core/compound-geometry.js): each
+// room's art is mapped onto its block so the floors share their edges, rooms
+// are drawn back to front, and interior walls are cut to a low curb. Items,
+// labels and the drag glow are separate layers over the rooms, so nothing in
+// them can move a room by a pixel. The floor rules are js/core/placement.js;
+// positions are kept by placement-state.js. Under reduced motion nothing
+// bounces, lifts or springs.
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t } from '../core/i18n.js';
 import {
-  compoundLayout, roomsOf, roomArt, ROOM_SIZE, SPORT_OF, ROOM_OF, DISCIPLINES, tileToPct, pctToTile, boxCorners, footprint,
-  canPlace, placeablesFor, placeableById, resolvePlacements, depthOf, ROW_TUCK, normalizeDisciplines, ROOM_GEOMETRY,
+  compoundLayout, roomArt, ROOM_SIZE, SPORT_OF, ROOM_OF, DISCIPLINES, tileToPct, pctToTile, boxCorners, footprint,
+  canPlace, placeablesFor, placeableById, resolvePlacements, normalizeDisciplines, ROOM_GEOMETRY,
 } from '../core/placement.js';
+import { compoundGeometry, roomToWorld, worldToRoom } from '../core/compound-geometry.js';
 import { sceneFor, propById } from '../core/scenes.js';
 import { earnsXp } from '../core/scoring.js';
 import { featsFor } from '../core/feats.js';
@@ -38,7 +44,6 @@ import { haptic } from './haptics.js';
 import { playPlace, prefersReducedMotion } from './effects.js';
 import * as store from './store.js';
 
-const U = 1000;          // world px per column
 const MIN_ZOOM = 0.85;   // × the fit scale
 const MAX_ZOOM = 4;
 
@@ -58,24 +63,9 @@ export function compoundDisciplines(workouts) {
 const roomName = (room) => t(`cp.room.${room}`);
 const itemName = (id) => t(`cp.item.${id}`);
 
-// ---- the world, in px of a 1000-wide column -------------------------------------------
+// ---- the world: one building ------------------------------------------------------------
 
-function worldOf(ctx) {
-  const layout = compoundLayout(compoundDisciplines(ctx.workouts));
-  const rooms = roomsOf(layout).map((r) => {
-    const [w, h] = ROOM_SIZE[r.geom];
-    const width = r.span * U;
-    return { ...r, w: width, h: width * h / w };
-  });
-  let y = 0;
-  layout.rows.forEach((_, i) => {
-    const inRow = rooms.filter((r) => r.row === i);
-    const rowH = Math.max(...inRow.map((r) => r.h));
-    inRow.forEach((r) => { r.x = r.col * U; r.y = y; });
-    y += rowH * (i === layout.rows.length - 1 ? 1 : 1 - ROW_TUCK);
-  });
-  return { layout, rooms, W: layout.cols * U, H: y };
-}
+const worldOf = (ctx) => compoundGeometry(compoundLayout(compoundDisciplines(ctx.workouts)));
 
 function levelOf(room, ctx) {
   if (room === 'locker') return Math.max(1, Math.min(10, ctx.acct?.level || 1));
@@ -101,12 +91,23 @@ function arrows(geom, it, p) {
   return set.map(([dir, pts]) => poly(tri(pts), 'cp-arrow', ` data-nudge="${dir}" role="button" aria-label="${esc(t(`cp.nudge.${dir}`))}"`)).join('');
 }
 
-/** An item standing on its footprint: centred on it, its base on the front corner. */
+/**
+ * Where an item stands in the world: centred on its footprint, its base on
+ * the footprint's front corner, as wide as the footprint (× its scale).
+ * Worked out in the room's art and mapped into the world, so it stands
+ * upright whatever the room's mapping.
+ */
+function itemBox(it, p, room) {
+  const pts = boxCorners(room.geom, p.u, p.v, it.w, it.h).map((c) => roomToWorld(room, c.x, c.y));
+  const xs = pts.map((q) => q[0]); const ys = pts.map((q) => q[1]);
+  const minX = Math.min(...xs); const maxX = Math.max(...xs);
+  return { x: (minX + maxX) / 2, y: Math.max(...ys), w: (maxX - minX) * (it.scale || 1.1) };
+}
+
 function itemHtml(it, p, room, sel, artOpts) {
-  const [, right, front, left] = boxCorners(room.geom, p.u, p.v, it.w, it.h);
-  const width = (right.x - left.x) * (it.scale || 1.1);
+  const b = itemBox(it, p, room);
   return `<button class="cp-item${sel ? ' is-sel' : ''}" data-item="${it.id}"
-      style="--x:${((left.x + right.x) / 2).toFixed(3)}%;--y:${front.y.toFixed(3)}%;--w:${width.toFixed(3)}%;--lift:${it.lift || 0};z-index:${Math.round(10 + depthOf(it, p))}"
+      style="left:${b.x.toFixed(1)}px;top:${b.y.toFixed(1)}px;width:${b.w.toFixed(1)}px;--lift:${it.lift || 0};z-index:${Math.round(b.y)}"
       aria-pressed="${sel}" aria-label="${esc(t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }))}">
     <img src="${esc(it.art(artOpts))}" alt="" draggable="false"></button>`;
 }
@@ -117,10 +118,15 @@ function riderArt(ctx) {
   return s?.entry?.char || '';
 }
 
+/** A room's labels, on its front floor corner in a layer of their own. */
 function plateHtml(room, ctx, s, now, wonIds) {
+  // on the middle of its floor
+  const g = ROOM_GEOMETRY[room.geom];
+  const mid = roomToWorld(room, (g.right[0] + g.left[0]) / 2, (g.right[1] + g.left[1]) / 2);
+  const at = `left:${mid[0].toFixed(1)}px;top:${mid[1].toFixed(1)}px`;
   const lvl = levelOf(room.room, ctx);
   if (room.room === 'locker') {
-    return `<div class="cp-plates"><button class="cp-plate" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}">
+    return `<div class="cp-plates" style="${at}"><button class="cp-plate" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}">
       <b>${esc(roomName('locker'))}</b><i class="data-num">${t('loop.quad.lv', { n: lvl })}</i></button></div>`;
   }
   const sport = SPORT_OF[room.room];
@@ -129,7 +135,7 @@ function plateHtml(room, ctx, s, now, wonIds) {
   const won = feats.filter((f) => wonIds.has(f.id)).length;
   const job = building(s.jobs, now).find((j) => (gearById(j.item_id)?.sport || propById(j.item_id)?.sport) === sport);
   const end = job ? Date.parse(job.finishes_at) : 0;
-  return `<div class="cp-plates">
+  return `<div class="cp-plates" style="${at}">
     <button class="cp-plate" data-action="open-sport-levels" data-sport="${sport}" aria-label="${esc(t('cp.roomAria', { room: roomName(room.room), n: lvl, q: q.level }))}">
       <b>${esc(roomName(room.room))}</b><i class="data-num">${t('loop.quad.lv', { n: q.level })}</i></button>
     <button class="cp-chip" data-action="open-trophies" data-sport="${sport}" aria-label="${esc(t('feat.ui.boardAria', { n: won, total: feats.length }))}">${svg('trophy')}<b class="data-num">${won}</b></button>
@@ -137,19 +143,18 @@ function plateHtml(room, ctx, s, now, wonIds) {
   </div>`;
 }
 
-function roomHtml(room, ctx, items, placements, sel, s, now, wonIds, artOpts) {
+/** A room: its art mapped onto its block (interior walls cut), and the floor glow and arrows. */
+function roomHtml(room, i, ctx, placements, sel) {
   const lvl = levelOf(room.room, ctx);
-  const here = items.filter((it) => placements[it.id]?.room === room.room);
+  const [w, h] = ROOM_SIZE[room.geom];
   const chosen = sel && placements[sel]?.room === room.room ? placeableById(sel) : null;
   return `<div class="cp-room is-${room.room}" data-room="${room.room}" data-geom="${room.geom}"
-      style="left:${room.x}px;top:${room.y}px;width:${room.w}px;height:${room.h}px;--rw:${room.w};z-index:${(room.row + 1) * 100}">
-    <img class="cp-room-art" src="${esc(roomArt(room.room, lvl, room.landscape))}" alt="${esc(t('cp.roomAlt', { room: roomName(room.room), n: lvl }))}" draggable="false">
+      style="width:${w}px;height:${h}px;transform:matrix(${room.M.map((n) => +n.toFixed(5)).join(',')});z-index:${i + 1}">
+    <img class="cp-room-art" src="${esc(roomArt(room.room, lvl, room.landscape))}" alt="${esc(t('cp.roomAlt', { room: roomName(room.room), n: lvl }))}" draggable="false" style="clip-path:${room.clip}">
     <svg class="cp-floor" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="${chosen ? 'false' : 'true'}">
       <g class="cp-cells"></g>
       ${chosen ? `<g class="cp-arrows">${arrows(room.geom, chosen, placements[sel])}</g>` : ''}
     </svg>
-    ${here.map((it) => itemHtml(it, placements[it.id], room, sel === it.id, artOpts)).join('')}
-    ${plateHtml(room, ctx, s, now, wonIds)}
   </div>`;
 }
 
@@ -195,6 +200,7 @@ export function wireCompound(root, ctx) {
   const inv = s.inventory;
   const world = worldOf(ctx);
   const items = placeablesFor(inv, world.rooms.map((r) => r.room));
+  const roomOfItem = (id) => world.rooms.find((r) => r.room === placements[id]?.room);
   const artOpts = { inventory: inv, rider: riderArt(ctx) };
   let placements = resolvePlacements(world.layout, items, savedPlacements());
   if (view.sel && !placements[view.sel]) view.sel = null;
@@ -205,11 +211,17 @@ export function wireCompound(root, ctx) {
     const wonIds = new Set(featAwards().map((a) => a.featId));
     worldEl.style.width = `${world.W}px`;
     worldEl.style.height = `${world.H}px`;
-    worldEl.innerHTML = world.rooms.map((r) => roomHtml(r, ctx, items, placements, view.sel, s, now, wonIds, artOpts)).join('');
+    worldEl.classList.toggle('has-sel', !!view.sel);
+    // rooms back to front, then the labels, then the items: three layers, none of them in another's flow
+    worldEl.innerHTML = `${world.rooms.map((r, i) => roomHtml(r, i, ctx, placements, view.sel)).join('')}
+      <div class="cp-labels">${world.rooms.map((r) => plateHtml(r, ctx, s, now, wonIds)).join('')}</div>
+      <div class="cp-items">${items.filter((it) => roomOfItem(it.id)).map((it) => itemHtml(it, placements[it.id], roomOfItem(it.id), view.sel === it.id, artOpts)).join('')}</div>`;
   };
   const apply = () => {
     worldEl.style.transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`;
     worldEl.style.setProperty('--s', String(view.s));
+    // zoomed out, each room shows just its name; closer in, its trophies and timers too
+    worldEl.classList.toggle('is-far', view.s < view.fit * 1.5);
   };
   const fit = () => {
     const r = vp.getBoundingClientRect();
@@ -226,7 +238,7 @@ export function wireCompound(root, ctx) {
     view.ty = Math.min(r.height - m, Math.max(m - h, view.ty));
   };
   // a new layout (other rooms) fits again; otherwise keep where you were
-  const key = `${world.layout.rows.map((row) => row.map((c) => c.room).join(',')).join('/')}`;
+  const key = world.rooms.map((r) => `${r.room}@${r.cu},${r.cv}`).join('/');
   draw();
   if (view.key !== key || !view.s) { fit(); view.key = key; }
   clampView();
@@ -269,12 +281,12 @@ export function wireCompound(root, ctx) {
   const tileAt = (cx, cy, it) => {
     const p = toWorld(cx, cy);
     // the frontmost room whose floor is under the point
-    for (const room of [...world.rooms].sort((a, b) => b.row - a.row)) {
-      const px = ((p.x - room.x) / room.w) * 100; const py = ((p.y - room.y) / room.h) * 100;
-      if (px < 0 || px > 100 || py < 0 || py > 100) continue;
-      const f = pctToTile(room.geom, px, py);
-      const u = Math.round(f.u - it.w / 2); const v = Math.round(f.v - it.h / 2);
-      if (f.u >= -0.5 && f.v >= -0.5) return { room, u, v };
+    for (const room of [...world.rooms].reverse()) {
+      const q = worldToRoom(room, p.x, p.y);
+      const f = pctToTile(room.geom, q.x, q.y);
+      const g = ROOM_GEOMETRY[room.geom];
+      if (f.u < 0 || f.v < 0 || f.u > g.cols || f.v > g.rows) continue;
+      return { room, u: Math.round(f.u - it.w / 2), v: Math.round(f.v - it.h / 2) };
     }
     return null;
   };
@@ -286,15 +298,11 @@ export function wireCompound(root, ctx) {
     const g = worldEl.querySelector(`.cp-room[data-room="${room.room}"] .cp-cells`);
     if (g) g.innerHTML = footprint(it, u, v).map(([a, b]) => poly(boxCorners(room.geom, a, b), `cp-cell ${ok ? 'is-ok' : 'is-bad'}`)).join('');
   };
-  // the item follows the finger: moved into the room it's over, at that tile
+  // the item follows the finger, standing on the tile it's over
   const moveEl = (el, it, room, u, v) => {
-    const host = worldEl.querySelector(`.cp-room[data-room="${room.room}"]`);
-    if (host && el.parentElement !== host) host.appendChild(el);
-    const [, right, front, left] = boxCorners(room.geom, u, v, it.w, it.h);
-    el.style.setProperty('--x', `${((left.x + right.x) / 2).toFixed(3)}%`);
-    el.style.setProperty('--y', `${front.y.toFixed(3)}%`);
-    el.style.setProperty('--w', `${((right.x - left.x) * (it.scale || 1.1)).toFixed(3)}%`);
-    el.style.zIndex = String(Math.round(10 + depthOf(it, { u, v })));
+    const b = itemBox(it, { u, v }, room);
+    el.style.left = `${b.x.toFixed(1)}px`; el.style.top = `${b.y.toFixed(1)}px`; el.style.width = `${b.w.toFixed(1)}px`;
+    el.style.zIndex = String(Math.round(b.y));
   };
 
   const place = (id, to) => {
@@ -361,6 +369,7 @@ export function wireCompound(root, ctx) {
       view.tx = g.tx0 + dx; view.ty = g.ty0 + dy; clampView(); apply();
     } else if (g.mode === 'drag' && g.moved) {
       g.cx = e.clientX; g.cy = e.clientY;
+      worldEl.classList.add('cp-dragging');
       if (!g.edgeLoop) g.edgeLoop = requestAnimationFrame(edgePan);
       track(g);
     }
@@ -399,6 +408,7 @@ export function wireCompound(root, ctx) {
     if (done.edgeLoop) cancelAnimationFrame(done.edgeLoop);
     if (done.mode === 'nudge') { nudge(done.dir); return; }
     if (done.mode === 'drag') {
+      worldEl.classList.remove('cp-dragging');
       done.el.classList.remove('is-lift', 'is-bad');
       showCells(null);
       if (!done.moved) { draw(); return; }

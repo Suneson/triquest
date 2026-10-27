@@ -24,18 +24,40 @@ The rooms are cut from the green-screen renders on the `art-raw` branch (`art-ra
 - **Room levels:** a sport room shows your level in that sport (the highest you've reached, so a prestige reset keeps it). The locker shows your account level.
 - **Characters:** only the bike room has one, the animated rider (see Items). The run, gym and pool rooms are empty.
 
-## Layouts (`compoundLayout()` in `js/core/placement.js`)
+## One building (`js/core/compound-geometry.js`)
 
-| Disciplines | Layout |
+The rooms aren't placed on a screen grid. They are blocks of one isometric building:
+- block (cu, cv) sits cu steps along the building's right-hand axis U and cv steps along its left-hand axis V, from the back corner;
+- U = (511, 284) and V = (−511, 284) world px (`ISO_METRICS`).
+
+```
+            back corner
+               GYM            (0,0)
+          BIKE      POOL      (0,1)  (1,0)
+               RUN            (1,1)
+          LOCKER (2 wide)     (0,2)–(1,2)
+            front corner
+```
+
+| Disciplines | Blocks |
 | --- | --- |
-| 1 | the sport, over a square locker |
-| 2 | two squares side by side, over the wide locker |
-| 3 | 2×2: the three sports and the square locker bottom-right |
-| 4 | gym and pool, then bike and run, then the wide locker |
+| 1 | the sport (0,0), the square locker (0,1) |
+| 2 | (0,0) and (1,0), the wide locker (0,1)–(1,1) |
+| 3 | (0,0), (1,0), (0,1), the square locker (1,1) |
+| 4 | as drawn above |
 
-- **Order:** rooms fill in the order gym, pool, bike, run.
-- **Choosing rooms:** your disciplines come from the setting `disciplines`, which is chosen at onboarding and editable in Settings and with the base's Rooms button (at least one stays on). Until it's set, it's the sports you've trained, or all four.
-- **Fit:** rows tuck under each other by `ROW_TUCK` (8% of the upper row), so the upper rooms' front curb sits on the lower rooms' back-wall rim.
+**Mapping the art.** An affine map takes each room's three measured floor corners exactly onto its block's corners, so neighbouring floors share their edges to the pixel:
+- the room is drawn with that CSS `matrix()`;
+- the art's long wall runs along its own V, so the wide locker is mirrored to put that wall along the building's U.
+
+**Walls.** Rooms are drawn back to front. A back wall standing on an edge shared with a room behind it is an interior wall: it's cut down to a low curb (`STUB`, 3% of the art's height) with a `clip-path`, so the room behind stays in view and the building reads as one cutaway. Outer walls keep their full height.
+
+**Layers.** Items, labels and the drag glow never take space among the rooms:
+- items stand upright in their own layer, positioned by mapping their footprint into the world;
+- labels sit in a layer under the items, at each floor's middle; zoomed out they show just the room's name, and they hide while you carry or pick something up;
+- the floor glow and the arrows are drawn in each room's own (mapped) floor.
+
+Your disciplines come from the setting `disciplines`, which is chosen at onboarding and editable in Settings and with the base's Rooms button (at least one stays on). Until it's set, it's the sports you've trained, or all four.
 
 ## The floor grid
 
@@ -47,9 +69,9 @@ Each room's floor is a parallelogram measured on its art as three corners (back,
 | --- | --- | --- |
 | Gym, bike, run, square locker | 8 × 8 | none |
 | Pool | 8 × 8 | the water: u 4–7, v 1–6 |
-| Wide locker | 10 × 22 | none |
+| Wide locker | 8 × 16 | none |
 
-Tiles are the same size in every room, about 67 px of a 1,000-px column. Walls and the outside are simply off the grid, so the bounds check refuses them.
+Once mapped into the building, tiles are the same size in every room (8 per block side). Walls and the outside are simply off the grid, so the bounds check refuses them.
 
 `canPlace()` says why a spot is refused:
 - `bounds`: a wall or the edge;

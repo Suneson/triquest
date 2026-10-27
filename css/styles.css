@@ -2402,7 +2402,12 @@ img[src*="Pixelart/GEAR/"], img[src*="Pixelart/FEATS/"] { image-rendering: auto 
 .cp-viewport:focus-visible { box-shadow: inset 0 0 0 2px var(--fg); }
 .cp-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 .cp-world.is-easing { transition: transform 260ms cubic-bezier(.2, .8, .3, 1); }
-.cp-room { position: absolute; }
+.cp-room { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+/* items and labels are layers over all the rooms: they never take space among them */
+/* labels under the items: an item standing on a label is still the thing you tap */
+.cp-labels { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
+.cp-items { position: absolute; inset: 0; z-index: 200; pointer-events: none; }
+.cp-items .cp-item { pointer-events: auto; }
 .cp-room-art { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
 .cp-floor { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 900; }
 .cp-cell { stroke-width: .25; vector-effect: non-scaling-stroke; }
@@ -2413,7 +2418,7 @@ img[src*="Pixelart/GEAR/"], img[src*="Pixelart/FEATS/"] { image-rendering: auto 
   filter: drop-shadow(0 0 6px rgba(61, 169, 252, .9)); animation: cp-arrow 1.2s steps(6, end) infinite alternate; }
 @keyframes cp-arrow { from { opacity: .7; } to { opacity: 1; } }
 /* items stand on their footprint: centred on it, base on its front corner */
-.cp-item { position: absolute; left: var(--x); top: var(--y); width: var(--w); padding: 0; border: 0; background: none; cursor: pointer;
+.cp-item { position: absolute; padding: 0; border: 0; background: none; cursor: pointer;
   --ty: calc(-100% + var(--lift, 0) * 100%);
   transform: translate(-50%, var(--ty)); transform-origin: 50% 94%; touch-action: none; -webkit-tap-highlight-color: transparent; }
 .cp-item img { display: block; width: 100%; height: auto; pointer-events: none; -webkit-user-drag: none;
@@ -2432,9 +2437,14 @@ img[src*="Pixelart/GEAR/"], img[src*="Pixelart/FEATS/"] { image-rendering: auto 
 .cp-item.landed { animation: cp-land 220ms cubic-bezier(.3, 1.4, .5, 1); }
 @keyframes cp-land { 0% { transform: translate(-50%, calc(var(--ty) - 8px / var(--s, 1))); } 100% { transform: translate(-50%, var(--ty)); } }
 /* each room's plate sits on its front curb and keeps its size whatever the zoom */
-.cp-plates { position: absolute; left: 50%; bottom: 2%; z-index: 950; display: flex; flex-wrap: wrap-reverse; justify-content: center; gap: 4px;
-  width: max-content; max-width: calc(var(--rw) * var(--s, 1) * 1px - 12px); align-items: center;
-  transform: translate(-50%, 0) scale(calc(1 / var(--s, 1))); transform-origin: 50% 100%; white-space: nowrap; }
+.cp-plates { position: absolute; display: flex; justify-content: center; gap: 4px; width: max-content; align-items: center;
+  transform: translate(-50%, -100%) scale(calc(1 / var(--s, 1))) translateY(-6px); transform-origin: 50% 100%; white-space: nowrap; pointer-events: none; }
+.cp-plates button { pointer-events: auto; }
+.cp-dragging .cp-labels, .has-sel .cp-labels { opacity: 0; visibility: hidden; }
+.cp-plates { transform: translate(-50%, -50%) scale(calc(1 / var(--s, 1))); transform-origin: 50% 50%; opacity: .92; }
+.is-far .cp-chip { display: none; }
+.is-far .cp-plate { min-height: 22px; padding: 2px 6px; }
+.is-far .cp-plate i { display: none; }
 .cp-plate, .cp-chip { --b: var(--line-soft); display: inline-flex; gap: 5px; align-items: center; min-height: 28px; padding: 3px 7px;
   background: rgba(11, 18, 34, .9); color: var(--fg); font-size: var(--fs-tiny); border: 0; cursor: pointer;
   box-shadow: 0 -2px 0 0 var(--b), 0 2px 0 0 var(--b), -2px 0 0 0 var(--b), 2px 0 0 0 var(--b); }

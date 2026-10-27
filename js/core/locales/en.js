@@ -2768,6 +2768,12 @@ en.prop["gym-cabinet"] = { "name": "Trophy cabinet", "blurb": "Glass doors, gold
 
 // ---- the unified compound (docs/COMPOUND.md) ----
 en.cp = {
+  "lvl": "Level {n}",
+  "coinsAria": "{n} coins",
+  "carbsAria": "{n} g of carbs",
+  "staminaAria": "Stamina {n} of {max}. It refills by itself, one point a minute",
+  "roomsAria": "Rooms",
+  "nav": { "bike": "Cycling", "pool": "Swim", "run": "Run", "gym": "Gym", "locker": "Locker Room & Recovery" },
   "room": { "gym": "Gym", "pool": "Pool", "bike": "Bike room", "run": "Run room", "locker": "Locker room" },
   "item": { "coffee-machine": "Coffee machine", "smart-bike": "Your bike", "smart-trainer": "Smart trainer" },
   "roledesc": "base editor",
@@ -2785,14 +2791,6 @@ en.cp = {
     "occupied": "Something’s already standing there."
   },
   "nudge": { "+u": "Move one tile right", "-u": "Move one tile left", "+v": "Move one tile forward", "-v": "Move one tile back" },
-  "zoom": "Zoom",
-  "zoomIn": "Zoom in",
-  "zoomOut": "Zoom out",
-  "zoomFit": "Show the whole base",
-  "actsAria": "Base",
-  "rooms": "Rooms",
-  "roomsTitle": "Rooms in your base",
-  "roomsNote": "One room per discipline you train, plus the locker room. Your items and everything you've built stay yours when a room is hidden.",
   "needOne": "Keep at least one room."
 };
 

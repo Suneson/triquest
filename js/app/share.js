@@ -23,7 +23,7 @@ const C = {
   bg: '#0B1222', bg2: '#121C33', bg3: '#1A2744', line: '#5372B5', shade: '#050912',
   fg: '#F2F5FC', muted: '#9AA8C7', accent: '#F2C14E', accentLo: '#B98A1E', onAccent: '#1A1205',
 };
-const PIXEL = "'Silkscreen', ui-monospace, monospace";
+const PIXEL = "'Franklin Gothic Heavy', 'Arial Black', Impact, sans-serif"; // i18n-ignore (font names)
 const DATA = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 const load = (src) => new Promise((resolve, reject) => {

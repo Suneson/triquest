@@ -118,6 +118,15 @@ export function playQuest() {
   [659.25, 783.99, 987.77].forEach((f, i) => blip(f, i * 0.07, 0.12, 'square', 0.1));
 }
 
+/** An item set down in the compound: a low thud and a clink. */
+export function playPlace() {
+  if (!soundOn()) return;
+  const ac = ctx();
+  if (ac && ac.state === 'suspended') ac.resume();
+  blip(130.81, 0, 0.09, 'triangle', 0.25);
+  blip(1046.5, 0.05, 0.06, 'square', 0.05);
+}
+
 /** Quest accepted: a short two-note "got it". */
 export function playAccept() {
   if (!soundOn()) return;

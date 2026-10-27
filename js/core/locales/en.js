@@ -2766,4 +2766,34 @@ en.prop["run-statue"] = { "name": "Runner statue", "blurb": "A gold runner mid-s
 en.prop["swim-blocks"] = { "name": "Gold starting block", "blurb": "The block the finals start from. Built from its blueprint." };
 en.prop["gym-cabinet"] = { "name": "Trophy cabinet", "blurb": "Glass doors, gold handles, room for more. Built from its blueprint." };
 
+// ---- the unified compound (docs/COMPOUND.md) ----
+en.cp = {
+  "room": { "gym": "Gym", "pool": "Pool", "bike": "Bike room", "run": "Run room", "locker": "Locker room" },
+  "item": { "coffee-machine": "Coffee machine", "smart-bike": "Your bike", "smart-trainer": "Smart trainer" },
+  "roledesc": "base editor",
+  "vpAria": "Your base. Drag to look around, pinch or use the buttons to zoom. Tap an item to pick it up.",
+  "roomAlt": "{room}, level {n}",
+  "roomAria": "{room}, level {n}, build level {q}. Open its levels",
+  "lockerAria": "Locker room, level {n}. Open your inventory",
+  "itemAria": "{name} in the {room}. Tap to pick it up",
+  "itemSelAria": "{name}, picked up. Drag it, use the arrows, or the arrow keys; Escape to put it down",
+  "selHint": "{name}: drag it, or tap an arrow",
+  "placed": "{name} moved to the {room}",
+  "why": {
+    "bounds": "It can’t go through a wall.",
+    "blocked": "Not there: that’s the water.",
+    "occupied": "Something’s already standing there."
+  },
+  "nudge": { "+u": "Move one tile right", "-u": "Move one tile left", "+v": "Move one tile forward", "-v": "Move one tile back" },
+  "zoom": "Zoom",
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
+  "zoomFit": "Show the whole base",
+  "actsAria": "Base",
+  "rooms": "Rooms",
+  "roomsTitle": "Rooms in your base",
+  "roomsNote": "One room per discipline you train, plus the locker room. Your items and everything you've built stay yours when a room is hidden.",
+  "needOne": "Keep at least one room."
+};
+
 export default en;

@@ -233,3 +233,8 @@ Accounts+sync, Strava OAuth/webhook/polling/matching + actual-vs-planned, UX pas
 7. Art: Run 1–10 real (6–10 renamed from `templvl*`), Gym 1–9 (`GYM/templvl10.png` unapproved), Swim 1 only (`SWIM_LVL1.png`), trainer art in `icons/trainer/` (portrait + full figure, no blink/talk/cheer frames yet). See `docs/redesign/ART-BRIEF.md`; new art is one manifest line in `js/core/scenes.js`.
 8. Dead code: `ui.renderProgress()` and the panels only it calls (load, volume, body metrics, badge wall, reference cards) aren't wired to any tab. Left in place; restyled so they work if re-wired.
 ```
+
+
+## The unified compound (2026-10-27)
+
+The Profile tab opens on the compound. docs/COMPOUND.md covers the rooms, layouts, floor grid, items and drag rules. The core is `js/core/placement.js` (pure, `tests/placement.test.js`); the view is `js/app/compound-view.js`; positions are in `user_placements` (0024). Room art is regenerated with `python3 tools/cut-rooms.py <art-raw checkout>`.

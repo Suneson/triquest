@@ -67,6 +67,15 @@ in the rooms' isometric angle, on flat #00FF00 that the cut keys out.
 | `icons/Pixelart/NEW/CLUBS/relay-gran-canaria.webp` | the island from above, navy sea | The club relay map |
 | `icons/Pixelart/GEAR/kit-season-*.png` + `bikelvl6_char--kit-season-*.webp` | recolours of the navy kit (`tools/kit-recolor.py`) | Season kit colourways |
 
+## Room buttons (the base's bottom bar)
+
+`tools/gen-buttons.mjs <dir> <style-ref.png>` then `python3 tools/cut-buttons.py <dir>` →
+`icons/Pixelart/NEW/UI/btn-{bike,swim,run,gym,locker}.webp`. Square game tiles: a chunky bevelled
+sand-and-tan stone frame, a cream panel, a glossy 3D icon in the upper two thirds and the lower third
+left plain, because the label is written by the app in its heavy type (so it translates). The style
+reference was a screenshot, sent only to the model and never committed. The wide Locker Room bar is
+the same frame drawn in CSS, with its tile as the icon.
+
 ## Later phases
 
 Climb plaques and race medals are added here as their phases are built.

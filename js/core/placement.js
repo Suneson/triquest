@@ -128,29 +128,28 @@ export function boxCorners(geomKey, u, v, w = 1, h = 1) {
  * yet). `gift`: everyone has one. `owned(inventory)`: has one when this says so.
  * `needsRoom`: only there while that room is in the compound. `art(o)`: the
  * picture, given { inventory, rider } (rider: the animated cyclist for your
- * level). `scale`: picture width over the footprint's; `lift`: how far up the
- * picture its base sits (0–1 of its height). `spot`: where it's first set down,
+ * level). `fit`: how much of the footprint the object's base covers (0.8
+ * when not given), so it stands inside the blue lines. `spot`: where it's first set down,
  * when that's free (else the first free tile from the middle). `opens`: what
  * tapping it opens once it's picked up ('missions').
  */
 export const PLACEABLES = [
-  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', scale: 0.92, lift: 0.01, art: () => `${ART}/ITEMS/coffee-machine.webp` },
-  // the rider on their bike: the cycling animation, standing along the floor's v axis.
-  // The rider fills the middle 55% of the frame, so 1.6 keeps the bike inside its two tiles.
-  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', scale: 1.6, lift: 0.04, art: (o) => o?.rider || '' },
+  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', fit: 0.75, art: () => `${ART}/ITEMS/coffee-machine.webp` },
+  // the rider on their bike: the cycling animation, standing along the floor's v axis
+  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.62, art: (o) => o?.rider || '' },
   {
-    id: 'smart-trainer', w: 2, h: 1, home: 'bike', scale: 1.2, lift: 0.1, art: () => 'icons/Pixelart/GEAR/bike-power-t3.png',
+    id: 'smart-trainer', w: 2, h: 1, home: 'bike', fit: 0.7, art: () => 'icons/Pixelart/GEAR/bike-power-t3.png',
     owned: (inv) => (inv || []).some((r) => r.item_id === 'bike-power-t3'),
   },
   // the weekly mission board (missions.js): one stands in every room, and tapping
   // it while it's picked up opens the board
   ...['bike', 'pool', 'run', 'gym', 'locker'].map((room) => ({
     id: `mission-board-${room}`, w: 1, h: 1, gift: true, home: room, needsRoom: room === 'locker' ? undefined : room, spot: [1, 0],
-    scale: 0.95, lift: 0.02, opens: 'missions', art: () => `${ART}/ITEMS/mission-board.webp`,
+    fit: 0.7, opens: 'missions', art: () => `${ART}/ITEMS/mission-board.webp`,
   })),
   // what the daily stall sells (stall.js): yours once bought
   ...STALL_ITEMS.map((s) => ({
-    id: s.id, w: s.w, h: s.h, home: s.home, scale: s.scale, lift: s.lift, flat: !!s.flat, art: () => s.art,
+    id: s.id, w: s.w, h: s.h, home: s.home, fit: s.fit, flat: !!s.flat, art: () => s.art,
     owned: (inv) => (inv || []).some((r) => r.item_id === s.id),
   })),
 ];

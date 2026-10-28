@@ -34,11 +34,10 @@ export function generatedBlock() {
     'returns jsonb language sql immutable set search_path = public as $$',
     `  select ${lit(stall)}::jsonb;`,
     '$$;',
-    "alter table public.gear_catalog drop constraint if exists gear_catalog_kind_check;",
-    "alter table public.gear_catalog add constraint gear_catalog_kind_check check (kind in ('gear', 'kit', 'gel', 'food', 'prop', 'decor'));",
     'insert into public.gear_catalog (id, kind, sport, slot, tier, cost, boost_bp, currency) values',
-    STALL_ITEMS.map((i) => `  (${lit(i.id)}, 'decor', null, null, null, ${i.cost}, 0, 'coins')`).join(',\n'),
-    'on conflict (id) do update set kind = excluded.kind, cost = excluded.cost, currency = excluded.currency;',
+    // decor is a prop with slot 'decor' (no new kind, so the catalog's check stays as it is)
+    STALL_ITEMS.map((i) => `  (${lit(i.id)}, 'prop', null, 'decor', null, ${i.cost}, 0, 'coins')`).join(',\n'),
+    'on conflict (id) do update set kind = excluded.kind, slot = excluded.slot, cost = excluded.cost, currency = excluded.currency;',
     END,
   ].join('\n');
 }

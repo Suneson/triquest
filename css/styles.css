@@ -2666,3 +2666,65 @@ body.rm .dg-item.spring, body.rm .dg-world.is-easing { transition: none; }
 .st-ahead img { width: 56px; height: 56px; object-fit: contain; }
 .st-ahead li span { display: grid; gap: 2px; min-width: 0; }
 .st-ahead small { color: var(--muted); font-size: var(--fs-tiny); text-transform: uppercase; }
+
+/* ---- clubs (docs/LOOP.md §6) ------------------------------------------------------------- */
+#club-root { display: grid; gap: 12px; }
+.cl-sec { display: grid; gap: 8px; }
+.cl-h { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 6px; font: var(--fs-d3)/1.1 var(--font-display); text-transform: uppercase; }
+.cl-sub { font: var(--fs-small)/1.2 var(--font-body); color: var(--muted); text-transform: none; }
+.cl-note { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-small); line-height: 1.4; display: flex; gap: 6px; align-items: flex-start; }
+.cl-note .ic { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.cl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cl-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--bg-2); }
+.cl-row img { width: 44px; height: 44px; object-fit: contain; }
+.cl-row-txt { display: grid; gap: 2px; min-width: 0; }
+.cl-row-txt small { color: var(--muted); font-size: var(--fs-tiny); }
+.cl-row-act { display: flex; gap: 6px; align-items: center; }
+.cl-new { padding: 12px; border-radius: 14px; background: var(--bg-2); }
+.cl-field, .cl-target label, .cl-invite label { display: grid; gap: 4px; font-size: var(--fs-small); color: var(--muted); }
+.cl-field input, .cl-target input, .cl-invite input, .cl-search input { min-height: 44px; padding: 8px 12px; border: 2px solid var(--line-soft); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; font-size: 16px; }
+.cl-crests { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; }
+.cl-crests legend { margin-bottom: 4px; font-size: var(--fs-small); color: var(--muted); }
+.cl-crest-opt { position: relative; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 12px; background: var(--bg-3); cursor: pointer; }
+.cl-crest-opt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.cl-crest-opt img { width: 50px; height: 50px; object-fit: contain; }
+.cl-crest-opt:has(input:checked) { box-shadow: inset 0 0 0 3px #F2C14E; background: var(--bg-4); }
+.cl-crest-opt:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: 2px; }
+.cl-search { display: flex; gap: 6px; }
+.cl-search input { flex: 1; min-width: 0; }
+.cl-head { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 10px 12px; border: 2px solid var(--line-soft);
+  border-radius: 16px; background: linear-gradient(160deg, var(--bg-3), var(--bg-2)); color: var(--fg); text-align: left; cursor: pointer; }
+.cl-head img { width: 56px; height: 56px; object-fit: contain; }
+.cl-head-txt { display: grid; gap: 2px; min-width: 0; }
+.cl-head-txt b { font: 18px/1.1 var(--font-display); }
+.cl-head-txt small { color: var(--muted); font-size: var(--fs-tiny); }
+.cl-head-go { display: inline-flex; align-items: center; gap: 4px; color: #F2C14E; font: 13px/1 var(--font-display); }
+.cl-head-go .ic { width: 16px; height: 16px; }
+.cl-head:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.cl-week { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline; padding: 10px 12px; border-radius: 14px; background: var(--bg-2); }
+.cl-week-h { font: 13px/1.1 var(--font-display); text-transform: uppercase; color: var(--muted); }
+.cl-week .meter { grid-column: 1 / -1; }
+.cl-week small { grid-column: 1 / -1; display: inline-flex; gap: 4px; align-items: center; color: #F2C14E; font-size: var(--fs-small); }
+.cl-week small .ic { width: 14px; height: 14px; }
+.cl-sheet-crest { width: 32px; height: 32px; object-fit: contain; margin-right: 6px; vertical-align: middle; }
+.cl-target, .cl-invite { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; margin-top: 10px; }
+.cl-relay { margin: 0; display: grid; gap: 8px; }
+.cl-map { position: relative; width: 100%; max-width: 420px; margin: 0 auto; aspect-ratio: 1; border-radius: 18px; overflow: hidden; border: 3px solid #0B1222; }
+.cl-map img { display: block; width: 100%; height: 100%; }
+.cl-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cl-route { fill: none; stroke: rgba(255, 255, 255, .55); stroke-width: .9; stroke-dasharray: 1.4 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.cl-route-on { fill: none; stroke: #F2C14E; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 1px #0B1222); transition: stroke-dasharray 900ms cubic-bezier(.2, .8, .3, 1); }
+.cl-start { fill: #fff; stroke: #0B1222; stroke-width: .6; }
+.cl-at { fill: #D9443B; stroke: #fff; stroke-width: .8; }
+.cl-relay.is-done .cl-at { fill: #F2C14E; }
+.cl-relay figcaption { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; align-items: baseline; }
+.cl-relay figcaption .meter { grid-column: 1 / -1; }
+.cl-next { width: 100%; margin-top: 8px; }
+.cl-members { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cl-members li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 6px 10px; background: var(--bg-2); border-radius: 12px; }
+.cl-members .lb-avatar { grid-row: 1 / 3; }
+.cl-members small { color: var(--muted); font-size: var(--fs-tiny); grid-column: 2; }
+.cl-owner { grid-column: 3; grid-row: 1 / 3; padding: 2px 8px; border-radius: 9999px; background: var(--bg-4); color: #F2C14E; font: 11px/1.4 var(--font-display); font-style: normal; }
+.cl-leave { width: 100%; margin-top: 18px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .cl-route-on { transition: none; } }
+body.rm .cl-route-on { transition: none; }

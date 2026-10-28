@@ -15,10 +15,7 @@ import { levelFromTotalXp } from '../core/scoring.js';
 import { toast } from './effects.js';
 import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
-import {
-  roomState, onRoom, startRoom, loadOlder, sendRoom, discardRoom, removeRoom, reportRoom,
-  blockUser, unblockUser, author, markRoomRead,
-} from './room.js';
+import { general } from './room.js';
 import { t, fmtDate } from '../core/i18n.js';
 import { challengeCard, trophyCard, openChallenge, openChallenges, openNewChallenge } from './challenges-view.js';
 import { challengeById, challengesState, onChallenges, refreshChallenges, challengesEnabled } from './challenges-state.js';
@@ -33,6 +30,8 @@ const askForChallenges = () => {
 
 const GROUP_MS = 5 * 60000; // messages from one person within 5 min sit under one header
 let mounted = null;          // { root, view, observer }
+let R = general;             // the room on screen: General, or your club's (room.js)
+const wiredRooms = new Set();
 let draft = '';
 
 const avatarOf = (a, uid) => `<span class="lb-avatar" aria-hidden="true">${a?.avatar
@@ -48,7 +47,7 @@ function dayLabel(iso) {
 }
 
 function menu(m, a) {
-  const st = roomState();
+  const st = R.roomState();
   const items = [];
   if (m.kind === 'hidden') items.push(['unblock', t('room.unblock', { name: nameOf(a) })]);
   if (m.kind === 'msg' && !m.mine) items.push(['report', t('room.report')], ['block', t('room.block', { name: nameOf(a) })]);
@@ -62,7 +61,7 @@ function menu(m, a) {
 }
 
 function listHtml() {
-  const st = roomState();
+  const st = R.roomState();
   const items = roomView(st.messages, { blocked: st.blocked, me: st.me });
   let lastDay = ''; let prev = null;
   const rows = items.map((m) => {
@@ -70,7 +69,7 @@ function listHtml() {
     const sep = day !== lastDay ? `<li class="ch-day" aria-hidden="true"><span>${esc(day)}</span></li>` : '';
     if (sep) prev = null;
     lastDay = day;
-    const a = author(m.user_id);
+    const a = R.author(m.user_id);
     const cont = prev && prev.user_id === m.user_id && prev.kind === 'msg' && m.kind === 'msg'
       && Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
     prev = m;
@@ -104,7 +103,7 @@ function listHtml() {
     </li>`;
   }).join('');
   const top = st.hasMore ? `<li class="rm-top" data-rm-top><span class="muted small">${t('room.loadingEarlier')}</span></li>`
-    : `<li class="rm-top"><span class="muted small">${t('room.start')}</span></li>`;
+    : `<li class="rm-top"><span class="muted small">${t(R.clubId ? 'club.roomStart' : 'room.start')}</span></li>`;
   return items.length ? top + rows : `${top}<li class="ch-hello muted">${t('room.empty')}</li>`;
 }
 
@@ -116,7 +115,7 @@ function skeleton() {
 function draw() {
   if (!mounted) return;
   const { root } = mounted;
-  const st = roomState();
+  const st = R.roomState();
   if (st.error && !st.ready) {
     root.innerHTML = dialogue({ who: t('room.general'), icon: 'chat', text: t('room.loadFailed', { error: st.error }), cls: 'empty-dlg',
       body: `<button class="btn secondary" data-rm="reload">${t('room.tryAgain')}</button>` });
@@ -124,11 +123,11 @@ function draw() {
   }
   if (!st.ready) { root.innerHTML = skeleton(); return; }
   root.innerHTML = `
-    <div class="rm-ch-bar"><button class="btn tiny ghost" data-rm="challenges">${svg('flag')} ${t('chx.title')}</button></div>
+    ${R.clubId ? '' : `<div class="rm-ch-bar"><button class="btn tiny ghost" data-rm="challenges">${svg('flag')} ${t('chx.title')}</button></div>`}
     <ol class="rm-msgs" id="rm-msgs" aria-live="polite" aria-label="${t('room.aria')}">${listHtml()}</ol>
     <form class="ch-compose rm-compose" data-rm-form autocomplete="off">
       ${st.offline ? `<p class="rm-offline" role="status">${svg('cloud')} ${t('room.offline')}</p>` : ''}
-      <button class="btn ghost rm-ch-btn" type="button" data-rm="challenge" aria-label="${t('chx.newAria')}" ${st.offline ? 'disabled' : ''}>${svg('flag')}</button>
+      ${R.clubId ? '' : `<button class="btn ghost rm-ch-btn" type="button" data-rm="challenge" aria-label="${t('chx.newAria')}" ${st.offline ? 'disabled' : ''}>${svg('flag')}</button>`}
       <textarea class="ch-in" name="body" rows="1" maxlength="500" placeholder="${t('room.ph')}" aria-label="${t('room.phAria')}" ${st.offline ? 'disabled' : ''}>${esc(draft)}</textarea>
       <button class="btn primary ch-send" type="submit" aria-label="${t('room.send')}" ${st.offline ? 'disabled' : ''}>${svg('send')}</button>
     </form>`;
@@ -155,7 +154,7 @@ function refreshList({ keepTop = false } = {}) {
   if (keepTop) v.scrollTop = v.scrollHeight - fromBottom; // older messages arrived above: stay where you were
   else if (end) toEnd();
   watchTop();
-  if (atEnd()) markRoomRead();
+  if (atEnd()) R.markRoomRead();
 }
 
 // scrolling to the top loads the page before
@@ -164,7 +163,7 @@ function watchTop() {
   const top = mounted?.root.querySelector('[data-rm-top]');
   if (!top || !('IntersectionObserver' in window)) return;
   mounted.observer = new IntersectionObserver((es) => {
-    if (es.some((e) => e.isIntersecting)) loadOlder().then((n) => { if (n) refreshList({ keepTop: true }); });
+    if (es.some((e) => e.isIntersecting)) R.loadOlder().then((n) => { if (n) refreshList({ keepTop: true }); });
   }, { root: mounted.view, rootMargin: '200px 0px 0px 0px' });
   mounted.observer.observe(top);
 }
@@ -182,7 +181,7 @@ function openReport(id) {
     </div>`;
   root.querySelector('[data-rp-form]').addEventListener('submit', async (e) => {
     e.preventDefault();
-    try { await reportRoom(id, e.target.reason.value.trim() || null); closeLayer(root); toast(t('room.reported'), { icon: svg('check') }); }
+    try { await R.reportRoom(id, e.target.reason.value.trim() || null); closeLayer(root); toast(t('room.reported'), { icon: svg('check') }); }
     catch (err) { toast(esc(err.message || t('room.reportFailed')), { icon: svg('warn') }); }
   });
 }
@@ -195,27 +194,27 @@ function wire(root) {
     if (!b) return;
     const act = b.dataset.rm;
     if (act === 'profile') {
-      const a = author(b.dataset.uid);
+      const a = R.author(b.dataset.uid);
       const from = b.closest('.rm-msg')?.querySelector('.lb-avatar');
       document.dispatchEvent(new CustomEvent('moske:open-athlete', { detail: { uid: b.dataset.uid, name: a?.display_name || t('room.athlete'), avatar: a?.avatar || null, from } }));
     } else if (act === 'retry') {
-      const m = roomState().messages.find((x) => x.pending && x.client_id === b.dataset.cid);
-      if (m) sendRoom(m.body, { retryOf: m.client_id });
-    } else if (act === 'discard') discardRoom(b.dataset.cid);
+      const m = R.roomState().messages.find((x) => x.pending && x.client_id === b.dataset.cid);
+      if (m) R.sendRoom(m.body, { retryOf: m.client_id });
+    } else if (act === 'discard') R.discardRoom(b.dataset.cid);
     else if (act === 'challenge') openNewChallenge();
     else if (act === 'challenges') openChallenges();
-    else if (act === 'reload') { startRoom(); draw(); }
+    else if (act === 'reload') { R.startRoom(); draw(); }
   };
   root.onchange = async (e) => {
     const sel = e.target.closest('[data-rm-menu]');
     if (!sel) return;
     const v = sel.value; sel.value = '';
-    const id = Number(sel.dataset.mid); const uid = sel.dataset.uid; const a = author(uid);
+    const id = Number(sel.dataset.mid); const uid = sel.dataset.uid; const a = R.author(uid);
     try {
       if (v === 'report') openReport(id);
-      else if (v === 'block' && confirm(t('room.blockConfirm', { name: nameOf(a) }))) { await blockUser(uid); toast(esc(t('room.blocked', { name: nameOf(a) })), { icon: svg('check') }); }
-      else if (v === 'unblock') await unblockUser(uid);
-      else if (v === 'remove' && confirm(t('room.removeConfirm'))) await removeRoom(id);
+      else if (v === 'block' && confirm(t('room.blockConfirm', { name: nameOf(a) }))) { await R.blockUser(uid); toast(esc(t('room.blocked', { name: nameOf(a) })), { icon: svg('check') }); }
+      else if (v === 'unblock') await R.unblockUser(uid);
+      else if (v === 'remove' && confirm(t('room.removeConfirm'))) await R.removeRoom(id);
     } catch (err) { toast(esc(err.message || t('room.wentWrong')), { icon: svg('warn') }); }
   };
   root.onsubmit = async (e) => {
@@ -223,7 +222,7 @@ function wire(root) {
     e.preventDefault();
     const ta = e.target.body;
     const text = ta.value;
-    const err = await sendRoom(text);
+    const err = await R.sendRoom(text);
     if (err) { toast(esc(err), { icon: svg('warn') }); return; }
     ta.value = ''; draft = ''; ta.style.height = 'auto';
     toEnd(); ta.focus();
@@ -244,24 +243,30 @@ function wire(root) {
 
 let _wired = false;
 /** Draw General into `root` (inside the Chat tab, scrolling with `view`). */
-export function mountRoom(root, view) {
+/** Draw a room into `root`: General, or a club room from createRoom(). */
+export function mountRoom(root, view, room = general) {
+  R = room;
   mounted?.observer?.disconnect();
   mounted = { root, view, observer: null };
   wire(root);
-  if (!_wired) {
-    _wired = true;
-    onRoom((why) => {
-      if (!mounted?.root.isConnected) return;
-      if (why === 'load' || why === 'error' || why === 'online' || why === 'offline' || why === 'stop') { draw(); if (why === 'load') { toEnd(); markRoomRead(); } }
+  // each room is listened to once; only the one on screen redraws
+  if (!wiredRooms.has(room)) {
+    wiredRooms.add(room);
+    room.onRoom((why) => {
+      if (R !== room || !mounted?.root.isConnected) return;
+      if (why === 'load' || why === 'error' || why === 'online' || why === 'offline' || why === 'stop') { draw(); if (why === 'load') { toEnd(); R.markRoomRead(); } }
       else if (why !== 'read' && why !== 'older') refreshList();
     });
+  }
+  if (!_wired) {
+    _wired = true;
     // the cards follow their challenges
     onChallenges(() => { if (mounted?.root.isConnected) refreshList(); });
   }
-  const st = roomState();
-  if (!st.ready) startRoom();
+  const st = R.roomState();
+  if (!st.ready) R.startRoom();
   draw();
-  if (st.ready) { toEnd(); markRoomRead(); }
+  if (st.ready) { toEnd(); R.markRoomRead(); }
 }
 
 export function unmountRoom() { mounted?.observer?.disconnect(); mounted = null; }

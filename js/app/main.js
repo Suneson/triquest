@@ -31,6 +31,7 @@ import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logg
 import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
 import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi, chatMode } from './chat.js';
 import { startRoom, stopRoom } from './room.js';
+import { refreshClub, stopClub } from './clubs-state.js';
 import { startSocial, stopSocial, refreshSocial } from './social.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, playAccept, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
@@ -1000,7 +1001,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); } else { stopSocial(); stopRoom(); stopChallenges(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); refreshClub(); } else { stopSocial(); stopRoom(); stopChallenges(); stopClub(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();
@@ -1110,7 +1111,7 @@ async function boot() {
     const from = appState.tab;
     appState.tab = 'chat';
     localStorage.setItem('moske-tab', 'chat');
-    withTabTransition(from, 'chat', () => { render(); openThread(e.detail); });
+    withTabTransition(from, 'chat', () => { render(); if (e.detail) openThread(e.detail); });
   });
   document.addEventListener('moske:open-athlete', (e) => {
     const a = athleteByUid(e.detail.uid); // the leaderboard's numbers when it has them
@@ -1121,7 +1122,7 @@ async function boot() {
   // Home, Ranks and Chat: pull down from the top to refresh
   enablePull(document.getElementById('view'), {
     // (in General, scrolling to the top loads earlier messages instead)
-    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers() && !(appState.tab === 'chat' && chatMode() === 'general'),
+    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers() && !(appState.tab === 'chat' && ['general', 'club'].includes(chatMode())),
     onRefresh: async () => {
       if (appState.tab === 'leaderboards') { await loadLeaderboard(appState.lbView, todayISO()); return; }
       if (appState.tab === 'chat') { await refreshSocial(); return; }

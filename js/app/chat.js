@@ -17,6 +17,15 @@ import {
 import { sheetHead } from './sheet.js';
 import { onRoom, unreadRoom } from './room.js';
 import { mountRoom, unmountRoom } from './room-view.js';
+import { drawClub } from './clubs-view.js';
+import { clubState, clubRoom, onClub } from './clubs-state.js';
+
+// a club room's unread count, once it's loaded
+const clubUnread = () => {
+  if (!clubState().board) return 0;
+  const r = clubRoom();
+  return r?.roomState().ready ? r.unreadRoom() : 0;
+};
 import { t, fmtDate, fmtTime } from '../core/i18n.js';
 
 const ui = { open: null, view: null, draft: new Map() }; // open = friend user_id in the thread view
@@ -31,6 +40,7 @@ const handle = (r) => (r?.username ? `@${r.username}` : '');
 // up front ("Ana accepted your friend request"); show them in the active language
 const NOTIF_EN = { friend_accepted: ' accepted your friend request', friend_request: ' wants to be friends' };
 function notifTitle(n) {
+  if (n.kind === 'club_invite' && n.data?.club) return t('club.notifInvite', { name: n.data.from || '', club: n.data.club });
   const tail = NOTIF_EN[n.kind];
   if (!tail || !String(n.title || '').endsWith(tail)) return n.title;
   const name = n.title.slice(0, -tail.length);
@@ -76,15 +86,15 @@ function skeleton() {
 // them up.
 const MODE_KEY = 'moske-chat-mode';
 export function chatMode() {
-  try { return localStorage.getItem(MODE_KEY) === 'direct' ? 'direct' : 'general'; } catch { return 'general'; }
+  try { const m = localStorage.getItem(MODE_KEY); return m === 'direct' || m === 'club' ? m : 'general'; } catch { return 'general'; }
 }
-function setChatMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch { /* private mode */ } }
+export function setChatMode(m) { try { localStorage.setItem(MODE_KEY, m); } catch { /* private mode */ } }
 
 function segHtml(mode) {
-  const n = { general: unreadRoom(), direct: socialState().ready ? unreadMessages() : 0 };
+  const n = { general: unreadRoom(), direct: socialState().ready ? unreadMessages() : 0, club: clubUnread() };
   const opt = (id, label) => `<button class="ch-seg-btn${mode === id ? ' on' : ''}" role="tab" aria-selected="${mode === id}" data-ch="mode" data-mode="${id}">
       ${label}${n[id] ? ` <span class="ch-seg-n data-num" aria-label="${t('chat.unreadN', { n: n[id] })}">${n[id] > 9 ? '9+' : n[id]}</span>` : ''}</button>`;
-  return `<div class="ch-seg" role="tablist" aria-label="${t('chat.chat')}">${opt('general', t('chat.general'))}${opt('direct', t('chat.direct'))}</div>`;
+  return `<div class="ch-seg" role="tablist" aria-label="${t('chat.chat')}">${opt('general', t('chat.general'))}${opt('direct', t('chat.direct'))}${opt('club', t('club.tab'))}</div>`;
 }
 function paintSeg() {
   const seg = document.querySelector('#chat-root .ch-seg');
@@ -118,6 +128,16 @@ export function drawChat() {
       ${mode === 'direct' ? `<button class="btn tiny secondary ch-add-btn" data-ch="add-friend">${svg('friend')} ${t('chat.addFriend')}</button>` : ''}
     </div>
     ${segHtml(mode)}`;
+  if (mode === 'club') {
+    // your club: its own room on General's plumbing, or how to find one (clubs-view.js)
+    if (!root.querySelector('#club-root')) {
+      unmountRoom();
+      root.innerHTML = `${head}<div id="club-root"></div>`;
+      wireChat(root);
+    } else paintSeg();
+    drawClub(root, ui.view || document.getElementById('view'));
+    return;
+  }
   if (mode === 'general') {
     // General keeps itself live (room-view.js); a redraw here would cost the
     // scroll position and the composer's focus, so only the switch repaints
@@ -384,6 +404,8 @@ export function wireSocialUi({ getTab }) {
 
 // General's updates light the badge and the switch too
 onRoom(() => { paintChatBadge(); paintSeg(); });
+// the club's board or invites changed: redraw the Club side if it's showing
+onClub(() => { paintSeg(); if (chatMode() === 'club' && document.getElementById('club-root')) drawChat(); });
 
 function paintChatBadge() {
   const tab = document.querySelector('.tab[data-tab="chat"]');
@@ -426,10 +448,11 @@ export function openBell() {
     const updates = notes.filter((n) => n.kind !== 'friend_request');
     const unread = new Set(unreadNotifications().map((n) => n.id));
     const row = (n) => {
-      const ic = n.kind === 'app_update' ? 'star' : n.kind.startsWith('friend') ? 'friend' : 'bell';
+      const ic = n.kind === 'app_update' ? 'star' : n.kind.startsWith('friend') || n.kind === 'club_invite' ? 'friend' : 'bell';
       const uid = n.data?.user_id;
       const msg = n.kind === 'friend_accepted' && uid && relationTo(uid) === 'friends'
-        ? `<button class="btn tiny secondary" data-bell="chat" data-uid="${esc(uid)}">${svg('chat')} ${t('chat.message')}</button>` : '';
+        ? `<button class="btn tiny secondary" data-bell="chat" data-uid="${esc(uid)}">${svg('chat')} ${t('chat.message')}</button>`
+        : n.kind === 'club_invite' ? `<button class="btn tiny secondary" data-bell="club">${t('club.see')}</button>` : '';
       return `<li class="bl-row ${unread.has(n.id) ? 'is-new' : ''}">
         <span class="bl-ico">${svg(ic)}</span>
         <span class="ch-txt"><b>${esc(notifTitle(n))}</b>${n.body ? `<small>${esc(n.body)}</small>` : ''}<small class="muted">${esc(chatTime(n.created_at))}</small></span>
@@ -459,7 +482,11 @@ export function openBell() {
     try {
       if (b.dataset.bell === 'accept') { await respondFriend(Number(b.dataset.fid), true); toast(t('chat.friendAdded'), { icon: svg('friend') }); }
       else if (b.dataset.bell === 'decline') await respondFriend(Number(b.dataset.fid), false);
-      else if (b.dataset.bell === 'chat') {
+      else if (b.dataset.bell === 'club') {
+        closeLayer(root);
+        setChatMode('club');
+        document.dispatchEvent(new CustomEvent('moske:open-chat', { detail: null }));
+      } else if (b.dataset.bell === 'chat') {
         closeLayer(root);
         document.dispatchEvent(new CustomEvent('moske:open-chat', { detail: b.dataset.uid }));
       }

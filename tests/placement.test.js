@@ -75,10 +75,12 @@ test('placing: walls and edges, the pool, other items', () => {
 });
 
 test('the gifts and the trainer; a spot for each, kept when it still fits', () => {
-  assert.deepEqual(placeablesFor([]).map((p) => p.id), ['coffee-machine', 'smart-bike'], 'everyone has the coffee machine and their bike');
-  assert.deepEqual(placeablesFor([], ['run', 'locker']).map((p) => p.id), ['coffee-machine'], 'no bike room, no bike');
-  assert.deepEqual(placeablesFor([{ item_id: 'bike-power-t2' }]).map((p) => p.id), ['coffee-machine', 'smart-bike'], 'pedals are not a trainer');
-  assert.deepEqual(placeablesFor([{ item_id: 'bike-power-t3' }]).map((p) => p.id), ['coffee-machine', 'smart-bike', 'smart-trainer']);
+  // the mission boards are checked on their own below
+  const ids = (list) => list.map((p) => p.id).filter((id) => !id.startsWith('mission-board-'));
+  assert.deepEqual(ids(placeablesFor([])), ['coffee-machine', 'smart-bike'], 'everyone has the coffee machine and their bike');
+  assert.deepEqual(ids(placeablesFor([], ['run', 'locker'])), ['coffee-machine'], 'no bike room, no bike');
+  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t2' }])), ['coffee-machine', 'smart-bike'], 'pedals are not a trainer');
+  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t3' }])), ['coffee-machine', 'smart-bike', 'smart-trainer']);
   const items = placeablesFor([{ item_id: 'bike-power-t3' }]);
   const full = compoundLayout(DISCIPLINES);
   const at = resolvePlacements(full, items, {});
@@ -96,4 +98,16 @@ test('the gifts and the trainer; a spot for each, kept when it still fits', () =
   const wet = resolvePlacements(full, items, { 'coffee-machine': { room: 'pool', u: 5, v: 3 } });
   assert.notDeepEqual(wet['coffee-machine'], { room: 'pool', u: 5, v: 3 });
   assert.equal(firstFree('locker-square', 'locker', placeableById('coffee-machine'), {}).room, 'locker');
+});
+
+test('a mission board stands in every room, at the back, and only in rooms you have', () => {
+  const full = compoundLayout(DISCIPLINES);
+  const items = placeablesFor([]);
+  const at = resolvePlacements(full, items, {});
+  for (const room of ['bike', 'pool', 'run', 'gym', 'locker']) {
+    assert.deepEqual(at[`mission-board-${room}`], { room, u: 1, v: 0 }, room);
+    assert.equal(placeableById(`mission-board-${room}`).opens, 'missions');
+  }
+  const runOnly = placeablesFor([], ['run', 'locker']).map((p) => p.id).filter((id) => id.startsWith('mission-board-'));
+  assert.deepEqual(runOnly, ['mission-board-run', 'mission-board-locker']);
 });

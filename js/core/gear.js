@@ -193,6 +193,11 @@ export const KIT_SPRITES = {
   'kit-moske-crimson': [L6],
   'kit-moske-climber': [L6],
   'kit-moske-pro': [L6],
+  // the season colourways (seasons.js)
+  'kit-season-almendro': [L6],
+  'kit-season-alisio': [L6],
+  'kit-season-calima': [L6],
+  'kit-season-mar-de-nubes': [L6],
 };
 /** The character sprite to show for a level's base sprite and the kit worn. */
 export const kitSprite = (src, kitId) => (kitId && KIT_SPRITES[kitId]?.includes(src) ? src.replace(/\.webp$/, `--${kitId}.webp`) : src);

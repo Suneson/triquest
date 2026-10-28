@@ -31,11 +31,13 @@ import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logg
 import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
 import { chatShell, mountChat, openThread, openBell, paintBell, wireSocialUi, chatMode } from './chat.js';
 import { startRoom, stopRoom } from './room.js';
+import { refreshClub, stopClub } from './clubs-state.js';
 import { startSocial, stopSocial, refreshSocial } from './social.js';
 import { confetti, playLevelUp, playBadge, playQuest, playComplete, playRestDone, playAccept, toast, xpPop, typeLines, prefersReducedMotion } from './effects.js';
 import { SYNC_ENABLED, STRAVA_ENABLED } from './config.js';
 import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
+import { openMissionBoard, maybeShowRecap, BOARD_ART } from './missions-view.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName, openRoute, leaveRoute } from './nav.js';
@@ -50,7 +52,7 @@ import { DISCIPLINES } from '../core/disciplines.js';
 import { langToggle } from './lang-toggle.js';
 import { planTitle, planItem } from '../core/plan-i18n.js';
 import { openCheckinSheet } from './checkin.js';
-import { gearState, refreshGear, onGear, onWorkshopFinish, sportLevelOf, takePrestige, gearError, gearEnabled } from './gear-state.js';
+import { gearState, refreshGear, onGear, onWorkshopFinish, sportLevelOf, takePrestige, gearError, gearEnabled, claimMissions } from './gear-state.js';
 import { gearById } from '../core/gear.js';
 import { propById } from '../core/scenes.js';
 import { refreshFeats, onFeats } from './feats-state.js';
@@ -157,6 +159,10 @@ function syncProgress(ctx) {
   appState.lastLevel = ctx.acct.level;
   feedbackMoments(ctx);
   syncQuestClaims(); // throttled; sends completed quests so they count in Ranks
+  // a weekly mission that's done is paid without a tap (docs/LOOP.md §5.1)
+  claimMissions(ctx.workouts).then((n) => {
+    if (n) toast(`<b>${t('mission.ui.paidToast', { n })}</b>`, { icon: `<img src="${BOARD_ART}" width="28" height="28" alt="">` });
+  });
 }
 
 // ---- feedback moments ----------------------------------------------------------
@@ -482,6 +488,7 @@ function onClick(e) {
     case 'open-base': openShop(buildCtx(), { tab: 'base', sport: el.dataset.sport || appState.pgSport, focus: el.dataset.bp ? 'bp' : '' }); break;
     case 'enter-scene': enterScene(el.dataset.sport); break;
     case 'open-next': openWhatNext(buildCtx()); break;
+    case 'open-missions': openMissionBoard(buildCtx()); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
@@ -994,7 +1001,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); } else { stopSocial(); stopRoom(); stopChallenges(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); refreshClub(); } else { stopSocial(); stopRoom(); stopChallenges(); stopClub(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();
@@ -1104,7 +1111,7 @@ async function boot() {
     const from = appState.tab;
     appState.tab = 'chat';
     localStorage.setItem('moske-tab', 'chat');
-    withTabTransition(from, 'chat', () => { render(); openThread(e.detail); });
+    withTabTransition(from, 'chat', () => { render(); if (e.detail) openThread(e.detail); });
   });
   document.addEventListener('moske:open-athlete', (e) => {
     const a = athleteByUid(e.detail.uid); // the leaderboard's numbers when it has them
@@ -1115,7 +1122,7 @@ async function boot() {
   // Home, Ranks and Chat: pull down from the top to refresh
   enablePull(document.getElementById('view'), {
     // (in General, scrolling to the top loads earlier messages instead)
-    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers() && !(appState.tab === 'chat' && chatMode() === 'general'),
+    when: () => ['home', 'leaderboards', 'chat'].includes(appState.tab) && !hasLayers() && !(appState.tab === 'chat' && ['general', 'club'].includes(chatMode())),
     onRefresh: async () => {
       if (appState.tab === 'leaderboards') { await loadLeaderboard(appState.lbView, todayISO()); return; }
       if (appState.tab === 'chat') { await refreshSocial(); return; }
@@ -1135,6 +1142,8 @@ async function boot() {
   // where your compound items stand, from the server (another device may have moved them)
   onPlacements(() => { if (appState.tab === 'progress') render(); });
   refreshPlacements();
+  // a season that closed while you were away leaves its recap card, once
+  setTimeout(maybeShowRecap, 1500);
   // the workshop finished something: the stamp lands (once per job), then the toast
   onWorkshopFinish((jobs) => {
     const names = jobs.map((j) => gearById(j.item_id)?.name || propById(j.item_id)?.name).filter(Boolean);

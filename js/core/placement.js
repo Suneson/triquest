@@ -14,6 +14,8 @@
 //
 // Nothing here touches the DOM; diorama-view.js draws it.
 
+import { STALL_ITEMS } from './stall.js';
+
 const ART = 'icons/Pixelart/NEW';
 
 /** The disciplines that can have a room, in the order the compound fills them. */
@@ -127,16 +129,30 @@ export function boxCorners(geomKey, u, v, w = 1, h = 1) {
  * `needsRoom`: only there while that room is in the compound. `art(o)`: the
  * picture, given { inventory, rider } (rider: the animated cyclist for your
  * level). `scale`: picture width over the footprint's; `lift`: how far up the
- * picture its base sits (0–1 of its height).
+ * picture its base sits (0–1 of its height). `spot`: where it's first set down,
+ * when that's free (else the first free tile from the middle). `opens`: what
+ * tapping it opens once it's picked up ('missions').
  */
 export const PLACEABLES = [
-  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', scale: 1.25, lift: 0.06, art: () => `${ART}/ITEMS/coffee-machine.webp` },
-  // the rider on their bike: the cycling animation, standing along the floor's v axis
-  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', scale: 2.3, lift: 0.07, art: (o) => o?.rider || '' },
+  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', scale: 0.92, lift: 0.01, art: () => `${ART}/ITEMS/coffee-machine.webp` },
+  // the rider on their bike: the cycling animation, standing along the floor's v axis.
+  // The rider fills the middle 55% of the frame, so 1.6 keeps the bike inside its two tiles.
+  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', scale: 1.6, lift: 0.04, art: (o) => o?.rider || '' },
   {
     id: 'smart-trainer', w: 2, h: 1, home: 'bike', scale: 1.2, lift: 0.1, art: () => 'icons/Pixelart/GEAR/bike-power-t3.png',
     owned: (inv) => (inv || []).some((r) => r.item_id === 'bike-power-t3'),
   },
+  // the weekly mission board (missions.js): one stands in every room, and tapping
+  // it while it's picked up opens the board
+  ...['bike', 'pool', 'run', 'gym', 'locker'].map((room) => ({
+    id: `mission-board-${room}`, w: 1, h: 1, gift: true, home: room, needsRoom: room === 'locker' ? undefined : room, spot: [1, 0],
+    scale: 0.95, lift: 0.02, opens: 'missions', art: () => `${ART}/ITEMS/mission-board.webp`,
+  })),
+  // what the daily stall sells (stall.js): yours once bought
+  ...STALL_ITEMS.map((s) => ({
+    id: s.id, w: s.w, h: s.h, home: s.home, scale: s.scale, lift: s.lift, flat: !!s.flat, art: () => s.art,
+    owned: (inv) => (inv || []).some((r) => r.item_id === s.id),
+  })),
 ];
 export const placeableById = (id) => PLACEABLES.find((p) => p.id === id) || null;
 
@@ -205,7 +221,8 @@ export function resolvePlacements(layout, items, saved = {}) {
   }
   for (const it of pending) {
     const room = geomOf(it.home) ? it.home : 'locker';
-    const spot = firstFree(geomOf(room), room, it, out) || firstFree(geomOf('locker'), 'locker', it, out);
+    const pref = it.spot && canPlace(geomOf(room), room, it, it.spot[0], it.spot[1], out).ok ? { room, u: it.spot[0], v: it.spot[1] } : null;
+    const spot = pref || firstFree(geomOf(room), room, it, out) || firstFree(geomOf('locker'), 'locker', it, out);
     if (spot) out[it.id] = spot;
   }
   return out;

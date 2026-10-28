@@ -137,3 +137,37 @@ export function demoRoom(now = Date.now()) {
   messages.push({ id: 1201, user_id: 'd-11', body: 'challenge', client_id: null, created_at: ago(20), deleted_at: null, challenge_id: 'demo-open', feat_id: null });
   return { authors, messages, blocked: [], isAdmin: false };
 }
+
+/** The demo club's room: a few messages between its members. */
+export function demoClubRoom(now = Date.now()) {
+  const ago = (min) => new Date(now - min * 60000).toISOString();
+  const handle = { 'd-01': 'marta_e', 'd-05': 'amara_runs', 'd-07': 'lucia_f', 'd-09': 'elin_b' };
+  const authors = ATHLETES.filter(([id]) => handle[id]).map(([user_id, display_name, xp]) => ({ user_id, display_name, username: handle[user_id], avatar: null, xp }));
+  const lines = [
+    ['d-01', 'Relay is past Maspalomas. Mogán by Sunday?', 400],
+    ['d-05', 'Long run Saturday should get us most of the way.', 380],
+    ['d-09', 'Pool km count too, so I am chipping in.', 120],
+    ['d-07', 'Easy week for me, legs need it. Back on Monday.', 30],
+  ];
+  return { authors, messages: lines.map(([user_id, body, min], i) => ({ id: 5000 + i, user_id, body, client_id: null, created_at: ago(min), deleted_at: null, club_id: 9 })), blocked: [], isAdmin: false };
+}
+
+/** The demo club's board, in club_board()'s shape. */
+export function demoClubBoard(now = Date.now()) {
+  const names = { 'd-01': 'Marta Eklund', 'd-05': 'Amara Okafor', 'd-07': 'Lucía Fernández', 'd-09': 'Elin Bergström' };
+  const d = new Date(now); const mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+  return {
+    id: 9, name: 'Los Alisios', crest: 'wave', created_at: new Date(now - 40 * 864e5).toISOString(), me: 'member',
+    members: Object.entries(names).map(([user_id, display_name], i) => ({ user_id, display_name, username: null, avatar: null, role: i ? 'member' : 'owner' })),
+    week: mon.toISOString().slice(0, 10), week_minutes: 610, target_minutes: null,
+    relay: { route_id: 'gc-vuelta', started_at: new Date(now - 9 * 864e5).toISOString(), km: 141.5 }, relays_done: 1,
+  };
+}
+
+/** Clubs anyone can find, in list_clubs()'s shape. */
+export const demoClubList = () => [
+  { id: 9, name: 'Los Alisios', crest: 'wave', members: 4 },
+  { id: 11, name: 'Calima Crew', crest: 'sun', members: 7 },
+  { id: 12, name: 'Pico Riders', crest: 'peak', members: 3 },
+  { id: 14, name: 'Telde Tri', crest: 'bolt', members: 12 },
+];

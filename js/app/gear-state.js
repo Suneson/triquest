@@ -13,13 +13,18 @@ import { withFitted, jobPhase, placeJob, fitMinutes, cancelRefund, reflow, WORKS
 import { propById } from '../core/scenes.js';
 import { canUseFuel, starRow } from '../core/boosts.js';
 import { collectionAwards, sportLevel } from '../core/collections.js';
+import { seasonKitsWon } from '../core/seasons.js';
+import { stallItemById, stallFor, stallDay } from '../core/stall.js';
+import { weekOf, missionsToClaim, MISSION_RULES } from '../core/missions.js';
+import { addDays, todayISO } from '../core/dates.js';
 import { t } from '../core/i18n.js';
 
 const KEY = 'moske-gear';
 // jobs, bays and offset come from workshop() (0022): offset is the server's clock
 // minus this device's, so countdowns follow the server however the phone is set
 // blueprints (rare props built) and prestige (stars) come from 0023 (docs/LOOP.md §4)
-const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [] };
+// missions (weekly missions paid) come from 0025 (§5)
+const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [], missions: [] };
 const listeners = new Set();
 
 function load() {
@@ -57,7 +62,10 @@ function demoState() {
   ];
   // twenty missions done since the start: twenty fragments towards a rare prop (24)
   const quests = Array.from({ length: 20 }, (_, i) => ({ day: GEAR_SINCE, quest_id: `demo-${i}` }));
-  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [] };
+  // weekly missions paid in the weeks before this one (demo only: real ones start on MISSION_RULES.since)
+  const wk = weekOf(todayISO());
+  const missions = [3, 3, 2, 2, 1].map((n, i) => ({ week: addDays(wk, -7 * n), mission_id: ['w-sessions-3', 'w-rest-2', 'w-hours-4', 'w-recovery', 'w-km-40'][i], claimed_at: ago(24 * 7 * n - 30 - i) }));
+  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions };
 }
 
 /** Can this device talk to the workshop at all (signed in, or demo)? */
@@ -83,11 +91,13 @@ export function gearState() {
   return { ...s, inventory: [...withFitted(s.inventory, s.jobs, serverNow()), ...loopRows(s)] };
 }
 
-// rare props you built and prestige stars, as inventory rows: the scene draws
-// the props, the quadrant counts them, and gearBoost() adds the stars
+// rare props you built, prestige stars and season kits you won, as inventory
+// rows: the scene draws the props, the quadrant counts them, gearBoost() adds
+// the stars and the clothes rail shows the kits
 const loopRows = (s) => [
   ...(s.blueprints || []).map((b) => ({ item_id: b.item_id, acquired_at: b.built_at })),
   ...(s.prestige || []).map((p) => starRow(p.sport, p.star, p.created_at)),
+  ...seasonKitsWon(s.missions).map((k) => ({ item_id: k.item_id, acquired_at: k.acquired_at })),
 ];
 
 /** A sport's level from its boosted XP, after any prestige resets: { level, …, stars, artLevel }. */
@@ -159,7 +169,7 @@ export async function refreshGear() {
     const t0 = Date.now();
     const ws = await c.rpc('workshop');
     const t1 = Date.now();
-    const [inv, sp, bo, qc, wa, bp, pr] = await Promise.all([
+    const [inv, sp, bo, qc, wa, bp, pr, mc] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
@@ -167,6 +177,7 @@ export async function refreshGear() {
       c.rpc('wallet'),
       c.from('user_blueprints').select('item_id, fragments, built_at'),
       c.from('user_prestige').select('sport, star, xp_at, created_at'),
+      c.from('mission_claims').select('week, mission_id, claimed_at'),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -176,7 +187,9 @@ export async function refreshGear() {
     state = { uid, inventory: inv.data || [], spends: sp.data || [], boosts: bo.data || [], quests: qc.data || [], wallet: wa.data || null,
       jobs: w?.jobs || [], bays: w?.bays || WORKSHOP_RULES.bays, offset: Number.isFinite(offset) ? offset : 0, at: Date.now(),
       // before 0023 is live these tables aren't there: nothing built, no stars
-      blueprints: bp.error ? [] : bp.data || [], prestige: pr.error ? [] : pr.data || [] };
+      blueprints: bp.error ? [] : bp.data || [], prestige: pr.error ? [] : pr.data || [],
+      // before 0025 is live there are no weekly missions
+      missions: mc.error ? [] : mc.data || [] };
     save(state);
     emit();
   } catch (e) {
@@ -209,6 +222,26 @@ function demoCall(fn, args) {
     return s;
   }
   if (fn === 'workshop_cancel' || fn === 'workshop_skip') return demoJob(fn, args, s);
+  if (fn === 'claim_mission') {
+    if (!s.missions.some((m) => m.week === args.p_week && m.mission_id === args.p_mission)) {
+      s.missions.push({ week: args.p_week, mission_id: args.p_mission, claimed_at: new Date().toISOString() });
+      s.wallet = { ...s.wallet, coins: s.wallet.coins + MISSION_RULES.reward.coins, carbs: s.wallet.carbs + MISSION_RULES.reward.carbs };
+    }
+    listeners.forEach((f) => f(s));
+    return s;
+  }
+  if (fn === 'buy_stall') {
+    const it = stallItemById(args.p_item);
+    if (!it) throw new Error('gear:unknown_item');
+    if (stallFor(stallDay(serverNow()))?.id !== it.id) throw new Error('gear:stall_gone');
+    if (s.inventory.some((r) => r.item_id === it.id)) throw new Error('gear:owned');
+    if (s.wallet.coins < it.cost) throw new Error('gear:insufficient');
+    s.spends.push({ item_id: it.id, coins: it.cost, currency: 'coins', created_at: new Date().toISOString() });
+    s.inventory.push({ item_id: it.id, acquired_at: new Date().toISOString() });
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - it.cost };
+    listeners.forEach((f) => f(s));
+    return s;
+  }
   const owned = (id) => s.inventory.some((r) => r.item_id === id);
   const now = new Date().toISOString();
   if (fn === 'use_gel') {
@@ -288,6 +321,41 @@ export const cancelJob = (id) => call('workshop_cancel', { p_job: id });
 export const skipJob = (id, kind) => call('workshop_skip', { p_job: id, p_kind: kind });
 /** Build a rare prop from blueprint fragments (docs/LOOP.md §4.2). */
 export const buildBlueprint = (id) => call('build_blueprint', { p_item: id });
+/** Buy today's item from the stall (docs/LOOP.md §5.3). */
+export const buyStall = (id) => call('buy_stall', { p_item: id });
+
+/**
+ * Ask the server to pay every weekly mission that's done and not paid yet,
+ * this week's and last week's (a Sunday rest day is only over on Monday).
+ * Quiet: a mission the server doesn't agree is done yet is simply tried again
+ * next time. Resolves to how many were paid.
+ */
+let claiming = null;
+const tried = new Map(); // a claim the server turned down waits ten minutes before it's asked again
+export function claimMissions(workouts) {
+  if (!gearEnabled() || claiming) return claiming || Promise.resolve(0);
+  const today = todayISO();
+  const s = rawState();
+  const due = [weekOf(addDays(today, -7)), weekOf(today)].flatMap((wk) => missionsToClaim(wk, workouts, today, s.missions))
+    .filter((m) => Date.now() - (tried.get(`${m.week}|${m.mission_id}`) || 0) > 10 * 60e3);
+  due.forEach((m) => tried.set(`${m.week}|${m.mission_id}`, Date.now()));
+  if (!due.length) return Promise.resolve(0);
+  claiming = (async () => {
+    let paid = 0;
+    for (const m of due) {
+      try {
+        if (isDemo()) { demoCall('claim_mission', { p_week: m.week, p_mission: m.mission_id }); paid++; continue; }
+        const c = await client();
+        const { data, error } = await c.rpc('claim_mission', { p_week: m.week, p_mission: m.mission_id });
+        if (!error && data?.claimed) paid++;
+      } catch (e) { console.warn('mission claim failed', e); }
+    }
+    if (paid && !isDemo()) await refreshGear();
+    return paid;
+  })().finally(() => { claiming = null; });
+  return claiming;
+}
+
 /** Reset a discipline's level for a star (§4.3). `xp` is only for demo mode; the server reads its own. */
 export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_sport: sport, xp }) : call('prestige', { p_sport: sport }));
 
@@ -299,7 +367,7 @@ export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_
 export function walletNow(workouts) {
   const s = gearState();
   const w = s.wallet;
-  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory) });
+  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions });
   const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id, s.jobs)]));
   return {
     coins: Number(w ? w.coins : local.coins) || 0,

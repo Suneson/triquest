@@ -51,7 +51,22 @@ Rarer than the props, so each should look a little grander, with more gold.
 
 Collection frames and plaques are drawn in CSS from the gear art you already have, so they need nothing new.
 
+## Missions, seasons, the stall and clubs (Phases 5–6)
+
+These were generated with Gemini and are in the app: `tools/gen-loop5.mjs <dir> [name…]` (key from
+`GEMINI_API_KEY` only), then `python3 tools/cut-loop5.py <dir>`. The exact prompts are in the
+generator. Room items use the coffee machine as the style reference: painted, glossy, navy and gold,
+in the rooms' isometric angle, on flat #00FF00 that the cut keys out.
+
+| File | What | Purpose |
+| --- | --- | --- |
+| `icons/Pixelart/NEW/ITEMS/mission-board.webp` | a wooden notice board on legs, three pinned notes, a gold star | The weekly mission board in every room |
+| `icons/Pixelart/NEW/ITEMS/decor-*.webp` | plant, water cooler, bench, foam roller rack, punch bag, trophy shelf, towel rack, bolt rug | The daily stall's items |
+| `icons/Pixelart/NEW/SEASONS/season-*.png` | round medallions: almond blossom, trade-wind windsock, calima dunes, sea of clouds | Season emblems (board, recap) |
+| `icons/Pixelart/NEW/CLUBS/crest-*.png` | six shields: wave, bolt, peak, sun, wheel, bird | Club crests |
+| `icons/Pixelart/NEW/CLUBS/relay-gran-canaria.webp` | the island from above, navy sea | The club relay map |
+| `icons/Pixelart/GEAR/kit-season-*.png` + `bikelvl6_char--kit-season-*.webp` | recolours of the navy kit (`tools/kit-recolor.py`) | Season kit colourways |
+
 ## Later phases
 
-Mission boards, club crests, season plates, climb plaques and race medals are
-added here as their phases are built.
+Climb plaques and race medals are added here as their phases are built.

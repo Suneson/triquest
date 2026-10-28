@@ -17,6 +17,7 @@ import { featValue } from './feats-view.js';
 import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
 import * as store from './store.js';
+import { boardCount } from './missions-view.js';
 
 const itemName = (id) => gearById(id)?.name || propById(id)?.name || rareById(id)?.name || id;
 const itemSport = (id) => gearById(id)?.sport || propById(id)?.sport || null;
@@ -42,6 +43,10 @@ function whatNext(ctx, s, now, wonIds) {
   } else {
     rows.push(nextRow({ icon: svg('wrench'), head: t('loop.base.building'), action: 'open-gear', body: esc(t('loop.base.workshopFree')) }));
   }
+  // this week's missions
+  const mb = boardCount(ctx.workouts);
+  rows.push(nextRow({ icon: svg('target'), head: t('mission.ui.thisWeek'), action: 'open-missions',
+    body: esc(t('mission.ui.doneOf', { n: mb.done, of: mb.total })) }));
   // what's nearly affordable
   const w = walletNow(ctx.workouts);
   const na = nearlyAffordable(s.inventory, s.jobs, w.coins, now);

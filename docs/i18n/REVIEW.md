@@ -141,3 +141,18 @@ and `npm test` will tell you if a placeholder went missing.
 | Prestige | Prestigio | |
 | Reset for a star | Reiniciar por una estrella | Volver a empezar |
 | Gold starting block | Poyete de oro | Plataforma de salida de oro |
+
+## Missions, seasons, the stall and clubs (added 2026-10-28)
+
+| English | Now | Alternatives |
+| --- | --- | --- |
+| Mission board | Tablón de misiones | Tablero de misiones |
+| Paid (a mission) | Cobrada | Pagada |
+| Stall (daily shop) | Puesto | Tenderete, mercadillo |
+| Sea of Clouds / Trade Winds / Almond Blossom | Mar de nubes / Alisios / Almendro en flor | |
+| Season colourway | Colores de temporada | Equipación de temporada |
+| Monstera plant | Costilla de Adán | Monstera |
+| Foam roller rack | Estante de rulos | Rodillos de espuma |
+| Relay (club) | Relevo | Ruta compartida |
+| Crest | Escudo | Emblema |
+| Over the summit / The grand tour | Por la cumbre / La gran vuelta | |

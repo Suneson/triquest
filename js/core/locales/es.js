@@ -2794,4 +2794,162 @@ es.cp = {
   "needOne": "Deja al menos una sala."
 };
 
+// ---- misiones semanales, temporadas y el puesto (docs/LOOP.md §5) ----
+es.gear.tab["stall"] = "Puesto";
+es.gear.err["stall_gone"] = "Eso ya no está en el puesto: cambió a medianoche (UTC).";
+es.gear.err["stall_only"] = "Eso solo se vende en el puesto del día.";
+es.gear.err["mission_week"] = "Las misiones de esa semana ya no se pueden cobrar.";
+es.gear.err["mission_unknown"] = "Esa misión no está en el tablón de esta semana.";
+es.gear.err["mission_not_done"] = "Esa misión aún no está completa.";
+Object.assign(es.cp.item, {
+  "mission-board-bike": "Tablón de misiones", "mission-board-pool": "Tablón de misiones", "mission-board-run": "Tablón de misiones",
+  "mission-board-gym": "Tablón de misiones", "mission-board-locker": "Tablón de misiones",
+  "decor-plant": "Costilla de Adán", "decor-cooler": "Fuente de agua", "decor-bench": "Banco de vestuario", "decor-roller": "Estante de rulos",
+  "decor-punchbag": "Saco de boxeo", "decor-shelf": "Estante de trofeos", "decor-towels": "Toallero", "decor-rug": "Alfombra del rayo"
+});
+es.mission = {
+  "w-sessions-3": { "name": "Tres sesiones", "blurb": "Completa {n} sesiones verificadas esta semana." },
+  "w-hours-4": { "name": "Cuatro horas", "blurb": "Entrena 4 horas esta semana, solo sesiones verificadas." },
+  "w-km-40": { "name": "Cuarenta kilómetros", "blurb": "Haz {n} km esta semana corriendo, en bici o nadando." },
+  "w-two-sports": { "name": "Dos deportes", "blurb": "Entrena {n} deportes distintos esta semana." },
+  "w-long-90": { "name": "Una larga", "blurb": "Completa una sesión de 90 minutos o más." },
+  "w-days-3": { "name": "Tres días", "blurb": "Entrena {n} días distintos esta semana." },
+  "w-rest-2": { "name": "Dos días libres", "blurb": "Descansa {n} días completos esta semana. Un día cuenta cuando ha terminado." },
+  "w-rest-1": { "name": "Un día libre", "blurb": "Descansa un día completo esta semana. Cuenta cuando ha terminado." },
+  "w-recovery": { "name": "Sesión suave", "blurb": "Una sesión tranquila de 20 a 40 minutos. La recuperación cuenta." },
+  "ui": {
+    "title": "Tablón de misiones",
+    "open": "Tablón de misiones",
+    "thisWeek": "Esta semana",
+    "nextWeek": "El tablón de la semana que viene",
+    "daysLeft": { "one": "último día", "other": "quedan {n} días" },
+    "training": "Entreno",
+    "rest": "Descanso y recuperación",
+    "restSame": "Las misiones de descanso y recuperación pagan exactamente lo mismo que las de entreno.",
+    "count": "{n} de {of}",
+    "hours": "{n} h de {of} h",
+    "km": "{n} de {of} km",
+    "rewardAria": "Paga {coins} monedas y {carbs} g de carbohidratos",
+    "paid": "Cobrada",
+    "paying": "Hecha",
+    "paidToast": { "one": "Misión semanal cobrada", "other": "{n} misiones semanales cobradas" },
+    "doneOf": "{n} de {of} misiones hechas"
+  }
+};
+es.season = {
+  "label": "Temporada · {year}",
+  "name": { "almendro": "Almendro en flor", "alisio": "Alisios", "calima": "Calima", "mar-de-nubes": "Mar de nubes" },
+  "daysLeft": { "one": "Último día de la temporada", "other": "Quedan {n} días de temporada" },
+  "stat": { "sessions": "sesiones", "hours": "horas", "km": "km", "missions": "misiones", "feats": "hazañas", "coins": "monedas" },
+  "kit": "Equipación {name}",
+  "kitOwned": "Tuya para siempre. Póntela desde la pestaña Equipación.",
+  "kitHow": "Completa {n} misiones semanales esta temporada para ganarla.",
+  "kitHowNow": "{n} misiones semanales esta temporada",
+  "kitHowLater": "Vuelve con su temporada",
+  "kitProgress": "{n} de {of} misiones",
+  "kitBlurb": "Los colores de una temporada. No se vende: se gana con misiones semanales en su temporada.",
+  "kitsTitle": "Colores de temporada",
+  "kitsNote": "Cada temporada tiene sus colores, que se ganan con {n} misiones semanales dentro de esa temporada. Una vez ganados son tuyos, aunque la temporada termine.",
+  "keep": "Cuando termina la temporada ya no puedes ganar su equipación, pero nada de lo que ganaste desaparece.",
+  "lastRecap": "Resumen de la temporada pasada",
+  "recapTitle": "Resumen de temporada",
+  "recapKeep": "Todo lo que hay aquí sigue siendo tuyo."
+};
+es.stall = {
+  "today": "El puesto de hoy",
+  "turns": "el siguiente en {time}",
+  "soon": "El puesto abre pronto.",
+  "owned": "Tuyo. Está en {room}.",
+  "buyAria": "Comprar {name} por {cost} monedas",
+  "size": "Ocupa {w} × {h} baldosas",
+  "fair": "Un artículo al día, el mismo para todo el mundo, solo con monedas. La lista va en orden, así que puedes ver lo que viene.",
+  "next": "Próximamente",
+  "boughtToast": "Ya está en tus salas. Tócalo para moverlo.",
+  "blurb": {
+    "decor-plant": "Una costilla de Adán frondosa en una maceta azul marino. Todo vestuario necesita una.",
+    "decor-cooler": "Agua fría junto a la pista, con vasos apilados.",
+    "decor-bench": "Un banco largo de madera para atarse las zapatillas.",
+    "decor-roller": "Tres rulos de espuma y una esterilla, para las zonas cargadas.",
+    "decor-punchbag": "Un saco pesado en su soporte, con los guantes en la base.",
+    "decor-shelf": "Sitio para tres copas y una medalla.",
+    "decor-towels": "Toallas de piscina a rayas y unas gafas de repuesto.",
+    "decor-rug": "Una alfombra azul marino con un rayo dorado. Se pueden poner cosas a su alrededor."
+  }
+};
+
+// ---- clubes (docs/LOOP.md §6) ----
+es.club = {
+  "tab": "Club",
+  "roomStart": "Aquí empieza la sala de tu club. Solo la leen sus miembros.",
+  "title": "Clubes",
+  "pitch": "Un club es un equipo pequeño, de hasta {n} personas, con un objetivo semanal compartido y un relevo alrededor de la isla. Todo el trabajo verificado suma junto. Nadie ve los días de nadie, y salir no cuesta nada.",
+  "signIn": "Inicia sesión para crear un club o unirte a uno.",
+  "loading": "Cargando tu club…",
+  "invites": "Invitaciones",
+  "invitedBy": "Te invita {name} · {n} en el club",
+  "join": "Unirme",
+  "declineAria": "Rechazar la invitación a {name}",
+  "start": "Crear un club",
+  "name": "Nombre",
+  "namePh": "Los Alisios",
+  "crestPick": "Escudo",
+  "crest": { "wave": "Ola", "bolt": "Rayo", "peak": "Cumbre", "sun": "Sol", "wheel": "Rueda", "bird": "Pájaro" },
+  "create": "Crear el club",
+  "created": "Tu club está creado. Invita a gente desde su tablón.",
+  "find": "Buscar un club",
+  "findPh": "Buscar por nombre",
+  "membersN": "{n} de {max} miembros",
+  "inviteOnly": "Solo se entra por invitación: pide a alguien del club que invite a {me}.",
+  "yourUsername": "tu usuario",
+  "noneFound": "Aún no hay ningún club con ese nombre. Podrías crearlo tú.",
+  "joined": "Ya estás dentro. Saluda en la sala del club.",
+  "board": "Tablón",
+  "boardAria": "Abrir el tablón de {name}",
+  "week": "Esta semana, juntos",
+  "hoursOf": "{n} de {of} h",
+  "weekAria": "{n} de {of} horas esta semana",
+  "weekDone": "Objetivo cumplido",
+  "targetLabel": "Objetivo semanal (horas, todo el club)",
+  "targetSave": "Fijar",
+  "targetSet": "Objetivo fijado para esta semana.",
+  "targetNote": "Cualquiera del club puede fijarlo. Si no, son {n} h por miembro. Solo cuentan las sesiones verificadas.",
+  "relay": "Relevo",
+  "relaysDone": { "one": "{n} ruta terminada", "other": "{n} rutas terminadas" },
+  "route": { "gc-cumbre": "Por la cumbre", "gc-vuelta": "Vuelta a la isla", "gc-grande": "La gran vuelta" },
+  "kmOf": "{n} de {of} km",
+  "relayAria": "{n} de {of} km recorridos",
+  "mapAlt": "Mapa de Gran Canaria con la ruta del relevo del club",
+  "nextRoute": "Empezar la siguiente ruta: {name}",
+  "relayNote": "Cada kilómetro verificado que alguien corre, pedalea o nada hace avanzar al club. Sin apuestas ni plazos.",
+  "members": "Quién está",
+  "owner": "lo creó",
+  "privacy": "El club ve los totales y tu nombre, nunca tus días.",
+  "inviteLabel": "Invitar por usuario",
+  "invite": "Invitar",
+  "invited": "Invitación enviada a {name}.",
+  "full": "El club está completo ({n}).",
+  "leave": "Salir del club",
+  "leaveConfirm": "¿Salir del club? No cuesta nada y no se avisa a nadie.",
+  "left": "Has salido del club.",
+  "see": "Ver",
+  "notifInvite": "{name} te ha invitado a {club}",
+  "err": {
+    "not_signed_in": "Inicia sesión primero.",
+    "already_in": "Ya estás en un club. Sal de él primero.",
+    "name_short": "Ese nombre es demasiado corto.",
+    "name_long": "Ese nombre es demasiado largo.",
+    "name_chars": "Solo letras, números, espacios y . ' & -",
+    "crest": "Elige un escudo.",
+    "name_taken": "Ya hay un club con ese nombre.",
+    "not_member": "No estás en ningún club.",
+    "no_user": "Nadie tiene ese usuario.",
+    "already_member": "Ya está en el club.",
+    "full": "El club está completo ({n}).",
+    "no_invite": "Esa invitación ya no está abierta.",
+    "target": "Elige un objetivo entre 1 y 200 horas.",
+    "relay_running": "La ruta aún no está terminada.",
+    "generic": "Algo ha fallado. Inténtalo de nuevo."
+  }
+};
+
 export default es;

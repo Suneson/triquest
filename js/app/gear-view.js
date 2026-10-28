@@ -23,7 +23,10 @@ import {
 import { featById, seasonHue } from '../core/feats.js';
 import { featItems } from './feats-state.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
-import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen, buildBlueprint } from './gear-state.js';
+import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen, buildBlueprint, buyStall } from './gear-state.js';
+import { stallFor, stallAhead, stallDay, msToNextStall } from '../core/stall.js';
+import { SEASON_KITS, SEASON_RULES, seasonInfo } from '../core/seasons.js';
+import { todayISO } from '../core/dates.js';
 import { jobPhase, jobFor, cancelRefund, fitMinutes, quadrantLevel, WORKSHOP_RULES } from '../core/workshop.js';
 import { propsFor, propById, rareById, RARE_PROPS } from '../core/scenes.js';
 import { collectionsFor, blueprintState, COLLECTION_RULES } from '../core/collections.js';
@@ -446,7 +449,52 @@ async function handleCommon(e, draw, onBought) {
 
 // ---- the shop --------------------------------------------------------------------------
 
-const SHOP_TABS = [['gear', 'wrench'], ['base', 'flag'], ['clothes', 'user'], ['fuel', 'gel']];
+const SHOP_TABS = [['stall', 'stall'], ['gear', 'wrench'], ['base', 'flag'], ['clothes', 'user'], ['fuel', 'gel']];
+
+// ---- the daily stall (docs/LOOP.md §5.3) --------------------------------------------------
+
+const ROOM_WORD = { locker: 'locker', bike: 'bike', pool: 'pool', run: 'run', gym: 'gym' };
+/** Today's stall: one thing for your rooms, the same for everyone, and the next few days. */
+function stallPanel(s, w) {
+  const now = serverNow();
+  const day = stallDay(now);
+  const it = stallFor(day);
+  if (!it) return `<p class="gw-note">${t('stall.soon')}</p>`;
+  const owned = s.inventory.some((r) => r.item_id === it.id);
+  const name = t(`cp.item.${it.id}`);
+  const act = owned ? `<span class="gw-need">${svg('check')} ${t('stall.owned', { room: t(`cp.room.${ROOM_WORD[it.home]}`) })}</span>`
+    : buyButton(it, 'coins', w.coins, t('stall.buyAria', { name, cost: it.cost })).replace('data-gear-buy=', 'data-stall-buy=');
+  const ahead = stallAhead(day, 3);
+  return `<section class="st-today" aria-labelledby="st-h">
+      <h3 id="st-h" class="gw-row-h">${svg('stall')} ${t('stall.today')} <span class="st-left">${t('stall.turns', { time: `<b data-st-left="${now + msToNextStall(now)}">${clockLeft(msToNextStall(now))}</b>` })}</span></h3>
+      <article class="gw-card st-card${owned ? ' is-owned' : ''}">
+        <span class="gw-art has-img st-art" aria-hidden="true"><img src="${esc(it.art)}" width="192" height="192" alt=""></span>
+        <div class="gw-body"><h3 class="gw-slot">${esc(name)}</h3>
+          <p class="gw-blurb">${t(`stall.blurb.${it.id}`)}</p>
+          <p class="gw-cur">${t('stall.size', { w: it.w, h: it.h })}</p></div>
+        <div class="gw-foot"><div class="gw-act">${act}</div></div>
+      </article>
+      <p class="gw-note">${t('stall.fair')}</p>
+    </section>
+    <section class="st-ahead" aria-labelledby="st-next">
+      <h3 id="st-next" class="gw-row-h">${t('stall.next')}</h3>
+      <ul>${ahead.map((a) => `<li><img src="${esc(a.item.art)}" width="56" height="56" alt=""><span><small>${esc(fmtDate(a.day, { weekday: 'short' }))}</small><b>${esc(t(`cp.item.${a.item.id}`))}</b></span>${price(a.item.cost, 'coins')}</li>`).join('')}</ul>
+    </section>`;
+}
+
+// season kits: won with weekly missions, never sold (docs/LOOP.md §5.2)
+function seasonKitCard(k, owned, worn) {
+  const nowTheme = seasonInfo(todayISO()).theme.id;
+  const act = owned
+    ? `<button class="btn tiny ${worn ? 'primary' : ''}" data-gear-wear="${k.id}" aria-pressed="${worn}">${worn ? t('gear.wearing') : t('gear.wear')}</button>`
+    : `<span class="gw-need">${svg('lock')} ${t(k.theme === nowTheme ? 'season.kitHowNow' : 'season.kitHowLater', { n: SEASON_RULES.kitMissions })}</span>`;
+  return `<article class="gw-card gw-kitcard${owned ? '' : ' is-locked'}" data-kit="${k.id}">
+    ${imgTile(kitArt(k.id))}
+    <div class="gw-body"><h3 class="gw-slot">${esc(t('season.kit', { name: t(`season.name.${k.theme}`) }))}</h3>
+      <p class="gw-blurb">${t('season.kitBlurb')}</p></div>
+    <div class="gw-foot"><div class="gw-act">${act}</div></div>
+  </article>`;
+}
 
 /** Open the shop: tab 'gear' (by discipline), 'base' (props), 'clothes' or 'fuel'. */
 export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {}) {
@@ -466,7 +514,9 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
       `<button class="gw-tab${v === view ? ' active' : ''}" role="tab" aria-selected="${v === view}" data-gear-tab="${v}">${svg(ic)}<span>${t(`gear.tab.${v}`)}</span>
         <small>${svg(v === 'fuel' ? 'carbs' : 'coin', 'cur-ico')}</small></button>`).join('')}</div>`;
     let panel;
-    if (view === 'gear') {
+    if (view === 'stall') {
+      panel = stallPanel(s, w);
+    } else if (view === 'gear') {
       const boost = gearBoost(s.inventory, current);
       panel = `${sportTabs(current)}
         <div class="gw-total"><span>${t('gear.disciplineBoost')}</span><b class="data-num">${pctBp(boost)}</b>
@@ -486,7 +536,10 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
         <div class="gw-grid" role="tabpanel">${KITS.map((k) => kitCard(k, owned.has(k.id), worn === k.id, w.coins, 'shop')).join('')}</div>
         <h3 class="gw-row-h gw-feat-h">${svg('trophy')} ${t('feat.ui.itemsTitle')}</h3>
         <p class="gw-note">${t('feat.ui.itemsNote')}</p>
-        <div class="gw-grid">${FEAT_ITEMS.map((it) => featItemCard(it, wonItems.get(it.id), worn === it.id)).join('')}</div>`;
+        <div class="gw-grid">${FEAT_ITEMS.map((it) => featItemCard(it, wonItems.get(it.id), worn === it.id)).join('')}</div>
+        <h3 class="gw-row-h gw-feat-h">${svg('star')} ${t('season.kitsTitle')}</h3>
+        <p class="gw-note">${t('season.kitsNote', { n: SEASON_RULES.kitMissions })}</p>
+        <div class="gw-grid">${SEASON_KITS.map((k) => seasonKitCard(k, s.inventory.some((r) => r.item_id === k.id), worn === k.id)).join('')}</div>`;
     } else {
       panel = `<p class="gw-note">${t('gear.fuelNote')}</p>${gelChip(s.boosts, { cls: 'gw-gel-top' })}
         <div class="gw-grid" role="tabpanel">${FUELS.map((f) => fuelCard(f, s, w, { mode: 'shop', fresh: fresh === f.id })).join('')}</div>`;
@@ -509,6 +562,12 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
       if (left <= 0) finished = true;
       el.textContent = clockLeft(left);
     });
+    // the stall turns over at midnight UTC: show the next one
+    root.querySelectorAll('[data-st-left]').forEach((el) => {
+      const left = Number(el.dataset.stLeft) - now;
+      if (left <= 0) finished = true;
+      el.textContent = clockLeft(left);
+    });
     root.querySelectorAll('[data-ws-bar]').forEach((el) => {
       const [a, b] = el.dataset.wsBar.split(':').map(Number);
       el.style.setProperty('--f', Math.min(1, Math.max(0, (now - a) / Math.max(1, b - a))).toFixed(3));
@@ -520,6 +579,20 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
   root.onclick = async (e) => {
     const tb = e.target.closest('[data-gear-tab]');
     if (tb) { view = tb.dataset.gearTab; draw(); return; }
+    const sb = e.target.closest('[data-stall-buy]');
+    if (sb) {
+      const id = sb.dataset.stallBuy;
+      await busy(sb, async () => {
+        try {
+          await buyStall(id);
+          playAccept();
+          haptic('record');
+          toast(`<b>${esc(t(`cp.item.${id}`))}</b><br>${t('stall.boughtToast')}`, { icon: svg('stall') });
+        } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
+      });
+      draw();
+      return;
+    }
     const sp = e.target.closest('[data-gear-sport]');
     if (sp) { current = sp.dataset.gearSport; draw(); return; }
     const aim = e.target.closest('[data-bp-target]');

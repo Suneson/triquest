@@ -11,6 +11,7 @@
 //   coins for a day = min(dailyCoinCap, floor(that day's base XP × coinsPerXp))
 //   carbs for a day = min(dailyCarbCap, floor(that day's base XP × carbsPerXp))  (grams)
 //   missions        = QUEST_REWARDS, coins or carbs
+//   weekly missions = MISSION_RULES.reward, coins and carbs (missions.js)
 //
 // Storage: each currency holds at most storageCap. Events are taken in time
 // order (a day's earnings at the start of that day, a spend when it was made);
@@ -19,6 +20,7 @@
 
 import { xpLedger } from './xp-rules.js';
 import { GEAR_RULES, GEAR_SINCE, QUEST_REWARDS, fuelById } from './gear.js';
+import { missionRewards } from './missions.js';
 
 /** Base XP per session date, from GEAR_SINCE on: Map(date → xp). */
 function xpByDay(workouts) {
@@ -73,7 +75,7 @@ const spendAmount = (s) => Number(s?.amount ?? s?.coins) || 0;
  * like any other):
  * { coins, carbs, earned: { coins, carbs }, spent: { coins, carbs }, lost: { coins, carbs } }.
  */
-export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [] } = {}) {
+export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [], missions = [] } = {}) {
   const ev = [];
   for (const d of coinDays(workouts)) ev.push({ at: `${d.date}T00:00:00.000Z`, rank: 0, key: d.date, coins: d.coins, carbs: d.carbs });
   for (const q of questRewards(quests)) ev.push({ at: `${q.day}T00:00:00.000Z`, rank: 1, key: q.quest_id, coins: q.coins, carbs: q.carbs });
@@ -93,6 +95,10 @@ export function walletFold({ workouts = [], quests = [], spends = [], moves = []
   (awards || []).forEach((a) => {
     ev.push({ at: new Date(Date.parse(a.at)).toISOString(), rank: 4, key: `${a.sport}:${a.tier}`, coins: Number(a.coins) || 0, carbs: 0 });
   });
+  // weekly missions (missions.js), from the moment the server paid them
+  for (const m of missionRewards(missions)) {
+    ev.push({ at: new Date(Date.parse(m.at)).toISOString(), rank: 5, key: m.key, coins: m.coins, carbs: m.carbs });
+  }
   ev.sort((a, b) => a.at.localeCompare(b.at) || a.rank - b.rank || a.key.localeCompare(b.key));
   const cap = GEAR_RULES.storageCap;
   const out = {

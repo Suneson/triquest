@@ -2794,4 +2794,87 @@ en.cp = {
   "needOne": "Keep at least one room."
 };
 
+// ---- weekly missions, seasons and the stall (docs/LOOP.md §5) ----
+en.gear.tab["stall"] = "Stall";
+en.gear.err["stall_gone"] = "That’s no longer on the stall: it changed at midnight (UTC).";
+en.gear.err["stall_only"] = "That one is only sold at the daily stall.";
+en.gear.err["mission_week"] = "That week’s missions can’t be paid any more.";
+en.gear.err["mission_unknown"] = "That mission isn’t on this week’s board.";
+en.gear.err["mission_not_done"] = "That mission isn’t finished yet.";
+Object.assign(en.cp.item, {
+  "mission-board-bike": "Mission board", "mission-board-pool": "Mission board", "mission-board-run": "Mission board",
+  "mission-board-gym": "Mission board", "mission-board-locker": "Mission board",
+  "decor-plant": "Monstera plant", "decor-cooler": "Water cooler", "decor-bench": "Locker bench", "decor-roller": "Foam roller rack",
+  "decor-punchbag": "Punch bag", "decor-shelf": "Trophy shelf", "decor-towels": "Towel rack", "decor-rug": "Bolt rug"
+});
+en.mission = {
+  "w-sessions-3": { "name": "Three sessions", "blurb": "Finish {n} verified sessions this week." },
+  "w-hours-4": { "name": "Four hours", "blurb": "Train for 4 hours this week, verified sessions only." },
+  "w-km-40": { "name": "Forty kilometres", "blurb": "Cover {n} km this week, running, riding or swimming." },
+  "w-two-sports": { "name": "Two sports", "blurb": "Train in {n} different sports this week." },
+  "w-long-90": { "name": "One long one", "blurb": "Finish one session of 90 minutes or more." },
+  "w-days-3": { "name": "Three days", "blurb": "Train on {n} different days this week." },
+  "w-rest-2": { "name": "Two days off", "blurb": "Take {n} full rest days this week. A day counts once it’s over." },
+  "w-rest-1": { "name": "A day off", "blurb": "Take a full rest day this week. It counts once it’s over." },
+  "w-recovery": { "name": "Easy session", "blurb": "One relaxed session of 20 to 40 minutes. Recovery counts." },
+  "ui": {
+    "title": "Mission board",
+    "open": "Mission board",
+    "thisWeek": "This week",
+    "nextWeek": "Next week’s board",
+    "daysLeft": { "one": "last day", "other": "{n} days left" },
+    "training": "Training",
+    "rest": "Rest and recovery",
+    "restSame": "Rest and recovery missions pay exactly what training missions pay.",
+    "count": "{n} of {of}",
+    "hours": "{n} h of {of} h",
+    "km": "{n} of {of} km",
+    "rewardAria": "Pays {coins} coins and {carbs} g of carbs",
+    "paid": "Paid",
+    "paying": "Done",
+    "paidToast": { "one": "Weekly mission paid", "other": "{n} weekly missions paid" },
+    "doneOf": "{n} of {of} missions done"
+  }
+};
+en.season = {
+  "label": "Season · {year}",
+  "name": { "almendro": "Almond Blossom", "alisio": "Trade Winds", "calima": "Calima", "mar-de-nubes": "Sea of Clouds" },
+  "daysLeft": { "one": "Last day of the season", "other": "{n} days left in the season" },
+  "stat": { "sessions": "sessions", "hours": "hours", "km": "km", "missions": "missions", "feats": "feats", "coins": "coins" },
+  "kit": "{name} kit",
+  "kitOwned": "Yours for good. Wear it from the Kit tab.",
+  "kitHow": "Finish {n} weekly missions this season to win it.",
+  "kitHowNow": "{n} weekly missions this season",
+  "kitHowLater": "Comes round with its season",
+  "kitProgress": "{n} of {of} missions",
+  "kitBlurb": "A season colourway. Never sold: won with weekly missions in its season.",
+  "kitsTitle": "Season colourways",
+  "kitsNote": "Each season has its own colourway, won with {n} weekly missions inside that season. Once won it’s yours, even after the season ends.",
+  "keep": "When the season ends you can’t earn its kit any more, but nothing you earned goes away.",
+  "lastRecap": "Last season’s recap",
+  "recapTitle": "Season recap",
+  "recapKeep": "Everything here stays yours."
+};
+en.stall = {
+  "today": "Today’s stall",
+  "turns": "next in {time}",
+  "soon": "The stall opens soon.",
+  "owned": "Yours. It stands in the {room}.",
+  "buyAria": "Buy {name} for {cost} coins",
+  "size": "Takes {w} × {h} floor tiles",
+  "fair": "One item a day, the same for everyone, coins only. The list goes round in order, so you can see what’s coming.",
+  "next": "Coming up",
+  "boughtToast": "It’s standing in your rooms. Tap it to move it.",
+  "blurb": {
+    "decor-plant": "A big leafy monstera in a navy pot. Every locker room needs one.",
+    "decor-cooler": "Cold water by the track, cups stacked.",
+    "decor-bench": "A long wooden bench for lacing up.",
+    "decor-roller": "Three foam rollers and a mat, for the sore bits.",
+    "decor-punchbag": "A heavy bag on a stand, gloves on the base.",
+    "decor-shelf": "Room for three cups and a medal.",
+    "decor-towels": "Striped pool towels and a spare pair of goggles.",
+    "decor-rug": "A flat navy rug with a gold bolt. Things can stand on the floor around it."
+  }
+};
+
 export default en;

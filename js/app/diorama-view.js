@@ -37,6 +37,7 @@ import { currentUser } from './auth.js';
 import { haptic } from './haptics.js';
 import { playPlace, prefersReducedMotion } from './effects.js';
 import * as store from './store.js';
+import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -140,6 +141,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     ${hud(ctx, avatarBtn)}
     ${roomPill(room, ctx)}
     <p class="dg-hint" data-dg-hint aria-live="polite"></p>
+    <button class="dg-act" data-dg-act hidden></button>
     <div class="dg-side is-left">
       <button class="dg-round" data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"><img src="icons/Pixelart/GEAR/btn-inventory.png" width="128" height="128" alt=""></button>
       <button class="dg-round is-small" data-action="open-next" aria-label="${esc(t('loop.base.next'))}">${svg('target')}</button>
@@ -154,6 +156,8 @@ export function renderDiorama(ctx, avatarBtn = '') {
 // ---- the stage ---------------------------------------------------------------------------
 
 const view = { v: null, sel: null, tick: null };
+// the world's DOM, kept between renders (see wireDiorama)
+const stage = { world: null, gen: 0 };
 
 const pt = (p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
 const poly = (corners, cls, extra = '') => `<polygon class="${cls}" points="${corners.map(pt).join(' ')}"${extra}/>`;
@@ -185,18 +189,10 @@ function itemBox(it, p, geom) {
   return { x: (minX + maxX) / 2, y: Math.max(...ys), w: (maxX - minX) * (it.scale || 1.1) };
 }
 
-function itemHtml(it, p, geom, sel, artOpts) {
-  const b = itemBox(it, p, geom);
-  return `<button class="dg-item${sel ? ' is-sel' : ''}" data-item="${it.id}"
-      style="left:${b.x.toFixed(1)}px;top:${b.y.toFixed(1)}px;width:${b.w.toFixed(1)}px;--lift:${it.lift || 0};z-index:${Math.round(b.y)}"
-      aria-pressed="${sel}" aria-label="${esc(t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }))}">
-    <img src="${esc(it.art(artOpts))}" alt="" draggable="false"></button>`;
-}
-
 /** Wire the stage in `root` (the view). */
 export function wireDiorama(root, ctx) {
   const vp = root.querySelector('[data-dg-vp]');
-  const worldEl = root.querySelector('[data-dg-world]');
+  let worldEl = root.querySelector('[data-dg-world]');
   const hint = root.querySelector('[data-dg-hint]');
   if (!vp || !worldEl) return;
   const reduced = () => prefersReducedMotion() || document.body.classList.contains('rm');
@@ -211,18 +207,67 @@ export function wireDiorama(root, ctx) {
   const [rw, rh] = ROOM_SIZE[geom];
   const M = roomPlacement(geom);
 
-  const draw = () => {
-    const here = items.filter((it) => placements[it.id]?.room === room);
-    const chosen = view.sel ? placeableById(view.sel) : null;
+  // The world is built once and kept across renders (the app re-renders the
+  // whole tab often): the terrain and the room stay painted, the floor's lines
+  // are redrawn, items are moved in place and a new room's art only goes up
+  // once it's decoded. Nothing ever flashes to the background colour.
+  if (stage.world && stage.world !== worldEl) { worldEl.replaceWith(stage.world); worldEl = stage.world; }
+  stage.world = worldEl;
+  const gen = ++stage.gen;
+  if (!worldEl.querySelector('.dg-env')) {
     worldEl.innerHTML = `<img class="dg-env" src="${ENV.src}" width="${ENV.w}" height="${ENV.h}" alt="" draggable="false">
-      <div class="dg-room-art is-${room}" style="width:${rw}px;height:${rh}px;transform:matrix(${M.map((n) => +n.toFixed(5)).join(',')})">
-        <img src="${esc(roomArt(room, levelOf(room, ctx)))}" alt="${esc(t('cp.roomAlt', { room: roomName(room), n: levelOf(room, ctx) }))}" draggable="false">
-        <svg class="dg-floor" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <g class="dg-cells">${chosen ? footprint(chosen, placements[view.sel].u, placements[view.sel].v).map(([a, b]) => poly(boxCorners(geom, a, b), 'dg-cell is-ok')).join('') : ''}</g>
-          ${chosen ? `<g class="dg-arrows">${arrows(geom, chosen, placements[view.sel])}</g>` : ''}
-        </svg>
+      <div class="dg-room-art"><img alt="" draggable="false">
+        <svg class="dg-floor" viewBox="0 0 100 100" preserveAspectRatio="none"><g class="dg-cells"></g><g class="dg-arrows"></g></svg>
       </div>
-      <div class="dg-items">${here.map((it) => itemHtml(it, placements[it.id], geom, view.sel === it.id, artOpts)).join('')}</div>`;
+      <div class="dg-items"></div>`;
+  }
+  const moveEl = (el, it, u, v) => {
+    const b = itemBox(it, { u, v }, geom);
+    el.style.left = `${b.x.toFixed(1)}px`; el.style.top = `${b.y.toFixed(1)}px`; el.style.width = `${b.w.toFixed(1)}px`;
+    el.style.zIndex = String(it.flat ? 1 : Math.round(b.y));
+  };
+  const board = boardCount(ctx.workouts);
+  const draw = () => {
+    const shown = roomImg.getAttribute('src') === src;
+    const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];
+    const chosen = shown && view.sel ? placeableById(view.sel) : null;
+    worldEl.querySelector('.dg-cells').innerHTML = chosen ? footprint(chosen, placements[view.sel].u, placements[view.sel].v).map(([a, b]) => poly(boxCorners(geom, a, b), 'dg-cell is-ok')).join('') : '';
+    const ar = worldEl.querySelector('.dg-arrows');
+    ar.innerHTML = chosen ? arrows(geom, chosen, placements[view.sel]) : '';
+    ar.style.display = '';
+    // items: keep each one's node (and its decoded picture), update it in place
+    const layer = worldEl.querySelector('.dg-items');
+    const keep = new Set(here.map((it) => it.id));
+    layer.querySelectorAll('[data-item]').forEach((el) => { if (!keep.has(el.dataset.item)) el.remove(); });
+    for (const it of here) {
+      let el = layer.querySelector(`[data-item="${it.id}"]`);
+      if (!el) {
+        el = document.createElement('button');
+        el.dataset.item = it.id;
+        el.innerHTML = '<img alt="" draggable="false">';
+        layer.append(el);
+      }
+      const p = placements[it.id]; const sel = view.sel === it.id;
+      el.className = `dg-item${sel ? ' is-sel' : ''}`;
+      el.style.setProperty('--lift', it.lift || 0);
+      moveEl(el, it, p.u, p.v);
+      el.setAttribute('aria-pressed', String(sel));
+      el.setAttribute('aria-label', t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }));
+      const img = el.querySelector('img'); const a = it.art(artOpts);
+      if (img.getAttribute('src') !== a) img.src = a;
+      // the mission board carries this week's count
+      if (it.opens === 'missions') {
+        let tag = el.querySelector('.dg-tag');
+        if (!tag) { tag = document.createElement('i'); tag.className = 'dg-tag'; el.append(tag); }
+        tag.textContent = `${board.done}/${board.total}`;
+        tag.classList.toggle('is-all', board.done === board.total);
+      }
+    }
+    // a picked-up item that opens something shows the way in
+    const act = root.querySelector('[data-dg-act]');
+    const opens = chosen?.opens;
+    act.hidden = !opens;
+    if (opens) act.innerHTML = `<img src="${BOARD_ART}" width="28" height="28" alt="">${esc(t('mission.ui.open'))} <b>${board.done}/${board.total}</b>`;
   };
 
   const box = () => vp.getBoundingClientRect();
@@ -231,6 +276,22 @@ export function wireDiorama(root, ctx) {
     view.v = clampView(view.v || homeView(r.width, r.height), r.width, r.height);
     worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
   };
+  const artEl = worldEl.querySelector('.dg-room-art');
+  const roomImg = artEl.querySelector('img');
+  const src = roomArt(room, levelOf(room, ctx));
+  const showRoom = () => {
+    artEl.className = `dg-room-art is-${room}`;
+    artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;
+    artEl.style.transform = `matrix(${M.map((n) => +n.toFixed(5)).join(',')})`;
+    roomImg.alt = t('cp.roomAlt', { room: roomName(room), n: levelOf(room, ctx) });
+  };
+  if (roomImg.getAttribute('src') !== src) {
+    const next = new Image(); next.src = src;
+    const swap = () => { if (stage.gen !== gen) return; roomImg.src = src; showRoom(); draw(); };
+    (next.decode ? next.decode() : Promise.resolve()).then(swap, swap);
+    if (!roomImg.getAttribute('src')) swap();
+  } else showRoom();
+
   draw();
   apply();
 
@@ -272,11 +333,6 @@ export function wireDiorama(root, ctx) {
   const showCells = (it, u, v, ok) => {
     const g = worldEl.querySelector('.dg-cells');
     if (g) g.innerHTML = it ? footprint(it, u, v).map(([a, b]) => poly(boxCorners(geom, a, b), `dg-cell ${ok ? 'is-ok' : 'is-bad'}`)).join('') : '';
-  };
-  const moveEl = (el, it, u, v) => {
-    const b = itemBox(it, { u, v }, geom);
-    el.style.left = `${b.x.toFixed(1)}px`; el.style.top = `${b.y.toFixed(1)}px`; el.style.width = `${b.w.toFixed(1)}px`;
-    el.style.zIndex = String(Math.round(b.y));
   };
   const place = (id, to) => {
     placements = { ...placements, [id]: to };
@@ -372,7 +428,8 @@ export function wireDiorama(root, ctx) {
     if (done.mode === 'nudge') { nudge(done.dir); return; }
     if (done.mode === 'drag') {
       done.el.classList.remove('is-lift', 'is-bad');
-      if (!done.moved) { draw(); return; }
+      // a second tap on a picked-up board opens it
+      if (!done.moved) { draw(); if (done.it.opens === 'missions') openMissionBoard(ctx); return; }
       const same = done.at.u === done.from.u && done.at.v === done.from.v;
       if (done.ok && !same) { place(done.id, done.at); return; }
       // back to where it was, with an elastic spring
@@ -398,6 +455,8 @@ export function wireDiorama(root, ctx) {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); deselect(); }
   };
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
+
+  root.querySelector('[data-dg-act]').onclick = () => { haptic('tick'); openMissionBoard(ctx); };
 
   // the rooms
   root.querySelectorAll('[data-room-go]').forEach((b) => {

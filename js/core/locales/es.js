@@ -2794,4 +2794,87 @@ es.cp = {
   "needOne": "Deja al menos una sala."
 };
 
+// ---- misiones semanales, temporadas y el puesto (docs/LOOP.md §5) ----
+es.gear.tab["stall"] = "Puesto";
+es.gear.err["stall_gone"] = "Eso ya no está en el puesto: cambió a medianoche (UTC).";
+es.gear.err["stall_only"] = "Eso solo se vende en el puesto del día.";
+es.gear.err["mission_week"] = "Las misiones de esa semana ya no se pueden cobrar.";
+es.gear.err["mission_unknown"] = "Esa misión no está en el tablón de esta semana.";
+es.gear.err["mission_not_done"] = "Esa misión aún no está completa.";
+Object.assign(es.cp.item, {
+  "mission-board-bike": "Tablón de misiones", "mission-board-pool": "Tablón de misiones", "mission-board-run": "Tablón de misiones",
+  "mission-board-gym": "Tablón de misiones", "mission-board-locker": "Tablón de misiones",
+  "decor-plant": "Costilla de Adán", "decor-cooler": "Fuente de agua", "decor-bench": "Banco de vestuario", "decor-roller": "Estante de rulos",
+  "decor-punchbag": "Saco de boxeo", "decor-shelf": "Estante de trofeos", "decor-towels": "Toallero", "decor-rug": "Alfombra del rayo"
+});
+es.mission = {
+  "w-sessions-3": { "name": "Tres sesiones", "blurb": "Completa {n} sesiones verificadas esta semana." },
+  "w-hours-4": { "name": "Cuatro horas", "blurb": "Entrena 4 horas esta semana, solo sesiones verificadas." },
+  "w-km-40": { "name": "Cuarenta kilómetros", "blurb": "Haz {n} km esta semana corriendo, en bici o nadando." },
+  "w-two-sports": { "name": "Dos deportes", "blurb": "Entrena {n} deportes distintos esta semana." },
+  "w-long-90": { "name": "Una larga", "blurb": "Completa una sesión de 90 minutos o más." },
+  "w-days-3": { "name": "Tres días", "blurb": "Entrena {n} días distintos esta semana." },
+  "w-rest-2": { "name": "Dos días libres", "blurb": "Descansa {n} días completos esta semana. Un día cuenta cuando ha terminado." },
+  "w-rest-1": { "name": "Un día libre", "blurb": "Descansa un día completo esta semana. Cuenta cuando ha terminado." },
+  "w-recovery": { "name": "Sesión suave", "blurb": "Una sesión tranquila de 20 a 40 minutos. La recuperación cuenta." },
+  "ui": {
+    "title": "Tablón de misiones",
+    "open": "Tablón de misiones",
+    "thisWeek": "Esta semana",
+    "nextWeek": "El tablón de la semana que viene",
+    "daysLeft": { "one": "último día", "other": "quedan {n} días" },
+    "training": "Entreno",
+    "rest": "Descanso y recuperación",
+    "restSame": "Las misiones de descanso y recuperación pagan exactamente lo mismo que las de entreno.",
+    "count": "{n} de {of}",
+    "hours": "{n} h de {of} h",
+    "km": "{n} de {of} km",
+    "rewardAria": "Paga {coins} monedas y {carbs} g de carbohidratos",
+    "paid": "Cobrada",
+    "paying": "Hecha",
+    "paidToast": { "one": "Misión semanal cobrada", "other": "{n} misiones semanales cobradas" },
+    "doneOf": "{n} de {of} misiones hechas"
+  }
+};
+es.season = {
+  "label": "Temporada · {year}",
+  "name": { "almendro": "Almendro en flor", "alisio": "Alisios", "calima": "Calima", "mar-de-nubes": "Mar de nubes" },
+  "daysLeft": { "one": "Último día de la temporada", "other": "Quedan {n} días de temporada" },
+  "stat": { "sessions": "sesiones", "hours": "horas", "km": "km", "missions": "misiones", "feats": "hazañas", "coins": "monedas" },
+  "kit": "Equipación {name}",
+  "kitOwned": "Tuya para siempre. Póntela desde la pestaña Equipación.",
+  "kitHow": "Completa {n} misiones semanales esta temporada para ganarla.",
+  "kitHowNow": "{n} misiones semanales esta temporada",
+  "kitHowLater": "Vuelve con su temporada",
+  "kitProgress": "{n} de {of} misiones",
+  "kitBlurb": "Los colores de una temporada. No se vende: se gana con misiones semanales en su temporada.",
+  "kitsTitle": "Colores de temporada",
+  "kitsNote": "Cada temporada tiene sus colores, que se ganan con {n} misiones semanales dentro de esa temporada. Una vez ganados son tuyos, aunque la temporada termine.",
+  "keep": "Cuando termina la temporada ya no puedes ganar su equipación, pero nada de lo que ganaste desaparece.",
+  "lastRecap": "Resumen de la temporada pasada",
+  "recapTitle": "Resumen de temporada",
+  "recapKeep": "Todo lo que hay aquí sigue siendo tuyo."
+};
+es.stall = {
+  "today": "El puesto de hoy",
+  "turns": "el siguiente en {time}",
+  "soon": "El puesto abre pronto.",
+  "owned": "Tuyo. Está en {room}.",
+  "buyAria": "Comprar {name} por {cost} monedas",
+  "size": "Ocupa {w} × {h} baldosas",
+  "fair": "Un artículo al día, el mismo para todo el mundo, solo con monedas. La lista va en orden, así que puedes ver lo que viene.",
+  "next": "Próximamente",
+  "boughtToast": "Ya está en tus salas. Tócalo para moverlo.",
+  "blurb": {
+    "decor-plant": "Una costilla de Adán frondosa en una maceta azul marino. Todo vestuario necesita una.",
+    "decor-cooler": "Agua fría junto a la pista, con vasos apilados.",
+    "decor-bench": "Un banco largo de madera para atarse las zapatillas.",
+    "decor-roller": "Tres rulos de espuma y una esterilla, para las zonas cargadas.",
+    "decor-punchbag": "Un saco pesado en su soporte, con los guantes en la base.",
+    "decor-shelf": "Sitio para tres copas y una medalla.",
+    "decor-towels": "Toallas de piscina a rayas y unas gafas de repuesto.",
+    "decor-rug": "Una alfombra azul marino con un rayo dorado. Se pueden poner cosas a su alrededor."
+  }
+};
+
 export default es;

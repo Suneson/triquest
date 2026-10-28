@@ -19,17 +19,17 @@ const ART = 'icons/Pixelart/NEW/ITEMS';
 /**
  * The stall's items, in the order they come round. Append only.
  * w × h: footprint in floor tiles. home: the room it's first set down in.
- * scale/lift: as placement.js's PLACEABLES.
+ * fit: as placement.js's PLACEABLES.
  */
 export const STALL_ITEMS = [
-  { id: 'decor-plant', cost: 120, w: 1, h: 1, home: 'locker', scale: 0.9, lift: 0.02 },
-  { id: 'decor-cooler', cost: 160, w: 1, h: 1, home: 'run', scale: 0.85, lift: 0.02 },
-  { id: 'decor-bench', cost: 220, w: 2, h: 1, home: 'locker', scale: 0.95, lift: 0.04 },
-  { id: 'decor-roller', cost: 140, w: 1, h: 1, home: 'gym', scale: 0.9, lift: 0.03 },
-  { id: 'decor-punchbag', cost: 240, w: 1, h: 1, home: 'gym', scale: 0.9, lift: 0.02 },
-  { id: 'decor-shelf', cost: 260, w: 1, h: 1, home: 'locker', scale: 0.9, lift: 0.02 },
-  { id: 'decor-towels', cost: 120, w: 1, h: 1, home: 'pool', scale: 0.9, lift: 0.02 },
-  { id: 'decor-rug', cost: 200, w: 2, h: 2, home: 'locker', scale: 1, lift: 0.18, flat: true },
+  { id: 'decor-plant', cost: 120, w: 1, h: 1, home: 'locker', fit: 0.78 },
+  { id: 'decor-cooler', cost: 160, w: 1, h: 1, home: 'run', fit: 0.78 },
+  { id: 'decor-bench', cost: 220, w: 2, h: 1, home: 'locker', fit: 0.78 },
+  { id: 'decor-roller', cost: 140, w: 1, h: 1, home: 'gym', fit: 0.78 },
+  { id: 'decor-punchbag', cost: 240, w: 1, h: 1, home: 'gym', fit: 0.78 },
+  { id: 'decor-shelf', cost: 260, w: 1, h: 1, home: 'locker', fit: 0.78 },
+  { id: 'decor-towels', cost: 120, w: 1, h: 1, home: 'pool', fit: 0.78 },
+  { id: 'decor-rug', cost: 200, w: 2, h: 2, home: 'locker', fit: 0.92, flat: true },
 ].map((it) => ({ ...it, kind: 'decor', currency: 'coins', art: `${ART}/${it.id}.webp` }));
 
 export const stallItemById = (id) => STALL_ITEMS.find((i) => i.id === id) || null;

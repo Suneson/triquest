@@ -78,3 +78,16 @@ Under reduced motion nothing bounces, lifts, springs or eases.
 ## Type
 
 The whole app uses one heavy game face: `'Franklin Gothic Heavy', 'Arial Black', Impact, sans-serif`. Headings, buttons, labels and numbers get a `0 2px 4px rgba(0, 0, 0, .6)` shadow. The pixel font (Silkscreen) is no longer loaded.
+
+## Items stand inside their footprint (2026-10-28)
+
+Each item's picture is set down concentric with its blue footprint: the object's base covers `fit` of
+it (0.8 unless the item says otherwise), its foot on the front corner of that smaller diamond, with a
+soft floor shadow the size of the base. How wide the object is inside its file, and how much empty
+space is under it, is measured once by `tools/measure-items.py` into `js/core/item-fit.js` (re-run it
+when art changes). So a new picture fits without hand-tuned numbers.
+
+## Type
+
+The house type is Franklin Gothic Heavy where it's installed, else Libre Franklin (OFL) served from
+`fonts/`, with its weight axis held at heavy, so iPhones get the same bold letters as desktops.

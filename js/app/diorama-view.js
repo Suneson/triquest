@@ -24,6 +24,7 @@ import {
 } from '../core/placement.js';
 import { ENV, STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM } from '../core/diorama.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
+import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
 import { featsFor } from '../core/feats.js';
 import { gearById } from '../core/gear.js';
@@ -121,9 +122,14 @@ function roomPill(room, ctx) {
   </div>`;
 }
 
+// the room buttons: tan game tiles (generated, tools/gen-buttons.mjs) with the
+// label in the house's heavy type, so it can be translated
+const BTN = { bike: 'bike', pool: 'swim', run: 'run', gym: 'gym', locker: 'locker' };
+const btnArt = (room) => `icons/Pixelart/NEW/UI/btn-${BTN[room]}.webp`;
+
 function roomNav(active) {
   const btn = (room) => `<button class="dg-room${room === active ? ' is-on' : ''}${room === 'locker' ? ' is-wide' : ''}" data-room-go="${room}"
-      aria-pressed="${room === active}">${svg(room === 'locker' ? 'backpack' : SPORT_OF[room])}<span>${t(`cp.nav.${room}`)}</span></button>`;
+      aria-pressed="${room === active}"><img src="${btnArt(room)}" width="256" height="256" alt="" draggable="false"><span>${t(`cp.nav.${room}`)}</span></button>`;
   return `<nav class="dg-rooms" aria-label="${esc(t('cp.roomsAria'))}">
     <div class="dg-rooms-row">${STAGE_ROOMS.filter((r) => r !== 'locker').map(btn).join('')}</div>
     ${btn('locker')}
@@ -181,12 +187,24 @@ function arrows(geom, it, p) {
   return set.map(([dir, pts]) => poly(pts, 'dg-arrow', ` data-nudge="${dir}" role="button" aria-label="${esc(t(`cp.nudge.${dir}`))}"`)).join('');
 }
 
-/** Where an item stands in the world: on its footprint's front corner, as wide as the footprint × its scale. */
-function itemBox(it, p, geom) {
+/**
+ * Where an item stands in the world. Its picture is set down inside its
+ * footprint, concentric with it: the object's base covers `fit` of the
+ * footprint (0.8 by default), so it sits within the blue lines, its foot on the
+ * front corner of that smaller diamond. The picture's own measures (item-fit.js)
+ * say how wide the object is inside the file and how much empty space is under it.
+ * Returns the picture's box (x, y = the object's foot, w) and the floor shadow.
+ */
+function itemBox(it, p, geom, src) {
   const pts = boxCorners(geom, p.u, p.v, it.w, it.h).map((c) => roomPctToWorld(geom, c.x, c.y));
   const xs = pts.map((q) => q[0]); const ys = pts.map((q) => q[1]);
   const minX = Math.min(...xs); const maxX = Math.max(...xs);
-  return { x: (minX + maxX) / 2, y: Math.max(...ys), w: (maxX - minX) * (it.scale || 1.1) };
+  const minY = Math.min(...ys); const maxY = Math.max(...ys);
+  const cx = (minX + maxX) / 2; const cy = (minY + maxY) / 2;
+  const fit = it.fit ?? 0.8;
+  const f = fitOf(src);
+  const w = ((maxX - minX) * fit) / f.w;
+  return { x: cx + (0.5 - f.mid) * w, y: cy + ((maxY - minY) / 2) * fit, w, pad: f.pad, cx, cy, sw: (maxX - minX) * fit, sh: (maxY - minY) * fit };
 }
 
 /** Wire the stage in `root` (the view). */
@@ -219,12 +237,17 @@ export function wireDiorama(root, ctx) {
       <div class="dg-room-art"><img alt="" draggable="false">
         <svg class="dg-floor" viewBox="0 0 100 100" preserveAspectRatio="none"><g class="dg-cells"></g><g class="dg-arrows"></g></svg>
       </div>
+      <div class="dg-shadows"></div>
       <div class="dg-items"></div>`;
   }
+  // an item's picture and its shadow on the floor move together
   const moveEl = (el, it, u, v) => {
-    const b = itemBox(it, { u, v }, geom);
+    const b = itemBox(it, { u, v }, geom, it.art(artOpts));
     el.style.left = `${b.x.toFixed(1)}px`; el.style.top = `${b.y.toFixed(1)}px`; el.style.width = `${b.w.toFixed(1)}px`;
+    el.style.setProperty('--lift', b.pad);
     el.style.zIndex = String(it.flat ? 1 : Math.round(b.y));
+    const sh = worldEl.querySelector(`.dg-shadow[data-for="${it.id}"]`);
+    if (sh) Object.assign(sh.style, { left: `${b.cx.toFixed(1)}px`, top: `${b.cy.toFixed(1)}px`, width: `${b.sw.toFixed(1)}px`, height: `${b.sh.toFixed(1)}px` });
   };
   const board = boardCount(ctx.workouts);
   const draw = () => {
@@ -239,6 +262,8 @@ export function wireDiorama(root, ctx) {
     const layer = worldEl.querySelector('.dg-items');
     const keep = new Set(here.map((it) => it.id));
     layer.querySelectorAll('[data-item]').forEach((el) => { if (!keep.has(el.dataset.item)) el.remove(); });
+    const shadows = worldEl.querySelector('.dg-shadows');
+    shadows.querySelectorAll('[data-for]').forEach((el) => { if (!keep.has(el.dataset.for)) el.remove(); });
     for (const it of here) {
       let el = layer.querySelector(`[data-item="${it.id}"]`);
       if (!el) {
@@ -247,9 +272,13 @@ export function wireDiorama(root, ctx) {
         el.innerHTML = '<img alt="" draggable="false">';
         layer.append(el);
       }
+      if (!it.flat && !shadows.querySelector(`[data-for="${it.id}"]`)) {
+        const sh = document.createElement('i');
+        sh.className = 'dg-shadow'; sh.dataset.for = it.id;
+        shadows.append(sh);
+      }
       const p = placements[it.id]; const sel = view.sel === it.id;
       el.className = `dg-item${sel ? ' is-sel' : ''}`;
-      el.style.setProperty('--lift', it.lift || 0);
       moveEl(el, it, p.u, p.v);
       el.setAttribute('aria-pressed', String(sel));
       el.setAttribute('aria-label', t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }));

@@ -2952,4 +2952,29 @@ en.club = {
   }
 };
 
+// ---- the redesigned shop (docs/SHOP.md) ----
+en.shop = {
+  "max": "MAX CAPACITY",
+  "owned": "Owned",
+  "building": "In the workshop",
+  "needCarbs": "{n} g short",
+  "needCoins": "{n} short",
+  "infoAria": "About {name}",
+  "storage": "Storage",
+  "coins": "Coins",
+  "carbs": "Carbs",
+  "walletCoins": "You have {n} coins of {cap}",
+  "walletCarbs": "You have {n} g of carbs of {cap}",
+  "fuelNote": "Buy it here; take it from your inventory when you want the boost.",
+  "fact": {
+    "boost": "Boost",
+    "when": "Works on",
+    "nextWorkout": "your next workout",
+    "forHours": "every session for {h} h",
+    "limit": "Limit",
+    "perWeek": { "one": "{n} a week", "other": "{n} a week" },
+    "price": "Price"
+  }
+};
+
 export default en;

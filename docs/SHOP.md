@@ -1,0 +1,55 @@
+# The shop overhaul: a two-column tactical store
+
+Branch `feature/shop-ui-overhaul`. It merges to `main` only when every phase is done.
+
+The dark, text-heavy list becomes a visual card grid in the spirit of a
+base-building game's league and season shops. The look follows the MOSKE
+bottle green palette, and the content stays MOSKE's:
+- **Cards:** two per row, and each says only four things: the name, the 3D
+  picture on a lit well, how many you hold of how many, and the price.
+- **Details:** everything else (boost, when it works, weekly limit, story) is
+  behind the card's `(i)` button.
+- **Currency:** the currency the open tab spends is pinned to the bottom.
+
+## Look
+
+- **Canvas:** bottle green `#0F3A20`.
+- **Structure:** warm beige `#E6D7BD` for the header, the tab plates and the
+  card bezels.
+- **Wells:** MOSKE blue, from `card-plate-blue`. Grey (`card-plate-grey`) once
+  storage is full or the thing is yours.
+- **Active tab:** seafoam `#39A672` with a light mint `#A7DBC5` rim.
+- **Price button:** chunky gold `#F2C14E` with an extruded edge `#B8892A`.
+  - Out of reach: a red price, with the shortfall under it.
+  - Storage full: grey **MAX CAPACITY**.
+- **Type:** Franklin Gothic Heavy for titles, Franklin for reading. On iPhone
+  both fall back to the served Libre Franklin, held heavy for titles.
+- **Tokens:** `css/theme.css`. The shop's styles are `css/shop.css`, scoped to
+  `.gw-screen.is-shop`.
+
+## Pieces
+
+| File | What |
+| --- | --- |
+| `js/core/shop-cards.js` | A card's state: `buy`, `short` (and by how much), `max`, `owned`, `building`, and its storage. Pure and tested (`tests/shop-cards.test.js`). |
+| `js/app/shop-ui.js` | `shopCard()`, `cardButton()`, `walletBar()`, `openShopInfo()`. |
+| `js/app/gear-view.js` | The shop itself: tabs, panels, buying. |
+| `tools/gen-shop-ui.mjs`, `tools/cut-shop-ui.py` | Tab icons (`icons/UI/tabs/`) and card plates (`icons/UI/cards/`), made with Gemini. |
+
+## Phases (built two at a time)
+
+1. **Foundations (done).** Palette tokens, the bottle green shell, the beige
+   header and tab plates with the seafoam active state. The generated tab
+   icons and card plates.
+2. **The card system and Fuel (done).** The two-column card, the `(i)` sheet
+   (boost, when it works, weekly limit, storage, price, story) and MAX
+   CAPACITY. The pinned currency bar (carbs on Fuel, coins elsewhere).
+3. **Gear.** The sport row on the canvas. A card per slot (current tier, next
+   tier's price, the boost in `(i)`). The workshop card restyled.
+4. **Base, Kit and Stall.** Props, collections and blueprints, kits, feat items
+   and season colourways, and the daily stall, all on cards with `(i)` sheets.
+5. **Inventory.** The same cards for what you hold: fuel with *Use*, clothes
+   with *Wear*, gear fitted.
+6. **Finish.** Accessibility (focus order, 44px targets, screen-reader labels),
+   reduced motion, checks at 320, 390 and 430, docs (DESIGN.md's shop section,
+   HANDOFF) and the merge.

@@ -2952,4 +2952,29 @@ es.club = {
   }
 };
 
+// ---- la tienda rediseñada (docs/SHOP.md) ----
+es.shop = {
+  "max": "ALMACÉN LLENO",
+  "owned": "Tuyo",
+  "building": "En el taller",
+  "needCarbs": "faltan {n} g",
+  "needCoins": "faltan {n}",
+  "infoAria": "Sobre {name}",
+  "storage": "Almacén",
+  "coins": "Monedas",
+  "carbs": "Carbohidratos",
+  "walletCoins": "Tienes {n} monedas de {cap}",
+  "walletCarbs": "Tienes {n} g de carbohidratos de {cap}",
+  "fuelNote": "Cómpralo aquí; tómalo desde tu inventario cuando quieras el empujón.",
+  "fact": {
+    "boost": "Empujón",
+    "when": "Funciona en",
+    "nextWorkout": "tu próximo entreno",
+    "forHours": "cada sesión durante {h} h",
+    "limit": "Límite",
+    "perWeek": { "one": "{n} por semana", "other": "{n} por semana" },
+    "price": "Precio"
+  }
+};
+
 export default es;

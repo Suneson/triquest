@@ -1,0 +1,33 @@
+/* theme.css — the brand palette for the redesigned screens (the shop first:
+   docs/SHOP.md). Bottle green canvas, warm beige structure, MOSKE blue wells,
+   seafoam for what's active, gold for coins and what you can buy.
+   Loaded before styles.css, which keeps the rest of the app's tokens. */
+
+:root {
+  /* canvas and surfaces */
+  --bg-canvas: #0F3A20;          /* bottle green */
+  --bg-surface-deep: #0A2715;    /* deep forest: recessed wells and the currency bar */
+  --surface-neutral: #E6D7BD;    /* warm beige: tabs, panels, light headers */
+  --surface-neutral-hi: #F4EAD6; /* its top highlight */
+  --surface-neutral-lo: #B9A684; /* its bevel shadow */
+  --surface-navy: #16264D;       /* base navy: inactive cards and shadows */
+
+  /* brand */
+  --brand-blue: #0C4CAE;         /* MOSKE blue */
+  --brand-blue-sky: #6EA8FF;     /* sky blue highlights */
+  --mint-active: #39A672;        /* seafoam: what's active */
+  --mint-light: #A7DBC5;         /* light mint: text and lit rims */
+
+  /* metallics and accents */
+  --gold-primary: #F2C14E;       /* gold badge and coin face */
+  --gold-shadow: #B8892A;        /* the gold's extruded bottom edge */
+  --accent-red: #D9443B;         /* caffeine, alerts, full storage */
+  --accent-orange: #E86326;      /* progress and secondary badges */
+  --text-white: #F2F5FC;         /* crisp white */
+  --ink-green: #0A2715;          /* dark text on beige */
+
+  /* type: heavy Franklin for titles; the body stack is set per screen (see shop.css),
+     because styles.css owns --font-body for the rest of the app */
+  --font-header: 'Franklin Gothic Heavy', 'MOSKE Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-reading: 'Franklin Gothic Medium', 'Franklin Gothic', 'MOSKE Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
+}

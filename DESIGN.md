@@ -459,29 +459,42 @@ canvas. The tokens are in `css/theme.css`, the styles are scoped to
   - The shop has five tabs: Stall, Gear, Base, Kit, Fuel.
   - The inventory has three: Fuel, Kit, Gear.
   - Arrow keys, Home and End move along a tab row and open the tab.
-- **Card:** a beige bezel with the name and a blue `(i)` (28px drawn, 44px
-  target), the picture on a lit well, a counter on the well and one button.
-  - **Counter:** `Storage 1/3`, `Tier 2/3`, build points, fragments or a size.
-  - **Well:** blue while there is something to get, grey (`card-plate-grey`)
-    when storage is full or the item is yours.
-- **Button:** a card has exactly one, chunky with an extruded edge:
-  - **Price:** gold. The currency picture sits beside the number.
-  - **Can't afford:** the price turns red and the shortfall is printed under it.
-  - **Storage full:** grey and disabled, reading `MAX CAPACITY`.
-  - **Yours, fitted or built:** a quiet line with a check.
-  - **In the workshop:** a live countdown, or the time it starts.
-  - **Wear, Use, Aim:** mint. **Build:** gold. **Wearing:** gold and pressed.
-  - **Locked:** grey with a lock. Feat items and season colourways are never
-    sold.
-  - **Fuel that can't be used yet:** a grey *Use*, with the reason under it.
-- **The (i) sheet:** the picture, the facts as label/value rows, the story, a
-  note, and the card's button again. Long labels (a feat's name) stack above
+- **Card:** a painted plate, two to a row. It is itself the button: a
+  transparent hit area covers it, so touching anywhere does what the tray
+  says.
+  - **Plates:** blue for gear, clothes, base and the stall; seafoam green for
+    fuel. The art is in `icons/UI/cards/src/`, fitted by
+    `tools/cut-card-art.py`.
+  - **Name:** top left, white Franklin Heavy in capitals, outlined in the
+    plate's ink, at most two lines.
+  - **(i):** top right, the painted square button in the plate's colour. It
+    sits above the hit area, so it opens the sheet and never buys.
+  - **Picture and counter:** the picture sits on the plate's light. The
+    counter (`Storage 1/3`, `Tier 2/3`, build points, fragments, a size) is
+    bottom right of the picture.
+- **Tray:** the plate's dark bar says what a touch does:
+  - **Price:** white, with the coin (gear, clothes, base) or carbs (fuel).
+  - **Can't afford:** the price turns red `#D9443B`. A touch shakes the card
+    and buys nothing. The shortfall is never printed; a screen reader hears
+    "not enough coins yet".
+  - **Full, yours or locked:** the whole card goes grey (`filter:
+    grayscale(1)`), touches pass through it, and the tray says `MAX`, *Owned*,
+    *Built* or *Locked*. The (i) still works.
+  - **Wear, Use, Aim, Build:** the word in capitals. *Wearing* and *Build* are
+    gold.
+  - **In the workshop, fitted, or fuel that can't go on yet:** the card keeps
+    its colour but doesn't act; the tray shows the countdown, *Fitted*, or a
+    word on why (*Fuel on*, *Week's limit*).
+- **The (i) sheet:** the picture on the plate's colour, the facts as
+  label/value rows, the story, a note, and the card's tap again as a button
+  (the price in the card's tray colours). Long labels (a feat's name) stack above
   their text. Closing the sheet returns focus to the card's `(i)`, even after
   a purchase redraws the grid.
 - **Currency bar:** the open tab's currency is pinned to the bottom, carbs on
   Fuel and coins elsewhere, as a filling track with the amount and the cap.
-- **Motion:** a just-bought card's picture pops once. Reduced motion (the OS
-  setting or `body.rm`) turns the pop and the button presses off.
+- **Motion:** a pressed card shrinks to 97%, a just-bought card's picture
+  pops once, and an unaffordable one shakes. Reduced motion (the OS setting or
+  `body.rm`) turns all three off.
 
 ### Challenge card (Room and Challenges)### Challenge card (Room and Challenges)
 A challenge travels as a card, never as a plain message. In the Room it's a

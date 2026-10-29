@@ -16,12 +16,15 @@ bottle green palette, and the content stays MOSKE's:
 - **Canvas:** bottle green `#0F3A20`.
 - **Structure:** warm beige `#E6D7BD` for the header, the tab plates and the
   card bezels.
-- **Wells:** MOSKE blue, from `card-plate-blue`. Grey (`card-plate-grey`) once
-  storage is full or the thing is yours.
+- **Cards (the facelift):** painted plates, blue (`card-plate-blue`) for
+  gear, clothes, base and the stall, seafoam (`card-plate-green`) for fuel, each
+  with its own painted `(i)` (`info-blue`, `info-green`). The whole card is the
+  button. Full, owned or locked cards go fully grey; out-of-reach prices turn
+  red, with no shortfall printed.
 - **Active tab:** seafoam `#39A672` with a light mint `#A7DBC5` rim.
-- **Price button:** chunky gold `#F2C14E` with an extruded edge `#B8892A`.
-  - Out of reach: a red price, with the shortfall under it.
-  - Storage full: grey **MAX CAPACITY**.
+- **Price:** in the plate's tray, white with the currency's picture.
+  - Out of reach: the price turns red `#D9443B`; a touch shakes the card.
+  - Storage full: the card goes grey and the tray says **MAX**.
 - **Type:** Franklin Gothic Heavy for titles, Franklin for reading. On iPhone
   both fall back to the served Libre Franklin, held heavy for titles.
 - **Tokens:** `css/theme.css`. The shop's styles are `css/shop.css`, scoped to
@@ -32,9 +35,10 @@ bottle green palette, and the content stays MOSKE's:
 | File | What |
 | --- | --- |
 | `js/core/shop-cards.js` | A card's state: `buy`, `short` (and by how much), `max`, `owned`, `building`, and its storage. Pure and tested (`tests/shop-cards.test.js`). |
-| `js/app/shop-ui.js` | `shopCard()`, `cardButton()`, `actionButton()` (Wear, Build, Aim, locked), `walletBar()`, `openShopInfo()`. |
+| `js/app/shop-ui.js` | `shopCard()`; `cardButton()` and `actionButton()` build a card's *tap* (go, deny, off, wait), drawn as the card and by `tapButton()` in the sheet; `denyTap()`, `walletBar()`, `openShopInfo()`. |
 | `js/app/gear-view.js` | The shop itself: tabs, panels, buying. |
-| `tools/gen-shop-ui.mjs`, `tools/cut-shop-ui.py` | Tab icons (`icons/UI/tabs/`) and card plates (`icons/UI/cards/`), made with Gemini. |
+| `tools/gen-shop-ui.mjs`, `tools/cut-shop-ui.py` | Tab icons (`icons/UI/tabs/`), made with Gemini. |
+| `tools/cut-card-art.py` | The painted card plates and `(i)` buttons: `icons/UI/cards/src/` → `icons/UI/cards/*.webp`. |
 
 ## Phases (built two at a time)
 

@@ -27,13 +27,26 @@ export function cardButton(item, cur, st, { buyAttr = 'data-gear-buy', label = '
   const coin = `<img class="sc-cur" src="${CUR_ART[cur]}" width="64" height="64" alt="">`;
   if (st.state === 'max') return `<button class="sc-buy is-max" disabled>${t('shop.max')}</button>`;
   if (st.state === 'owned') return `<span class="sc-buy is-done">${svg('check')} ${owned || t('shop.owned')}</span>`;
-  if (st.state === 'building') return `<span class="sc-buy is-done">${svg('wrench')} ${t('shop.building')}</span>`;
+  if (st.state === 'building') {
+    // in the workshop: a live countdown while it's fitted, else when it starts
+    return st.end
+      ? `<span class="sc-buy is-done is-ws">${svg('wrench')} <span data-ws-left="${st.end}" class="data-num">${st.left || ''}</span></span>`
+      : `<span class="sc-buy is-done is-ws">${svg('clock')} ${st.queued || t('shop.building')}</span>`;
+  }
   if (st.state === 'short') {
     const need = t(cur === 'carbs' ? 'shop.needCarbs' : 'shop.needCoins', { n: fmtNum(st.short) });
     return `<button class="sc-buy is-short" disabled aria-label="${esc(`${label} · ${need}`)}"><span class="sc-price">${priceText(item.cost, cur)}</span>${coin}</button>
       <small class="sc-need" aria-hidden="true">${need}</small>`;
   }
   return `<button class="sc-buy" ${buyAttr}="${item.id}"${online() ? '' : ' disabled'} aria-label="${esc(label)}"><span class="sc-price">${priceText(item.cost, cur)}</span>${coin}</button>`;
+}
+
+/**
+ * A card button that isn't a price: Wear, Build, Aim (mint), or locked (grey).
+ * `attrs` carries the data attribute the shop's click handler reads.
+ */
+export function actionButton(label, attrs = '', { variant = 'mint', icon = '', pressed = null, disabled = false } = {}) {
+  return `<button class="sc-buy is-${variant}" ${attrs}${pressed == null ? '' : ` aria-pressed="${pressed}"`}${disabled || !online() ? ' disabled' : ''}>${icon ? svg(icon) : ''}<span>${label}</span></button>`;
 }
 
 /**
@@ -44,15 +57,17 @@ export function cardButton(item, cur, st, { buyAttr = 'data-gear-buy', label = '
  *   badge               a short tag on the well (e.g. "T2"), optional
  *   fresh               just bought: the well pops
  */
-export function shopCard({ id, kind, title, art, st, button, badge = '', fresh = false }) {
-  const plate = cardPlate(st.state);
-  return `<article class="sc-card is-${plate}${fresh ? ' is-fresh' : ''}" data-card="${esc(id)}">
+export function shopCard({ id, kind, title, art, st, button, badge = '', fresh = false, counter = null, plate: plateIn = null, wide = false, pixel = false }) {
+  const plate = plateIn || cardPlate(st.state);
+  // the counter on the well: storage for fuel, or what the caller gives (a tier, fragments)
+  const ctr = counter || (st.storage ? { label: t('shop.storage'), text: storageText(st.storage), full: st.state === 'max' } : null);
+  return `<article class="sc-card is-${plate}${fresh ? ' is-fresh' : ''}${wide ? ' is-wide' : ''}${pixel ? ' is-pixel' : ''}" data-card="${esc(id)}">
     <header class="sc-head"><h3>${esc(title)}</h3>
       <button class="sc-info" data-shop-info="${esc(id)}" data-kind="${kind}" aria-label="${esc(t('shop.infoAria', { name: title }))}">${svg('info')}</button></header>
     <div class="sc-well">
       <img class="sc-art" src="${esc(art)}" width="256" height="256" loading="lazy" alt="">
       ${badge ? `<i class="sc-badge">${esc(badge)}</i>` : ''}
-      ${st.storage ? `<span class="sc-store"><small>${t('shop.storage')}</small><b class="data-num${st.state === 'max' ? ' is-full' : ''}">${storageText(st.storage)}</b></span>` : ''}
+      ${ctr ? `<span class="sc-store"><small>${esc(ctr.label)}</small><b class="data-num${ctr.full ? ' is-full' : ''}">${esc(ctr.text)}</b></span>` : ''}
     </div>
     <div class="sc-foot">${button}</div>
   </article>`;
@@ -72,14 +87,14 @@ export function walletBar(cur, amount, cap) {
  * The (i) sheet: the picture, the name, the facts as rows (label → value),
  * the story, and the card's button again so you can buy from here.
  */
-export function openShopInfo({ title, art, rows = [], lore = '', note = '', button = '', onClick = null }) {
+export function openShopInfo({ title, art, rows = [], lore = '', note = '', button = '', onClick = null, stack = false }) {
   const root = openLayer('shop-info');
   root.innerHTML = `<div class="modal-backdrop" data-si-close></div>
     <div class="modal sc-info-sheet" role="dialog" aria-modal="true" aria-labelledby="si-h">
       ${sheetHead({ title: esc(title), id: 'si-h', closeAttr: 'data-si-close' })}
       <div class="modal-body">
         <div class="sc-info-well"><img src="${esc(art)}" width="256" height="256" alt=""></div>
-        ${rows.length ? `<dl class="sc-facts">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>` : ''}
+        ${rows.length ? `<dl class="sc-facts${stack ? ' is-stack' : ''}">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>` : ''}
         ${lore ? `<p class="sc-lore">${esc(lore)}</p>` : ''}
         ${note ? `<p class="sc-note">${note}</p>` : ''}
         ${button ? `<div class="sc-info-foot">${button}</div>` : ''}

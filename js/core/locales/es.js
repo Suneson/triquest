@@ -2592,8 +2592,6 @@ es.loop = {
     "startsAt": "Empieza a las {time} · puesto {bay}",
     "fittedAt": "Montado a las {time}",
     "rules": "Quitar un trabajo que no ha empezado es gratis. Cancelar a medio montar te lo devuelve todo la primera vez; después, el {pct} %.",
-    "fittingCard": "En el taller:",
-    "queuedCard": "En cola: empieza a las {time}",
     "fitsIn": "Se monta en {time}",
     "h": "{h} h",
     "min": "{m} min",
@@ -2954,6 +2952,12 @@ es.club = {
 
 // ---- la tienda rediseñada (docs/SHOP.md) ----
 es.shop = {
+  "startsAt": "empieza a las {time}",
+  "tier": "Nivel",
+  "points": "Puntos de obra",
+  "fragments": "Fragmentos",
+  "locked": "BLOQUEADO",
+  "size": "Tamaño",
   "max": "ALMACÉN LLENO",
   "owned": "Tuyo",
   "building": "En el taller",
@@ -2967,6 +2971,12 @@ es.shop = {
   "walletCarbs": "Tienes {n} g de carbohidratos de {cap}",
   "fuelNote": "Cómpralo aquí; tómalo desde tu inventario cuando quieras el empujón.",
   "fact": {
+    "now": "Ahora",
+    "next": "Siguiente",
+    "fit": "Tiempo en el taller",
+    "light": "Luz",
+    "where": "Dónde",
+    "how": "Cómo conseguirlo",
     "boost": "Empujón",
     "when": "Funciona en",
     "nextWorkout": "tu próximo entreno",

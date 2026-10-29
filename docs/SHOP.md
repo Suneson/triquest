@@ -32,7 +32,7 @@ bottle green palette, and the content stays MOSKE's:
 | File | What |
 | --- | --- |
 | `js/core/shop-cards.js` | A card's state: `buy`, `short` (and by how much), `max`, `owned`, `building`, and its storage. Pure and tested (`tests/shop-cards.test.js`). |
-| `js/app/shop-ui.js` | `shopCard()`, `cardButton()`, `walletBar()`, `openShopInfo()`. |
+| `js/app/shop-ui.js` | `shopCard()`, `cardButton()`, `actionButton()` (Wear, Build, Aim, locked), `walletBar()`, `openShopInfo()`. |
 | `js/app/gear-view.js` | The shop itself: tabs, panels, buying. |
 | `tools/gen-shop-ui.mjs`, `tools/cut-shop-ui.py` | Tab icons (`icons/UI/tabs/`) and card plates (`icons/UI/cards/`), made with Gemini. |
 
@@ -44,10 +44,13 @@ bottle green palette, and the content stays MOSKE's:
 2. **The card system and Fuel (done).** The two-column card, the `(i)` sheet
    (boost, when it works, weekly limit, storage, price, story) and MAX
    CAPACITY. The pinned currency bar (carbs on Fuel, coins elsewhere).
-3. **Gear.** The sport row on the canvas. A card per slot (current tier, next
-   tier's price, the boost in `(i)`). The workshop card restyled.
-4. **Base, Kit and Stall.** Props, collections and blueprints, kits, feat items
-   and season colourways, and the daily stall, all on cards with `(i)` sheets.
+3. **Gear (done).** The sport row on the canvas. A card per slot (current tier,
+   next tier's price, the boost in `(i)`). A slot in the workshop shows its live
+   countdown on the button. The workshop card is restyled in beige and gold.
+4. **Base, Kit and Stall (done).** Props (size on the well, build points),
+   collections, blueprints (fragments, *Aim* in mint, *Build* in gold), kits
+   (*Wear*), feat items (grey *LOCKED* until earned) and season colourways. The
+   daily stall is one wide card under its countdown, with what's coming up.
 5. **Inventory.** The same cards for what you hold: fuel with *Use*, clothes
    with *Wear*, gear fitted.
 6. **Finish.** Accessibility (focus order, 44px targets, screen-reader labels),

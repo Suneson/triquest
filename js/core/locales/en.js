@@ -2592,8 +2592,6 @@ en.loop = {
     "startsAt": "Starts at {time} · bay {bay}",
     "fittedAt": "Fitted at {time}",
     "rules": "Removing a job that hasn’t started is free. Cancelling mid-fit gives everything back the first time, then {pct}%.",
-    "fittingCard": "In the workshop:",
-    "queuedCard": "Queued: starts at {time}",
     "fitsIn": "Fits in {time}",
     "h": "{h} h",
     "min": "{m} min",
@@ -2954,6 +2952,12 @@ en.club = {
 
 // ---- the redesigned shop (docs/SHOP.md) ----
 en.shop = {
+  "startsAt": "starts {time}",
+  "tier": "Tier",
+  "points": "Build points",
+  "fragments": "Fragments",
+  "locked": "LOCKED",
+  "size": "Size",
   "max": "MAX CAPACITY",
   "owned": "Owned",
   "building": "In the workshop",
@@ -2967,6 +2971,12 @@ en.shop = {
   "walletCarbs": "You have {n} g of carbs of {cap}",
   "fuelNote": "Buy it here; take it from your inventory when you want the boost.",
   "fact": {
+    "now": "Now",
+    "next": "Next",
+    "fit": "Fitting time",
+    "light": "Light",
+    "where": "Where",
+    "how": "How to get it",
     "boost": "Boost",
     "when": "Works on",
     "nextWorkout": "your next workout",

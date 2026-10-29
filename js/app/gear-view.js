@@ -33,7 +33,7 @@ import { collectionsFor, blueprintState, COLLECTION_RULES } from '../core/collec
 import { gelChip, pctBp } from './gel-chip.js';
 import { SWITCH } from './profile-game.js';
 import * as store from './store.js';
-import { shopCard, cardButton, walletBar, openShopInfo, priceText } from './shop-ui.js';
+import { shopCard, cardButton, actionButton, walletBar, openShopInfo, priceText } from './shop-ui.js';
 import { cardState } from '../core/shop-cards.js';
 
 const CUR_ICON = { coins: 'icons/Pixelart/GEAR/coin.png', carbs: 'icons/Pixelart/GEAR/carbs.png' };
@@ -157,56 +157,6 @@ function workshopCard(s, w) {
   </section>`;
 }
 
-/** What a shop card says about an item in the workshop (or null when it isn't). */
-function inWorkshop(s, id) {
-  const j = jobFor(s.jobs, id, serverNow());
-  if (!j) return null;
-  const end = Date.parse(j.finishes_at);
-  return jobPhase(j, serverNow()) === 'fitting'
-    ? `<p class="gw-inws">${svg('wrench')} ${t('loop.ws.fittingCard')} <span data-ws-left="${end}" class="data-num">${clockLeft(end - serverNow())}</span></p>`
-    : `<p class="gw-inws">${svg('clock')} ${t('loop.ws.queuedCard', { time: fmtTime(j.started_at) })}</p>`;
-}
-
-function gearCard(sport, slot, inv, coins, fresh, s) {
-  const tier = ownedTier(inv, sport, slot);
-  const cur = gearById(tierId(sport, slot, tier));
-  const next = nextTier(inv, sport, slot);
-  const ws = next && s ? inWorkshop(s, next.id) : null;
-  const foot = !next
-    ? `<p class="gw-max">${svg('star')} ${t('gear.maxed')}</p>`
-    : `<div class="gw-next"><span class="gw-next-k">${t('gear.next')}</span><b>${esc(next.name)}</b><span class="gw-boost">${pctBp(next.boostBp)}</span></div>
-       ${ws || `<p class="gw-fit">${svg('clock')} ${t('loop.ws.fitsIn', { time: fitText(fitMinutes(next.id)) })}</p>
-       <div class="gw-act">${buyButton(next, 'coins', coins, t('gear.buyAria', { name: next.name, cost: next.cost, boost: pctBp(next.boostBp) }))}</div>`}`;
-  return `<article class="gw-card${fresh ? ' is-bought' : ''}" data-slot="${slot}">
-    ${artTile(sport, slot, tier, { locked: tier === 0, fresh })}
-    <div class="gw-body">
-      <h3 class="gw-slot">${esc(cur.slotName)}</h3>
-      <p class="gw-cur">${esc(cur.name)}</p>
-      <div class="gw-now">${pips(tier, fresh)}<span class="gw-boost ${tier ? '' : 'is-zero'}">${tier ? pctBp(cur.boostBp) : t('gear.noBoost')}</span></div>
-      <p class="gw-blurb">${esc(cur.blurb)}</p>
-    </div>
-    <div class="gw-foot">${foot}</div>
-  </article>`;
-}
-
-/** A prop for the base: built, in the workshop, or its price and fitting time. */
-function propCard(p, s, w) {
-  const owned = s.inventory.some((r) => r.item_id === p.id);
-  const ws = owned ? null : inWorkshop(s, p.id);
-  const act = owned ? `<p class="gw-max">${svg('check')} ${t('loop.prop.built')}</p>`
-    : ws || `<p class="gw-fit">${svg('clock')} ${t('loop.ws.fitsIn', { time: fitText(p.fitMin) })} · ${t('loop.prop.points', { n: p.points })}</p>
-      <div class="gw-act">${buyButton(p, 'coins', w.coins, t('loop.prop.buyAria', { name: p.name, cost: p.cost }))}</div>`;
-  return `<article class="gw-card gw-prop${owned ? ' is-owned' : ''}" data-prop="${p.id}">
-    ${imgTile(p.art, owned ? '✓' : '', 'is-prop')}
-    <div class="gw-body">
-      <h3 class="gw-slot">${esc(p.name)}</h3>
-      <p class="gw-blurb">${esc(p.blurb)}</p>
-      ${p.glow ? `<p class="gw-cur">${svg('bolt')} ${t('loop.prop.glows')}</p>` : ''}
-    </div>
-    <div class="gw-foot">${act}</div>
-  </article>`;
-}
-
 /** The quadrant's level, and what the next one takes. */
 function quadHead(sport, inventory) {
   const q = quadrantLevel(sport, inventory);
@@ -248,39 +198,6 @@ function collectionRow(sport, inventory) {
   </section>`;
 }
 const fmtDateShort = (iso) => fmtDate(iso, { day: 'numeric', month: 'short' });
-
-/** Every rare prop, its price in fragments, and the one you're working towards. */
-function blueprintRow(s) {
-  const target = store.getSettings().bpTarget || null;
-  const bp = blueprintState(s.quests, s.blueprints, target);
-  const cards = RARE_PROPS.map((p) => {
-    const built = bp.built.has(p.id);
-    const on = bp.target?.id === p.id;
-    const sportName = t(`sport.${SWITCH.find(([x]) => x === p.sport)[1]}`);
-    let act;
-    if (built) act = `<p class="gw-max">${svg('check')} ${t('loop.prop.built')}</p>`;
-    else if (bp.free >= p.fragments) act = `<div class="gw-act"><button class="btn tiny primary" data-bp-build="${p.id}"${online() ? '' : ' disabled'}>${svg('wrench')} ${t('loop.bp.build')}</button></div>`;
-    else if (on) {
-      act = `${meter(bp.free / p.fragments, { segments: 12, cls: 'bp-meter', label: t('loop.bp.progress', { n: bp.free, of: p.fragments }) })}
-        <p class="gw-need">${t('loop.bp.left', { n: `<b class="data-num">${p.fragments - bp.free}</b>` })}</p>`;
-    } else act = `<div class="gw-act"><button class="btn tiny" data-bp-target="${p.id}" aria-pressed="false">${svg('target')} ${t('loop.bp.aim')}</button></div>`;
-    return `<article class="gw-card gw-prop bp-card${built ? ' is-owned' : ''}${on ? ' is-target' : ''}" data-rare="${p.id}">
-      ${imgTile(p.art, built ? '✓' : String(p.fragments), 'is-prop is-rare')}
-      <div class="gw-body">
-        <h3 class="gw-slot">${esc(p.name)}</h3>
-        <p class="gw-cur">${svg(p.sport, `tint-${p.sport}`)} ${esc(sportName)} · ${t('loop.prop.points', { n: p.points })}</p>
-        <p class="gw-blurb">${esc(p.blurb)}</p>
-        <p class="gw-cur">${svg('scroll')} ${t('loop.bp.price', { n: p.fragments })}${on ? ` · <b>${t('loop.bp.aiming')}</b>` : ''}</p>
-      </div>
-      <div class="gw-foot">${act}</div>
-    </article>`;
-  }).join('');
-  return `<section class="bp-row" id="bp-row" aria-labelledby="bp-h">
-    <h3 id="bp-h" class="gw-row-h">${svg('scroll')} ${t('loop.bp.title')} <small class="bp-have">${t('loop.bp.have', { n: `<b class="data-num">${bp.free}</b>` })}</small></h3>
-    <p class="gw-note">${t('loop.bp.note', { n: COLLECTION_RULES.fragmentPerMission })}</p>
-    <div class="gw-grid">${cards}</div>
-  </section>`;
-}
 
 const skCard = (i) => `<article class="gw-card is-sk" style="--sk-i:${i}" aria-hidden="true">
     <span class="gw-art sk-tile"></span>
@@ -483,50 +400,205 @@ const SHOP_TABS = [['stall', 'stall'], ['gear', 'wrench'], ['base', 'flag'], ['c
 const TAB_ART = (v) => `icons/UI/tabs/tab-${v}.webp`;
 const TAB_CUR = { stall: 'coins', gear: 'coins', base: 'coins', clothes: 'coins', fuel: 'carbs' };
 
-// ---- the daily stall (docs/LOOP.md §5.3) --------------------------------------------------
 
-const ROOM_WORD = { locker: 'locker', bike: 'bike', pool: 'pool', run: 'run', gym: 'gym' };
-/** Today's stall: one thing for your rooms, the same for everyone, and the next few days. */
-function stallPanel(s, w) {
+// ---- the card grid for gear, base, kit and the stall (docs/SHOP.md, phases 3–4) ----------
+
+/** A card's state for something the workshop may hold: building (with its clock), owned, or to buy. */
+function wsCardState(s, id, cost, balance, owned) {
+  if (owned) return cardState({ cost, balance, owned: true });
+  const j = jobFor(s.jobs, id, serverNow());
+  if (!j) return cardState({ cost, balance });
+  const end = Date.parse(j.finishes_at);
+  return jobPhase(j, serverNow()) === 'fitting'
+    ? { state: 'building', short: 0, storage: null, end, left: clockLeft(end - serverNow()) }
+    : { state: 'building', short: 0, storage: null, queued: t('shop.startsAt', { time: fmtTime(j.started_at) }) };
+}
+const tierCounter = (tier) => ({ label: t('shop.tier'), text: `${tier}/3`, full: tier >= 3 });
+
+/** A gear slot: the next tier's picture, the tier you're on, its price (or the workshop's clock). */
+function gearShopCard(sport, slot, s, w, fresh) {
+  const tier = ownedTier(s.inventory, sport, slot);
+  const cur = gearById(tierId(sport, slot, tier));
+  const next = nextTier(s.inventory, sport, slot);
+  const show = next || cur;
+  const st = next ? wsCardState(s, next.id, next.cost, w.coins, false) : cardState({ cost: 0, balance: 0, owned: true });
+  return shopCard({
+    id: `${sport}:${slot}`, kind: 'gear', title: cur.slotName, art: ART_READY.has(show.id) ? show.art : cur.art,
+    st, fresh, counter: tierCounter(tier), badge: next ? `T${next.tier}` : `T${tier}`,
+    button: cardButton(next || cur, 'coins', st, { owned: t('gear.maxed'), label: next ? t('gear.buyAria', { name: next.name, cost: next.cost, boost: pctBp(next.boostBp) }) : '' }),
+  });
+}
+function gearInfo(sport, slot, s, w, redraw) {
+  const tier = ownedTier(s.inventory, sport, slot);
+  const cur = gearById(tierId(sport, slot, tier));
+  const next = nextTier(s.inventory, sport, slot);
+  const st = next ? wsCardState(s, next.id, next.cost, w.coins, false) : cardState({ cost: 0, balance: 0, owned: true });
+  const rows = [
+    [t('shop.fact.now'), `${esc(cur.name)} · <b class="data-num">${tier ? pctBp(cur.boostBp) : t('gear.noBoost')}</b>`],
+    ...(next ? [
+      [t('shop.fact.next'), `${esc(next.name)} · <b class="data-num">${pctBp(next.boostBp)}</b>`],
+      [t('shop.fact.fit'), esc(fitText(fitMinutes(next.id)))],
+      [t('shop.fact.price'), `<b class="data-num">${priceText(next.cost, 'coins')}</b>`],
+    ] : [[t('shop.fact.next'), esc(t('gear.maxed'))]]),
+    [t('gear.disciplineBoost'), `<b class="data-num">${pctBp(gearBoost(s.inventory, sport))}</b> ${esc(t('gear.ofCap', { cap: pctBp(GEAR_RULES.sportCapBp) }))}`],
+  ];
+  openShopInfo({
+    title: cur.slotName, art: ART_READY.has((next || cur).id) ? (next || cur).art : cur.art, rows, lore: (next || cur).blurb,
+    button: cardButton(next || cur, 'coins', st, { owned: t('gear.maxed'), label: next ? t('gear.buyAria', { name: next.name, cost: next.cost, boost: pctBp(next.boostBp) }) : '' }),
+    onClick: async (e, layer) => { if (await handleCommon(e, () => {})) { closeLayer(layer); redraw(); } },
+  });
+}
+
+/** A prop for the base. */
+function propShopCard(p, s, w) {
+  const st = wsCardState(s, p.id, p.cost, w.coins, s.inventory.some((r) => r.item_id === p.id));
+  return shopCard({
+    id: p.id, kind: 'prop', title: p.name, art: p.art, st, pixel: true,
+    counter: { label: t('shop.points'), text: `+${p.points}` },
+    button: cardButton(p, 'coins', st, { owned: t('loop.prop.built'), label: t('loop.prop.buyAria', { name: p.name, cost: p.cost }) }),
+  });
+}
+function propInfo(p, s, w, redraw) {
+  const st = wsCardState(s, p.id, p.cost, w.coins, s.inventory.some((r) => r.item_id === p.id));
+  openShopInfo({
+    title: p.name, art: p.art, lore: p.blurb,
+    rows: [
+      [t('shop.points'), `<b class="data-num">+${p.points}</b>`],
+      [t('shop.fact.fit'), esc(fitText(p.fitMin))],
+      [t('shop.fact.price'), `<b class="data-num">${priceText(p.cost, 'coins')}</b>`],
+      ...(p.glow ? [[t('shop.fact.light'), esc(t('loop.prop.glows'))]] : []),
+    ],
+    button: cardButton(p, 'coins', st, { owned: t('loop.prop.built'), label: t('loop.prop.buyAria', { name: p.name, cost: p.cost }) }),
+    onClick: async (e, layer) => { if (await handleCommon(e, () => {})) { closeLayer(layer); redraw(); } },
+  });
+}
+
+/** A rare piece, built from blueprint fragments. */
+function rareShopCard(p, bp) {
+  const built = bp.built.has(p.id);
+  const on = bp.target?.id === p.id;
+  const st = { state: built ? 'owned' : 'buy', short: 0, storage: null };
+  let button;
+  if (built) button = cardButton(p, 'coins', st, { owned: t('loop.prop.built') });
+  else if (bp.free >= p.fragments) button = actionButton(t('loop.bp.build'), `data-bp-build="${p.id}"`, { icon: 'wrench', variant: 'gold' });
+  else if (on) button = actionButton(t('loop.bp.aiming'), `data-bp-target="${p.id}"`, { icon: 'target', pressed: true, disabled: true, variant: 'mint' });
+  else button = actionButton(t('loop.bp.aim'), `data-bp-target="${p.id}"`, { icon: 'target', pressed: false, variant: 'mint' });
+  return shopCard({
+    id: p.id, kind: 'rare', title: p.name, art: p.art, st, pixel: true,
+    counter: built ? null : { label: t('shop.fragments'), text: `${Math.min(bp.free, p.fragments)}/${p.fragments}`, full: bp.free >= p.fragments },
+    button,
+  });
+}
+function rareInfo(p, bp) {
+  const sportName = t(`sport.${SWITCH.find(([x]) => x === p.sport)[1]}`);
+  openShopInfo({
+    title: p.name, art: p.art, lore: p.blurb, note: esc(t('loop.bp.note', { n: COLLECTION_RULES.fragmentPerMission })),
+    rows: [
+      [t('shop.fact.where'), esc(sportName)],
+      [t('shop.points'), `<b class="data-num">+${p.points}</b>`],
+      [t('shop.fragments'), `<b class="data-num">${Math.min(bp.free, p.fragments)}/${p.fragments}</b>`],
+    ],
+  });
+}
+
+/** A kit you can buy and wear. */
+function kitShopCard(k, owned, worn, w) {
+  const st = cardState({ cost: k.cost, balance: w.coins, owned });
+  const button = owned
+    ? actionButton(worn ? t('gear.wearing') : t('gear.wear'), `data-gear-wear="${k.id}"`, { pressed: worn, variant: worn ? 'gold' : 'mint' })
+    : cardButton(k, 'coins', st, { label: t('gear.buyKitAria', { name: k.name, cost: k.cost }) });
+  return shopCard({ id: k.id, kind: 'kit', title: k.name, art: kitArt(k.id), st, plate: 'blue', button });
+}
+function kitInfo(k, owned, worn, w, redraw) {
+  const st = cardState({ cost: k.cost, balance: w.coins, owned });
+  openShopInfo({
+    title: k.name, art: kitArt(k.id), lore: t('gear.kitsNote'),
+    rows: [[t('shop.fact.price'), `<b class="data-num">${priceText(k.cost, 'coins')}</b>`]],
+    button: owned ? '' : cardButton(k, 'coins', st, { label: t('gear.buyKitAria', { name: k.name, cost: k.cost }) }),
+    onClick: async (e, layer) => { if (await handleCommon(e, () => {})) { closeLayer(layer); redraw(); } },
+  });
+}
+
+/** An item only a feat gives: locked until won, then wearable (cycling kits) or simply yours. */
+function featShopCard(it, won, worn) {
+  const st = { state: won ? 'owned' : 'buy', short: 0, storage: null };
+  const button = won && it.wearable
+    ? actionButton(worn ? t('gear.wearing') : t('gear.wear'), `data-gear-wear="${it.id}"`, { pressed: worn, variant: worn ? 'gold' : 'mint' })
+    : won ? cardButton(it, 'coins', st, { owned: t('feat.ui.itemOwned') })
+      : actionButton(t('shop.locked'), '', { icon: 'lock', variant: 'locked', disabled: true });
+  return shopCard({ id: it.id, kind: 'feat', title: it.name, art: it.art, st, plate: won ? 'blue' : 'grey', button, badge: won ? won.season : '' });
+}
+function featInfo(it, won) {
+  const feats = it.feats.map(featById).filter(Boolean);
+  openShopInfo({
+    title: it.name, art: it.art, lore: t(won ? 'feat.ui.itemWon' : 'feat.ui.itemHow'),
+    rows: feats.map((f) => [f.name, esc(f.blurb)]), stack: true,
+    note: esc(t('feat.ui.itemsNote')),
+  });
+}
+
+/** A season colourway: won with weekly missions in its season, never sold. */
+function seasonKitShopCard(k, owned, worn) {
+  const st = { state: owned ? 'owned' : 'buy', short: 0, storage: null };
+  const name = t('season.kit', { name: t(`season.name.${k.theme}`) });
+  const button = owned
+    ? actionButton(worn ? t('gear.wearing') : t('gear.wear'), `data-gear-wear="${k.id}"`, { pressed: worn, variant: worn ? 'gold' : 'mint' })
+    : actionButton(t('shop.locked'), '', { icon: 'lock', variant: 'locked', disabled: true });
+  return shopCard({ id: k.id, kind: 'skit', title: name, art: kitArt(k.id), st, plate: owned ? 'blue' : 'grey', button });
+}
+function seasonKitInfo(k) {
+  const nowTheme = seasonInfo(todayISO()).theme.id;
+  openShopInfo({
+    title: t('season.kit', { name: t(`season.name.${k.theme}`) }), art: kitArt(k.id), lore: t('season.kitBlurb'),
+    rows: [[t('shop.fact.how'), esc(t(k.theme === nowTheme ? 'season.kitHowNow' : 'season.kitHowLater', { n: SEASON_RULES.kitMissions }))]],
+    note: esc(t('season.kitsNote', { n: SEASON_RULES.kitMissions })),
+  });
+}
+
+/** The day's stall item. */
+function stallShopCard(it, s, w) {
+  const owned = s.inventory.some((r) => r.item_id === it.id);
+  const st = cardState({ cost: it.cost, balance: w.coins, owned });
+  return shopCard({
+    id: it.id, kind: 'stall', title: t(`cp.item.${it.id}`), art: it.art, st, wide: true,
+    counter: { label: t('shop.size'), text: `${it.w}×${it.h}` },
+    button: cardButton(it, 'coins', st, { buyAttr: 'data-stall-buy', owned: t('stall.owned', { room: t(`cp.room.${it.home}`) }), label: t('stall.buyAria', { name: t(`cp.item.${it.id}`), cost: it.cost }) }),
+  });
+}
+function stallInfo(it, s, w, redraw) {
+  const owned = s.inventory.some((r) => r.item_id === it.id);
+  const st = cardState({ cost: it.cost, balance: w.coins, owned });
+  openShopInfo({
+    title: t(`cp.item.${it.id}`), art: it.art, lore: t(`stall.blurb.${it.id}`), note: esc(t('stall.fair')),
+    rows: [
+      [t('shop.size'), esc(t('stall.size', { w: it.w, h: it.h }))],
+      [t('shop.fact.where'), esc(t(`cp.room.${it.home}`))],
+      [t('shop.fact.price'), `<b class="data-num">${priceText(it.cost, 'coins')}</b>`],
+    ],
+    button: cardButton(it, 'coins', st, { buyAttr: 'data-stall-buy', owned: t('stall.owned', { room: t(`cp.room.${it.home}`) }), label: t('stall.buyAria', { name: t(`cp.item.${it.id}`), cost: it.cost }) }),
+    onClick: (e, layer) => {
+      const b = e.target.closest('[data-stall-buy]');
+      if (b) { closeLayer(layer); redraw(b.dataset.stallBuy); }
+    },
+  });
+}
+
+/** Today's stall on the card grid, and the next three days. */
+function stallCards(s, w) {
   const now = serverNow();
   const day = stallDay(now);
   const it = stallFor(day);
   if (!it) return `<p class="gw-note">${t('stall.soon')}</p>`;
-  const owned = s.inventory.some((r) => r.item_id === it.id);
-  const name = t(`cp.item.${it.id}`);
-  const act = owned ? `<span class="gw-need">${svg('check')} ${t('stall.owned', { room: t(`cp.room.${ROOM_WORD[it.home]}`) })}</span>`
-    : buyButton(it, 'coins', w.coins, t('stall.buyAria', { name, cost: it.cost })).replace('data-gear-buy=', 'data-stall-buy=');
   const ahead = stallAhead(day, 3);
-  return `<section class="st-today" aria-labelledby="st-h">
-      <h3 id="st-h" class="gw-row-h">${svg('stall')} ${t('stall.today')} <span class="st-left">${t('stall.turns', { time: `<b data-st-left="${now + msToNextStall(now)}">${clockLeft(msToNextStall(now))}</b>` })}</span></h3>
-      <article class="gw-card st-card${owned ? ' is-owned' : ''}">
-        <span class="gw-art has-img st-art" aria-hidden="true"><img src="${esc(it.art)}" width="192" height="192" alt=""></span>
-        <div class="gw-body"><h3 class="gw-slot">${esc(name)}</h3>
-          <p class="gw-blurb">${t(`stall.blurb.${it.id}`)}</p>
-          <p class="gw-cur">${t('stall.size', { w: it.w, h: it.h })}</p></div>
-        <div class="gw-foot"><div class="gw-act">${act}</div></div>
-      </article>
-      <p class="gw-note">${t('stall.fair')}</p>
-    </section>
-    <section class="st-ahead" aria-labelledby="st-next">
-      <h3 id="st-next" class="gw-row-h">${t('stall.next')}</h3>
-      <ul>${ahead.map((a) => `<li><img src="${esc(a.item.art)}" width="56" height="56" alt=""><span><small>${esc(fmtDate(a.day, { weekday: 'short' }))}</small><b>${esc(t(`cp.item.${a.item.id}`))}</b></span>${price(a.item.cost, 'coins')}</li>`).join('')}</ul>
-    </section>`;
+  return `<div class="sc-strip"><span>${svg('clock')} ${t('stall.turns', { time: `<b data-st-left="${now + msToNextStall(now)}">${clockLeft(msToNextStall(now))}</b>` })}</span></div>
+    <div class="sc-grid" role="tabpanel">${stallShopCard(it, s, w)}</div>
+    <h3 class="sc-row-h">${t('stall.next')}</h3>
+    <ul class="sc-ahead">${ahead.map((a) => `<li><img src="${esc(a.item.art)}" width="96" height="96" alt="">
+      <span><small>${esc(fmtDate(a.day, { weekday: 'short' }))}</small><b>${esc(t(`cp.item.${a.item.id}`))}</b></span>
+      <i class="sc-ahead-price"><b class="data-num">${fmtNum(a.item.cost)}</b><img src="icons/Pixelart/GEAR/coin.png" width="32" height="32" alt=""></i></li>`).join('')}</ul>`;
 }
 
-// season kits: won with weekly missions, never sold (docs/LOOP.md §5.2)
-function seasonKitCard(k, owned, worn) {
-  const nowTheme = seasonInfo(todayISO()).theme.id;
-  const act = owned
-    ? `<button class="btn tiny ${worn ? 'primary' : ''}" data-gear-wear="${k.id}" aria-pressed="${worn}">${worn ? t('gear.wearing') : t('gear.wear')}</button>`
-    : `<span class="gw-need">${svg('lock')} ${t(k.theme === nowTheme ? 'season.kitHowNow' : 'season.kitHowLater', { n: SEASON_RULES.kitMissions })}</span>`;
-  return `<article class="gw-card gw-kitcard${owned ? '' : ' is-locked'}" data-kit="${k.id}">
-    ${imgTile(kitArt(k.id))}
-    <div class="gw-body"><h3 class="gw-slot">${esc(t('season.kit', { name: t(`season.name.${k.theme}`) }))}</h3>
-      <p class="gw-blurb">${t('season.kitBlurb')}</p></div>
-    <div class="gw-foot"><div class="gw-act">${act}</div></div>
-  </article>`;
-}
+// ---- the daily stall (docs/LOOP.md §5.3) --------------------------------------------------
 
 /** Open the shop: tab 'gear' (by discipline), 'base' (props), 'clothes' or 'fuel'. */
 export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {}) {
@@ -547,31 +619,33 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
         <img src="${TAB_ART(v)}" width="128" height="128" alt="" draggable="false"><span>${t(`gear.tab.${v}`)}</span></button>`).join('')}</div>`;
     let panel;
     if (view === 'stall') {
-      panel = stallPanel(s, w);
+      panel = stallCards(s, w);
     } else if (view === 'gear') {
       const boost = gearBoost(s.inventory, current);
       panel = `${sportTabs(current)}
-        <div class="gw-total"><span>${t('gear.disciplineBoost')}</span><b class="data-num">${pctBp(boost)}</b>
+        <div class="gw-total sc-total"><span>${t('gear.disciplineBoost')}</span><b class="data-num">${pctBp(boost)}</b>
           <small>${t('gear.ofCap', { cap: pctBp(GEAR_RULES.sportCapBp) })}</small>
           <span class="gw-cap" style="--f:${(boost / GEAR_RULES.sportCapBp).toFixed(3)}" aria-hidden="true"><i></i></span></div>
-        <div class="gw-grid" role="tabpanel"${loading ? ' aria-busy="true"' : ''}>${loading ? [0, 1, 2, 3].map(skCard).join('')
-          : SLOTS[current].map((slot) => gearCard(current, slot, s.inventory, w.coins, fresh === slot, s)).join('')}</div>`;
+        <div class="sc-grid" role="tabpanel"${loading ? ' aria-busy="true"' : ''}>${loading ? [0, 1, 2, 3].map(skCard).join('')
+          : SLOTS[current].map((slot) => gearShopCard(current, slot, s, w, fresh === slot)).join('')}</div>`;
     } else if (view === 'base') {
+      const bp = blueprintState(s.quests, s.blueprints, store.getSettings().bpTarget || null);
       panel = `${sportTabs(current)}${quadHead(current, s.inventory)}
-        <div class="gw-grid" role="tabpanel">${propsFor(current).map((p) => propCard(p, s, w)).join('')}</div>
-        ${collectionRow(current, s.inventory)}${blueprintRow(s)}`;
+        <div class="sc-grid" role="tabpanel">${propsFor(current).map((p) => propShopCard(p, s, w)).join('')}</div>
+        ${collectionRow(current, s.inventory)}
+        <section class="bp-row" id="bp-row" aria-labelledby="bp-h">
+          <h3 id="bp-h" class="sc-row-h">${svg('scroll')} ${t('loop.bp.title')} <small class="bp-have">${t('loop.bp.have', { n: `<b class="data-num">${bp.free}</b>` })}</small></h3>
+          <div class="sc-grid">${RARE_PROPS.map((p) => rareShopCard(p, bp)).join('')}</div>
+        </section>`;
     } else if (view === 'clothes') {
       const owned = new Set(ownedKits(s.inventory).map((k) => k.id));
       const worn = store.getSettings().kit || null;
       const wonItems = new Map(featItems().map((i) => [i.id, i]));
-      panel = `<p class="gw-note">${t('gear.clothesNote')}</p>
-        <div class="gw-grid" role="tabpanel">${KITS.map((k) => kitCard(k, owned.has(k.id), worn === k.id, w.coins, 'shop')).join('')}</div>
-        <h3 class="gw-row-h gw-feat-h">${svg('trophy')} ${t('feat.ui.itemsTitle')}</h3>
-        <p class="gw-note">${t('feat.ui.itemsNote')}</p>
-        <div class="gw-grid">${FEAT_ITEMS.map((it) => featItemCard(it, wonItems.get(it.id), worn === it.id)).join('')}</div>
-        <h3 class="gw-row-h gw-feat-h">${svg('star')} ${t('season.kitsTitle')}</h3>
-        <p class="gw-note">${t('season.kitsNote', { n: SEASON_RULES.kitMissions })}</p>
-        <div class="gw-grid">${SEASON_KITS.map((k) => seasonKitCard(k, s.inventory.some((r) => r.item_id === k.id), worn === k.id)).join('')}</div>`;
+      panel = `<div class="sc-grid" role="tabpanel">${KITS.map((k) => kitShopCard(k, owned.has(k.id), worn === k.id, w)).join('')}</div>
+        <h3 class="sc-row-h">${svg('trophy')} ${t('feat.ui.itemsTitle')}</h3>
+        <div class="sc-grid">${FEAT_ITEMS.map((it) => featShopCard(it, wonItems.get(it.id), worn === it.id)).join('')}</div>
+        <h3 class="sc-row-h">${svg('star')} ${t('season.kitsTitle')}</h3>
+        <div class="sc-grid">${SEASON_KITS.map((k) => seasonKitShopCard(k, s.inventory.some((r) => r.item_id === k.id), worn === k.id)).join('')}</div>`;
     } else {
       // fuel: the card grid, two to a row (docs/SHOP.md)
       panel = `${gelChip(s.boosts, { cls: 'gw-gel-top' })}
@@ -582,7 +656,7 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
       title: t('gear.shop'), icon: 'stall', id: 'gw-title', workouts, cls: 'is-shop', bars: false,
       foot: walletBar(cur, w[cur], w.cap),
       body: `${online() ? '' : `<p class="gw-offline" id="gw-offline" role="status">${svg('cloud')} ${t('gear.offline')}</p>`}
-        ${tabs}${['gear', 'base'].includes(view) && (s.jobs || []).some((j) => j.state !== 'cancelled') ? workshopCard(s, w) : ''}${panel}<p class="gw-note gw-honest">${svg('trophy')} ${t('gear.honest')}</p>`,
+        ${tabs}${panel}${['gear', 'base'].includes(view) && (s.jobs || []).some((j) => j.state !== 'cancelled') ? workshopCard(s, w) : ''}<p class="gw-note gw-honest">${svg('trophy')} ${t('gear.honest')}</p>`,
     });
     fresh = null;
     markWorkshopSeen();
@@ -617,7 +691,22 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
     const info = e.target.closest('[data-shop-info]');
     if (info) {
       const w = walletNow(store.getWorkouts());
-      if (info.dataset.kind === 'fuel') fuelInfo(fuelById(info.dataset.shopInfo), w, draw);
+      const s = gearState();
+      const id = info.dataset.shopInfo;
+      const worn = store.getSettings().kit || null;
+      switch (info.dataset.kind) {
+        case 'fuel': fuelInfo(fuelById(id), w, draw); break;
+        case 'gear': { const [sp, sl] = id.split(':'); gearInfo(sp, sl, s, w, draw); break; }
+        case 'prop': propInfo(propById(id), s, w, draw); break;
+        case 'rare': rareInfo(rareById(id), blueprintState(s.quests, s.blueprints, store.getSettings().bpTarget || null)); break;
+        case 'kit': kitInfo(KITS.find((k) => k.id === id), ownedKits(s.inventory).some((k) => k.id === id), worn === id, w, draw); break;
+        case 'feat': featInfo(featItemById(id), featItems().find((i) => i.id === id)); break;
+        case 'skit': seasonKitInfo(SEASON_KITS.find((k) => k.id === id)); break;
+        case 'stall': stallInfo(stallFor(stallDay(serverNow())), s, w, (buyId) => {
+          if (buyId) root.querySelector(`[data-stall-buy="${buyId}"]`)?.click(); else draw();
+        }); break;
+        default: break;
+      }
       return;
     }
     const sb = e.target.closest('[data-stall-buy]');

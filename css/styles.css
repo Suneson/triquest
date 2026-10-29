@@ -2248,9 +2248,7 @@ body.rm .pg-board.is-fresh::after { animation: none; }
 .ws-queue small, .ws-done small { color: var(--muted); font-size: var(--fs-tiny); }
 .ws-done li { display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--ok, var(--accent)); }
 .ws-done b { color: var(--fg); }
-.gw-inws, .gw-fit { margin: 0; display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--muted); }
-.gw-inws { color: var(--accent); }
-.gw-inws .data-num { color: var(--fg); }
+.gw-fit { margin: 0; display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--muted); }
 .gw-art.is-prop img, .gw-prop .gw-art img { image-rendering: pixelated; }
 /* the base: the quadrant's level and the props you can build */
 .quad-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 12px; background: var(--bg-2); }

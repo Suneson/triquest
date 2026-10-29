@@ -2066,11 +2066,9 @@ en.gear = {
   "disciplines": "Disciplines",
   "disciplineBoost": "Gear boost",
   "ofCap": "of {cap} max",
-  "tierOf": "Tier {n} of {of}",
   "next": "Next",
   "maxed": "Top tier",
   "noBoost": "No boost yet",
-  "needMore": "{n} more coins",
   "buyAria": "Buy {name} for {cost} coins, {boost} XP in this discipline",
   "kitsNote": "Colourways for your athlete. They change how you look, not your XP.",
   "wear": "Wear",
@@ -2105,9 +2103,6 @@ en.gear = {
   "res": {
     "aria": "Coins {coins}, carbs {carbs} g, each stores up to {cap}"
   },
-  "needCarbs": "{n} g more carbs",
-  "fuelEffect": "+{pct}% XP for {h} h · {n} a week",
-  "fuelFull": "You can hold {n}",
   "buyFuelAria": "Buy {name} for {cost} grams of carbs",
   "buyKitAria": "Buy {name} for {cost} coins",
   "use": "Use",
@@ -2118,7 +2113,6 @@ en.gear = {
   },
   "fuelOn": "{name}: +{pct}% XP for {h} hours",
   "fuelOnNext": "{name}: +{pct}% XP on your next workout",
-  "fuelEffectNext": "+{pct}% XP on your next workout · {n} a week",
   "nextWorkout": "Next workout",
   "fuelWaitingAria": "{name} taken: +{pct}% XP on your next workout",
   "fuelActiveAria": "{name} running: {time} left, +{pct}% XP",
@@ -2343,8 +2337,6 @@ en.feat.ui = {
   "itemHow": "Earn it:",
   "itemWon": "Won, in that season's colours",
   "itemOwned": "Yours",
-  "itemLocked": "Earned, never bought",
-  "itemLockedLogged": "Earned with logged lifts"
 };
 en.featItem = {
   "kit-run-sub20": "Sub-20 run kit",
@@ -2964,6 +2956,7 @@ en.shop = {
   "needCarbs": "{n} g short",
   "needCoins": "{n} short",
   "infoAria": "About {name}",
+  "useAria": "Use {name} now",
   "storage": "Storage",
   "coins": "Coins",
   "carbs": "Carbs",

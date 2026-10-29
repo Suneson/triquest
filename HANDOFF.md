@@ -210,6 +210,17 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - **App:** `gear-state.js` holds the jobs, the server clock offset, `onWorkshopFinish`, and the shop dot (`unseenFinished`). `gear-view.js` has the workshop card and the Base tab.
 - **Demo:** `?demo=1` has a fitting job, a queued one and two finished props.
 
+## The shop overhaul (Oct 2026, `feature/shop-ui-overhaul`)
+- **Design and phases:** `docs/SHOP.md`; the look is in DESIGN.md under *Shop and inventory cards*.
+- **Tokens:** `css/theme.css` (bottle green, beige, MOSKE blue, gold), loaded before `styles.css`. The shop's styles are in `css/shop.css`, all scoped to `.gw-screen.is-shop`.
+- **Card logic:** `js/core/shop-cards.js` (`cardState`, `cardPlate`, `storageText`), pure, tested in `tests/shop-cards.test.js`.
+- **Card markup:** `js/app/shop-ui.js` (`shopCard`, `cardButton`, `actionButton`, `walletBar`, `openShopInfo`).
+- **Shop and inventory:** `js/app/gear-view.js`.
+  - Each kind has a `*ShopCard` and an `*Info` pair. `cardInfo()` dispatches the `(i)` for both screens by `data-kind`, and `data-mode="use"` makes a fuel sheet use rather than sell.
+  - `openInventory({ tab })` opens on `fuel`, `clothes` or `gear`.
+- **Art:** `tools/gen-shop-ui.mjs` (Gemini, key from `GEMINI_API_KEY` only) and `tools/cut-shop-ui.py` make `icons/UI/tabs/tab-*.webp` and `icons/UI/cards/card-plate-{blue,grey}.webp`.
+- **Gotcha:** don't put a `url()` in a CSS custom property set inline; it resolves against the stylesheet and 404s. The plates are classes in `shop.css`.
+
 ## ⚠️ Gotchas
 - **Bump SW `CACHE` + add new JS to ASSETS** every asset change, else stale.
 - Connector `deploy_edge_function` needs **self-contained** files (inline shared code; can't `../_shared` import). Repo keeps `_shared/` for CLI parity.

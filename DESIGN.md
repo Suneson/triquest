@@ -450,14 +450,40 @@ one row of five (Bike, Swim, Run, Gym, Cross). Each feat is a framed card:
 
 Gym adds the bodyweight field and the check-in line on top.
 
-### Earned plate (shop and inventory)
-An item only a feat gives sits in the clothes tab under *Earned, not bought*:
-- **Locked:** a silhouette, the feat that unlocks it spelled out, and a lock
-  line instead of a price. There is never a buy button.
-- **Won:** the item in its season's colourway, with the season as a tag. A
-  cycling kit gets *Wear*.
+### Shop and inventory cards (`js/app/shop-ui.js`, `css/shop.css`)
+The gear shop and the inventory are a two-column card store on a bottle green
+canvas. The tokens are in `css/theme.css`, the styles are scoped to
+`.gw-screen.is-shop`, and the design notes are in `docs/SHOP.md`.
+- **Header and tabs:** a warm beige header and beige tab plates with painted
+  icons. The open tab is seafoam with a mint rim.
+  - The shop has five tabs: Stall, Gear, Base, Kit, Fuel.
+  - The inventory has three: Fuel, Kit, Gear.
+  - Arrow keys, Home and End move along a tab row and open the tab.
+- **Card:** a beige bezel with the name and a blue `(i)` (28px drawn, 44px
+  target), the picture on a lit well, a counter on the well and one button.
+  - **Counter:** `Storage 1/3`, `Tier 2/3`, build points, fragments or a size.
+  - **Well:** blue while there is something to get, grey (`card-plate-grey`)
+    when storage is full or the item is yours.
+- **Button:** a card has exactly one, chunky with an extruded edge:
+  - **Price:** gold. The currency picture sits beside the number.
+  - **Can't afford:** the price turns red and the shortfall is printed under it.
+  - **Storage full:** grey and disabled, reading `MAX CAPACITY`.
+  - **Yours, fitted or built:** a quiet line with a check.
+  - **In the workshop:** a live countdown, or the time it starts.
+  - **Wear, Use, Aim:** mint. **Build:** gold. **Wearing:** gold and pressed.
+  - **Locked:** grey with a lock. Feat items and season colourways are never
+    sold.
+  - **Fuel that can't be used yet:** a grey *Use*, with the reason under it.
+- **The (i) sheet:** the picture, the facts as label/value rows, the story, a
+  note, and the card's button again. Long labels (a feat's name) stack above
+  their text. Closing the sheet returns focus to the card's `(i)`, even after
+  a purchase redraws the grid.
+- **Currency bar:** the open tab's currency is pinned to the bottom, carbs on
+  Fuel and coins elsewhere, as a filling track with the amount and the cap.
+- **Motion:** a just-bought card's picture pops once. Reduced motion (the OS
+  setting or `body.rm`) turns the pop and the button presses off.
 
-### Challenge card (Room and Challenges)
+### Challenge card (Room and Challenges)### Challenge card (Room and Challenges)
 A challenge travels as a card, never as a plain message. In the Room it's a
 card row (`rm-card`) posted by the server, not the sender: the sport glyph, the
 rule in one line ("Most riding km, Tue 20 Oct – Mon 26 Oct"), the stake as a
@@ -485,12 +511,12 @@ Toasts sit above layers (`.toast-wrap` z-index 10200, over `.modal-root`
 10000), so anything said while a layer is open is seen.
 
 ### Workshop card (Gear shop)
-Sits at the top of the shop's Gear and Base tabs whenever something is in the
-workshop. One row per bay:
+A beige panel under the cards on the shop's Gear and Base tabs whenever
+something is in the workshop. One row per bay:
 - the bay number set vertically;
 - the item's tile;
 - its name, a countdown in `--font-data`, and a stepped progress bar (24 hard steps, no smooth fill);
-- *Finish with a gel* (primary) and *Cancel* (ghost) underneath.
+- *Finish with a gel* (gold) and *Cancel* (outlined) underneath.
 
 Cancelling mid-fit asks first and says what comes back; removing a queued job
 doesn't ask, because it's free. The waiting queue lists under the bays with

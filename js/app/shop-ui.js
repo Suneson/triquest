@@ -56,14 +56,15 @@ export function actionButton(label, attrs = '', { variant = 'mint', icon = '', p
  *   button              cardButton() html
  *   badge               a short tag on the well (e.g. "T2"), optional
  *   fresh               just bought: the well pops
+ *   mode                'use' on the inventory: the (i) sheet uses, not sells
  */
-export function shopCard({ id, kind, title, art, st, button, badge = '', fresh = false, counter = null, plate: plateIn = null, wide = false, pixel = false }) {
+export function shopCard({ id, kind, mode = '', title, art, st, button, badge = '', fresh = false, counter = null, plate: plateIn = null, wide = false, pixel = false }) {
   const plate = plateIn || cardPlate(st.state);
   // the counter on the well: storage for fuel, or what the caller gives (a tier, fragments)
   const ctr = counter || (st.storage ? { label: t('shop.storage'), text: storageText(st.storage), full: st.state === 'max' } : null);
   return `<article class="sc-card is-${plate}${fresh ? ' is-fresh' : ''}${wide ? ' is-wide' : ''}${pixel ? ' is-pixel' : ''}" data-card="${esc(id)}">
     <header class="sc-head"><h3>${esc(title)}</h3>
-      <button class="sc-info" data-shop-info="${esc(id)}" data-kind="${kind}" aria-label="${esc(t('shop.infoAria', { name: title }))}">${svg('info')}</button></header>
+      <button class="sc-info" data-shop-info="${esc(id)}" data-kind="${kind}"${mode ? ` data-mode="${mode}"` : ''} aria-label="${esc(t('shop.infoAria', { name: title }))}">${svg('info')}</button></header>
     <div class="sc-well">
       <img class="sc-art" src="${esc(art)}" width="256" height="256" loading="lazy" alt="">
       ${badge ? `<i class="sc-badge">${esc(badge)}</i>` : ''}

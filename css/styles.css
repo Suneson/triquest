@@ -1864,8 +1864,6 @@ body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 .gw-cap { grid-column: 1 / -1; height: 8px; background: var(--bg-4); position: relative; }
 .gw-cap i { position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); background: repeating-linear-gradient(90deg, var(--steel) 0 6px, transparent 6px 8px); }
 /* the workshop grid: one card per slot, two across from 600px */
-.gw-grid { display: grid; gap: var(--sp-group); grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 600px) { .gw-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .gw-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); grid-template-areas: "art body" "foot foot"; gap: 12px 14px; padding: 14px; background: var(--bg-2); margin: 2px 2px 6px; }
 .gw-art { grid-area: art; position: relative; width: 88px; height: 88px; display: grid; place-items: center; background: var(--bg-3); --b: var(--steel-lo); color: var(--steel); overflow: hidden; }
 .gw-art .ic { width: 48px; height: 48px; }
@@ -1874,22 +1872,11 @@ body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 .gw-art.is-locked .ic, .gw-art.is-locked img { opacity: .35; filter: grayscale(1) brightness(.6); } /* a silhouette of what's to come */
 .gw-tier { position: absolute; right: 2px; bottom: 2px; font: 700 12px/1 var(--font-display); font-style: normal; color: var(--muted); background: var(--shade); padding: 2px 3px; }
 .gw-body { grid-area: body; min-width: 0; display: grid; gap: 4px; align-content: start; }
-.gw-slot { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d3); text-transform: uppercase; line-height: 1.1; margin: 0; }
-.gw-cur { margin: 0; font-size: var(--fs-small); color: var(--fg); }
-.gw-blurb { margin: 0; font-size: var(--fs-tiny); color: var(--muted); line-height: 1.35; }
 .gw-now { display: flex; align-items: center; gap: 10px; }
-.gw-pips { display: inline-flex; gap: 4px; }
-.gw-pips i { width: 12px; height: 12px; background: var(--bg-4); box-shadow: inset 0 0 0 2px var(--steel-lo); }
-.gw-pips i.on { background: var(--steel); box-shadow: none; }
-.gw-boost { font-family: var(--font-display); font-size: var(--fs-d3); color: var(--steel); white-space: nowrap; }
-.gw-boost.is-zero { color: var(--muted); font-family: var(--font-body); font-size: var(--fs-tiny); }
 .gw-foot { grid-area: foot; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; border-top: var(--px) dashed var(--line-soft); padding-top: 10px; }
 .gw-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; font-size: var(--fs-small); }
 .gw-next-k { font-family: var(--font-display); font-size: var(--fs-tiny); text-transform: uppercase; color: var(--muted); }
-.gw-act { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
-.gw-buy { min-width: 88px; min-height: 44px; }
 .btn.is-short { opacity: .55; }
-.gw-need { font-size: var(--fs-tiny); color: var(--muted); }
 .gw-max { margin: 0; display: flex; gap: 6px; align-items: center; color: var(--accent); font-family: var(--font-display); font-size: var(--fs-d3); text-transform: uppercase; }
 .gw-row { display: grid; gap: 12px; }
 .gw-row-h { display: flex; gap: 8px; align-items: center; font-family: var(--font-display); font-weight: 400; font-size: var(--fs-d3); text-transform: uppercase; color: var(--muted); margin: 0; }
@@ -1903,9 +1890,6 @@ body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 .gw-note { margin: 0; font-size: var(--fs-small); color: var(--muted); }
 .gw-honest { display: flex; gap: 8px; align-items: flex-start; }
 /* the workshop moment after a purchase: the new tier slides in, the pips fill one at a time */
-.gw-card.is-bought .gw-art.is-fresh > :first-child { animation: gw-slide 360ms steps(6, end) both; }
-.gw-card.is-bought .gw-pips i.is-new { animation: gw-pip 240ms steps(3, end) both; animation-delay: calc(var(--d) * 120ms + 300ms); }
-.gw-card.is-bought { --b: var(--steel); }
 @keyframes gw-slide { from { transform: translateX(-120%); } to { transform: none; } }
 @keyframes gw-pip { from { background: var(--bg-4); transform: scale(.4); } to { background: var(--steel); transform: none; } }
 /* the GEAR button in the Profile top bar, beside the avatar */
@@ -1932,7 +1916,6 @@ body.rm .btn[aria-busy="true"]::before { clip-path: none; }
 .bento-xp small { font-size: var(--fs-tiny); color: var(--muted); }
 .xp-pop small { display: block; font-size: var(--fs-tiny); color: var(--fg); opacity: .75; text-align: center; margin-top: 2px; }
 .xp-land-sub { display: block; font-size: var(--fs-small); color: var(--muted); margin-top: 4px; }
-body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-bought .gw-pips i.is-new { animation: none; }
 .gw-screen > .gel-chip, .gw-screen > .gw-sports { margin: 0 16px var(--sp-group); }
 .gw-screen > .gw-sports { width: auto; }
 .btn.primary .coin-amt { color: var(--on-accent); }
@@ -1989,14 +1972,6 @@ body.rm .gw-card.is-bought .gw-art.is-fresh > :first-child, body.rm .gw-card.is-
 .gw-art.has-img { background: var(--bg-3); }
 .gw-art.has-img img { width: 100%; height: 100%; image-rendering: pixelated; }
 /* the inventory's gear list */
-.inv-list, .inv-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.inv-sport h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 700 var(--fs-d3)/1 var(--font-display); text-transform: uppercase; }
-.inv-gear { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px; background: var(--bg-2); }
-.inv-gear .gw-art { width: 56px; height: 56px; }
-.inv-gear .gw-art .ic { width: 32px; height: 32px; }
-.inv-gear b { display: block; font-size: var(--fs-small); }
-.inv-gear small { color: var(--muted); font-size: var(--fs-tiny); }
-.inv-empty { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .gw-screen > .gw-tabs { margin: 0 16px var(--sp-group); }
 .res-track b { right: 30px; }
 .gw-screen > .gw-note, .gw-screen > .gw-offline { margin: 0 16px var(--sp-group); }
@@ -2100,10 +2075,6 @@ body.rm .pg-board.is-fresh::after { animation: none; }
 /* items only a feat gives: a locked plate in the shop, the season's colours once won */
 .gw-feat-h { margin: var(--sp-section) 0 var(--sp-group); }
 .gw-art.is-feat { color: var(--accent); --b: var(--accent); }
-.gw-feat-item.is-locked .gw-art.is-feat .ic { opacity: .3; filter: grayscale(1) brightness(.6); }
-.gw-feat-item.is-won .gw-art.is-feat { filter: hue-rotate(var(--hue, 0deg)); }
-.gw-feat-how { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: var(--fs-small); color: var(--muted); }
-.gw-feat-how b { color: var(--fg); }
 
 /* a narrow phone: the sport name gives way first, so the boost chip and the level chip stay whole */
 .pg-hud-top > .pg-sport-name { min-width: 0; flex: 1 1 auto; overflow: hidden; white-space: nowrap; }
@@ -2248,7 +2219,6 @@ body.rm .pg-board.is-fresh::after { animation: none; }
 .ws-queue small, .ws-done small { color: var(--muted); font-size: var(--fs-tiny); }
 .ws-done li { display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--ok, var(--accent)); }
 .ws-done b { color: var(--fg); }
-.gw-fit { margin: 0; display: flex; gap: 6px; align-items: center; font-size: var(--fs-small); color: var(--muted); }
 .gw-art.is-prop img, .gw-prop .gw-art img { image-rendering: pixelated; }
 /* the base: the quadrant's level and the props you can build */
 .quad-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 12px; background: var(--bg-2); }
@@ -2266,7 +2236,6 @@ body.rm .pg-board.is-fresh::after { animation: none; }
 img[src*="Pixelart/GEAR/"], img[src*="Pixelart/FEATS/"] { image-rendering: auto !important; }
 .tc-trophy img { width: 56px; height: 56px; object-fit: contain; }
 .tc-card.is-locked .tc-trophy img { opacity: .35; filter: grayscale(1) brightness(.55); } /* a silhouette of what's to come */
-.gw-feat-item.is-locked .gw-art.is-feat img { opacity: .35; filter: grayscale(1) brightness(.55); }
 
 /* ---- THE LONG LOOP, phases 3 and 4: the home base, collections, blueprints, prestige ---- */
 /* the base is the Profile tab's landing view: its own scroller over the sealed pg-mode viewport */

@@ -51,8 +51,18 @@ bottle green palette, and the content stays MOSKE's:
    collections, blueprints (fragments, *Aim* in mint, *Build* in gold), kits
    (*Wear*), feat items (grey *LOCKED* until earned) and season colourways. The
    daily stall is one wide card under its countdown, with what's coming up.
-5. **Inventory.** The same cards for what you hold: fuel with *Use*, clothes
-   with *Wear*, gear fitted.
-6. **Finish.** Accessibility (focus order, 44px targets, screen-reader labels),
-   reduced motion, checks at 320, 390 and 430, docs (DESIGN.md's shop section,
-   HANDOFF) and the merge.
+5. **Inventory (done).** The same cards for what you hold, under three tabs.
+   - **Fuel:** *Use*, or a grey *Use* with the reason it can't go on yet.
+   - **Kit:** *Wear* for kits, won feat items and season colourways.
+   - **Gear:** fitted gear by sport, with each sport's boost.
+   - Every card has the same `(i)` sheet as in the shop, and an empty tab
+     points to the shop.
+6. **Finish (done).**
+   - **Tabs:** keyboard tabs (arrows, Home, End, one tab stop per row), and
+     each tab panel is labelled by its tab.
+   - **Focus:** returns to the card's `(i)` after its sheet closes. Focus rings
+     show on both beige and green.
+   - **Targets:** every target is at least 44px.
+   - **Motion:** reduced motion is respected.
+   - **Widths:** no overflow at 320, 390 or 430.
+   - **Docs:** DESIGN.md and HANDOFF.

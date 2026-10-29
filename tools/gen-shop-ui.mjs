@@ -1,5 +1,6 @@
-// gen-shop-ui.mjs — the shop's tab icons and card plates (the shop overhaul,
-// docs/SHOP.md), generated with Google's Gemini image model.
+// gen-shop-ui.mjs — the shop's tab icons (the shop overhaul, docs/SHOP.md),
+// generated with Google's Gemini image model. The card plates and (i) buttons
+// are painted by hand: icons/UI/cards/src/, fitted by tools/cut-card-art.py.
 //
 //   GEMINI_API_KEY=… node tools/gen-shop-ui.mjs <out-dir> [name…]
 //
@@ -22,7 +23,6 @@ mkdirSync(OUT, { recursive: true });
 
 const COFFEE = `${ROOT}icons/Pixelart/NEW/ITEMS/coffee-machine.webp`;
 const ICON = (what) => `Stylised 3D game item icon in the style of Clash of Clans and of the reference image: ${what}, chunky rounded form, glossy specular highlights, thick dark outline. One single object, centred, filling about 80% of the frame, no text, no letters. Flat solid green background #00FF00, no shadows, no gradient.`;
-const PLATE = (what) => `A square mobile game shop card inset texture, seen straight on, filling the whole frame edge to edge, no border, no object, no text: ${what}. Smooth, slightly glossy, with a soft light burst behind the centre where an item will sit, like the item wells of the Clash of Clans league shop.`;
 
 const JOBS = {
   'tab-fuel': { refs: [COFFEE], prompt: ICON('an energy gel sachet in electric blue and white with a small lightning bolt') },
@@ -30,8 +30,6 @@ const JOBS = {
   'tab-gear': { refs: [COFFEE], prompt: ICON('a pair of carbon-fiber clip-on aerobars and an aero helmet, glossy metallic finish') },
   'tab-base': { refs: [COFFEE], prompt: ICON('a small isometric training building with a navy roof and a gold flag on top') },
   'tab-stall': { refs: [COFFEE], prompt: ICON('a small market stall with a navy and gold striped awning and a wooden counter') },
-  'card-plate-blue': { refs: [], prompt: PLATE('a radial gradient from vivid royal blue #0C4CAE in the centre to deep navy #16264D at the edges, with soft sky blue #6EA8FF highlights in the corners') },
-  'card-plate-grey': { refs: [], prompt: PLATE('the same plate desaturated: a radial gradient from slate grey #6B7280 in the centre to dark charcoal #2B2F3B at the edges, with soft pale grey highlights in the corners') },
 };
 
 const pngB64 = async (path) => (await sharp(readFileSync(path)).png().toBuffer()).toString('base64');

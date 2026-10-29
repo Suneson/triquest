@@ -33,7 +33,7 @@ import { collectionsFor, blueprintState, COLLECTION_RULES } from '../core/collec
 import { gelChip, pctBp } from './gel-chip.js';
 import { SWITCH } from './profile-game.js';
 import * as store from './store.js';
-import { shopCard, cardButton, actionButton, walletBar, openShopInfo, priceText } from './shop-ui.js';
+import { shopCard, cardButton, actionButton, tapButton, denyTap, walletBar, openShopInfo, priceText } from './shop-ui.js';
 import { cardState } from '../core/shop-cards.js';
 
 const CUR_ICON = { coins: 'icons/Pixelart/GEAR/coin.png', carbs: 'icons/Pixelart/GEAR/carbs.png' };
@@ -197,24 +197,22 @@ function sportTabs(sport) {
 function fuelShopCard(f, w, fresh) {
   const st = cardState({ cost: f.cost, balance: w.carbs, held: w.held[f.id] || 0, max: f.maxHeld });
   return shopCard({
-    id: f.id, kind: 'fuel', title: f.name, art: f.art, st, fresh,
+    id: f.id, kind: 'fuel', title: f.name, art: f.art, st, fresh, plate: 'green',
     button: cardButton(f, 'carbs', st, { label: t('gear.buyFuelAria', { name: f.name, cost: f.cost }) }),
   });
 }
 
-/** The Use button for fuel you hold: mint when it can go on, else grey with the reason under it. */
+/** Use, for fuel you hold; when it can't go on yet, the tray says why in a word or two. */
 function useButton(f, s, w) {
   const can = canUseFuel(f.id, s.boosts, w.held[f.id] || 0, Date.now());
-  if (can.ok) return actionButton(t('gear.use'), `data-gear-use="${f.id}" aria-label="${esc(t('shop.useAria', { name: f.name }))}"`, { icon: 'bolt', variant: 'mint' });
-  const why = t(`gear.fuelWhy.${can.reason}`);
-  return `<button class="sc-buy is-locked" disabled aria-label="${esc(`${f.name} · ${why}`)}">${svg('bolt')}<span>${t('gear.use')}</span></button>
-    <small class="sc-need" aria-hidden="true">${esc(why)}</small>`;
+  if (can.ok) return actionButton(t('gear.use'), `data-gear-use="${f.id}"`, { icon: 'bolt', aria: t('shop.useAria', { name: f.name }) });
+  return { kind: 'wait', tone: 'muted', tray: `${svg('bolt')}<b>${t(`shop.useWhy.${can.reason}`)}</b>`, label: t(`gear.fuelWhy.${can.reason}`) };
 }
 
 /** Fuel you hold, on the inventory's grid: how many, and Use. */
 function fuelInvCard(f, s, w) {
   const st = cardState({ cost: f.cost, balance: w.carbs, held: w.held[f.id] || 0, max: f.maxHeld });
-  return shopCard({ id: f.id, kind: 'fuel', mode: 'use', title: f.name, art: f.art, st, plate: 'blue', button: useButton(f, s, w) });
+  return shopCard({ id: f.id, kind: 'fuel', mode: 'use', title: f.name, art: f.art, st, plate: 'green', button: useButton(f, s, w) });
 }
 
 /**
@@ -231,7 +229,7 @@ function fuelInfo(f, s, w, redraw, mode = 'buy') {
     [t('shop.fact.price'), `<b class="data-num">${priceText(f.cost, 'carbs')}</b>`],
   ];
   return openShopInfo({
-    title: f.name, art: f.art, rows, lore: t(`gear.fuel.${f.id}.blurb`), note: esc(t('shop.fuelNote')),
+    title: f.name, art: f.art, rows, lore: t(`gear.fuel.${f.id}.blurb`), note: esc(t('shop.fuelNote')), plate: 'green',
     button: mode === 'use' ? useButton(f, s, w) : cardButton(f, 'carbs', st, { label: t('gear.buyFuelAria', { name: f.name, cost: f.cost }) }),
     onClick: async (e, layer) => { if (await handleCommon(e, () => {})) { closeLayer(layer); redraw(); } },
   });
@@ -443,7 +441,7 @@ function kitShopCard(k, owned, worn, w) {
   const button = owned
     ? wearButton(k.id, worn)
     : cardButton(k, 'coins', st, { label: t('gear.buyKitAria', { name: k.name, cost: k.cost }) });
-  return shopCard({ id: k.id, kind: 'kit', title: k.name, art: kitArt(k.id), st, plate: 'blue', button });
+  return shopCard({ id: k.id, kind: 'kit', title: k.name, art: kitArt(k.id), st, button });
 }
 function kitInfo(k, owned, worn, w, redraw) {
   const st = cardState({ cost: k.cost, balance: w.coins, owned });
@@ -462,7 +460,7 @@ function featShopCard(it, won, worn) {
     ? wearButton(it.id, worn)
     : won ? cardButton(it, 'coins', st, { owned: t('feat.ui.itemOwned') })
       : actionButton(t('shop.locked'), '', { icon: 'lock', variant: 'locked', disabled: true });
-  return shopCard({ id: it.id, kind: 'feat', title: it.name, art: it.art, st, plate: won ? 'blue' : 'grey', button, badge: won ? won.season : '' });
+  return shopCard({ id: it.id, kind: 'feat', title: it.name, art: it.art, st, button, badge: won ? won.season : '' });
 }
 function featInfo(it, won, worn, redraw) {
   const feats = it.feats.map(featById).filter(Boolean);
@@ -482,7 +480,7 @@ function seasonKitShopCard(k, owned, worn) {
   const button = owned
     ? wearButton(k.id, worn)
     : actionButton(t('shop.locked'), '', { icon: 'lock', variant: 'locked', disabled: true });
-  return shopCard({ id: k.id, kind: 'skit', title: name, art: kitArt(k.id), st, plate: owned ? 'blue' : 'grey', button });
+  return shopCard({ id: k.id, kind: 'skit', title: name, art: kitArt(k.id), st, button });
 }
 function seasonKitInfo(k, owned, worn, redraw) {
   const nowTheme = seasonInfo(todayISO()).theme.id;
@@ -500,7 +498,7 @@ function stallShopCard(it, s, w) {
   const owned = s.inventory.some((r) => r.item_id === it.id);
   const st = cardState({ cost: it.cost, balance: w.coins, owned });
   return shopCard({
-    id: it.id, kind: 'stall', title: t(`cp.item.${it.id}`), art: it.art, st, wide: true,
+    id: it.id, kind: 'stall', title: t(`cp.item.${it.id}`), art: it.art, st,
     counter: { label: t('shop.size'), text: `${it.w}×${it.h}` },
     button: cardButton(it, 'coins', st, { buyAttr: 'data-stall-buy', owned: t('stall.owned', { room: t(`cp.room.${it.home}`) }), label: t('stall.buyAria', { name: t(`cp.item.${it.id}`), cost: it.cost }) }),
   });
@@ -531,7 +529,7 @@ function stallCards(s, w) {
   if (!it) return `<p class="gw-note">${t('stall.soon')}</p>`;
   const ahead = stallAhead(day, 3);
   return `<div class="sc-strip"><span>${svg('clock')} ${t('stall.turns', { time: `<b data-st-left="${now + msToNextStall(now)}">${clockLeft(msToNextStall(now))}</b>` })}</span></div>
-    <div class="sc-grid">${stallShopCard(it, s, w)}</div>
+    <div class="sc-grid is-solo">${stallShopCard(it, s, w)}</div>
     <h3 class="sc-row-h">${t('stall.next')}</h3>
     <ul class="sc-ahead">${ahead.map((a) => `<li><img src="${esc(a.item.art)}" width="96" height="96" alt="">
       <span><small>${esc(fmtDate(a.day, { weekday: 'short' }))}</small><b>${esc(t(`cp.item.${a.item.id}`))}</b></span>
@@ -655,6 +653,7 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
   off = onGear(() => { if (root.isConnected) draw(); });
   root.addEventListener('keydown', (e) => tabKeys(e, root));
   root.onclick = async (e) => {
+    if (denyTap(e)) return;
     const tb = e.target.closest('[data-gear-tab]');
     if (tb) { view = tb.dataset.gearTab; draw(); root.querySelector(`[data-gear-tab="${view}"]`)?.focus({ preventScroll: true }); return; }
     const info = e.target.closest('[data-shop-info]');
@@ -716,9 +715,9 @@ function gearInvCard(sport, slot, tier) {
   const e = gearById(tierId(sport, slot, tier));
   const st = cardState({ cost: 0, balance: 0, owned: true });
   return shopCard({
-    id: `${sport}:${slot}`, kind: 'gear', title: e.slotName, art: e.art, st, plate: 'blue',
+    id: `${sport}:${slot}`, kind: 'gear', title: e.slotName, art: e.art, st,
     counter: tierCounter(tier), badge: `T${tier}`,
-    button: cardButton(e, 'coins', st, { owned: t('loop.ws.fitted') }),
+    button: { kind: 'wait', tone: 'action', tray: `${svg('check')}<b>${t('loop.ws.fitted')}</b>`, label: t('loop.ws.fitted') },
   });
 }
 
@@ -735,7 +734,7 @@ export function openInventory({ tab = 'fuel' } = {}) {
     if (!gearEnabled()) { shell(root, { title: t('gear.inventory'), icon: 'backpack', id: 'inv-title', body: signInBody(), workouts }); return; }
     const s = gearState();
     const w = walletNow(workouts);
-    const empty = (txt, to) => `<div class="sc-empty"><p>${txt}</p>${actionButton(t('gear.toShop'), `data-inv-shop="${to}"`, { icon: 'stall', variant: 'gold' })}</div>`;
+    const empty = (txt, to) => `<div class="sc-empty"><p>${txt}</p>${tapButton(actionButton(t('gear.toShop'), `data-inv-shop="${to}"`, { icon: 'stall', variant: 'gold' }))}</div>`;
     const tabs = `<div class="gw-tabs sh-tabs is-three" role="tablist" aria-label="${t('gear.inventory')}">${INV_TABS.map((v) =>
       `<button class="gw-tab sh-tab${v === view ? ' active' : ''}" role="tab" id="inv-tab-${v}" aria-selected="${v === view}" aria-controls="inv-panel" data-inv-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
         <img src="${TAB_ART(v)}" width="128" height="128" alt="" draggable="false"><span>${t(`gear.tab.${v}`)}</span></button>`).join('')}</div>`;
@@ -774,6 +773,7 @@ export function openInventory({ tab = 'fuel' } = {}) {
   };
   off = onGear(() => { if (root.isConnected) draw(); });
   root.onclick = async (e) => {
+    if (denyTap(e)) return;
     const tb = e.target.closest('[data-inv-tab]');
     if (tb) { view = tb.dataset.invTab; draw(); root.querySelector(`[data-inv-tab="${view}"]`)?.focus({ preventScroll: true }); return; }
     const go = e.target.closest('[data-inv-shop]');

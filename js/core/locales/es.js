@@ -2951,10 +2951,16 @@ es.shop = {
   "locked": "BLOQUEADO",
   "size": "Tamaño",
   "max": "ALMACÉN LLENO",
+  "maxShort": "MÁX",
   "owned": "Tuyo",
   "building": "En el taller",
-  "needCarbs": "faltan {n} g",
-  "needCoins": "faltan {n}",
+  "shortCarbs": "Aún no tienes carbohidratos suficientes",
+  "shortCoins": "Aún no tienes monedas suficientes",
+  "useWhy": {
+    "active": "Ya activo",
+    "limit": "Límite semanal",
+    "none": "No quedan"
+  },
   "infoAria": "Sobre {name}",
   "useAria": "Usar {name} ahora",
   "storage": "Almacén",

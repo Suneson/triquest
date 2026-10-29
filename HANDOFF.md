@@ -218,7 +218,8 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - **Shop and inventory:** `js/app/gear-view.js`.
   - Each kind has a `*ShopCard` and an `*Info` pair. `cardInfo()` dispatches the `(i)` for both screens by `data-kind`, and `data-mode="use"` makes a fuel sheet use rather than sell.
   - `openInventory({ tab })` opens on `fuel`, `clothes` or `gear`.
-- **Art:** `tools/gen-shop-ui.mjs` (Gemini, key from `GEMINI_API_KEY` only) and `tools/cut-shop-ui.py` make `icons/UI/tabs/tab-*.webp` and `icons/UI/cards/card-plate-{blue,grey}.webp`.
+- **Art:** `tools/gen-shop-ui.mjs` (Gemini, key from `GEMINI_API_KEY` only) and `tools/cut-shop-ui.py` make `icons/UI/tabs/tab-*.webp`. The card plates and `(i)` buttons are painted art in `icons/UI/cards/src/`; `python3 tools/cut-card-art.py` keys out the green (only the screen touching the border: the green plate is seafoam) and writes `card-plate-{blue,green}.webp` and `info-{blue,green}.webp`.
+- **Cards are buttons:** a transparent `.sc-hit` covers each card and carries the data attribute the click handler reads (`data-gear-buy`, `data-gear-wear`, `data-gear-use`, `data-bp-*`, `data-stall-buy`); the `(i)` sits above it. A card's state is a *tap* (`go`, `deny`, `off`, `wait`) from `cardButton()`/`actionButton()`.
 - **Gotcha:** don't put a `url()` in a CSS custom property set inline; it resolves against the stylesheet and 404s. The plates are classes in `shop.css`.
 
 ## ⚠️ Gotchas

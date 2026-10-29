@@ -50,36 +50,68 @@
 /* ---- the card grid: two to a row --------------------------------------------------------- */
 .sc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 0 16px; }
 .gw-screen.is-shop :is(#shop-panel, #inv-panel) > .sc-grid { margin: 0 12px; }
-.sc-card { position: relative; display: grid; grid-template-rows: auto 1fr auto; min-width: 0; border-radius: 14px; overflow: hidden;
-  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 3px 0 rgba(0, 0, 0, .4); }
-.sc-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 8px 8px 6px 10px; }
-.sc-head h3 { margin: 0; font-size: 15px; line-height: 1.1; color: var(--ink-green); text-shadow: none; text-transform: none;
-  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.sc-info { position: relative; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 9px; cursor: pointer;
-  background: linear-gradient(#2F6FD6, var(--brand-blue)); color: var(--text-white); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .3), 0 2px 0 var(--surface-navy); }
-.sc-info .ic { width: 16px; height: 16px; }
-.sc-info::after { content: ""; position: absolute; inset: -8px; } /* a 44px target */
-.sc-info:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
-/* the well: the item on its lit plate */
-.sc-well { position: relative; margin: 0 8px; aspect-ratio: 1 / .86; border-radius: 10px; overflow: hidden;
-  background: var(--surface-navy) url('../icons/UI/cards/card-plate-blue.webp') center / cover no-repeat;
-  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35), inset 0 3px 8px rgba(0, 0, 0, .35); }
-.sc-card.is-grey .sc-well { background-image: url('../icons/UI/cards/card-plate-grey.webp'); }
-.sc-art { position: absolute; left: 50%; top: 46%; width: 70%; height: 70%; object-fit: contain; transform: translate(-50%, -50%);
-  filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .45)); }
-.sc-badge { position: absolute; left: 6px; top: 6px; padding: 2px 7px; border-radius: 8px; background: rgba(10, 39, 21, .8); color: var(--mint-light);
+.sc-grid.is-solo { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.sc-grid.is-solo > .sc-card { width: calc(50% - 6px); }
+
+/*
+ * The card: one painted plate (icons/UI/cards/card-plate-*.webp, tools/cut-card-art.py)
+ * with the price tray in it. A transparent button covers the whole card, so a
+ * touch anywhere but the (i) does what the tray says. The tray sits where the
+ * plate paints it: 76.8%–91.7% down, 6.4%–6.9% in.
+ */
+.sc-card { --tx: #F2F5FC; --ink: #0A2E6E; position: relative; min-width: 0; aspect-ratio: 360 / 521; border-radius: 7% / 5%;
+  background: url('../icons/UI/cards/card-plate-blue.webp') 0 0 / 100% 100% no-repeat; user-select: none; -webkit-user-select: none;
+  transition: transform 100ms ease, filter 150ms ease; -webkit-tap-highlight-color: transparent; }
+.sc-card.is-green { --ink: #0E3B26; background-image: url('../icons/UI/cards/card-plate-green.webp'); }
+.sc-card.is-go:active:not(:has(.sc-info:active)) { transform: scale(.97); }
+/* full, owned or locked: the whole card goes grey, like a spent league-shop card */
+.sc-card.is-disabled { filter: grayscale(1) contrast(.9) brightness(.9); pointer-events: none; }
+.sc-card.is-disabled .sc-info { pointer-events: auto; }
+.sc-hit { position: absolute; inset: 0; z-index: 2; margin: 0; padding: 0; border: 0; border-radius: inherit; background: none; cursor: pointer; }
+.sc-hit[disabled], .sc-hit[aria-disabled="true"] { cursor: default; }
+.sc-hit:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
+.sc-card.is-shake { animation: sc-shake 320ms steps(6, end); }
+@keyframes sc-shake { 0%, 100% { translate: 0; } 20%, 60% { translate: -4px 0; } 40%, 80% { translate: 4px 0; } }
+/* name, top left; the (i), top right, above the hit area */
+.sc-head { position: absolute; left: 8%; right: 29%; top: 5.5%; pointer-events: none; }
+.sc-head h3 { margin: 0; font: clamp(11.5px, 3.7vw, 14px)/1.08 var(--font-header); font-variation-settings: 'wght' 860; text-transform: uppercase; letter-spacing: .01em;
+  color: var(--tx); text-shadow: -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 2px 0 var(--ink), 0 3px 4px rgba(0, 0, 0, .35);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: break-word; hyphens: auto; }
+.sc-info { position: absolute; z-index: 3; right: 5%; top: 3.6%; width: 21%; aspect-ratio: 1; padding: 0; border: 0; background: none; cursor: pointer;
+  transition: transform 50ms ease; }
+.sc-info img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); }
+.sc-info::after { content: ""; position: absolute; inset: -7px; } /* a 44px target */
+.sc-info:active { transform: translateY(2px); }
+.sc-info:focus-visible { outline: 3px solid var(--text-white); outline-offset: 1px; border-radius: 22%; }
+/* the picture, on the plate's light burst */
+.sc-well { position: absolute; left: 6%; right: 6%; top: 18%; bottom: 24.5%; pointer-events: none; }
+.sc-art { position: absolute; left: 50%; top: 50%; width: 82%; height: 82%; object-fit: contain; transform: translate(-50%, -50%);
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .45)); }
+.sc-badge { position: absolute; left: 3%; top: 0; padding: 2px 7px; border-radius: 8px; background: rgba(10, 30, 60, .55); color: var(--tx);
   font: 12px/1.3 var(--font-header); font-style: normal; }
-.sc-store { position: absolute; right: 8px; bottom: 6px; display: grid; justify-items: end; line-height: 1; color: var(--text-white);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, .8), 0 0 3px rgba(0, 0, 0, .6); }
-.sc-store small { font-size: 11px; }
-.sc-store b { font: 18px/1.1 var(--font-header); font-variation-settings: 'wght' 860; }
-.sc-store b.is-full { color: #FF8A80; }
-.sc-card.is-grey .sc-art { filter: grayscale(1) brightness(.85) drop-shadow(0 6px 4px rgba(0, 0, 0, .45)); }
+.sc-card.is-green .sc-badge { background: rgba(10, 46, 30, .55); }
+.sc-store { position: absolute; right: 3%; bottom: 0; display: grid; justify-items: end; line-height: 1; color: var(--tx);
+  text-shadow: -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 2px 0 var(--ink); }
+.sc-store small { font: 11px/1.1 var(--font-header); font-variation-settings: 'wght' 860; }
+.sc-store b { font: 19px/1.05 var(--font-header); font-variation-settings: 'wght' 860; }
+.sc-store b.is-full { color: #FFD7D3; }
 .sc-card.is-fresh .sc-art { animation: sc-pop 420ms cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes sc-pop { 0% { transform: translate(-50%, -50%) scale(.8); } 60% { transform: translate(-50%, -50%) scale(1.12); } 100% { transform: translate(-50%, -50%) scale(1); } }
+/* the tray: price and currency, or what the card does */
+.sc-tray { position: absolute; left: 6.4%; right: 6.9%; top: 76.8%; height: 14.9%; display: flex; align-items: center; justify-content: center; gap: 6px;
+  pointer-events: none; color: var(--tx); font: 20px/1 var(--font-header); font-variation-settings: 'wght' 860; letter-spacing: .02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, .6); white-space: nowrap; overflow: hidden; }
+.sc-tray b { font-weight: inherit; overflow: hidden; text-overflow: ellipsis; }
+.sc-tray.is-price b { color: #F2F5FC; }
+.sc-tray.is-short b { color: #D9443B; text-shadow: 0 1px 0 rgba(0, 0, 0, .7), 0 2px 4px rgba(0, 0, 0, .5); }
+.sc-tray:is(.is-action, .is-gold, .is-muted) { font-size: 15px; text-transform: uppercase; }
+.sc-tray.is-gold b, .sc-tray.is-gold .ic { color: var(--gold-primary); }
+.sc-tray.is-muted { color: rgba(242, 245, 252, .72); }
+.sc-tray .ic { width: 16px; height: 16px; flex: none; }
+.sc-tray .sc-cur { width: 24px; height: 24px; object-fit: contain; flex: none; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .4)); }
+.sc-tray .data-num { font-variant-numeric: tabular-nums; }
 
 /* ---- the price button: chunky gold; red price when it's out of reach; grey when full -------- */
-.sc-foot { display: grid; justify-items: stretch; gap: 2px; padding: 8px; }
 .sc-buy { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 4px 10px; border: 0; border-radius: 11px;
   background: linear-gradient(#FFE08A, var(--gold-primary) 55%, #D9A53A); color: var(--ink-green); cursor: pointer; font-size: 18px;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .65), 0 4px 0 var(--gold-shadow), 0 5px 0 rgba(0, 0, 0, .3); transition: transform 80ms ease; }
@@ -87,10 +119,9 @@
 .sc-buy .sc-cur { width: 26px; height: 26px; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4)); }
 .sc-buy:active:not([disabled]) { transform: translateY(3px); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .65), 0 1px 0 var(--gold-shadow); }
 .sc-buy:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
-.sc-buy.is-short { cursor: not-allowed; background: linear-gradient(#5C6B5F, #48564B); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), 0 4px 0 #2B352D; }
+.sc-buy.is-short { cursor: default; background: linear-gradient(#5C6B5F, #48564B); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), 0 4px 0 #2B352D; }
 .sc-buy.is-short .sc-price { color: #FF8A80; -webkit-text-stroke-color: #2a0d0b; text-shadow: 0 2px 0 #2a0d0b; }
 .sc-buy.is-short .sc-cur { filter: grayscale(.5) brightness(.8); }
-.sc-need { text-align: center; font-size: 11px; color: #8C2F27; font-variation-settings: 'wght' 700; }
 .sc-buy.is-max { cursor: not-allowed; background: linear-gradient(#9AA2AE, #6E7682); color: var(--text-white); font-size: 13px; letter-spacing: .02em;
   -webkit-text-stroke: 2px #2B2F3B; paint-order: stroke fill; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .35), 0 4px 0 #474D57; }
 .sc-buy.is-done { cursor: default; background: rgba(10, 39, 21, .1); color: var(--ink-green); font-size: 14px; box-shadow: inset 0 0 0 2px rgba(10, 39, 21, .2); }
@@ -119,8 +150,9 @@
 .sc-info-sheet .sc-buy { font-family: var(--font-header); font-variation-settings: 'wght' 860; }
 .sc-info-sheet .modal-body { display: grid; gap: 14px; }
 .sc-info-well { justify-self: center; width: min(200px, 60vw); aspect-ratio: 1; border-radius: 16px;
-  background: var(--surface-navy) url('../icons/UI/cards/card-plate-blue.webp') center / cover no-repeat;
-  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35); display: grid; place-items: center; }
+  background: radial-gradient(circle at 50% 46%, #A6D5FF 0, #7DB4FF 30%, #6AA4FB 62%, #5B93EE 100%);
+  box-shadow: inset 0 0 0 3px #1B2A55, inset 0 5px 0 rgba(255, 255, 255, .3); display: grid; place-items: center; }
+.sc-info-well.is-green { background: radial-gradient(circle at 50% 46%, #9ED8C0 0, #63B58F 32%, #3FA676 62%, #368F66 100%); box-shadow: inset 0 0 0 3px #0E2A1C, inset 0 5px 0 rgba(255, 255, 255, .25); }
 .sc-info-well img { width: 72%; height: 72%; object-fit: contain; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, .45)); }
 .sc-facts { display: grid; gap: 6px; margin: 0; }
 .sc-facts div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--bg-3); }
@@ -130,25 +162,21 @@
 .sc-note { margin: 0; color: var(--muted); font-size: var(--fs-small); }
 .sc-info-foot { display: grid; justify-items: stretch; }
 
-@media (prefers-reduced-motion: reduce) { .sc-card.is-fresh .sc-art { animation: none; } .sc-buy, .sh-tab.gw-tab { transition: none; } }
-body.rm .sc-card.is-fresh .sc-art { animation: none; }
+@media (prefers-reduced-motion: reduce) { .sc-card.is-fresh .sc-art, .sc-card.is-shake { animation: none; } .sc-buy, .sh-tab.gw-tab, .sc-card, .sc-info { transition: none; } .sc-card.is-go:active { transform: none; } }
+body.rm .sc-card.is-fresh .sc-art, body.rm .sc-card.is-shake { animation: none; }
+body.rm .sc-card.is-go:active { transform: none; }
 
 /* ---- phases 3–4: gear, base, kit and the stall ---------------------------------------------- */
 /* painted art is smooth; pixel props keep their pixels */
 .sc-art, .sc-info-well img, .sc-ahead img, .sh-tab img, .sc-cur, .sc-wallet img { image-rendering: auto; }
 .sc-card.is-pixel .sc-art { image-rendering: pixelated; width: 64%; height: 64%; }
-/* the day's stall item: one wide card across the grid */
-.sc-card.is-wide { grid-column: 1 / -1; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; }
-.sc-card.is-wide .sc-head { grid-column: 1 / -1; }
-.sc-card.is-wide .sc-well { margin: 0 0 8px 8px; aspect-ratio: 1; }
-.sc-card.is-wide .sc-foot { align-content: end; padding: 0 8px 8px; }
 /* more button kinds: mint (Wear, Aim), gold label (Build, Wearing), locked */
 .sc-buy span, .sc-buy .ic { position: relative; }
 .sc-buy .ic { width: 18px; height: 18px; }
-.sc-buy.is-mint { background: linear-gradient(#5CD39B, var(--mint-active) 60%, #2C8A5C); color: var(--text-white); font-size: 16px;
+.sc-buy:is(.is-mint, .is-action) { background: linear-gradient(#5CD39B, var(--mint-active) 60%, #2C8A5C); color: var(--text-white); font-size: 16px;
   box-shadow: inset 0 2px 0 var(--mint-light), 0 4px 0 #1E6B44, 0 5px 0 rgba(0, 0, 0, .3); -webkit-text-stroke: 2px #124a2e; paint-order: stroke fill; }
 .sc-buy.is-gold { font-size: 16px; color: var(--text-white); -webkit-text-stroke: 2px #3a2600; paint-order: stroke fill; }
-.sc-buy.is-mint[disabled], .sc-buy.is-gold[disabled] { opacity: .85; cursor: default; }
+.sc-buy:is(.is-mint, .is-action)[disabled], .sc-buy.is-gold[disabled] { opacity: .85; cursor: default; }
 .sc-buy.is-locked { cursor: not-allowed; background: linear-gradient(#9AA2AE, #6E7682); color: var(--text-white); font-size: 14px;
   -webkit-text-stroke: 2px #2B2F3B; paint-order: stroke fill; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .35), 0 4px 0 #474D57; }
 .sc-buy.is-ws { font-size: 15px; }
@@ -228,10 +256,16 @@ body.rm .sc-card.is-fresh .sc-art { animation: none; }
   background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); box-shadow: 0 4px 0 var(--surface-neutral-lo); color: var(--ink-green); }
 .sc-empty p { margin: 0; font: 16px/1.3 var(--font-reading); font-variation-settings: 'wght' 600; }
 .sc-empty .sc-buy { width: auto; padding-inline: 20px; }
-.sc-buy.is-locked + .sc-need { color: var(--mint-light); }
-.sc-card .sc-buy.is-locked + .sc-need { color: var(--ink-green); opacity: .75; }
 
 /* ---- phase 6: focus you can see on beige and on green ---- */
-.sc-card .sc-buy:focus-visible, .sc-empty .sc-buy:focus-visible, .gw-screen.is-shop .ws-card .btn:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+.sc-empty .sc-buy:focus-visible, .gw-screen.is-shop .ws-card .btn:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
 .gw-screen.is-shop .pg-sport:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
 body.rm .sc-buy, body.rm .sh-tab.gw-tab { transition: none; }
+
+/* the (i) sheet's price button wears its card's tray */
+.sc-info-sheet .sc-buy:is(.is-price, .is-short) { min-height: 52px; border-radius: 12px; font-size: 22px; color: #F2F5FC;
+  background: linear-gradient(#1A56A8, #134A97); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), inset 0 0 0 2px #0B2E6A, 0 4px 0 #0B2246; }
+.sc-info-sheet.is-green .sc-buy:is(.is-price, .is-short) { background: linear-gradient(#173A27, #12301F); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .12), inset 0 0 0 2px #0A2014, 0 4px 0 #061409; }
+.sc-info-sheet .sc-buy .sc-price { -webkit-text-stroke: 0; text-shadow: 0 2px 4px rgba(0, 0, 0, .6); }
+.sc-info-sheet .sc-buy.is-short .sc-price { color: #D9443B; }
+.sc-info-sheet .sc-buy.is-max { min-height: 52px; filter: grayscale(1); }

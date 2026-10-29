@@ -3,7 +3,8 @@
     python3 tools/cut-shop-ui.py <gen dir>
 
   tab-*.png        -> icons/UI/tabs/<name>.webp    green keyed out, trimmed, 128 px square
-  card-plate-*.png -> icons/UI/cards/<name>.webp   as it is, 256 px square
+
+(The card plates and (i) buttons are painted art: tools/cut-card-art.py.)
 
 Build-time only (Pillow, numpy, scipy; the key is cut-art.py's).
 """
@@ -20,8 +21,7 @@ UI = os.path.join(os.path.dirname(HERE), 'icons', 'UI')
 
 def main():
     src = sys.argv[1]
-    for d in ('tabs', 'cards'):
-        os.makedirs(os.path.join(UI, d), exist_ok=True)
+    os.makedirs(os.path.join(UI, 'tabs'), exist_ok=True)
     for f in sorted(os.listdir(src)):
         name, ext = os.path.splitext(f)
         if ext != '.png':
@@ -38,9 +38,6 @@ def main():
             sq.paste(im, ((s - im.width) // 2, (s - im.height) // 2), im)
             out = os.path.join(UI, 'tabs', name + '.webp')
             sq.resize((128, 128), Image.LANCZOS).save(out, 'WEBP', quality=90, method=6)
-        elif name.startswith('card-plate-'):
-            out = os.path.join(UI, 'cards', name + '.webp')
-            Image.open(path).convert('RGB').resize((256, 256), Image.LANCZOS).save(out, 'WEBP', quality=86, method=6)
         else:
             continue
         print(out, os.path.getsize(out))

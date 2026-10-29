@@ -2951,10 +2951,16 @@ en.shop = {
   "locked": "LOCKED",
   "size": "Size",
   "max": "MAX CAPACITY",
+  "maxShort": "MAX",
   "owned": "Owned",
   "building": "In the workshop",
-  "needCarbs": "{n} g short",
-  "needCoins": "{n} short",
+  "shortCarbs": "Not enough carbs yet",
+  "shortCoins": "Not enough coins yet",
+  "useWhy": {
+    "active": "Fuel on",
+    "limit": "Week's limit",
+    "none": "None left"
+  },
   "infoAria": "About {name}",
   "useAria": "Use {name} now",
   "storage": "Storage",

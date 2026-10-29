@@ -249,3 +249,9 @@ Accounts+sync, Strava OAuth/webhook/polling/matching + actual-vs-planned, UX pas
 ## The unified compound (2026-10-27)
 
 The Profile tab opens on the compound. docs/COMPOUND.md covers the rooms, layouts, floor grid, items and drag rules. The core is `js/core/placement.js` (pure, `tests/placement.test.js`); the view is `js/app/compound-view.js`; positions are in `user_placements` (0024). Room art is regenerated with `python3 tools/cut-rooms.py <art-raw checkout>`.
+
+## Reward bags (Oct 2026)
+- `openRewardBag(rarity, { variant, onClose })` in `js/app/reward-bag.js` opens the bag modal; `preloadRewardBag(rarity)` fetches ahead. Rarities, clip paths and lengths live in `js/core/reward-bags.js` (tested in `tests/reward-bags.test.js`): common (2 clips), uncommon, rare (2 clips), legendary, mythic.
+- Nothing awards a bag yet — the modal is ready for whatever does. With `?demo=1`: `moskeDemo.bag('mythic')`, `moskeDemo.bag('rare', 1)`.
+- Assets in `assets/rewards/<slug>.{webm,webp,mp3}` plus `<slug>-still.webp` (last frame, shown under reduced motion). Chrome/Edge/Firefox/Android play the VP9-alpha WebM; Safari and every iOS browser get the animated WebP (Safari draws VP9 alpha black). The WebP plays once and is shown through a fresh blob URL per opening so it restarts. Sound follows Settings → Sound.
+- Rebuild from the ProRes 4444 masters: `tools/convert-rewards.sh <raw_dir> assets/rewards` (512×512, 30 fps, WebP q80, VP9 CRF 32 two-pass, yuva420p). Masters are not in the repo.

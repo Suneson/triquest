@@ -42,6 +42,7 @@ import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName, openRoute, leaveRoute } from './nav.js';
 import { haptic } from './haptics.js';
+import { openRewardBag } from './reward-bag.js';
 import { enablePull } from './pull.js';
 import { morph } from './vt.js';
 import { stampRecord, firstStamp } from './stamp.js';
@@ -1060,7 +1061,10 @@ function maybeOnboard() {
 
 async function boot() {
   // ?demo=1 only: a hook so screenshots and clips can show moments on demand
-  if (new URLSearchParams(location.search).has('demo')) window.moskeDemo = { levelUp: (sport = 'run', level = 3) => openLevelUp(sport, level) };
+  if (new URLSearchParams(location.search).has('demo')) window.moskeDemo = {
+    levelUp: (sport = 'run', level = 3) => openLevelUp(sport, level),
+    bag: (rarity = 'legendary', variant = null) => openRewardBag(rarity, { variant }),
+  };
   await store.init();
   syncLang(store.getSettings());
   applyStatic();

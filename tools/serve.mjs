@@ -18,6 +18,8 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.webp': 'image/webp',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
   '.gif': 'image/gif',
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',

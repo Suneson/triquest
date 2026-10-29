@@ -2719,3 +2719,21 @@ body.rm .dg-item.spring, body.rm .dg-world.is-easing { transition: none; }
 .cl-leave { width: 100%; margin-top: 18px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .cl-route-on { transition: none; } }
 body.rm .cl-route-on { transition: none; }
+
+/* ---- reward bag (js/app/reward-bag.js) -------------------------------------------------------------------------------- */
+/* The clip plays on the sheet with its own transparency; the rarity's colour
+   lights the stage from behind and names the bag once it has opened. */
+:root { --rar-common: var(--muted); --rar-uncommon: var(--good); --rar-rare: var(--info); --rar-legendary: var(--accent); --rar-mythic: #C77DFF; }
+.bag { text-align: center; justify-items: center; gap: 12px; }
+.bag-art { position: relative; width: min(100%, 360px); aspect-ratio: 1; display: grid; place-items: center; }
+.bag-art::before { content: ""; position: absolute; inset: 14%; background: radial-gradient(closest-side, color-mix(in srgb, var(--rar) 34%, transparent), transparent);
+  opacity: 0; transition: opacity 400ms steps(4, end); pointer-events: none; }
+.bag-art.is-open::before { opacity: 1; }
+.bag-clip { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; background: transparent; }
+.bag-art[aria-busy="true"]::after { content: ""; position: absolute; width: 16px; height: 16px; background: var(--accent);
+  animation: bag-wait 600ms steps(2, end) infinite; }
+@keyframes bag-wait { 50% { opacity: .25; } }
+.bag-name { margin: 0; min-height: 1.2em; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-d2);
+  color: var(--rar); text-transform: uppercase; line-height: 1.1; text-shadow: 2px 2px 0 var(--shade); }
+.bag-sheet.is-revealed .bag-name { animation: bag-name-in 320ms steps(4, end) both; }
+@keyframes bag-name-in { from { translate: 0 8px; opacity: 0; } }

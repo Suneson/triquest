@@ -2980,4 +2980,18 @@ es.shop = {
   }
 };
 
+es.bag = {
+  "title": "Bolsa de recompensa",
+  "opening": "Abriendo la bolsa…",
+  "found": "¡Bolsa {rarity}!",
+  "alt": "Una bolsa de recompensa {rarity} abriéndose",
+  "rarity": {
+    "common": "común",
+    "uncommon": "poco común",
+    "rare": "rara",
+    "legendary": "legendaria",
+    "mythic": "mítica"
+  }
+};
+
 export default es;

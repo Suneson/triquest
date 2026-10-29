@@ -2980,4 +2980,18 @@ en.shop = {
   }
 };
 
+en.bag = {
+  "title": "Reward bag",
+  "opening": "Opening the bag…",
+  "found": "{rarity} bag!",
+  "alt": "A {rarity} reward bag opening",
+  "rarity": {
+    "common": "Common",
+    "uncommon": "Uncommon",
+    "rare": "Rare",
+    "legendary": "Legendary",
+    "mythic": "Mythic"
+  }
+};
+
 export default en;

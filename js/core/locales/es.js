@@ -2066,11 +2066,9 @@ es.gear = {
   "disciplines": "Disciplinas",
   "disciplineBoost": "Mejora de material",
   "ofCap": "de {cap} máx.",
-  "tierOf": "Nivel {n} de {of}",
   "next": "Siguiente",
   "maxed": "Nivel máximo",
   "noBoost": "Sin mejora aún",
-  "needMore": "Faltan {n} monedas",
   "buyAria": "Comprar {name} por {cost} monedas, {boost} de XP en esta disciplina",
   "kitsNote": "Combinaciones de color para tu atleta. Cambian tu aspecto, no tu XP.",
   "wear": "Ponerla",
@@ -2105,9 +2103,6 @@ es.gear = {
   "res": {
     "aria": "Monedas {coins}, carbohidratos {carbs} g, cada uno guarda hasta {cap}"
   },
-  "needCarbs": "Faltan {n} g de carbohidratos",
-  "fuelEffect": "+{pct}% de XP durante {h} h · {n} por semana",
-  "fuelFull": "Puedes llevar {n}",
   "buyFuelAria": "Comprar {name} por {cost} gramos de carbohidratos",
   "buyKitAria": "Comprar {name} por {cost} monedas",
   "use": "Usar",
@@ -2118,7 +2113,6 @@ es.gear = {
   },
   "fuelOn": "{name}: +{pct}% de XP durante {h} horas",
   "fuelOnNext": "{name}: +{pct}% de XP en tu próximo entrenamiento",
-  "fuelEffectNext": "+{pct}% de XP en tu próximo entrenamiento · {n} por semana",
   "nextWorkout": "Próximo entreno",
   "fuelWaitingAria": "{name} tomado: +{pct}% de XP en tu próximo entrenamiento",
   "fuelActiveAria": "{name} activo: quedan {time}, +{pct}% de XP",
@@ -2343,8 +2337,6 @@ es.feat.ui = {
   "itemHow": "Cómo se gana:",
   "itemWon": "Ganado, con los colores de esa temporada",
   "itemOwned": "Tuyo",
-  "itemLocked": "Se gana, nunca se compra",
-  "itemLockedLogged": "Se gana con pesas registradas"
 };
 es.featItem = {
   "kit-run-sub20": "Equipación sub-20 de carrera",
@@ -2592,8 +2584,6 @@ es.loop = {
     "startsAt": "Empieza a las {time} · puesto {bay}",
     "fittedAt": "Montado a las {time}",
     "rules": "Quitar un trabajo que no ha empezado es gratis. Cancelar a medio montar te lo devuelve todo la primera vez; después, el {pct} %.",
-    "fittingCard": "En el taller:",
-    "queuedCard": "En cola: empieza a las {time}",
     "fitsIn": "Se monta en {time}",
     "h": "{h} h",
     "min": "{m} min",
@@ -2949,6 +2939,44 @@ es.club = {
     "target": "Elige un objetivo entre 1 y 200 horas.",
     "relay_running": "La ruta aún no está terminada.",
     "generic": "Algo ha fallado. Inténtalo de nuevo."
+  }
+};
+
+// ---- la tienda rediseñada (docs/SHOP.md) ----
+es.shop = {
+  "startsAt": "empieza a las {time}",
+  "tier": "Nivel",
+  "points": "Puntos de obra",
+  "fragments": "Fragmentos",
+  "locked": "BLOQUEADO",
+  "size": "Tamaño",
+  "max": "ALMACÉN LLENO",
+  "owned": "Tuyo",
+  "building": "En el taller",
+  "needCarbs": "faltan {n} g",
+  "needCoins": "faltan {n}",
+  "infoAria": "Sobre {name}",
+  "useAria": "Usar {name} ahora",
+  "storage": "Almacén",
+  "coins": "Monedas",
+  "carbs": "Carbohidratos",
+  "walletCoins": "Tienes {n} monedas de {cap}",
+  "walletCarbs": "Tienes {n} g de carbohidratos de {cap}",
+  "fuelNote": "Cómpralo aquí; tómalo desde tu inventario cuando quieras el empujón.",
+  "fact": {
+    "now": "Ahora",
+    "next": "Siguiente",
+    "fit": "Tiempo en el taller",
+    "light": "Luz",
+    "where": "Dónde",
+    "how": "Cómo conseguirlo",
+    "boost": "Empujón",
+    "when": "Funciona en",
+    "nextWorkout": "tu próximo entreno",
+    "forHours": "cada sesión durante {h} h",
+    "limit": "Límite",
+    "perWeek": { "one": "{n} por semana", "other": "{n} por semana" },
+    "price": "Precio"
   }
 };
 

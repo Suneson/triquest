@@ -2066,11 +2066,9 @@ en.gear = {
   "disciplines": "Disciplines",
   "disciplineBoost": "Gear boost",
   "ofCap": "of {cap} max",
-  "tierOf": "Tier {n} of {of}",
   "next": "Next",
   "maxed": "Top tier",
   "noBoost": "No boost yet",
-  "needMore": "{n} more coins",
   "buyAria": "Buy {name} for {cost} coins, {boost} XP in this discipline",
   "kitsNote": "Colourways for your athlete. They change how you look, not your XP.",
   "wear": "Wear",
@@ -2105,9 +2103,6 @@ en.gear = {
   "res": {
     "aria": "Coins {coins}, carbs {carbs} g, each stores up to {cap}"
   },
-  "needCarbs": "{n} g more carbs",
-  "fuelEffect": "+{pct}% XP for {h} h · {n} a week",
-  "fuelFull": "You can hold {n}",
   "buyFuelAria": "Buy {name} for {cost} grams of carbs",
   "buyKitAria": "Buy {name} for {cost} coins",
   "use": "Use",
@@ -2118,7 +2113,6 @@ en.gear = {
   },
   "fuelOn": "{name}: +{pct}% XP for {h} hours",
   "fuelOnNext": "{name}: +{pct}% XP on your next workout",
-  "fuelEffectNext": "+{pct}% XP on your next workout · {n} a week",
   "nextWorkout": "Next workout",
   "fuelWaitingAria": "{name} taken: +{pct}% XP on your next workout",
   "fuelActiveAria": "{name} running: {time} left, +{pct}% XP",
@@ -2343,8 +2337,6 @@ en.feat.ui = {
   "itemHow": "Earn it:",
   "itemWon": "Won, in that season's colours",
   "itemOwned": "Yours",
-  "itemLocked": "Earned, never bought",
-  "itemLockedLogged": "Earned with logged lifts"
 };
 en.featItem = {
   "kit-run-sub20": "Sub-20 run kit",
@@ -2592,8 +2584,6 @@ en.loop = {
     "startsAt": "Starts at {time} · bay {bay}",
     "fittedAt": "Fitted at {time}",
     "rules": "Removing a job that hasn’t started is free. Cancelling mid-fit gives everything back the first time, then {pct}%.",
-    "fittingCard": "In the workshop:",
-    "queuedCard": "Queued: starts at {time}",
     "fitsIn": "Fits in {time}",
     "h": "{h} h",
     "min": "{m} min",
@@ -2949,6 +2939,44 @@ en.club = {
     "target": "Pick a target between 1 and 200 hours.",
     "relay_running": "The route isn’t finished yet.",
     "generic": "Something went wrong. Try again."
+  }
+};
+
+// ---- the redesigned shop (docs/SHOP.md) ----
+en.shop = {
+  "startsAt": "starts {time}",
+  "tier": "Tier",
+  "points": "Build points",
+  "fragments": "Fragments",
+  "locked": "LOCKED",
+  "size": "Size",
+  "max": "MAX CAPACITY",
+  "owned": "Owned",
+  "building": "In the workshop",
+  "needCarbs": "{n} g short",
+  "needCoins": "{n} short",
+  "infoAria": "About {name}",
+  "useAria": "Use {name} now",
+  "storage": "Storage",
+  "coins": "Coins",
+  "carbs": "Carbs",
+  "walletCoins": "You have {n} coins of {cap}",
+  "walletCarbs": "You have {n} g of carbs of {cap}",
+  "fuelNote": "Buy it here; take it from your inventory when you want the boost.",
+  "fact": {
+    "now": "Now",
+    "next": "Next",
+    "fit": "Fitting time",
+    "light": "Light",
+    "where": "Where",
+    "how": "How to get it",
+    "boost": "Boost",
+    "when": "Works on",
+    "nextWorkout": "your next workout",
+    "forHours": "every session for {h} h",
+    "limit": "Limit",
+    "perWeek": { "one": "{n} a week", "other": "{n} a week" },
+    "price": "Price"
   }
 };
 

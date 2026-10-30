@@ -3,14 +3,11 @@
 // opening (the chest's clip and sound, then its rewards one tap at a time), and
 // the admin tools that preview or gift a chest.
 //
-// The opening, in four beats:
-//   1. the chest plays its clip and sound (or, where a browser can't draw a clip
-//      with transparency, its still drops in to the same sound);
-//   2. it rests on its still, lit by its tier's colour: "Tap to open";
-//   3. a tap: coins rise out of it, the total counting up, the chest's bonus beside it;
-//   4. a tap: carbs, the same; then Collect (or the next chest).
-// The server is asked to open the chest at the first beat, so the numbers are
-// ready by the third; a preview asks nothing and pays nothing.
+// The opening (openChestModal() has the beats): three taps break the chest open,
+// its clip and sound play together, and its rewards rise on top of the open
+// chest one tap at a time. The server is asked to open the chest on the first
+// tap, so the numbers are ready by the time they're shown; a preview asks
+// nothing and pays nothing.
 
 import { openLayer, closeLayer } from './nav.js';
 import { esc } from './ui.js';
@@ -33,7 +30,7 @@ const ENABLED = TIERS.filter((x) => CHEST_RULES.enabled[x]);
 /**
  * Can this browser draw a WebM clip with its transparency? Chromium and Firefox
  * can; Safari (every browser on iPhone) plays WebM but ignores the alpha, so it
- * gets the still and the sound instead.
+ * plays the same clip as an animated WebP instead.
  */
 export function alphaVideo() {
   if (typeof document === 'undefined') return false;
@@ -164,29 +161,59 @@ function shower(stage, from, to, src, n = 14) {
   }
 }
 
+/** How long each clip runs, in seconds (the clips are 24 fps). */
+const CLIP_SECONDS = { common: 3.04, uncommon: 4.05, rare: 3.04, epic: 4.05, legendary: 4.04, mythic: 5.04 };
+/** Taps it takes to break a chest open. */
+const TAPS = 3;
+
 /**
  * The chest opening. `chest.preview` plays it without asking the server (the
- * admin preview and the simulated workout); otherwise the server opens it.
+ * admin preview and the simulated workout); otherwise the server opens it on
+ * the first tap.
+ *
+ *   shut    the chest's first frame, rocking gently: "Tap to open" and three pips;
+ *           each tap squashes it a step smaller with a hard wiggle
+ *   play    the third tap: it springs back to full size and the clip and its sound
+ *           start together (the first frame is the still, so nothing jumps)
+ *   ready   the clip holds its last frame, the open chest, lit by the tier's rays
+ *   coins, carbs, done   a tap each, the rewards rising on top of the open chest
+ *
+ * WebM where the browser draws its transparency; Safari (every iPhone browser)
+ * plays the same clip as an animated WebP made from its frames.
  */
 export function openChestModal(chest, { queue = [] } = {}) {
   const art = chestArt(chest.tier);
-  const clip = alphaVideo() && !prefersReducedMotion();
+  const webm = alphaVideo();
+  const calm = prefersReducedMotion();
   const color = TIER_COLOR[chest.tier];
-  let phase = 'play';
-  let audio = null;
-  const root = openLayer('chest', { className: 'cx-layer', instant: true, reuse: false, onClose: () => { audio?.pause(); } });
-  root.innerHTML = `<div class="cx tier-${chest.tier}" role="dialog" aria-modal="true" aria-labelledby="cx-title" style="--tc:${color}">
+  const seconds = CLIP_SECONDS[chest.tier] || 4;
+  let phase = 'shut';
+  let taps = 0;
+  let opened = null;
+  let animUrl = null;
+  const timers = [];
+  // the sound is made ready now, inside the tap that opened this, so the third tap can start it
+  const audio = soundOn() ? Object.assign(new Audio(art.mp3), { preload: 'auto' }) : null;
+  audio?.load();
+  const root = openLayer('chest', {
+    className: 'cx-layer', instant: true, reuse: false,
+    onClose: () => { audio?.pause(); timers.forEach(clearTimeout); if (animUrl) URL.revokeObjectURL(animUrl); },
+  });
+  root.innerHTML = `<div class="cx tier-${chest.tier}${calm ? ' is-calm' : ''}" role="dialog" aria-modal="true" aria-labelledby="cx-title" style="--tc:${color}">
     <div class="cx-bg" aria-hidden="true"><i class="cx-rays"></i><i class="cx-flash"></i></div>
     <header class="cx-head">
       <p class="cx-from">${esc(fromLine(chest))}${chest.preview ? ` · <b>${t('chest.preview')}</b>` : ''}</p>
       <h2 id="cx-title" class="cx-tier"><span>${esc(tierName(chest.tier))}</span><small>${esc(boxName(chest.tier))}</small></h2>
     </header>
     <div class="cx-box">
-      <img class="cx-still" src="${art.still}" width="512" height="512" alt="${esc(boxName(chest.tier))}" draggable="false">
-      ${clip ? `<video class="cx-vid" src="${art.webm}" muted playsinline preload="auto" aria-hidden="true"></video>` : ''}
+      <div class="cx-squash"><div class="cx-wiggle">
+        <img class="cx-still" src="${art.still}" width="448" height="448" alt="${esc(boxName(chest.tier))}" draggable="false">
+        ${webm ? `<video class="cx-vid" src="${art.webm}" muted playsinline preload="auto" aria-hidden="true"></video>` : ''}
+        <img class="cx-open" src="${art.open}" width="448" height="448" alt="" draggable="false" hidden>
+      </div></div>
     </div>
     <div class="cx-loot" aria-live="polite"></div>
-    <p class="cx-hint">${t('chest.hint.wait')}</p>
+    <p class="cx-hint"><span>${t('chest.hint.open')}</span><i class="cx-pips" aria-hidden="true">${'<b></b>'.repeat(TAPS)}</i></p>
     <footer class="cx-foot">
       <button class="cx-skip" data-cx-skip>${t('chest.skip')}</button>
       <button class="sc-buy cx-collect" data-cx-collect hidden>${queue.length ? t('chest.next', { n: queue.length }) : t('chest.collect')}</button>
@@ -194,38 +221,82 @@ export function openChestModal(chest, { queue = [] } = {}) {
   </div>`;
   const stage = root.querySelector('.cx');
   const box = root.querySelector('.cx-box');
+  const squash = root.querySelector('.cx-squash');
+  const wiggle = root.querySelector('.cx-wiggle');
   const vid = root.querySelector('.cx-vid');
+  const openStill = root.querySelector('.cx-open');
   const loot = root.querySelector('.cx-loot');
-  const hint = root.querySelector('.cx-hint');
+  const hint = root.querySelector('.cx-hint span');
+  const pips = root.querySelector('.cx-pips');
   const collect = root.querySelector('[data-cx-collect]');
   const skipBtn = root.querySelector('[data-cx-skip]');
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
-  // ask the server now, so the numbers are there by the time they're shown
-  const opened = chest.preview ? Promise.resolve(chest) : openChest(chest.id);
-  opened.catch((err) => { toast(gearError(err), { icon: svg('warn') }); closeLayer(root); });
+  // Safari's animation: fetched now, while the chest is being tapped; each opening
+  // gets its own object URL so it starts from its first frame
+  const animBlob = webm ? null : fetch(art.anim).then((r) => (r.ok ? r.blob() : null)).catch(() => null);
+  new Image().src = art.open;
 
-  if (soundOn()) {
-    audio = new Audio(art.mp3);
-    audio.play().catch(() => {});
-  }
+  // the server opens the chest on the first tap (closing before that opens nothing)
+  const openOnServer = () => {
+    opened ||= chest.preview ? Promise.resolve(chest) : openChest(chest.id);
+    opened.catch((err) => { toast(gearError(err), { icon: svg('warn') }); closeLayer(root); });
+    return opened;
+  };
+
   const toReady = () => {
     if (phase !== 'play') return;
     phase = 'ready';
+    // the open chest stays: the clip on its last frame, or the same frame as a still
+    if (!vid || !vid.ended) { openStill.hidden = false; wiggle.classList.add('is-ended'); }
     stage.classList.add('is-ready');
-    if (vid) vid.classList.add('is-done');
-    hint.textContent = t('chest.hint.open');
+    hint.textContent = t('chest.hint.collect');
     haptic(['legendary', 'mythic'].includes(chest.tier) ? 'levelUp' : 'record');
   };
-  if (vid) {
-    vid.addEventListener('ended', toReady, { once: true });
-    vid.addEventListener('error', toReady, { once: true });
-    vid.play().catch(toReady);
-  } else {
-    box.classList.add(prefersReducedMotion() ? 'is-calm' : 'is-drop');
-  }
-  // whatever happens to the clip, the chest is ready after it would have ended
-  const longest = { common: 3.1, uncommon: 4.1, rare: 3.1, epic: 4.1, legendary: 4.1, mythic: 5.1 }[chest.tier] || 4;
-  setTimeout(toReady, prefersReducedMotion() ? 300 : (vid ? longest + 1.5 : Math.min(longest, 2.6)) * 1000);
+
+  const play = async () => {
+    phase = 'play';
+    pips.hidden = true;
+    hint.textContent = '';
+    squash.style.removeProperty('--sq');
+    box.classList.add('is-pop');
+    if (vid) {
+      // the clip and its sound start together; if the clip had to wait for data,
+      // the sound catches up with it the moment it plays
+      vid.addEventListener('playing', () => {
+        wiggle.classList.add('is-playing');
+        if (audio && Math.abs(audio.currentTime - vid.currentTime) > 0.08) audio.currentTime = vid.currentTime;
+      }, { once: true });
+      vid.addEventListener('ended', toReady, { once: true });
+      vid.addEventListener('error', () => { openStill.hidden = false; toReady(); }, { once: true });
+      vid.play().catch(() => { openStill.hidden = false; toReady(); });
+      audio?.play().catch(() => {});
+      later(toReady, (seconds + 2) * 1000); // a clip that stalls still ends
+      return;
+    }
+    audio?.play().catch(() => {});
+    const blob = await animBlob;
+    animUrl = blob ? URL.createObjectURL(blob) : `${art.anim}?t=${Date.now()}`;
+    const anim = new Image();
+    anim.className = 'cx-anim'; anim.alt = ''; anim.width = 448; anim.height = 448; anim.draggable = false;
+    anim.onload = () => { wiggle.classList.add('is-playing'); if (audio) audio.currentTime = 0; };
+    anim.src = animUrl;
+    wiggle.appendChild(anim);
+    // the animation runs once; at its end the open still (its last frame) takes over
+    later(toReady, seconds * 1000);
+  };
+
+  const tap = () => {
+    taps += 1;
+    if (taps === 1) openOnServer();
+    pips.children[taps - 1]?.classList.add('on');
+    squash.style.setProperty('--sq', String(1 - taps * 0.08));
+    wiggle.classList.remove('is-hit');
+    void wiggle.offsetWidth; // restart the wiggle
+    wiggle.classList.add('is-hit');
+    haptic(taps >= TAPS ? 'record' : 'tick');
+    if (taps >= TAPS) later(play, calm ? 0 : 260);
+  };
 
   const row = (cur, r) => `<div class="cx-row is-${cur}${r.base ? '' : ' is-flat'}">
       <img class="cx-ico" src="${CUR_ART[cur]}" width="64" height="64" alt="">
@@ -234,14 +305,14 @@ export function openChestModal(chest, { queue = [] } = {}) {
       <span class="cx-bonus"><b>+${fmtNum(r.bonus)}</b><small>${t('chest.bonus')}</small></span>
     </div>`;
   const reveal = async (cur, { quick = false } = {}) => {
-    const c = await opened;
+    const c = await openOnServer();
     const r = rewardsOf(c)[cur];
     loot.insertAdjacentHTML('beforeend', row(cur, r));
     const el = loot.lastElementChild;
     if (quick) { el.querySelector('.cx-total').textContent = fmtNum(r.base + r.bonus); el.classList.add('is-in', 'has-bonus'); return; }
     requestAnimationFrame(() => el.classList.add('is-in'));
     tween(el.querySelector('.cx-total'), r.base + r.bonus, 900);
-    setTimeout(() => el.classList.add('has-bonus'), 520);
+    later(() => el.classList.add('has-bonus'), 520);
     shower(stage, box, el.querySelector('.cx-ico'), CUR_ART[cur]);
     haptic('tick');
   };
@@ -254,13 +325,21 @@ export function openChestModal(chest, { queue = [] } = {}) {
     collect.focus({ preventScroll: true });
   };
   const advance = async () => {
+    if (phase === 'shut') { tap(); return; }
     if (phase === 'ready') { phase = 'coins'; stage.classList.add('is-open'); hint.textContent = t('chest.hint.more'); await reveal('coins'); return; }
-    if (phase === 'coins') { phase = 'carbs'; await reveal('carbs'); setTimeout(finish, 700); }
+    if (phase === 'coins') { phase = 'carbs'; await reveal('carbs'); later(finish, 700); }
   };
   const skip = async () => {
     if (phase === 'done') return;
+    timers.forEach(clearTimeout);
+    audio?.pause();
     vid?.pause();
-    if (phase === 'play') toReady();
+    phase = 'play';
+    pips.hidden = true;
+    squash.style.removeProperty('--sq');
+    wiggle.querySelector('.cx-anim')?.remove();
+    if (vid) vid.hidden = true;
+    toReady();
     stage.classList.add('is-open');
     if (!loot.querySelector('.is-coins')) await reveal('coins', { quick: true });
     if (!loot.querySelector('.is-carbs')) await reveal('carbs', { quick: true });

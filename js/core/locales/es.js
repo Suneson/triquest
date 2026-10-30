@@ -3021,8 +3021,8 @@ es.chest = {
   "bonusOnly": "extra del cofre",
   "fromSession": "{n} de tu sesión",
   "hint": {
-    "wait": "Abriendo…",
     "open": "Toca para abrir",
+    "collect": "Toca para ver tus recompensas",
     "more": "Toca para ver más"
   },
   "banner": {

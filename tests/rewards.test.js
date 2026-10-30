@@ -102,7 +102,10 @@ test('the wallet pays a chest only once it is opened, from when it was', () => {
 });
 
 test('art and the top tier', () => {
-  assert.deepEqual(chestArt('rare'), { webm: 'icons/AnimatedRewards/WEBM/Rare.webm', mp3: 'icons/AnimatedRewards/mp3/Rare.mp3', still: 'icons/AnimatedRewards/still/Rare.webp' });
+  assert.deepEqual(chestArt('rare'), {
+    webm: 'icons/AnimatedRewards/WEBM/Rare.webm', mp3: 'icons/AnimatedRewards/mp3/Rare.mp3',
+    still: 'icons/AnimatedRewards/still/Rare.webp', open: 'icons/AnimatedRewards/still/Rare-open.webp', anim: 'icons/AnimatedRewards/WEBP/Rare.webp',
+  });
   assert.equal(topTier([{ tier: 'common' }, { tier: 'legendary' }, { tier: 'rare' }]), 'legendary');
   assert.equal(topTier([]), 'common');
 });

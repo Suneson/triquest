@@ -3021,8 +3021,8 @@ en.chest = {
   "bonusOnly": "chest bonus",
   "fromSession": "{n} from your session",
   "hint": {
-    "wait": "Opening…",
     "open": "Tap to open",
+    "collect": "Tap for your rewards",
     "more": "Tap for more"
   },
   "banner": {

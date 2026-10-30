@@ -1,7 +1,9 @@
-"""cut-reward-stills.py — the chest stills (icons/AnimatedRewards/still/<Tier>.webp).
+"""cut-reward-stills.py — the chest stills and Safari's animation (icons/AnimatedRewards/).
 
-    python3 tools/cut-reward-stills.py            key the painted JPGs in icons/AnimatedRewards/JPG/
-    python3 tools/cut-reward-stills.py --frames   fit the clip frames reward-stills.mjs read (already clear)
+    python3 tools/cut-reward-stills.py                 key the painted JPGs in JPG/ into still/<Tier>.webp
+    python3 tools/cut-reward-stills.py --frames <dir>  from the clip frames reward-stills.mjs captured
+                                                       (<dir>/<Tier>/0000.png …, already clear): the shut
+                                                       still, the open still and WEBP/<Tier>.webp
 
 The JPGs are on a flat screen: green for most, pink #FF017E for one. The screen
 colour is read from the image's border, so either works without saying which.
@@ -19,7 +21,7 @@ from scipy import ndimage
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, 'icons', 'AnimatedRewards')
 OUT = os.path.join(BASE, 'still')
-SIZE = 512
+SIZE = 448
 
 
 def screen_colour(rgb):
@@ -78,13 +80,27 @@ def save(im, name):
     print(path, os.path.getsize(path))
 
 
+FPS = 24  # the clips' rate
+
+
+def from_frames(root):
+    anim_dir = os.path.join(BASE, 'WEBP')
+    os.makedirs(anim_dir, exist_ok=True)
+    for tier in sorted(os.listdir(root)):
+        files = sorted(f for f in os.listdir(os.path.join(root, tier)) if f.endswith('.png'))
+        frames = [fit(Image.open(os.path.join(root, tier, f)).convert('RGBA')) for f in files]
+        save(frames[0], tier)
+        save(frames[-1], tier + '-open')
+        # the whole clip, once (loop=1), for Safari; the first frame is the shut still
+        out = os.path.join(anim_dir, tier + '.webp')
+        frames[0].save(out, 'WEBP', save_all=True, append_images=frames[1:], duration=round(1000 / FPS),
+                       loop=1, quality=62, method=5, allow_mixed=True)
+        print(out, len(frames), 'frames', os.path.getsize(out))
+
+
 def main():
     if '--frames' in sys.argv:
-        for f in sorted(os.listdir(OUT)):
-            if f.endswith('.png'):
-                p = os.path.join(OUT, f)
-                save(Image.open(p).convert('RGBA'), f[:-4])
-                os.remove(p)
+        from_frames(sys.argv[sys.argv.index('--frames') + 1])
         return
     src = os.path.join(BASE, 'JPG')
     for f in sorted(os.listdir(src)):

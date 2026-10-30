@@ -15,7 +15,7 @@ const reduced = () => prefersReducedMotion() || document.body.classList.contains
 
 // The tab bar, left to right. The calendar ('journal') isn't on the bar any
 // more: it opens from Home, so it sits at Home's position as a level deeper.
-const TAB_ORDER = ['home', 'shop', 'leaderboards', 'chat', 'progress'];
+const TAB_ORDER = ['home', 'shop', 'progress', 'chat', 'leaderboards'];
 
 /** 'fwd' (the wipe travels left, like moving right along the bar) or 'back'. */
 export function tabDirection(from, to) {

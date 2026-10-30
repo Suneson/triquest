@@ -27,19 +27,9 @@
 .gw-screen.is-shop .sh-lead { --b: transparent; --e: transparent; background: var(--bg-canvas); color: var(--text-white); border-radius: 12px;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .12), 0 3px 0 rgba(0, 0, 0, .35); }
 
-/* ---- tabs: beige plates; the open one is seafoam with a mint rim ------------------------- */
+/* ---- tabs: beige plates; the open one is seafoam with a mint rim (css/tabs.css) ---------- */
 .gw-screen.is-shop > .sh-tabs { margin: 0 12px 16px; gap: 6px; }
-.sh-tab.gw-tab { --b: transparent; --e: transparent; position: relative; display: grid; justify-items: center; align-content: start; gap: 2px;
-  min-height: 72px; padding: 6px 2px 6px; margin: 0; border-radius: 14px; background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
-  color: var(--ink-green); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35); cursor: pointer;
-  text-transform: none; transition: transform 80ms ease; }
-.sh-tab img { width: 42px; height: 42px; object-fit: contain; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
-.sh-tab span { font-size: 12px; line-height: 1.1; color: var(--ink-green); text-shadow: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sh-tab.gw-tab.active { background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C); color: var(--text-white);
-  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 rgba(0, 0, 0, .35); transform: translateY(-2px); }
-.sh-tab.gw-tab.active span { color: var(--text-white); text-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
-.sh-tab.gw-tab:active { transform: translateY(1px); }
-.sh-tab.gw-tab:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
+/* the plates themselves are the shared game tab: css/tabs.css */
 
 /* a running fuel's chip: a mint pill on the canvas */
 .gw-screen.is-shop .gel-chip { --b: transparent; --e: transparent; border-radius: 9999px; background: var(--bg-surface-deep); color: var(--text-white);
@@ -163,13 +153,13 @@
 .sc-note { margin: 0; color: var(--muted); font-size: var(--fs-small); }
 .sc-info-foot { display: grid; justify-items: stretch; }
 
-@media (prefers-reduced-motion: reduce) { .sc-card.is-fresh .sc-art, .sc-card.is-shake { animation: none; } .sc-buy, .sh-tab.gw-tab, .sc-card, .sc-info { transition: none; } .sc-card.is-go:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sc-card.is-fresh .sc-art, .sc-card.is-shake { animation: none; } .sc-buy, .sc-card, .sc-info { transition: none; } .sc-card.is-go:active { transform: none; } }
 body.rm .sc-card.is-fresh .sc-art, body.rm .sc-card.is-shake { animation: none; }
 body.rm .sc-card.is-go:active { transform: none; }
 
 /* ---- phases 3–4: gear, base, kit and the stall ---------------------------------------------- */
 /* painted art is smooth; pixel props keep their pixels */
-.sc-art, .sc-info-well img, .sc-ahead img, .sh-tab img, .sc-cur, .sc-wallet img { image-rendering: auto; }
+.sc-art, .sc-info-well img, .sc-ahead img, .sc-cur, .sc-wallet img { image-rendering: auto; }
 .sc-card.is-pixel .sc-art { image-rendering: pixelated; width: 64%; height: 64%; }
 /* more button kinds: mint (Wear, Aim), gold label (Build, Wearing), locked */
 .sc-buy span, .sc-buy .ic { position: relative; }
@@ -261,7 +251,7 @@ body.rm .sc-card.is-go:active { transform: none; }
 /* ---- phase 6: focus you can see on beige and on green ---- */
 .sc-empty .sc-buy:focus-visible, .gw-screen.is-shop .ws-card .btn:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
 .gw-screen.is-shop .pg-sport:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
-body.rm .sc-buy, body.rm .sh-tab.gw-tab { transition: none; }
+body.rm .sc-buy { transition: none; }
 
 /* the (i) sheet's price button wears its card's tray */
 .sc-info-sheet .sc-buy:is(.is-price, .is-short) { min-height: 52px; border-radius: 12px; font-size: 22px; color: #F2F5FC;

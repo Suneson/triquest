@@ -2,7 +2,7 @@
 
 Status: **built (2026-10-27)**. This replaces the multi-room compound. `0024_placements.sql` is live.
 
-The Profile tab is a diorama: one painted isometric room at a time, standing in its plot on a generated terrain (sky, grass, the dirt cutaway). It sits under a game HUD:
+The GYM tab (the middle of the tab bar; it was Profile) is a diorama: one painted isometric room at a time, standing in its plot on a generated terrain (sky, grass, the dirt cutaway). It sits under a game HUD:
 
 | Where | What |
 | --- | --- |
@@ -91,3 +91,17 @@ when art changes). So a new picture fits without hand-tuned numbers.
 
 The house type is Franklin Gothic Heavy where it's installed, else Libre Franklin (OFL) served from
 `fonts/`, with its weight axis held at heavy, so iPhones get the same bold letters as desktops.
+
+## The room buttons and the tab bar
+
+- **Tab bar:** Home, Shop, **GYM** (this view, in the middle), Chat, Ranks. The view's key is still `progress`, so saved tabs and links keep working.
+- **Room buttons:** the four sports and the locker room use the shop's own tab plate (`.game-tab` in `css/tabs.css`, shared with the gear shop and inventory tabs). They're beige, and the open room's is seafoam, on a bottle-green band.
+- **Icons** (`icons/UI/sports/`, cut by `python3 tools/cut-shop-ui.py icons/UI/sports/src`):
+
+| Button | Icon |
+| --- | --- |
+| Cycling | The bike photo, keyed |
+| Swim | The cap photo, keyed |
+| Run | The T3 running shoe |
+| Gym | A dumbbell from `tools/gen-shop-ui.mjs`, styled like the shop tab icons |
+| Locker | The backpack, cut from the old locker tile |

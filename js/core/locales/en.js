@@ -16,6 +16,7 @@ en.nav = {
   "shop": "Shop",
   "ranks": "Ranks",
   "chat": "Chat",
+  "gym": "GYM",
   "profile": "Profile",
   "views": "Views",
   "notifications": "Notifications",

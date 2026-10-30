@@ -112,17 +112,28 @@ function roomPill(room, ctx) {
   const s = gearState();
   const sport = SPORT_OF[room];
   const q = quadrantLevel(sport, s.inventory);
-  const wonIds = new Set(featAwards().map((a) => a.featId));
-  const feats = [...featsFor(sport), ...featsFor('cross')];
-  const won = feats.filter((f) => wonIds.has(f.id)).length;
   const now = serverNow();
   const job = building(s.jobs, now).find((j) => (gearById(j.item_id)?.sport || propById(j.item_id)?.sport) === sport);
   const end = job ? Date.parse(job.finishes_at) : 0;
   return `<div class="dg-pill">
     <button class="dg-pill-name" data-action="open-sport-levels" data-sport="${sport}" aria-label="${esc(t('cp.roomAria', { room: roomName(room), n: lvl, q: q.level }))}"><b>${esc(roomName(room))}</b><i>${t('loop.quad.lv', { n: q.level })}</i></button>
-    <button class="dg-pill-chip" data-action="open-trophies" data-sport="${sport}" aria-label="${esc(t('feat.ui.boardAria', { n: won, total: feats.length }))}">${svg('trophy')}<b>${won}</b></button>
     ${job ? `<span class="dg-pill-chip is-job" aria-label="${esc(t('loop.base.buildingAria', { name: gearById(job.item_id)?.name || propById(job.item_id)?.name || '' }))}">${svg('wrench')}<b data-ws-left="${end}">${clockLeft(end - now)}</b></span>` : ''}
   </div>`;
+}
+
+// the side buttons: a green orb each (icons/UI/side/side-orb.webp), the icon standing
+// over it and spilling past its rim, like the buttons round a game's home screen
+const orb = (src, attrs, extra = '') => `<button class="dg-orb" ${attrs}><img src="${src}" width="128" height="128" alt="" draggable="false">${extra}</button>`;
+
+/** The room's trophies (its feats won), on the right under the shop. */
+function trophyOrb(room) {
+  if (room === 'locker') return '';
+  const sport = SPORT_OF[room];
+  const wonIds = new Set(featAwards().map((a) => a.featId));
+  const feats = [...featsFor(sport), ...featsFor('cross')];
+  const won = feats.filter((f) => wonIds.has(f.id)).length;
+  return orb('icons/UI/side/side-trophy.webp', `data-action="open-trophies" data-sport="${sport}" aria-label="${esc(t('feat.ui.boardAria', { n: won, total: feats.length }))}"`,
+    `<b class="dg-orb-n data-num" aria-hidden="true">${won}</b>`);
 }
 
 // the room buttons: the shop's game tabs (css/tabs.css), each with its sport's
@@ -152,11 +163,12 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <p class="dg-hint" data-dg-hint aria-live="polite"></p>
     <button class="dg-act" data-dg-act hidden></button>
     <div class="dg-side is-left">
-      <button class="dg-round" data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"><img src="icons/Pixelart/GEAR/btn-inventory.png" width="128" height="128" alt=""></button>
-      <button class="dg-round is-small" data-action="open-next" aria-label="${esc(t('loop.base.next'))}">${svg('target')}</button>
+      ${orb('icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
+      ${orb('icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
     </div>
     <div class="dg-side is-right">
-      <button class="dg-round" data-action="open-gear" aria-label="${esc(t('gear.shop'))}"><img src="icons/Pixelart/GEAR/btn-shop.png" width="128" height="128" alt="">${ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : ''}</button>
+      ${orb('icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
+      ${trophyOrb(room)}
     </div>
     ${room === 'run' && (isChestAdmin() || isDemo()) ? turnBar() : ''}
     ${roomNav(room)}

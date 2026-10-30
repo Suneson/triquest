@@ -7,6 +7,8 @@
                       (sources in icons/UI/sports/src/; one that already has alpha,
                       the T3 shoe, is only trimmed)
   nav-*.png|jpg    -> icons/UI/nav/<name>.webp     the bottom dock's icons (sources in icons/UI/nav/src/)
+  side-*.png       -> icons/UI/side/<name>.webp    the base's side buttons, 192 px: the green orb
+                      (keyed from magenta) and the trophy and target icons
 
 (The card plates and (i) buttons are painted art: tools/cut-card-art.py.)
 
@@ -23,6 +25,25 @@ spec.loader.exec_module(cut_art)
 UI = os.path.join(os.path.dirname(HERE), 'icons', 'UI')
 
 
+def magenta(rgb):
+    """Is the screen colour (the image's border) magenta rather than green?"""
+    edge = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]]).astype(int)
+    r, g, b = np.median(edge, axis=0)
+    return r > 180 and b > 180 and g < 90
+
+
+def key_magenta(rgb):
+    """Key out a #FF00FF screen: alpha from how far a pixel is from magenta, with the
+    pink spill taken out of the soft edge."""
+    f = rgb.astype(float)
+    spill = np.clip((np.minimum(f[..., 0], f[..., 2]) - f[..., 1]) / 255, 0, 1)  # 1 = pure magenta
+    alpha = np.clip((0.82 - spill) / 0.5, 0, 1)
+    out = f.copy()
+    m = np.minimum(f[..., 0], f[..., 2]); lim = f[..., 1] + (m - f[..., 1]) * (1 - spill)
+    out[..., 0] = np.minimum(f[..., 0], np.maximum(lim, f[..., 1])); out[..., 2] = np.minimum(f[..., 2], np.maximum(lim, f[..., 1]))
+    return Image.fromarray(np.dstack([out.clip(0, 255).astype(np.uint8), (alpha * 255).astype(np.uint8)]), 'RGBA')
+
+
 def main():
     src = sys.argv[1]
     for f in sorted(os.listdir(src)):
@@ -30,12 +51,14 @@ def main():
         if ext not in ('.png', '.jpg'):
             continue
         path = os.path.join(src, f)
-        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav'}.get(name.split('-')[0])
+        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav', 'side': 'side'}.get(name.split('-')[0])
         if folder:
             os.makedirs(os.path.join(UI, folder), exist_ok=True)
             raw = Image.open(path)
             if raw.mode == 'RGBA' and np.asarray(raw)[..., 3].min() < 128:
                 im = raw  # already cut out
+            elif magenta(np.asarray(raw.convert('RGB'))):
+                im = key_magenta(np.asarray(raw.convert('RGB')))  # the green orb is painted on magenta
             else:
                 rgb = np.asarray(raw.convert('RGB'))
                 img, alpha = cut_art.key_green(rgb)
@@ -46,7 +69,8 @@ def main():
             sq = Image.new('RGBA', (s, s), (0, 0, 0, 0))
             sq.paste(im, ((s - im.width) // 2, (s - im.height) // 2), im)
             out = os.path.join(UI, folder, name + '.webp')
-            sq.resize((128, 128), Image.LANCZOS).save(out, 'WEBP', quality=90, method=6)
+            px = 192 if folder == 'side' else 128  # the base's side buttons show bigger
+            sq.resize((px, px), Image.LANCZOS).save(out, 'WEBP', quality=90, method=6)
         else:
             continue
         print(out, os.path.getsize(out))

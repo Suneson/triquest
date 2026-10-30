@@ -67,7 +67,7 @@ html { font-variation-settings: 'wght' 860; }
 
   /* layout: every bottom offset derives from the tab bar's real height */
   --tabs-row: 72px;                                   /* the dock: one 72px tray of five segments */
-  --tabs-pb: max(6px, calc(var(--safe-b) - 12px));    /* sit just above the home indicator */
+  --tabs-pb: max(4px, calc(var(--safe-b) - 22px));    /* low: the icons sit just above the home indicator */
   --tabs-h: calc(var(--tabs-row) + var(--tabs-pb));
   --fab-size: 56px;
   --gap-float: 16px;                                  /* floating things clear the bar by this */
@@ -89,7 +89,7 @@ html { font-variation-settings: 'wght' 860; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 /* Top half matches the header, bottom half matches the tab bar, so no strip of
    a different colour can ever show above or below the shell. */
-html { height: 100%; color-scheme: dark; background: linear-gradient(var(--bg) 0 50%, var(--bg-2) 50% 100%); }
+html { height: 100%; color-scheme: dark; background: linear-gradient(var(--bg) 0 50%, #26384A 50% 100%); } /* bottom half: the dock */
 html, body { margin: 0; }
 body {
   height: 100%; overflow: hidden;
@@ -316,10 +316,20 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
   position: relative; z-index: 3;
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
   height: var(--tabs-h); padding: 0 6px var(--tabs-pb);
-  background: linear-gradient(180deg, #223243 0%, #15222E 100%);
-  border-top: 2px solid #3B4E63; border-radius: 16px 16px 0 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 -4px 12px rgba(0, 0, 0, .35);
+  background: linear-gradient(180deg, #3A5068 0%, #26384A 100%);
+  border-top: 2px solid #567089; border-radius: 16px 16px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 -4px 12px rgba(0, 0, 0, .35);
+  /* the dock is its own group in a tab change, drawn over the outgoing view's snapshot
+     (HOME's stage fills the screen, and its snapshot used to cover the dock mid-wipe) */
+  view-transition-name: dock;
 }
+/* the tray carries on under the home indicator and any strip iOS leaves below the page */
+.tabs::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 160px; background: #26384A; pointer-events: none; }
+::view-transition-group(dock) { animation: none; }
+::view-transition-old(dock) { display: none; }
+::view-transition-new(dock) { animation: none; }
+/* an installed app on iPhone: the shell reaches the screen's real bottom edge */
+@media (display-mode: standalone) { .app { bottom: auto; height: max(100%, 100lvh); } }
 .tab {
   position: relative; display: grid; justify-items: center; align-content: center; gap: 2px;
   height: var(--tabs-row); padding: 0; margin: 0; background: none; border: 0; border-radius: 0;
@@ -334,12 +344,18 @@ body.toast-up .fab { bottom: calc(var(--tabs-h) + var(--gap-float) + 80px); }
 /* the label only shows on the active tab (screen readers always have it) */
 .tab:not(.active) .tab-lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .tab:active .tab-img { transform: scale(.92); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .4)) brightness(.9); transition-duration: 80ms; }
-.tab.active { background: radial-gradient(ellipse at bottom, rgba(57, 166, 114, .25) 0%, transparent 70%); }
-.tab.active .tab-img { width: 40px; height: 40px; transform: translateY(-8px); filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .5)); }
-.tab.active:active .tab-img { transform: translateY(-8px) scale(.92); }
-.tab.active .tab-lbl { margin-top: -6px; color: var(--text-white); text-shadow: 0 1px 2px #000, 0 2px 4px rgba(0, 0, 0, .8); }
+.tab.active {
+  margin: 5px 3px; height: calc(var(--tabs-row) - 10px); border: 0; border-radius: 12px;
+  background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C);
+  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 rgba(0, 0, 0, .35);
+}
+.tab.active + .tab { border-left-color: transparent; }
+.tab:has(+ .tab.active) { border-right-color: transparent; }
+.tab.active .tab-img { width: 40px; height: 40px; transform: translateY(-10px); filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .5)); }
+.tab.active:active .tab-img { transform: translateY(-10px) scale(.92); }
+.tab.active .tab-lbl { margin-top: -10px; color: var(--text-white); text-shadow: 0 1px 0 rgba(0, 0, 0, .5), 0 2px 4px rgba(0, 0, 0, .5); }
 .tab-img.hop { animation: tab-hop 260ms ease-out; }
-@keyframes tab-hop { 0% { transform: translateY(0) scale(.85); } 60% { transform: translateY(-12px) scale(1.06); } 100% { transform: translateY(-8px); } }
+@keyframes tab-hop { 0% { transform: translateY(0) scale(.85); } 60% { transform: translateY(-14px) scale(1.06); } 100% { transform: translateY(-10px); } }
 .tab:focus { outline: none; }
 .tab:focus-visible { outline: 2px solid var(--text-white); outline-offset: -4px; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) { .tab-img { transition: none; } .tab-img.hop { animation: none; } }
@@ -924,8 +940,8 @@ span.gl-prev { cursor: default; }
 @keyframes bell-ring { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 50% { transform: rotate(12deg); } 75% { transform: rotate(-8deg); } }
 .tab { position: relative; }
 .tab-badge {
-  position: absolute; top: 8px; left: calc(50% + 8px); z-index: 1; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center;
-  background: var(--danger); color: var(--shade); font-size: 11px; box-shadow: 0 0 0 2px #15222E;
+  position: absolute; top: 4px; left: calc(50% + 8px); z-index: 1; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center;
+  background: var(--danger); color: var(--shade); font-size: 11px; box-shadow: 0 0 0 2px #26384A;
 }
 
 /* ---- chat (js/app/chat.js) ------------------------------------------------------------------------ */
@@ -2539,13 +2555,18 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 /* round buttons over the stage */
 .dg-side { position: absolute; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 10px); z-index: 4; display: grid; gap: 8px; justify-items: center; }
 .dg-side.is-left { left: 10px; } .dg-side.is-right { right: 10px; }
-.dg-round { position: relative; width: 62px; height: 62px; display: grid; place-items: center; padding: 0; border: 3px solid #0B1222; border-radius: 50%;
-  background: radial-gradient(circle at 50% 30%, #3a5592, #16264d 70%); color: #FFD34D; cursor: pointer; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .2), 0 4px 0 rgba(0, 0, 0, .45); }
-.dg-round img { width: 48px; height: 48px; }
-.dg-round.is-small { width: 46px; height: 46px; }
-.dg-round .ic { width: 24px; height: 24px; }
-.dg-round:active { transform: translateY(3px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .2), 0 1px 0 rgba(0, 0, 0, .45); }
-.dg-round:focus-visible, .dg-room:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* each one is a glossy green orb (icons/UI/side/side-orb.webp) with its 3D icon standing
+   over it, a little bigger than the orb so it spills past the rim, like a game's home screen */
+.dg-side { gap: 16px; }
+.dg-orb { position: relative; width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: url("../icons/UI/side/side-orb.webp") center / 100% 100% no-repeat; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .45));
+  transition: transform 100ms ease; -webkit-tap-highlight-color: transparent; }
+.dg-orb > img { position: absolute; left: 50%; top: 40%; width: 52px; height: 52px; object-fit: contain; transform: translate(-50%, -50%);
+  pointer-events: none; -webkit-user-drag: none; image-rendering: auto; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); }
+.dg-orb:active { transform: translateY(3px) scale(.96); }
+.dg-orb-n { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); min-width: 26px; height: 20px; padding: 0 6px; display: grid; place-items: center;
+  border-radius: 9999px; background: #16264D; color: #FFD34D; font-size: 13px; line-height: 1; box-shadow: 0 0 0 2px #0B1222; text-shadow: none; }
+.dg-orb:focus-visible, .dg-room:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 /* the rooms: four of the shop's game tabs (css/tabs.css), the locker room underneath, on a
    bottle-green band like the shop's tab row */
 .dg-screen { --dg-nav-h: 142px; }

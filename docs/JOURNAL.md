@@ -13,12 +13,17 @@ The tab bar is one tray across the bottom of the screen. Its five segments, from
 | Ranks | `leaderboards` | |
 
 - **View keys:** they're unchanged from before the dock. Saved tabs, deep links and the tab-change animation keep working.
-- **The tray:** a slate gradient (`#223243` to `#15222E`), a milled top lip (`#3B4E63`) with an inner highlight, and rounded top corners. Recessed grooves divide the segments.
+- **The tray:** a slate gradient (`#3A5068` to `#26384A`), a milled top lip (`#567089`) with an inner highlight, and rounded top corners. Recessed grooves divide the segments.
+- **iPhone:**
+  - The tray sits low; its icons stay just above the home indicator.
+  - It carries on below its own box (`.tabs::after`), so the strip iOS can leave under the page is the tray's colour, not black.
+  - Installed as an app, the shell is at least `100lvh` tall, so the dock reaches the screen's real bottom edge.
+- **Tab changes:** the dock is its own view-transition group (`dock`), drawn above the wiping view. Before, HOME's full-screen stage was captured in the outgoing snapshot and covered the dock until the wipe ended.
 - **Inactive tabs:** only the 3D icon, 32 px. Their label stays readable to screen readers.
 - **The active tab:**
-  - its icon grows to 40 px and pops 8 px up out of the dock;
-  - its label shows underneath;
-  - a seafoam glow rises from the bottom of its segment.
+  - the whole segment becomes the house's seafoam button (the shop's open-tab plate);
+  - its icon grows to 40 px and pops up over the button's top edge;
+  - its label shows underneath.
 - **Feedback:** tapping a tab gives its icon a small hop. A press squeezes the icon (scale .92).
 - **Icons:** `icons/UI/nav/nav-*.webp`, cut from the green-screen renders in `icons/UI/nav/src/` by `python3 tools/cut-shop-ui.py icons/UI/nav/src`.
 
@@ -56,3 +61,16 @@ The Chat tab is bottle green too, scoped to `body.chat-mode`, and takes its colo
 - **Conversations and friend requests:** beige rows.
 - **A challenge posted in General:** a beige quest card with a gold rim (blue while it's running).
 - **The composer:** a beige well with the Journal's green button as Send.
+
+## The base's side buttons (`diorama-view.js`, `css/styles.css` `.dg-orb`)
+
+The round buttons on either side of the base:
+
+| Side | Buttons |
+| --- | --- |
+| Left | Inventory, then next up (the target) |
+| Right | Shop, then this room's trophies (with the count) |
+
+- **The look:** like the buttons round a game's home screen. Each is a glossy green orb (`icons/UI/side/side-orb.webp`), with its 3D icon standing over it and spilling just past the rim.
+- **The trophies** moved here from the chip next to the room's name.
+- **The art:** the orb, the trophy and the target come from `tools/gen-shop-ui.mjs` (`side-*`). They're cut by `python3 tools/cut-shop-ui.py icons/UI/side/src`; the orb was painted on magenta, so it's keyed from that.

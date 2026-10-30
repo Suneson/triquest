@@ -2986,4 +2986,66 @@ es.shop = {
   }
 };
 
+es.chest = {
+  "tier": {
+    "common": "Común",
+    "uncommon": "Poco común",
+    "rare": "Raro",
+    "epic": "Épico",
+    "legendary": "Legendario",
+    "mythic": "Mítico"
+  },
+  "box": {
+    "common": "Bolsa de kit",
+    "uncommon": "Nevera",
+    "rare": "Mochila de ruta",
+    "epic": "Caja épica",
+    "legendary": "Cofre dorado",
+    "mythic": "Cámara de carbono"
+  },
+  "diff": {
+    "easy": "Sesión suave",
+    "moderate": "Sesión constante",
+    "hard": "Sesión dura",
+    "brutal": "Sesión brutal"
+  },
+  "gift": "Un regalo",
+  "preview": "Vista previa",
+  "open": "ABRIR",
+  "skip": "Saltar",
+  "collect": "Recoger",
+  "next": "Siguiente cofre (quedan {n})",
+  "coins": "Monedas",
+  "carbs": "Carbohidratos",
+  "bonus": "Extra",
+  "bonusOnly": "extra del cofre",
+  "fromSession": "{n} de tu sesión",
+  "hint": {
+    "wait": "Abriendo…",
+    "open": "Toca para abrir",
+    "more": "Toca para ver más"
+  },
+  "banner": {
+    "title": "¡Entreno registrado!",
+    "one": "¡Has desbloqueado una {box}!",
+    "many": "¡Has desbloqueado {n} cofres de recompensa!"
+  },
+  "home": {
+    "eyebrow": "Recompensas listas",
+    "title": "Las recompensas de tu última sesión están listas",
+    "more": "{n} cofres esperando · el último: {box}",
+    "aria": "Abre tus recompensas: {n} esperando"
+  },
+  "admin": {
+    "title": "Admin · cofres de recompensa",
+    "note": "Ver abre un cofre y no paga nada. Regalo crea un cofre real para ti (paga al abrirlo). Simular muestra el aviso que mostraría un entreno terminado.",
+    "preview": "Ver",
+    "gift": "Regalar",
+    "previewAria": "Ver un cofre {tier} (no paga nada)",
+    "giftAria": "Regálate un cofre {tier} real",
+    "simulate": "Simular un entreno terminado",
+    "gifted": "Te espera un cofre {tier}"
+  }
+};
+
 export default es;

@@ -59,7 +59,8 @@
  * touch anywhere but the (i) does what the tray says. The tray sits where the
  * plate paints it: 76.8%–91.7% down, 6.4%–6.9% in.
  */
-.sc-card { --tx: #F2F5FC; --ink: #0A2E6E; position: relative; min-width: 0; aspect-ratio: 360 / 521; border-radius: 7% / 5%;
+/* isolate: the hit area and the (i) stack inside the card, never over the sticky header or a sheet */
+.sc-card { --tx: #F2F5FC; --ink: #0A2E6E; position: relative; isolation: isolate; min-width: 0; aspect-ratio: 360 / 521; border-radius: 7% / 5%;
   background: url('../icons/UI/cards/card-plate-blue.webp') 0 0 / 100% 100% no-repeat; user-select: none; -webkit-user-select: none;
   transition: transform 100ms ease, filter 150ms ease; -webkit-tap-highlight-color: transparent; }
 .sc-card.is-green { --ink: #0E3B26; background-image: url('../icons/UI/cards/card-plate-green.webp'); }

@@ -22,7 +22,11 @@ if (!OUT) { console.error('Usage: node tools/gen-shop-ui.mjs <out-dir> [name…]
 mkdirSync(OUT, { recursive: true });
 
 const COFFEE = `${ROOT}icons/Pixelart/NEW/ITEMS/coffee-machine.webp`;
-const ICON = (what) => `Stylised 3D game item icon in the style of Clash of Clans and of the reference image: ${what}, chunky rounded form, glossy specular highlights, thick dark outline. One single object, centred, filling about 80% of the frame, no text, no letters. Flat solid green background #00FF00, no shadows, no gradient.`;
+// The house style (docs/ART-DIRECTION.md): modern, clean 3D like the reference shop and
+// office building, never wood, never medieval or fantasy.
+const MODERN = [`${ROOT}icons/UI/ref/modern-shop.jpg`, `${ROOT}icons/UI/ref/modern-building.jpg`];
+const STYLE = 'Modern, clean stylised 3D render in the style of the reference images: soft rounded forms, smooth matte and satin plastic, metal and glass materials, navy blue, white, warm grey and baby blue with small gold accents, soft studio lighting. No wood, no medieval or fantasy elements.';
+const ICON = (what) => `${STYLE} A mobile app icon of ${what}. One single object, centred, filling about 80% of the frame, no text, no letters. Flat solid green background #00FF00, no shadows, no gradient.`;
 
 const JOBS = {
   'tab-fuel': { refs: [COFFEE], prompt: ICON('an energy gel sachet in electric blue and white with a small lightning bolt') },
@@ -37,7 +41,10 @@ const JOBS = {
   'side-target': { refs: [`${ROOT}icons/Pixelart/GEAR/btn-inventory.png`, `${ROOT}icons/Pixelart/GEAR/btn-shop.png`], prompt: ICON('an archery target in navy blue, white and gold rings with a gold arrow stuck in the bullseye, the same painted game-icon style as the reference backpack and stall') },
   // the Chat tab's switches: General and Club (Direct is the dock's chat icon)
   'chat-general': { refs: [`${ROOT}icons/UI/nav/src/nav-chat.jpg`, `${ROOT}icons/UI/nav/src/nav-ranks.jpg`], prompt: ICON('a small glossy blue globe with a beige speech bubble beside it, meaning a chat room for everyone, the same glossy 3D style and blue and beige colours as the reference speech bubbles') },
-  'chat-club': { refs: [`${ROOT}icons/UI/nav/src/nav-chat.jpg`, `${ROOT}icons/UI/chat/src/club-ref.jpg`], prompt: ICON('a heraldic club shield emblem with a thick carved wooden frame like the second reference, the shield face royal blue with the white winged bird logo from the first reference in its middle, glossy 3D game style') },
+  // the Club switch, in the modern style: no wood
+  'chat-club': { refs: [...MODERN, `${ROOT}icons/UI/nav/src/nav-chat.jpg`], prompt: ICON('a modern club crest shield: a sleek rounded shield with a polished navy and white bevelled metal rim, the face royal blue with the white winged bird logo from the speech bubble reference in its middle, satin finish') },
+  // the frame round the Journal's panels: one rounded panel border, cut as a 9-slice
+  'frame-panel': { refs: MODERN, prompt: `${STYLE} A mobile game UI panel frame: one wide rounded rectangle border, about 4:3, with a thick glossy baby-blue bevelled rim, a thin white inner highlight line and a darker navy outer edge, its inside completely empty and filled with flat solid magenta #FF00FF. Seen straight on, perfectly symmetrical, even thickness all round, no text, no icons. Flat solid magenta background #FF00FF outside it too, no shadows.` },
   'sport-gym': { refs: [`${ROOT}icons/UI/tabs/tab-gear.webp`, `${ROOT}icons/UI/tabs/tab-fuel.webp`], prompt: ICON('a single heavy hexagonal dumbbell, navy blue rubber heads with gold rims and a knurled chrome handle, seen from a slight three-quarter angle') },
 };
 

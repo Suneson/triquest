@@ -1,0 +1,82 @@
+/* backdrop.css — the Journal's and Chat's backdrop and the framed panels on it (docs/ART-DIRECTION.md).
+   The screen behind is quilted baby-blue leather (icons/UI/bg/quilt.webp), held still while the
+   view scrolls over it. Everything on it sits forward with deep, soft shadows, so the backdrop
+   reads as far away. Panels wear the glossy baby-blue frame (icons/UI/frames/frame-panel.webp,
+   a 9-slice border image) round the reward card's blue or the house beige. */
+
+:root {
+  --deep: 0 10px 18px rgba(8, 25, 60, .42), 0 24px 44px rgba(8, 25, 60, .26);   /* a panel, far off the backdrop */
+  --lift: 0 6px 12px rgba(8, 25, 60, .38), 0 14px 26px rgba(8, 25, 60, .22);    /* a button */
+  --panel-blue: repeating-linear-gradient(115deg, transparent 0 18px, rgba(255, 255, 255, .07) 18px 20px),
+                linear-gradient(155deg, #2F78E0 0%, #0C4CAE 55%, #0A3A8A 100%);
+  --panel-beige: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
+}
+
+body.jh-mode, body.chat-mode { --bg: #557BA8; background: #4C719E; }
+body.jh-mode .app, body.chat-mode .app { background: #557BA8 url("../icons/UI/bg/quilt.webp") center top / cover no-repeat; }
+body.jh-mode .view, body.chat-mode .view { background: transparent; }
+body.jh-mode .tabs, body.chat-mode .tabs { background: transparent; }
+body.jh-mode .app-header, body.chat-mode .app-header { background: linear-gradient(rgba(10, 32, 74, .72), rgba(10, 32, 74, .45)); border-bottom: 0;
+  box-shadow: 0 8px 18px rgba(8, 25, 60, .35); }
+body.jh-mode .muted, body.chat-mode .muted { color: #E4EEFB; }
+
+/* ---- framed panels ---------------------------------------------------------------------------- */
+/* the Journal's panels */
+.jh .jh-card, .jh .jh-prog, .jh .quests-panel, .jh .tg-card, .jh .ai-row {
+  --b: transparent; --e: transparent;
+  border: 16px solid transparent; border-image: url("../icons/UI/frames/frame-panel.webp") 76 / 16px stretch;
+  border-radius: 18px; background-clip: border-box; background-origin: border-box; margin: 0;
+  box-shadow: var(--deep);
+}
+.jh .jh-card { background: var(--panel-beige); padding: 4px 6px 8px; }
+.jh .tg-card { background: var(--panel-beige); color: var(--ink-green); padding: 6px 8px; }
+.jh .tg-card .tg-title, .jh .tg-card .tg-min { color: var(--ink-green); }
+.jh .jh-prog, .jh .quests-panel, .jh .ai-row { background: var(--panel-blue); color: var(--text-white); padding: 6px 8px 8px; }
+.jh .jh-prog-top span, .jh .jh-prog-note { color: #DCE9FA; }
+.jh .jh-track { background: rgba(4, 20, 52, .55); }
+.jh .ai-row { padding: 8px 10px; }
+.jh .ai-row p { color: #E4EEFB; }
+
+/* the daily quests, on blue */
+.jh .quests-panel .q-head h3 .ic { color: #FFD34D; }
+.jh .quests-panel .q-reset { color: #C8DAF5; }
+.jh .quests-panel .q-box { --b: transparent; --e: transparent; border-radius: 6px; background: rgba(255, 255, 255, .92);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18), 0 2px 0 rgba(4, 20, 52, .5); color: #0C4CAE; }
+.jh .quests-panel .q-row.done .q-box { background: var(--act-grad); color: #fff; }
+.jh .quests-panel .q-xp { color: #FFD34D; }
+.jh .quests-panel .q-coach { border-top-color: rgba(255, 255, 255, .2); }
+.jh .quests-panel .dlg-who { color: #FFD34D; }
+
+/* buttons in and around them: beige plates that sit forward */
+.jh .btn.ghost, .jh .btn.secondary, .jh .btn.tiny {
+  --b: transparent; --e: transparent; border-radius: 12px; color: var(--ink-green); text-shadow: none;
+  background: var(--panel-beige); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), var(--lift);
+}
+.jh .btn.ghost:active, .jh .btn.secondary:active, .jh .btn.tiny:active { transform: translateY(2px); box-shadow: inset 0 -1px 0 var(--surface-neutral-lo), 0 2px 6px rgba(8, 25, 60, .35); }
+
+/* more lift for what's tappable on the backdrop */
+.jh .jh-day { box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), var(--lift); }
+.jh .jh-day.is-on { box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge), var(--lift); }
+.jh .jh-go { box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 var(--act-edge), var(--lift); }
+.jh .btn.jr-btn { box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 var(--act-edge), var(--lift); }
+.jh .cx-home { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .28), inset 0 0 0 2px #0A2E6E, 0 4px 0 #082656, var(--deep); }
+.jh .home-date small { color: #E4EEFB; }
+.jh .focus-more { color: #E4EEFB; }
+
+/* Chat on the backdrop */
+body.chat-mode .ch-seg { background: rgba(10, 32, 74, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 10px 18px rgba(8, 25, 60, .35); }
+body.chat-mode .ch-seg-btn { box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), var(--lift); }
+body.chat-mode .ch-seg-btn.on { box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge), var(--lift); }
+body.chat-mode .ch-row, body.chat-mode .rm-bub, body.chat-mode .ch-msg.theirs { box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), var(--lift); }
+body.chat-mode .rm-msg.mine .rm-bub, body.chat-mode .ch-msg.mine { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), inset 0 -3px 0 #08357A, var(--lift); }
+body.chat-mode .chc { box-shadow: inset 0 0 0 2px #F2C14E, 0 4px 0 #2A1B0E, var(--deep); }
+body.chat-mode .ch-compose { background: rgba(10, 32, 74, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+body.chat-mode .ch-send { box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 var(--act-edge), var(--lift); }
+body.chat-mode .rm-status, body.chat-mode .rm-more, body.chat-mode .rm-note p, body.chat-mode .ch-day span { color: #E4EEFB; }
+body.chat-mode .ch-day span { background: rgba(10, 32, 74, .55); }
+body.chat-mode .ch-head { background: rgba(10, 32, 74, .6); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+body.chat-mode .ch-me { color: #E4EEFB; }
+body.chat-mode .rm-ch-bar .btn, body.chat-mode .ch-add-btn {
+  --b: transparent; --e: transparent; border-radius: 12px; color: var(--ink-green); text-shadow: none;
+  background: var(--panel-beige); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), var(--lift);
+}

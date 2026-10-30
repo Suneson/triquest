@@ -2547,26 +2547,14 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-round .ic { width: 24px; height: 24px; }
 .dg-round:active { transform: translateY(3px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .2), 0 1px 0 rgba(0, 0, 0, .45); }
 .dg-round:focus-visible, .dg-room:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-/* the rooms: four square sport buttons, the locker room underneath, full width */
-/* the rooms: four square game tiles, the locker room underneath, full width */
-.dg-screen { --dg-tile: min(calc((100vw - 38px) / 4), 96px); --dg-nav-h: calc(var(--dg-tile) + 64px); }
-.dg-rooms { position: absolute; left: 0; right: 0; bottom: calc(var(--tabs-h) + 6px); z-index: 4; display: grid; gap: 6px; padding: 0 10px; }
-.dg-rooms-row { display: grid; grid-template-columns: repeat(4, var(--dg-tile)); justify-content: space-between; }
-.dg-room { position: relative; display: block; width: var(--dg-tile); height: var(--dg-tile); padding: 0; border: 0; background: none; cursor: pointer;
-  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .45)); transition: transform 120ms ease, filter 120ms ease; -webkit-tap-highlight-color: transparent; }
-.dg-room img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
-/* the label sits in the tile's plain lower panel: white heavy type, dark outline */
-.dg-room span { position: absolute; left: 0; right: 0; bottom: 13%; font: 900 clamp(12px, calc(var(--dg-tile) * .17), 16px)/1 var(--font-display); color: #fff; text-align: center;
-  -webkit-text-stroke: 3px #1b1206; paint-order: stroke fill; text-shadow: 0 2px 0 #1b1206; letter-spacing: .01em; }
-.dg-room:not(.is-on) { filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .45)) saturate(.8) brightness(.92); }
-.dg-room.is-on { transform: translateY(-3px); filter: drop-shadow(0 0 6px #FFD34D) drop-shadow(0 0 2px #FFD34D) drop-shadow(0 6px 0 rgba(0, 0, 0, .45)); }
-.dg-room:active { transform: translateY(2px); }
-/* the locker room: the same tan frame drawn as a wide bar, its tile as the icon */
-.dg-room.is-wide { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 50px; border-radius: 14px;
-  background: linear-gradient(#F3DFB0, #E2C385 55%, #C99E5E); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -4px 0 rgba(110, 72, 26, .55), 0 0 0 3px #3a2810; }
-.dg-room.is-wide img { position: static; width: 44px; height: 44px; margin-left: -8px; }
-.dg-room.is-wide span { position: static; font-size: 17px; }
-.dg-room.is-wide.is-on { box-shadow: inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -4px 0 rgba(110, 72, 26, .55), 0 0 0 3px #3a2810, 0 0 0 5px #FFD34D; }
+/* the rooms: four of the shop's game tabs (css/tabs.css), the locker room underneath, on a
+   bottle-green band like the shop's tab row */
+.dg-screen { --dg-nav-h: 142px; }
+.dg-rooms { position: absolute; left: 0; right: 0; bottom: var(--tabs-h); z-index: 4; display: grid; gap: 8px; padding: 10px 12px 10px;
+  background: var(--bg-canvas); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .08), 0 -3px 0 rgba(0, 0, 0, .35); }
+.dg-rooms-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.dg-room.game-tab { min-height: 70px; }
+.dg-room.game-tab:not(.is-wide) span { font-size: 13px; }
 @media (prefers-reduced-motion: reduce) {
   .dg-item.bounce, .dg-item.landed, .dg-arrow, .dg-gauge.is-stamina .dg-fill::after { animation: none; }
   .dg-item.spring, .dg-world.is-easing, .dg-fill { transition: none; }

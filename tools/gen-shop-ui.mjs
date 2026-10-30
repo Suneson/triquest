@@ -1,5 +1,5 @@
 // gen-shop-ui.mjs — the shop's tab icons (the shop overhaul, docs/SHOP.md),
-// generated with Google's Gemini image model. The card plates and (i) buttons
+// and the GYM tab's dumbbell, generated with Google's Gemini image model. The card plates and (i) buttons
 // are painted by hand: icons/UI/cards/src/, fitted by tools/cut-card-art.py.
 //
 //   GEMINI_API_KEY=… node tools/gen-shop-ui.mjs <out-dir> [name…]
@@ -30,6 +30,8 @@ const JOBS = {
   'tab-gear': { refs: [COFFEE], prompt: ICON('a pair of carbon-fiber clip-on aerobars and an aero helmet, glossy metallic finish') },
   'tab-base': { refs: [COFFEE], prompt: ICON('a small isometric training building with a navy roof and a gold flag on top') },
   'tab-stall': { refs: [COFFEE], prompt: ICON('a small market stall with a navy and gold striped awning and a wooden counter') },
+  // the GYM tab's sport buttons: the other three are the swim cap, the bike and the T3 shoe
+  'sport-gym': { refs: [`${ROOT}icons/UI/tabs/tab-gear.webp`, `${ROOT}icons/UI/tabs/tab-fuel.webp`], prompt: ICON('a single heavy hexagonal dumbbell, navy blue rubber heads with gold rims and a knurled chrome handle, seen from a slight three-quarter angle') },
 };
 
 const pngB64 = async (path) => (await sharp(readFileSync(path)).png().toBuffer()).toString('base64');

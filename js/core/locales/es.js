@@ -16,6 +16,7 @@ es.nav = {
   "shop": "Tienda",
   "ranks": "Ranking",
   "chat": "Chat",
+  "gym": "GYM",
   "profile": "Perfil",
   "views": "Secciones",
   "notifications": "Notificaciones",

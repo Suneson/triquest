@@ -1,0 +1,37 @@
+/* tabs.css — the game tab: one beige plate shared by every tab row in the app.
+   Today: the shop's and inventory's category tabs (gear-view.js) and the GYM tab's
+   sport buttons (diorama-view.js). The open one turns seafoam with a mint rim and
+   rises a little; a press pushes it down. Loaded after styles.css, so it wins over
+   the old .gw-tab look it replaces. Colours are theme.css tokens (art.md). */
+
+.game-tab {
+  --b: transparent; --e: transparent;
+  position: relative; display: grid; justify-items: center; align-content: start; gap: 2px;
+  min-height: 72px; min-width: 0; padding: 6px 2px; margin: 0; border: 0; border-radius: 14px;
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
+  color: var(--ink-green);
+  box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35);
+  font-family: var(--font-header); font-variation-settings: 'wght' 860;
+  text-transform: none; cursor: pointer; transition: transform 100ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.game-tab img { width: 42px; height: 42px; object-fit: contain; image-rendering: auto; pointer-events: none; -webkit-user-drag: none;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+.game-tab span { font-size: 12px; line-height: 1.1; color: var(--ink-green); text-shadow: none;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-tab.active, .game-tab.is-on {
+  background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C); color: var(--text-white);
+  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 rgba(0, 0, 0, .35);
+  transform: translateY(-2px);
+}
+.game-tab.active span, .game-tab.is-on span { color: var(--text-white); text-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
+.game-tab:active { transform: translateY(2px); }
+.game-tab:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
+
+/* a wide one: the icon beside the label (the locker room) */
+.game-tab.is-wide { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 4px 12px; }
+.game-tab.is-wide img { width: 34px; height: 34px; }
+.game-tab.is-wide span { font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) { .game-tab { transition: none; } }
+body.rm .game-tab { transition: none; }

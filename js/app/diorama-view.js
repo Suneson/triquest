@@ -125,21 +125,21 @@ function roomPill(room, ctx) {
   </div>`;
 }
 
-// the room buttons: tan game tiles (generated, tools/gen-buttons.mjs) with the
-// label in the house's heavy type, so it can be translated
-const BTN = { bike: 'bike', pool: 'swim', run: 'run', gym: 'gym', locker: 'locker' };
-const btnArt = (room) => `icons/Pixelart/NEW/UI/btn-${BTN[room]}.webp`;
+// the room buttons: the shop's game tabs (css/tabs.css), each with its sport's
+// icon (tools/cut-shop-ui.py); the locker room is the same plate, wide
+const SPORT_ART = { bike: 'sport-bike', pool: 'sport-swim', run: 'sport-run', gym: 'sport-gym', locker: 'sport-locker' };
+const btnArt = (room) => `icons/UI/sports/${SPORT_ART[room]}.webp`;
 
 function roomNav(active) {
-  const btn = (room) => `<button class="dg-room${room === active ? ' is-on' : ''}${room === 'locker' ? ' is-wide' : ''}" data-room-go="${room}"
-      aria-pressed="${room === active}"><img src="${btnArt(room)}" width="256" height="256" alt="" draggable="false"><span>${t(`cp.nav.${room}`)}</span></button>`;
+  const btn = (room) => `<button class="dg-room game-tab${room === active ? ' is-on' : ''}${room === 'locker' ? ' is-wide' : ''}" data-room-go="${room}"
+      aria-pressed="${room === active}"><img src="${btnArt(room)}" width="128" height="128" alt="" draggable="false"><span>${t(`cp.nav.${room}`)}</span></button>`;
   return `<nav class="dg-rooms" aria-label="${esc(t('cp.roomsAria'))}">
     <div class="dg-rooms-row">${STAGE_ROOMS.filter((r) => r !== 'locker').map(btn).join('')}</div>
     ${btn('locker')}
   </nav>`;
 }
 
-/** The Profile tab. */
+/** The GYM tab (it was Profile). */
 export function renderDiorama(ctx, avatarBtn = '') {
   const room = activeRoom();
   const ready = unseenFinished().length;

@@ -581,7 +581,7 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
     const w = walletNow(workouts);
     const loading = !s.at;
     const tabs = `<div class="gw-tabs sh-tabs" role="tablist" aria-label="${t('gear.shop')}">${SHOP_TABS.map(([v]) =>
-      `<button class="gw-tab sh-tab${v === view ? ' active' : ''}" role="tab" id="shop-tab-${v}" aria-selected="${v === view}" aria-controls="shop-panel" data-gear-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
+      `<button class="gw-tab sh-tab game-tab${v === view ? ' active' : ''}" role="tab" id="shop-tab-${v}" aria-selected="${v === view}" aria-controls="shop-panel" data-gear-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
         <img src="${TAB_ART(v)}" width="128" height="128" alt="" draggable="false"><span>${t(`gear.tab.${v}`)}</span></button>`).join('')}</div>`;
     let panel;
     if (view === 'stall') {
@@ -736,7 +736,7 @@ export function openInventory({ tab = 'fuel' } = {}) {
     const w = walletNow(workouts);
     const empty = (txt, to) => `<div class="sc-empty"><p>${txt}</p>${tapButton(actionButton(t('gear.toShop'), `data-inv-shop="${to}"`, { icon: 'stall', variant: 'gold' }))}</div>`;
     const tabs = `<div class="gw-tabs sh-tabs is-three" role="tablist" aria-label="${t('gear.inventory')}">${INV_TABS.map((v) =>
-      `<button class="gw-tab sh-tab${v === view ? ' active' : ''}" role="tab" id="inv-tab-${v}" aria-selected="${v === view}" aria-controls="inv-panel" data-inv-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
+      `<button class="gw-tab sh-tab game-tab${v === view ? ' active' : ''}" role="tab" id="inv-tab-${v}" aria-selected="${v === view}" aria-controls="inv-panel" data-inv-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
         <img src="${TAB_ART(v)}" width="128" height="128" alt="" draggable="false"><span>${t(`gear.tab.${v}`)}</span></button>`).join('')}</div>`;
     let panel;
     if (view === 'fuel') {

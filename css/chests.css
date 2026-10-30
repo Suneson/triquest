@@ -77,18 +77,32 @@
 .tier-mythic .cx-tier span { background: linear-gradient(90deg, #6FF0FF, #B57BFF, #FFC94A, #6FF0FF); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text;
   color: transparent; animation: cx-sheen 3s linear infinite; text-shadow: none; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45)); }
 @keyframes cx-sheen { to { background-position: 300% 0; } }
-/* the chest: its clip on top of its still; when the clip ends the still is the same frame */
+/* the chest: .cx-box places it, .cx-squash scales it (each tap a step smaller, then a
+   spring back), .cx-wiggle rocks it; inside, the shut still (the clip's first frame),
+   the clip on top of it once it plays, and the open still (its last frame) */
 .cx-box { grid-area: 2 / 1; position: relative; align-self: center; width: min(78vw, 46vh, 420px); aspect-ratio: 1; transition: transform 320ms cubic-bezier(.3, 1.4, .5, 1); }
-.cx-still, .cx-vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.cx-vid { transition: opacity 120ms linear; }
-.cx-vid.is-done { opacity: 0; }
+.cx-squash, .cx-wiggle { position: absolute; inset: 0; }
+.cx-squash { transform: scale(var(--sq, 1)); transition: transform 170ms cubic-bezier(.3, 1.6, .5, 1); }
+.cx-box.is-pop .cx-squash { transition: transform 300ms cubic-bezier(.2, 2.1, .4, 1); }
+.cx-wiggle { transform-origin: 50% 78%; }
+.cx-still, .cx-vid, .cx-anim, .cx-open { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.cx-vid, .cx-anim { opacity: 0; }
+.cx-wiggle.is-playing :is(.cx-vid, .cx-anim) { opacity: 1; }
+.cx-wiggle.is-playing .cx-still { opacity: 0; }
+.cx-wiggle.is-ended :is(.cx-vid, .cx-anim, .cx-still) { opacity: 0; }
+/* shut: it rocks now and then; each tap wiggles it hard */
+.cx-wiggle { animation: cx-idle 2.4s ease-in-out infinite; }
+.cx .cx-wiggle.is-hit { animation: cx-hit 380ms cubic-bezier(.3, .8, .4, 1); }
+.cx-wiggle.is-playing, .cx-wiggle.is-ended, .cx.is-ready .cx-wiggle { animation: none; }
+@keyframes cx-idle { 0%, 62%, 100% { rotate: 0deg; } 70% { rotate: -3deg; } 78% { rotate: 3deg; } 86% { rotate: -2deg; } 94% { rotate: 1deg; } }
+@keyframes cx-hit { 0% { rotate: 0deg; translate: 0 0; } 15% { rotate: -9deg; translate: 0 4px; } 35% { rotate: 8deg; } 55% { rotate: -6deg; } 75% { rotate: 3deg; } 100% { rotate: 0deg; translate: 0 0; } }
+.cx-pips { display: inline-flex; gap: 7px; margin-left: 10px; vertical-align: middle; }
+.cx-pips[hidden] { display: none; }
+.cx-pips b { width: 11px; height: 11px; border-radius: 50%; background: rgba(230, 215, 189, .28); box-shadow: inset 0 0 0 2px rgba(230, 215, 189, .45); transition: background 120ms ease, box-shadow 120ms ease, transform 160ms cubic-bezier(.2, 2, .4, 1); }
+.cx-pips b.on { background: var(--tc); box-shadow: 0 0 10px var(--tc); transform: scale(1.2); }
 .cx.is-ready .cx-box { animation: cx-breathe 2.2s ease-in-out infinite; }
 @keyframes cx-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
 .cx.is-open .cx-box { transform: translateY(6%) scale(.9); filter: brightness(.62) saturate(.9); animation: none; transition: transform 320ms cubic-bezier(.3, 1.4, .5, 1), filter 320ms ease; }
-/* no clip (Safari, iPhone): the still drops in and shakes to the sound */
-.cx-box.is-drop .cx-still { animation: cx-land 700ms cubic-bezier(.3, 1.6, .5, 1) both, cx-shake 1.6s 900ms ease-in-out both; }
-@keyframes cx-land { from { transform: translateY(-60%) scale(.6); opacity: 0; } }
-@keyframes cx-shake { 0%, 100% { rotate: 0deg; } 15% { rotate: -4deg; } 30% { rotate: 4deg; } 45% { rotate: -6deg; } 60% { rotate: 6deg; } 75% { rotate: -3deg; } 90% { rotate: 2deg; } }
 /* the rewards, rising out of the chest one tap at a time */
 .cx-loot { grid-area: 2 / 1; position: relative; z-index: 2; align-self: center; display: grid; gap: 12px; width: min(100%, 420px); pointer-events: none; }
 .cx-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border-radius: 16px;
@@ -125,7 +139,9 @@
   .cx-banner, .cx-banner.is-leaving, .cx-banner-badge i, .cx-home-art img, .cx, .cx-head, .cx-rays, .cx.is-ready .cx-flash, .cx.is-ready .cx-box,
   .cx-hint, .tier-mythic .cx-tier span, .cx-collect { animation: none; }
   .cx-row, .cx-bonus, .cx-box { transition: none; }
+  .cx-wiggle, .cx .cx-wiggle.is-hit { animation: none; }
 }
+.cx.is-calm .cx-wiggle, .cx.is-calm .cx-wiggle.is-hit { animation: none; }
 body.rm :is(.cx-banner, .cx-banner-badge i, .cx-home-art img, .cx, .cx-head, .cx-rays, .cx-flash, .cx-box, .cx-hint, .cx-collect) { animation: none !important; }
 body.rm :is(.cx-row, .cx-bonus, .cx-box) { transition: none !important; }
 

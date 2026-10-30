@@ -231,9 +231,10 @@ Recent Strava history (most recent first): ${JSON.stringify(body.strava || [])}`
 - **App:**
   - `chests-state.js` holds the server copy, the demo chests, and which chests the banner has announced on this device.
   - `chest-view.js` has the banner, the Home card (`homeChestCard()` in `renderHome`), the opening, and the admin tools in Settings (for `app_admins`).
-- **Art:** `icons/AnimatedRewards/` holds the clips (WebM with alpha), the sounds (mp3) and the stills (`still/`, from `tools/reward-stills.mjs`, or keyed from `JPG/` by `tools/cut-reward-stills.py`).
+- **Art:** `icons/AnimatedRewards/` holds the clips (WebM with alpha: the whole opening), the sounds (mp3), the shut and open stills (`still/<Tier>.webp`, `still/<Tier>-open.webp`: the clip's first and last frames) and Safari's animated WebPs (`WEBP/`). Everything except the clips and sounds comes from `tools/reward-stills.mjs`. `tools/cut-reward-stills.py` keys painted JPGs from `JPG/`.
 - **Gotchas:**
-  - Safari ignores WebM alpha, so it gets the still and the sound.
+  - Safari ignores WebM alpha, so it plays the animated WebP of the same clip.
+  - The opening takes three taps (`openChestModal()`), and the server opens the chest on the first.
   - The service worker lets media and range requests through untouched.
   - Epic is off until its clip exists.
 

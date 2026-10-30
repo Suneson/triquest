@@ -6,6 +6,7 @@
   sport-*.png|jpg  -> icons/UI/sports/<name>.webp  the GYM tab's sport buttons, the same way
                       (sources in icons/UI/sports/src/; one that already has alpha,
                       the T3 shoe, is only trimmed)
+  nav-*.png|jpg    -> icons/UI/nav/<name>.webp     the bottom dock's icons (sources in icons/UI/nav/src/)
 
 (The card plates and (i) buttons are painted art: tools/cut-card-art.py.)
 
@@ -29,7 +30,7 @@ def main():
         if ext not in ('.png', '.jpg'):
             continue
         path = os.path.join(src, f)
-        folder = 'tabs' if name.startswith('tab-') else 'sports' if name.startswith('sport-') else None
+        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav'}.get(name.split('-')[0])
         if folder:
             os.makedirs(os.path.join(UI, folder), exist_ok=True)
             raw = Image.open(path)

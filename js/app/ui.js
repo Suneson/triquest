@@ -12,7 +12,6 @@ import { svg } from '../core/icons.js';
 import { renderLogger, hasLogger } from './gym-logger.js';
 import { mainSetIsExercises } from '../core/gym-split.js';
 import { rollNum } from './motion.js';
-import { weekPathCard } from './game.js';
 import { sceneFor, SCENES, COACH, cornerPolygon } from '../core/scenes.js';
 import { sessionLine, dayLine, raceOn } from '../core/coach-lines.js';
 import { formatCountdown, msUntilReset } from '../core/quests.js';
@@ -388,16 +387,93 @@ export function eventBanner(ctx) {
 // goals sit in one compact strip (tap to open), quests fold to one line once
 // they're cleared, and the AI coach offer is a quiet row at the end.
 export function renderHome(ctx) {
-  const ws = mondayOf(ctx.today);
-  return weekPathCard(ctx)
+  const sel = ctx.ui?.homeDay || ctx.today;
+  return `<div class="jh">`
     + homeDateHeader(ctx)
-    + focusCard(ctx)
+    + journalWeek(ctx, sel)
+    + journalWorkout(ctx, sel)
+    + journalProgress(ctx)
     + homeChestCard()
-    + weekStrip(ctx, ws, !!ctx.ui?.weekOpen)
     + questsPanel(ctx)
-    + tomorrowGlance(ctx)
+    + (sel === ctx.today ? tomorrowGlance(ctx) : '')
     + `<section class="ai-row">${coachMini()}<p>${t('ui.aiOffer')}</p>
-        <button class="btn tiny secondary" data-action="ai-onboard">${svg('spark')} ${t('ui.buildPlan')}</button></section>`;
+        <button class="btn tiny secondary" data-action="ai-onboard">${svg('spark')} ${t('ui.buildPlan')}</button></section>`
+    + `</div>`;
+}
+
+// ---- the Journal (the training plan, docs/JOURNAL.md) ---------------------------
+// Seven beige day tokens for this week, the chosen day's session as a quest card,
+// and the week's sessions against the goal on a forest-green track.
+
+const SPORT_TAG = { bike: 'bike', run: 'run', gym: 'gym', swim: 'swim', brick: 'bike' };
+
+/** This week, Monday to Sunday: tap a day to see its session. */
+function journalWeek(ctx, sel) {
+  const ws = mondayOf(ctx.today);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+  return `<nav class="jh-week" aria-label="${esc(t('ui.thisWeek'))}">${days.map((iso) => {
+    const d = parseISO(iso);
+    const done = ctx.workouts.some((w) => w.date === iso && w.completed);
+    const planned = ctx.workouts.some((w) => w.date === iso);
+    const cls = `${iso === sel ? ' is-on' : ''}${iso === ctx.today ? ' is-today' : ''}${done ? ' is-done' : ''}${planned ? ' has-plan' : ''}`;
+    const label = `${capFirst(fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long' }))}${done ? `, ${t('ui.done')}` : ''}${iso === ctx.today ? `, ${t('ui.today')}` : ''}`;
+    return `<button class="jh-day${cls}" data-action="jr-pick-day" data-date="${esc(iso)}" aria-pressed="${iso === sel}" aria-label="${esc(label)}">
+      <small>${esc(fmtDate(d, { weekday: 'short' }).replace('.', ''))}</small><b class="data-num">${d.getDate()}</b>
+      ${done ? `<i class="jh-check" aria-hidden="true">${svg('check')}</i>` : ''}</button>`;
+  }).join('')}</nav>`;
+}
+
+/** The chosen day's session: sport tag, title and targets, and Start. */
+function journalWorkout(ctx, iso) {
+  const { workouts, units } = ctx;
+  const sessions = workouts.filter((w) => w.date === iso).sort(sortSessions);
+  if (!sessions.length) {
+    const next = nextSession(workouts, iso);
+    return `<section class="jh-card is-rest">
+      <div class="jh-top"><span class="jh-tag">${svg('moon')} ${t('ui.rest')}</span></div>
+      <h3 class="jh-title">${t('ui.restRecovery')}</h3>
+      <p class="jh-sub">${next ? esc(t('ui.nextUpLine', { title: planTitle(next.title), date: shortLabel(next.date) })) : t('ui.nothingScheduled')}</p>
+      <button class="jh-go is-quiet" data-action="open-editor-new" data-date="${esc(iso)}">${svg('plus')} ${t('ui.addSession')}</button>
+    </section>`;
+  }
+  const w = sessions.find((x) => !x.completed) || sessions[sessions.length - 1];
+  const d = DISCIPLINES[w.type] || DISCIPLINES.other;
+  const km = w.metrics?.distanceKm;
+  const pace = paceHint(w.type, w.intensity);
+  const stat = (ico, value, label) => `<div class="jh-stat"><span class="jh-stat-ico">${svg(ico)}</span><b>${value}</b><small>${label}</small></div>`;
+  const others = sessions.length - 1;
+  return `<section class="jh-card">
+      <div class="jh-top">
+        <span class="jh-tag sp-${SPORT_TAG[w.type] || 'other'}">${svg(w.type)} ${esc(d.label)}</span>
+        ${proofBadges(w, workouts)}
+        <span class="jh-state">${w.completed ? `${svg('check')} ${t('ui.done')}` : esc(INTENSITIES[w.intensity] || '')}</span></div>
+      <h3 class="jh-title">${esc(planTitle(w.title))} <span class="jh-min">— ${t('ui.minLong', { n: w.durationMin || 0 })}</span></h3>
+      <div class="jh-stats">
+        ${stat('clock', `${w.durationMin || 0}`, 'min')}
+        ${km ? stat('route', fmtNum(km, { maximumFractionDigits: 1 }), units === 'imperial' ? 'mi' : 'km') : ''}
+        ${w.hr_zone ? stat('heart', `Z${Math.max(1, Math.min(5, parseInt(w.hr_zone) || 1))}`, t('ui.hrZone')) : ''}
+        ${stat('flame', `${kcalEst(w)}`, 'kcal')}
+      </div>
+      ${pace ? `<p class="jh-sub">${svg('spark')} ${esc(pace)}</p>` : ''}
+      <button class="jh-go" data-action="open-workout" data-id="${esc(w.id)}"><h3 class="sr">${esc(planTitle(w.title))}</h3>${w.completed ? t('ui.viewSession') : `${svg('play')} ${t('ui.startWorkout')}`}</button>
+    </section>`
+    + (others ? `<p class="focus-more">${t('ui.moreToday', { n: others })}</p>` : '');
+}
+
+/** This week's sessions against the goal, with the goal editor and the season path. */
+function journalProgress(ctx) {
+  const ws = mondayOf(ctx.today);
+  const s = weekGoalState(ctx, ws);
+  const frac = Math.max(0, Math.min(1, s.fracs.sessions));
+  return `<section class="jh-prog" aria-label="${esc(t('ui.thisWeek'))}">
+    <div class="jh-prog-top"><b>${t('ui.thisWeek')}</b><span>${t('ui.sessionsDone', { done: `<span class="data-num">${rollNum(s.sessions, 'goal-sessions')}</span>`, goal: `<span class="data-num">${esc(s.g.sessions)}</span>` })}</span></div>
+    <div class="jh-track" role="progressbar" aria-valuemin="0" aria-valuemax="${esc(s.g.sessions)}" aria-valuenow="${s.sessions}" aria-label="${esc(t('ui.thisWeek'))}"><i style="width:${Math.round(frac * 100)}%"></i></div>
+    <p class="jh-prog-note">${esc(insightText(ctx, ws))}</p>
+    <div class="jh-prog-btns">
+      <button class="btn tiny ghost" data-action="edit-goals">${svg('edit')} ${t('ui.editGoals')}</button>
+      <button class="btn tiny ghost" data-action="open-season">${svg('route')} ${t('misc.seasonPath')}</button>
+    </div>
+  </section>`;
 }
 
 /** Daily quests: three per day, reset at local midnight. */
@@ -482,40 +558,6 @@ function weekGoalState(ctx, weekStartIso) {
   };
 }
 
-// One goal as a labelled segmented meter: "PLAN 3/5" over ten cells.
-function goalMeter(frac, label, targetHtml, cls = '', id = label.toLowerCase()) {
-  const p = Math.max(0, Math.round(frac * 100));
-  return `<div class="goal-row">
-    <div class="goal-top"><b>${esc(label)}</b><span>${targetHtml}</span></div>
-    ${meter(frac, { cls, label: `${label} ${p}%`, key: `goal-${id}` })}
-  </div>`;
-}
-
-// "This week": one compact strip (Plan / Volume / Intensity as small meters).
-// Tap it to open the full meters, the coaching line and Edit goals.
-function weekStrip(ctx, weekStartIso, open) {
-  const s = weekGoalState(ctx, weekStartIso);
-  const a = acwr(ctx.workouts, ctx.today);
-  const intensityFrac = Math.max(0, Math.min(1.5, a.ratio || 0));
-  const doneToday = ctx.workouts.some((w) => w.completed && w.date === ctx.today);
-  const opener = doneToday ? t('ui.niceWork') : t('ui.freshDay');
-  const mini = (label, frac, cls) => `<span class="wk-mini"><small>${label}</small>${meter(frac, { segments: 5, cls, label: `${label} ${Math.round(Math.min(1, frac) * 100)}%` })}</span>`;
-  return `<section class="card wk-sum${open ? ' is-open' : ''}">
-    <button class="wk-sum-row" data-action="toggle-week" aria-expanded="${open}" aria-controls="wk-detail">
-      <span class="wk-sum-title">${t('ui.thisWeek')}</span>
-      ${mini(t('ui.plan'), s.fracs.sessions)}${mini(t('ui.vol'), s.fracs.hours, 'info')}${mini(t('ui.int'), intensityFrac / 1.3, 'good')}
-      <span class="wk-sum-chev" aria-hidden="true">${svg('chevron')}</span>
-    </button>
-    ${open ? `<div class="wk-detail" id="wk-detail">
-      ${goalMeter(s.fracs.sessions, t('ui.plan'), `${rollNum(s.sessions, 'goal-sessions')} / ${esc(s.g.sessions)}`, '', 'plan')}
-      ${goalMeter(s.fracs.hours, t('ui.volume'), `${rollNum(s.hours, 'goal-hours', { dp: 1 })} / ${esc(s.g.hours)} ${t('ui.hoursUnit').toUpperCase()}`, 'info', 'volume')}
-      ${goalMeter(intensityFrac / 1.3, t('ui.intensity'), a.ratio ? t('ui.xBase', { ratio: rollNum(a.ratio, 'goal-ratio', { dp: 2 }) }) : t('ui.calibrating'), 'good', 'intensity')}
-      <p class="wk-coach">${esc(opener)} ${esc(insightText(ctx, weekStartIso))}</p>
-      <button class="btn tiny ghost rings-edit" data-action="edit-goals">${svg('edit')} ${t('ui.editGoals')}</button>
-    </div>` : ''}
-  </section>`;
-}
-
 // One understated sentence pointing at the goal that needs the most work.
 function insightText(ctx, weekStartIso) {
   const s = weekGoalState(ctx, weekStartIso);
@@ -528,55 +570,6 @@ function insightText(ctx, weekStartIso) {
   return t('ui.insightSessions', { n });
 }
 
-
-// A single ultra-clean card for today's targeted assignment.
-// A letterbox crop of the sport's scene at the athlete's current level, as the
-// header of Today's target. Same art as Profile, so levelling up shows here too.
-function sceneStrip(type, workouts) {
-  const sport = type === 'brick' ? 'bike' : type;
-  const s = sceneFor(sport, sportProgress(workouts, sport).level);
-  if (!s) return '';
-  const e = s.entry;
-  const art = s.kind === 'still'
-    ? `<img class="fs-still" src="${esc(e.src)}" alt="" width="${e.w}" height="${e.h}" style="--ar:${e.w} / ${e.h}" loading="lazy">`
-    : `<span class="fs-world"><img src="${esc(e.bg)}" alt="" loading="lazy"><img src="${esc(e.platform)}" alt="" class="fs-plat" loading="lazy"><img src="${esc(e.char)}" alt="" class="fs-char" loading="lazy"></span>`;
-  return `<div class="focus-strip is-${s.kind} sp-${s.sport}" aria-hidden="true">${art}<span class="fs-lvl">LVL ${s.level}</span></div>`;
-}
-
-function focusCard(ctx) {
-  const { today, workouts, units } = ctx;
-  const sessions = workouts.filter((w) => w.date === today).sort(sortSessions);
-
-  if (!sessions.length) {
-    const next = nextSession(workouts, today);
-    return `<section class="card focus-card" data-action="open-editor-new" data-date="${esc(today)}" role="button" tabindex="0">
-      <div class="focus-top"><span class="focus-sport">${svg('moon')} ${t('ui.today')}</span></div>
-      <div class="focus-big">${t('ui.rest')}</div>
-      <div class="focus-sub">${next ? esc(t('ui.nextUpLine', { title: planTitle(next.title), date: shortLabel(next.date) })) : t('ui.nothingScheduled')}</div>
-    </section>`;
-  }
-
-  const focus = sessions.find((w) => !w.completed) || sessions[sessions.length - 1];
-  const d = DISCIPLINES[focus.type] || DISCIPLINES.other;
-  const strip = sceneStrip(focus.type, workouts);
-  const km = focus.metrics?.distanceKm;
-  const others = sessions.length - 1;
-  return `<section class="card focus-card${strip ? ' has-strip' : ''}" data-action="open-workout" data-id="${esc(focus.id)}" role="button" tabindex="0">
-      ${strip}
-      <div class="focus-top">
-        <span class="focus-sport">${svg(focus.type, `tint-${focus.type}`)} ${esc(d.label)}</span>
-        ${focus.hr_zone ? zoneBadge(focus.hr_zone) : ''}${proofBadges(focus, workouts)}
-        <span class="focus-state">${focus.completed ? t('ui.done') : t('ui.nextUp')}</span></div>
-      <h3 class="focus-title">${esc(planTitle(focus.title))}</h3>
-      <div class="bento-metrics">
-        <div class="bm"><span class="bm-ico">${svg('clock')}</span><b>${focus.durationMin || 0}</b><small>min</small></div>
-        ${km ? `<div class="bm"><span class="bm-ico">${svg('route')}</span><b>${fmtNum(km, { maximumFractionDigits: 1 })}</b><small>${units === 'imperial' ? 'mi' : 'km'}</small></div>` : ''}
-        <div class="bm"><span class="bm-ico">${svg('flame')}</span><b>${kcalEst(focus)}</b><small>kcal</small></div>
-      </div>
-      <div class="focus-sub">${esc(INTENSITIES[focus.intensity] || '')}${focus.notes && /\[Main Set\]/i.test(focus.notes) ? t('ui.structuredHint') : t('ui.detailsHint')}</div>
-    </section>`
-    + (others ? `<p class="focus-more">${t('ui.moreToday', { n: others })}</p>` : '');
-}
 
 // ---- JOURNAL (Mon–Fri chronological list, today spot-lit) ---------------------
 

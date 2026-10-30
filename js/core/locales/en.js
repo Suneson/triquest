@@ -16,7 +16,7 @@ en.nav = {
   "shop": "Shop",
   "ranks": "Ranks",
   "chat": "Chat",
-  "gym": "GYM",
+  "journal": "Journal",
   "profile": "Profile",
   "views": "Views",
   "notifications": "Notifications",
@@ -106,6 +106,11 @@ en.date = {
 };
 
 en.ui = {
+  "minLong": "{n} min",
+  "hrZone": "HR zone",
+  "viewSession": "View session",
+  "startWorkout": "Start workout",
+  "sessionsDone": "{done} / {goal} sessions done",
   "packRemove": "Remove {item}",
   "packEmpty": "No items yet",
   "packAddPh": "Add item…",

@@ -1,0 +1,93 @@
+/* journal.css — the Journal tab, the training plan (js/app/ui.js renderHome, docs/JOURNAL.md).
+   Bottle green like the shop: a strip of seven beige day tokens, the chosen day's session
+   as a beige quest card, and the week's sessions on a forest-green track. Colours are
+   theme.css tokens (art.md). */
+
+body.jh-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
+.jh { display: grid; gap: 14px; }
+
+/* the date header sits on the green */
+.jh .home-date small { color: var(--mint-light); }
+
+/* ---- the week: seven day tokens ------------------------------------------------------------ */
+.jh-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.jh-day {
+  position: relative; display: grid; justify-items: center; gap: 2px; min-height: 56px; padding: 7px 0 6px; margin: 0;
+  border: 2px solid #2A1B0E; border-radius: 12px; cursor: pointer;
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); color: var(--ink-green);
+  box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35);
+  font-family: var(--font-header); font-variation-settings: 'wght' 860; text-shadow: none;
+  transition: transform 100ms ease; -webkit-tap-highlight-color: transparent;
+}
+.jh-day small { font-size: 11px; line-height: 1; text-transform: uppercase; letter-spacing: .04em; opacity: .75; }
+.jh-day b { font-size: 18px; line-height: 1; text-shadow: none; }
+.jh-day.has-plan:not(.is-on)::after { content: ''; position: absolute; bottom: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--surface-neutral-lo); }
+.jh-day.is-today:not(.is-on) { border-color: var(--mint-active); }
+.jh-day.is-on {
+  background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C); color: var(--text-white);
+  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 #1a4d33; transform: translateY(-2px);
+}
+.jh-day.is-on small { opacity: 1; }
+.jh-day.is-on b, .jh-day.is-on small { text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.jh-day:active { transform: translateY(2px); }
+.jh-day:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
+.jh-check { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--mint-active); color: var(--text-white); box-shadow: 0 0 0 2px #2A1B0E; }
+.jh-check .ic { width: 12px; height: 12px; }
+
+/* ---- the day's session: a quest card ----------------------------------------------------------- */
+.jh-card {
+  display: grid; gap: 10px; padding: 14px 16px 16px; border-radius: 16px;
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); color: var(--ink-green);
+  box-shadow: 0 4px 0 #2A1B0E, 0 8px 16px rgba(0, 0, 0, .3);
+}
+.jh-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.jh-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 9999px;
+  background: #16264D; color: var(--text-white); font: 900 12px/1 var(--font-header); font-variation-settings: 'wght' 860;
+  text-transform: uppercase; letter-spacing: .04em; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .3); }
+.jh-tag .ic { width: 16px; height: 16px; color: currentColor; }
+.jh-tag.sp-bike { background: #0C4CAE; }
+.jh-tag.sp-run { background: #39A672; }
+.jh-tag.sp-gym { background: #F2C14E; color: var(--ink-green); }
+.jh-tag.sp-swim { background: #4EA8DE; }
+.jh-state { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font: 800 12px/1 var(--font-header); color: #6B5A3E; text-transform: uppercase; letter-spacing: .04em; }
+.jh-state .ic { width: 14px; height: 14px; color: var(--mint-active); }
+.jh-title { margin: 0; font: 900 20px/1.15 var(--font-header); font-variation-settings: 'wght' 860; color: var(--ink-green); text-shadow: none; text-transform: none; }
+.jh-min { color: #6B5A3E; white-space: nowrap; }
+.jh-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.jh-stat { display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: 4px; padding: 6px 10px; border-radius: 10px;
+  background: rgba(42, 27, 14, .08); box-shadow: inset 0 1px 0 rgba(0, 0, 0, .08); }
+.jh-stat-ico { grid-row: span 2; align-self: center; color: #6B5A3E; }
+.jh-stat-ico .ic { width: 16px; height: 16px; }
+.jh-stat b { font: 900 18px/1 var(--font-data, var(--font-header)); color: var(--ink-green); text-shadow: none; }
+.jh-stat small { grid-column: 2; font-size: 11px; color: #6B5A3E; }
+.jh-sub { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 14px; color: #4A3B26; }
+.jh-sub .ic { width: 16px; height: 16px; flex: none; }
+.jh-go {
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin: 2px 0 0; padding: 0 16px; border: 0; border-radius: 12px;
+  background: linear-gradient(#4CC08A, #39A672 60%, #2F9463); color: var(--text-white); cursor: pointer;
+  box-shadow: inset 0 2px 0 var(--mint-light), 0 4px 0 #236B48; transition: transform 100ms ease, box-shadow 100ms ease;
+  font: 900 16px/1 var(--font-header); font-variation-settings: 'wght' 860; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); -webkit-tap-highlight-color: transparent;
+}
+.jh-go .ic { width: 18px; height: 18px; }
+.jh-go:active { transform: translateY(4px); box-shadow: inset 0 2px 0 var(--mint-light), 0 0 0 #236B48; }
+.jh-go:focus-visible { outline: 3px solid var(--ink-green); outline-offset: 2px; }
+.jh-go.is-quiet { background: linear-gradient(#FFFFFF80, #FFFFFF40); color: var(--ink-green); text-shadow: none; box-shadow: inset 0 0 0 2px #2A1B0E33, 0 4px 0 #2A1B0E55; }
+.jh-card.is-rest .jh-tag { background: #4A3B26; }
+.jh .focus-more { color: var(--mint-light); margin: -4px 4px 0; }
+
+/* ---- the week's progress ------------------------------------------------------------------------- */
+.jh-prog { display: grid; gap: 10px; padding: 14px 16px; border-radius: 16px; background: var(--bg-surface-deep, #0A2715);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .06), 0 3px 0 rgba(0, 0, 0, .35); color: var(--text-white); }
+.jh-prog-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.jh-prog-top b { font: 900 15px/1 var(--font-header); font-variation-settings: 'wght' 860; text-transform: uppercase; letter-spacing: .04em; }
+.jh-prog-top span { font-size: 14px; color: var(--mint-light); }
+.jh-track { position: relative; height: 14px; border-radius: 9999px; background: #0A2715; overflow: hidden;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, .6), 0 1px 0 rgba(255, 255, 255, .08); }
+.jh-track i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, #39A672, #A7DBC5);
+  box-shadow: 0 0 10px rgba(167, 219, 197, .55); transition: width 400ms ease; }
+.jh-prog-note { margin: 0; font-size: 14px; color: var(--mint-light); }
+.jh-prog-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) { .jh-day, .jh-go, .jh-track i { transition: none; } }
+body.rm .jh-day, body.rm .jh-go, body.rm .jh-track i { transition: none; }

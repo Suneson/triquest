@@ -139,15 +139,13 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false } = {})
     const clock = new THREE.Clock();
     let raf = 0;
     let last = 0;
-    let gone = 0;
     const frame = (now) => {
       if (disposed) return;
-      if (!canvas.isConnected) {
-        // taken off the stage (another room): let go of the GPU after a moment
-        if (!gone) gone = now; else if (now - gone > 1500) { dispose(); return; }
-      } else gone = 0;
       raf = requestAnimationFrame(frame);
-      if (document.hidden || now - last < 1000 / 30) return; // 30 fps is plenty, and kind to batteries
+      // off screen (another tab keeps the stage's DOM aside) or in the background: pause, keep
+      // everything, so coming back to HOME carries on mid-stride with no reload. The diorama
+      // disposes the runner when its treadmill leaves the room.
+      if (!canvas.isConnected || document.hidden || now - last < 1000 / 30) return; // 30 fps is plenty
       last = now;
       mixer.update(Math.min(0.1, clock.getDelta()));
       renderer.render(scene, camera);

@@ -3,8 +3,8 @@
 Branch `feature/strava-reward-chests`.
 
 When a session finishes (synced from Strava, or logged in the app), it leaves
-a chest. A banner slides down to say so. The chest then waits on Home until
-you open it. Opening plays the chest's clip and sound. Then the session's coins
+a chest. A banner slides down to say so. The chest then waits on the Journal
+tab until you open it. Opening plays the chest's clip and sound. Then the session's coins
 and carbs rise out of it, one tap at a time, with the chest's bonus next to
 each.
 
@@ -126,7 +126,7 @@ opened. An unopened chest is worth nothing yet.
 - **Banner:** a bottle-green pill with a beige rim and a pulsing gold dot.
   - It shows once per chest per device. Tapping it opens the chest.
   - Dismissed or ignored (it folds away after 12 s), the chest stays on Home.
-- **Home card:** a blue card under today's session, with the waiting chest
+- **Journal card:** a blue card under today's session, with the waiting chest
   bobbing and a red count when more than one is waiting.
   - It reads "Your last session rewards are ready". Tapping it opens the
     waiting chests one after another, newest first.

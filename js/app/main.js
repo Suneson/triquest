@@ -77,13 +77,13 @@ import { startGelTicker } from './gel-chip.js';
 }
 
 const appState = {
-  tab: 'home',
+  tab: 'progress', // HOME, the base, until a tab has been chosen
+  homeDay: null,   // the day the Journal shows (null = today)
   lbView: 'season',
   journalDate: null, // ISO date selected in the Journal strip (null = today)
   pgSport: 'bike',   // which sport the Profile scene shows
   pgView: 'base',    // the Profile tab lands on the home base; 'scene' is one sport's scene (docs/LOOP.md §3)
   pgSlide: '',       // 'left' / 'right': the next scene slides in from that side
-  weekOpen: localStorage.getItem('moske-week-open') === '1', // Home's week strip, opened
   questsOpen: false, // cleared quests unfolded (this session only)
   lastLevel: null,
   booted: false,
@@ -130,7 +130,7 @@ function buildCtx() {
     quests: questsFor(today, workouts, settings),
     acct: boost.acct,
     boost,
-    ui: { weekOpen: appState.weekOpen, questsOpen: appState.questsOpen },
+    ui: { homeDay: appState.homeDay, questsOpen: appState.questsOpen },
   };
 }
 
@@ -282,6 +282,7 @@ function render() {
 
   // Profile tab is a sealed full-screen game viewport: hide app chrome, lock scroll.
   document.body.classList.toggle('pg-mode', appState.tab === 'progress');
+  document.body.classList.toggle('jh-mode', appState.tab === 'home'); // the Journal is bottle green, like the shop
   document.body.classList.toggle('chat-mode', appState.tab === 'chat'); // the + button would cover the composer
 
   const view = document.getElementById('view');
@@ -312,21 +313,15 @@ function render() {
   animateIn(document);
 }
 
-// ---- tab bar: the gold cell slides to the new tab in four steps -----------------
-// One cursor element behind the five tabs; its index is a CSS variable, so the
-// move is a stepped transform. The tab you enter gives its icon a 2px hop.
+// ---- tab bar: the dock (css/styles.css) --------------------------------------
+// The active tab's icon pops up out of the dock; the one you enter gives a hop.
 let _tabIdx = -1;
 function paintTabCursor() {
-  const bar = document.querySelector('.tabs');
-  if (!bar) return;
-  let cur = bar.querySelector('.tab-cursor');
-  if (!cur) { cur = document.createElement('span'); cur.className = 'tab-cursor'; cur.setAttribute('aria-hidden', 'true'); bar.prepend(cur); bar.classList.add('has-cursor'); }
-  const tabs = [...bar.querySelectorAll('.tab')];
+  const tabs = [...document.querySelectorAll('.tabs .tab')];
   const lit = appState.tab === 'journal' ? 'home' : appState.tab;
   const i = Math.max(0, tabs.findIndex((tab) => tab.dataset.tab === lit));
-  bar.style.setProperty('--i', String(i));
   if (_tabIdx >= 0 && i !== _tabIdx) {
-    const ico = tabs[i]?.querySelector('.tab-ico');
+    const ico = tabs[i]?.querySelector('.tab-img');
     if (ico) { ico.classList.remove('hop'); void ico.offsetWidth; ico.classList.add('hop'); }
   }
   _tabIdx = i;
@@ -453,6 +448,7 @@ function onClick(e) {
       tabScroll.set(from, view.scrollTop);
       appState.tab = el.dataset.tab;
       if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
+      if (appState.tab === 'home') appState.homeDay = null; // the Journal opens on today
       localStorage.setItem('moske-tab', appState.tab);
       if (appState.tab === 'progress') { appState.pgView = 'base'; resetDiorama(); autoStravaSync(); } // lands on the base; silent background pull
       withTabTransition(from, appState.tab, () => {
@@ -527,11 +523,10 @@ function onClick(e) {
       break;
     }
     case 'edit-goals': openGoalEditor(); break;
-    case 'toggle-week':
-      appState.weekOpen = !appState.weekOpen;
-      try { localStorage.setItem('moske-week-open', appState.weekOpen ? '1' : '0'); } catch { /* private mode */ }
+    case 'jr-pick-day':
+      appState.homeDay = el.dataset.date === todayISO() ? null : el.dataset.date;
       render();
-      document.querySelector('[data-action="toggle-week"]')?.focus({ preventScroll: true });
+      document.querySelector(`.jh-day[data-date="${el.dataset.date}"]`)?.focus({ preventScroll: true });
       break;
     case 'toggle-quests':
       appState.questsOpen = !appState.questsOpen;

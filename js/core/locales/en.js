@@ -2765,7 +2765,7 @@ en.cp = {
   "roomsAria": "Rooms",
   "nav": { "bike": "Cycling", "pool": "Swim", "run": "Run", "gym": "Gym", "locker": "Locker Room & Recovery" },
   "room": { "gym": "Gym", "pool": "Pool", "bike": "Bike room", "run": "Run room", "locker": "Locker room" },
-  "item": { "coffee-machine": "Coffee machine", "smart-bike": "Your bike", "smart-trainer": "Smart trainer" },
+  "item": { "coffee-machine": "Coffee machine", "smart-bike": "Your bike", "smart-trainer": "Smart trainer", "treadmill": "Treadmill" },
   "roledesc": "base editor",
   "vpAria": "Your base. Drag to look around, pinch or use the buttons to zoom. Tap an item to pick it up.",
   "roomAlt": "{room}, level {n}",
@@ -3047,5 +3047,7 @@ en.chest = {
     "gifted": "A {tier} chest is waiting for you"
   }
 };
+
+en.cp.r3d = { "aria": "Turn the runner", "left": "Turn left", "right": "Turn right" };
 
 export default en;

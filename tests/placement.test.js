@@ -77,16 +77,19 @@ test('placing: walls and edges, the pool, other items', () => {
 test('the gifts and the trainer; a spot for each, kept when it still fits', () => {
   // the mission boards are checked on their own below
   const ids = (list) => list.map((p) => p.id).filter((id) => !id.startsWith('mission-board-'));
-  assert.deepEqual(ids(placeablesFor([])), ['coffee-machine', 'smart-bike'], 'everyone has the coffee machine and their bike');
-  assert.deepEqual(ids(placeablesFor([], ['run', 'locker'])), ['coffee-machine'], 'no bike room, no bike');
-  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t2' }])), ['coffee-machine', 'smart-bike'], 'pedals are not a trainer');
-  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t3' }])), ['coffee-machine', 'smart-bike', 'smart-trainer']);
+  assert.deepEqual(ids(placeablesFor([])), ['coffee-machine', 'smart-bike', 'treadmill'], 'everyone has the coffee machine, their bike and their treadmill');
+  assert.deepEqual(ids(placeablesFor([], ['run', 'locker'])), ['coffee-machine', 'treadmill'], 'no bike room, no bike');
+  assert.deepEqual(ids(placeablesFor([], ['bike', 'locker'])), ['coffee-machine', 'smart-bike'], 'no run room, no treadmill');
+  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t2' }])), ['coffee-machine', 'smart-bike', 'treadmill'], 'pedals are not a trainer');
+  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t3' }])), ['coffee-machine', 'smart-bike', 'treadmill', 'smart-trainer']);
   const items = placeablesFor([{ item_id: 'bike-power-t3' }]);
   const full = compoundLayout(DISCIPLINES);
   const at = resolvePlacements(full, items, {});
   assert.equal(at['coffee-machine'].room, 'locker');
   assert.equal(at['smart-bike'].room, 'bike');
   assert.equal(at['smart-trainer'].room, 'bike');
+  assert.equal(at.treadmill.room, 'run');
+  assert.ok(canPlace('run', 'run', placeableById('treadmill'), at.treadmill.u, at.treadmill.v, at).ok);
   assert.ok(canPlace('bike', 'bike', placeableById('smart-trainer'), at['smart-trainer'].u, at['smart-trainer'].v, at).ok);
   assert.ok(canPlace('bike', 'bike', placeableById('smart-bike'), at['smart-bike'].u, at['smart-bike'].v, at).ok, 'they do not overlap');
   // a saved spot stays; one that no longer fits (or whose room is gone) moves

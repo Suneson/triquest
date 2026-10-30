@@ -47,3 +47,12 @@ The week path card and the old one-line week summary are gone: the day strip and
 ## The runner between tabs
 
 The base's DOM is kept aside while another tab is showing (`diorama-view.js`), and the 3D runner only pauses. Coming back to Home carries on mid-stride, with no reload and no new WebGL context. The runner is freed only when its treadmill leaves the room. See `docs/RUNNER3D.md`.
+
+## Chat in the same look (`css/chat.css`)
+
+The Chat tab is bottle green too, scoped to `body.chat-mode`, and takes its colours from the dock's chat icon.
+- **Messages:** other people's are beige bubbles and yours are MOSKE blue.
+- **General | Direct | Club:** the shop's tab plates, beige with seafoam for the one you're on.
+- **Conversations and friend requests:** beige rows.
+- **A challenge posted in General:** a beige quest card with a gold rim (blue while it's running).
+- **The composer:** a beige well with the Journal's green button as Send.

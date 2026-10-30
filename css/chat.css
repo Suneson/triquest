@@ -1,0 +1,96 @@
+/* chat.css — the Chat tab in the house look (art.md), like the Journal (css/journal.css):
+   bottle green, with the dock's chat icon as the palette. Other people's messages are
+   beige bubbles, yours MOSKE blue; the General | Direct | Club switch is the shop's
+   tab plates (beige, seafoam when on); the composer is a beige well with the
+   Journal's green Start button as Send. Scoped to body.chat-mode, so the same parts
+   drawn elsewhere (the friend sheets) keep their look. */
+
+body.chat-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
+body.chat-mode .muted { color: var(--mint-light); }
+
+/* ---- General | Direct | Club: beige plates, seafoam when on ------------------------------------- */
+body.chat-mode .ch-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; background: none; box-shadow: none; }
+body.chat-mode .ch-seg-btn {
+  min-height: 44px; border-radius: 12px; color: var(--ink-green);
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
+  box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35);
+  font-family: var(--font-header); font-variation-settings: 'wght' 860; font-size: 14px; text-transform: none; text-shadow: none;
+  transition: transform 100ms ease; -webkit-tap-highlight-color: transparent;
+}
+body.chat-mode .ch-seg-btn.on {
+  background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C); color: var(--text-white);
+  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 rgba(0, 0, 0, .35);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .45); transform: translateY(-2px);
+}
+body.chat-mode .ch-seg-btn:active { transform: translateY(2px); }
+body.chat-mode .ch-seg-btn:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
+body.chat-mode .ch-seg-n { border-radius: 9999px; }
+
+/* ---- the conversation list: beige rows ---------------------------------------------------------- */
+body.chat-mode .ch-list { gap: 8px; }
+body.chat-mode .ch-row {
+  padding: 10px 12px; border: 0; border-radius: 14px; color: var(--ink-green);
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
+  box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35);
+}
+body.chat-mode .ch-row .muted, body.chat-mode .ch-txt small { color: #6B5A3E; }
+body.chat-mode .ch-thread:active { background: linear-gradient(var(--surface-neutral), var(--surface-neutral-lo)); transform: translateY(1px); }
+body.chat-mode .ch-thread.is-unread b, body.chat-mode .ch-thread.is-unread small:not(.muted) { color: var(--ink-green); }
+body.chat-mode .ch-badge { border-radius: 9999px; }
+body.chat-mode .ch-chip { border-radius: 6px; background: var(--ink-green); color: var(--text-white); }
+body.chat-mode .ch-chip.is-quiet { background: transparent; color: #6B5A3E; box-shadow: inset 0 0 0 1px #6B5A3E; }
+
+/* ---- messages: theirs beige, yours MOSKE blue ---------------------------------------------------- */
+body.chat-mode .rm-bub, body.chat-mode .ch-msg.theirs {
+  --b: transparent; --e: transparent; border-radius: 4px 16px 16px 16px; color: var(--ink-green);
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
+  box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35);
+}
+body.chat-mode .rm-msg.mine .rm-bub, body.chat-mode .ch-msg.mine {
+  --b: transparent; --e: transparent; border-radius: 16px 4px 16px 16px; color: var(--text-white);
+  background: linear-gradient(#2F6FD6, #0C4CAE);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), inset 0 -3px 0 #08357A, 0 2px 0 rgba(0, 0, 0, .35);
+}
+body.chat-mode .rm-bub .rm-name { color: var(--ink-green); }
+body.chat-mode .rm-bub .rm-head time, body.chat-mode .ch-msg.theirs small { color: #6B5A3E; }
+body.chat-mode .rm-msg.mine .rm-bub .rm-name, body.chat-mode .rm-msg.mine .rm-head time { color: #DCE7FA; }
+body.chat-mode .rm-msg.mine .rm-status, body.chat-mode .ch-msg.mine small { color: #C8D8F5; }
+body.chat-mode .rm-status { color: var(--mint-light); }
+body.chat-mode .rm-more { color: var(--mint-light); }
+body.chat-mode .rm-note p { color: var(--mint-light); border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(167, 219, 197, .35); }
+body.chat-mode .ch-day span { color: var(--mint-light); padding: 4px 10px; border-radius: 9999px; background: var(--bg-surface-deep); }
+body.chat-mode .rm-offline { border-radius: 10px; background: var(--bg-surface-deep); }
+
+/* a challenge in General: a beige quest card with a gold rim */
+body.chat-mode .chc {
+  --b: transparent; --e: transparent; border-radius: 16px; color: var(--ink-green);
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
+  box-shadow: inset 0 0 0 2px #F2C14E, 0 4px 0 #2A1B0E, 0 8px 16px rgba(0, 0, 0, .3);
+}
+body.chat-mode .chc.phase-running, body.chat-mode .chc.phase-resolving { box-shadow: inset 0 0 0 2px #4EA8DE, 0 4px 0 #2A1B0E, 0 8px 16px rgba(0, 0, 0, .3); }
+body.chat-mode .chc.phase-settled, body.chat-mode .chc.phase-cancelled { box-shadow: inset 0 0 0 2px var(--surface-neutral-lo), 0 4px 0 #2A1B0E; }
+body.chat-mode .chc-ico { border-radius: 8px; background: #16264D; color: #F2C14E; }
+body.chat-mode .chc-rule { color: var(--ink-green); }
+body.chat-mode .chc-meta, body.chat-mode .chc-phase { color: #6B5A3E; }
+body.chat-mode .chc .cur-amt { color: #9A6A00; }
+
+/* ---- the composer: a beige well and the green Send --------------------------------------------- */
+body.chat-mode .ch-compose { background: var(--bg-canvas); border-top: 0; box-shadow: 0 -6px 12px -6px rgba(0, 0, 0, .45); padding-top: 12px; }
+body.chat-mode .ch-in {
+  --b: transparent; --e: transparent; border-radius: 14px; color: var(--ink-green);
+  background: var(--surface-neutral-hi); box-shadow: inset 0 2px 3px rgba(42, 27, 14, .35), 0 0 0 2px #2A1B0E;
+}
+body.chat-mode .ch-in::placeholder { color: #8A7655; }
+body.chat-mode .ch-in:focus { box-shadow: inset 0 2px 3px rgba(42, 27, 14, .35), 0 0 0 2px var(--mint-active); }
+body.chat-mode .ch-send {
+  --b: transparent; --e: transparent; border-radius: 12px; color: var(--text-white);
+  background: linear-gradient(#4CC08A, #39A672 60%, #2F9463); box-shadow: inset 0 2px 0 var(--mint-light), 0 4px 0 #236B48;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+body.chat-mode .ch-send:active { transform: translateY(4px); box-shadow: inset 0 2px 0 var(--mint-light), 0 0 0 #236B48; }
+body.chat-mode .ch-send:disabled { filter: grayscale(.6); }
+body.chat-mode .rm-ch-btn { --b: transparent; --e: transparent; border-radius: 12px; color: var(--ink-green);
+  background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35); }
+
+@media (prefers-reduced-motion: reduce) { body.chat-mode .ch-seg-btn, body.chat-mode .ch-send { transition: none; } }
+body.rm.chat-mode .ch-seg-btn, body.rm.chat-mode .ch-send { transition: none; }

@@ -97,20 +97,28 @@ opened. An unopened chest is worth nothing yet.
 | Legendary | `Legendary.*` | Gold chest |
 | Mythic | `Mythic.*` | Carbon vault |
 
-- **Clips:** 940 × 940, 3–5 s, VP9 with transparency. They are the source and
-  are never re-encoded.
-- **Stills:** `still/<Tier>.webp` (512 px, same framing as the clip) is what the
-  chest rests on when its clip ends. It also appears on Home and in the banner.
-  - Today they come from each clip's last frame: `node tools/reward-stills.mjs`
-    with the dev server running.
-  - When the painted JPG stills are in `JPG/`, `python3 tools/cut-reward-stills.py`
-    keys them instead. It reads the screen colour (green, or pink `#FF017E`) from
-    the image's border.
-- **iPhone:** Safari, so every browser on iPhone, plays WebM but ignores its
-  transparency. On Safari the chest's still drops in and shakes to the same
-  sound, with no clip. For the clip on iPhone too, the clips would also need
-  exporting as HEVC with alpha (`.mov`).
-- **Service worker:** media files and range requests skip it (`sw.js`). Clips
+- **Clips:** 940 × 940, 24 fps, 3–5 s, VP9 with transparency. Each is the
+  whole opening: the shut chest on its first frame, the open chest on its last.
+  They are the source and are never re-encoded or touched.
+- **Read from the clips** by `node tools/reward-stills.mjs` (dev server running):
+  - `still/<Tier>.webp`: the first frame, the shut chest you tap. It also
+    appears on Home and in the banner.
+  - `still/<Tier>-open.webp`: the last frame, the open chest the rewards sit on.
+  - `WEBP/<Tier>.webp`: the whole clip as an animated WebP (448 px, played once,
+    1.4–3.7 MB) for Safari.
+  - The frames are captured while the clip plays. Seeking a VP9-alpha clip in
+    headless Chromium only ever returns the first frame.
+- **Painted JPG stills:** when they're in `JPG/`, `python3 tools/cut-reward-stills.py`
+  keys them into the shut stills instead. It reads the screen colour (green, or
+  pink `#FF017E`) from the image's border.
+- **Which format plays where:**
+  - Chrome, Edge, Firefox and Android play the WebM with its transparency.
+  - Safari (every browser on iPhone) plays WebM but ignores its transparency, so
+    it plays the animated WebP, which keeps it.
+  - The sharper option for iPhone is HEVC with alpha (`.mov`). That is exported
+    on a Mac (Compressor, or `ffmpeg -c:v hevc_videotoolbox -alpha_quality 0.75
+    -tag:v hvc1`). With those files, `chest-view.js` can prefer them on Safari.
+- **Service worker:** clips, sounds and range requests skip it (`sw.js`). They
   stream straight from the server and are never cached in full.
 
 ## On screen (`js/app/chests-state.js`, `js/app/chest-view.js`, `css/chests.css`)
@@ -123,17 +131,24 @@ opened. An unopened chest is worth nothing yet.
   - It reads "Your last session rewards are ready". Tapping it opens the
     waiting chests one after another, newest first.
 - **The opening:**
-  1. The tier's name and container drop in, and the clip plays with its sound.
-     Sound follows Settings → Sound.
-  2. The chest rests on its still, with a flash and slowly turning rays in its
-     tier's colour: *Tap to open*.
-  3. A tap: coins spray out of the chest into a card on top of it. The total
+  1. The tier's name and container drop in. The shut chest (the clip's first
+     frame) rocks gently: *Tap to open*, with three pips.
+  2. Each tap squashes it a step smaller (92%, 84%, 76%) with a hard wiggle,
+     and lights a pip. The first tap asks the server to open the chest, so
+     closing before tapping opens nothing.
+  3. On the third tap it springs back to full size, and the clip and its sound
+     start in the same moment. The clip's first frame is the still, so nothing
+     jumps. Sound follows Settings → Sound.
+  4. The clip holds its last frame, the open chest, with a flash and slowly
+     turning rays in its tier's colour: *Tap for your rewards*.
+  5. A tap: coins spray out of the chest into a card on top of it. The total
      counts up, and the gold *+bonus* chip pops in beside it. The small line
      says how much came from the session.
-  4. A tap: carbs, the same. Then *Collect*, or *Next chest (n left)*.
-  - *Skip* jumps to the end.
+  6. A tap: carbs, the same. Then *Collect*, or *Next chest (n left)*.
+  - *Skip* jumps to the open chest and the rewards.
   - A gift has no session, so it shows one figure.
-  - Reduced motion: no clip, no spray, no count-up.
+  - Reduced motion: no rocking, wiggle, spray or count-up. The clip still
+    plays, because you tapped for it.
 - **Admin tools** (Settings, admins only):
   - *Play* any tier: plays it, pays nothing.
   - *Gift* yourself a real one.

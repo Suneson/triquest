@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v84';
+const CACHE = 'triquest-v85';
 const ASSETS = [
   './',
   './index.html',
@@ -46,6 +46,11 @@ const ASSETS = [
   './icons/AnimatedRewards/still/Rare.webp',
   './icons/AnimatedRewards/still/Legendary.webp',
   './icons/AnimatedRewards/still/Mythic.webp',
+  './icons/AnimatedRewards/still/Common-open.webp',
+  './icons/AnimatedRewards/still/Uncommon-open.webp',
+  './icons/AnimatedRewards/still/Rare-open.webp',
+  './icons/AnimatedRewards/still/Legendary-open.webp',
+  './icons/AnimatedRewards/still/Mythic-open.webp',
   './js/app/missions-view.js',
   './js/app/clubs-view.js',
   './js/app/clubs-state.js',

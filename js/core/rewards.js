@@ -156,13 +156,19 @@ export function chestSessions(workouts) {
   return out;
 }
 
-/** The art for a tier (icons/AnimatedRewards): its clip, its sound and its still. */
+/**
+ * The art for a tier (icons/AnimatedRewards): its clip and sound, the shut and
+ * open stills (the clip's first and last frames), and the clip as an animated
+ * WebP for Safari.
+ */
 export const chestArt = (tier) => {
   const name = tier[0].toUpperCase() + tier.slice(1);
   return {
     webm: `icons/AnimatedRewards/WEBM/${name}.webm`,
     mp3: `icons/AnimatedRewards/mp3/${name}.mp3`,
     still: `icons/AnimatedRewards/still/${name}.webp`,
+    open: `icons/AnimatedRewards/still/${name}-open.webp`,
+    anim: `icons/AnimatedRewards/WEBP/${name}.webp`,
   };
 };
 

@@ -520,18 +520,23 @@ chest's tier colour (`--tc`) runs through everything it touches:
   - Gold *OPEN*, and a red count when more than one is waiting.
   - Under 400 px the button sits under the text.
 - **The opening:** full screen on a bottle-green radial lit by the tier colour.
-  1. The tier name (huge, in the tier colour) and the container name drop in,
-     and the clip plays.
-  2. The chest rests on its still, with a white flash and slowly turning conic
-     rays.
-  3. Each tap brings one reward card up out of the chest and over it, while the
+  1. The tier name (huge, in the tier colour) and the container name drop in.
+  2. The shut chest rocks now and then, over *Tap to open* and three pips.
+  3. Each tap squashes it 8% smaller with a hard wiggle and lights a pip in the
+     tier colour.
+  4. The third springs it back to full size with an overshoot, and its clip and
+     sound play together. The clip's first frame is the still.
+  5. It holds the clip's last frame (the open chest) with a white flash and
+     slowly turning conic rays.
+  6. Each tap brings one reward card up out of the chest and over it, while the
      chest dims and settles behind. The card shows the currency picture, the
      total counting up in Franklin Heavy with tabular figures, the source line,
      and a gold *+bonus* chip that pops in a beat later. A spray of coins (or
      carbs) flies from the chest into the card.
-  4. *Collect* (or *Next chest*) is a full-width gold button.
-  - **Safari:** no clip; the still drops in and shakes to the sound.
-  - **Reduced motion:** nothing moves and the numbers land at once.
+  7. *Collect* (or *Next chest*) is a full-width gold button.
+  - **Safari:** the same clip, as an animated WebP.
+  - **Reduced motion:** the clip plays, but nothing rocks, wiggles or sprays,
+    and the numbers land at once.
 
 ### Challenge card (Room and Challenges)### Reward chests (`js/app/chest-view.js`, `css/chests.css`)
 A finished session leaves a chest (rules and art: `docs/REWARDS.md`). The
@@ -557,18 +562,23 @@ chest's tier colour (`--tc`) runs through everything it touches:
   - Gold *OPEN*, and a red count when more than one is waiting.
   - Under 400 px the button sits under the text.
 - **The opening:** full screen on a bottle-green radial lit by the tier colour.
-  1. The tier name (huge, in the tier colour) and the container name drop in,
-     and the clip plays.
-  2. The chest rests on its still, with a white flash and slowly turning conic
-     rays.
-  3. Each tap brings one reward card up out of the chest and over it, while the
+  1. The tier name (huge, in the tier colour) and the container name drop in.
+  2. The shut chest rocks now and then, over *Tap to open* and three pips.
+  3. Each tap squashes it 8% smaller with a hard wiggle and lights a pip in the
+     tier colour.
+  4. The third springs it back to full size with an overshoot, and its clip and
+     sound play together. The clip's first frame is the still.
+  5. It holds the clip's last frame (the open chest) with a white flash and
+     slowly turning conic rays.
+  6. Each tap brings one reward card up out of the chest and over it, while the
      chest dims and settles behind. The card shows the currency picture, the
      total counting up in Franklin Heavy with tabular figures, the source line,
      and a gold *+bonus* chip that pops in a beat later. A spray of coins (or
      carbs) flies from the chest into the card.
-  4. *Collect* (or *Next chest*) is a full-width gold button.
-  - **Safari:** no clip; the still drops in and shakes to the sound.
-  - **Reduced motion:** nothing moves and the numbers land at once.
+  7. *Collect* (or *Next chest*) is a full-width gold button.
+  - **Safari:** the same clip, as an animated WebP.
+  - **Reduced motion:** the clip plays, but nothing rocks, wiggles or sprays,
+    and the numbers land at once.
 
 ### Challenge card (Room and Challenges)
 A challenge travels as a card, never as a plain message. In the Room it's a

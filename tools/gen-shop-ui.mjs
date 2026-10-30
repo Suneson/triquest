@@ -31,6 +31,10 @@ const JOBS = {
   'tab-base': { refs: [COFFEE], prompt: ICON('a small isometric training building with a navy roof and a gold flag on top') },
   'tab-stall': { refs: [COFFEE], prompt: ICON('a small market stall with a navy and gold striped awning and a wooden counter') },
   // the GYM tab's sport buttons: the other three are the swim cap, the bike and the T3 shoe
+  // the base's side buttons (docs/JOURNAL.md): a green orb each, the icon sitting over it
+  'side-orb': { refs: [`${ROOT}icons/Pixelart/GEAR/btn-shop.png`], prompt: 'Stylised 3D mobile game round button base in the style of Clash Royale: a glossy emerald-green sphere-like disc seen from the front, a thick dark green rim, a soft white specular highlight on the upper left, a slightly darker lower half, empty in the middle, no icon, no text. One single object, centred, filling about 90% of the frame. Flat solid magenta background #FF00FF, no shadows, no gradient.' },
+  'side-trophy': { refs: [`${ROOT}icons/Pixelart/GEAR/btn-inventory.png`, `${ROOT}icons/Pixelart/GEAR/btn-shop.png`], prompt: ICON('a gold trophy cup with two handles on a navy blue base with a small gold star, the same painted game-icon style as the reference backpack and stall') },
+  'side-target': { refs: [`${ROOT}icons/Pixelart/GEAR/btn-inventory.png`, `${ROOT}icons/Pixelart/GEAR/btn-shop.png`], prompt: ICON('an archery target in navy blue, white and gold rings with a gold arrow stuck in the bullseye, the same painted game-icon style as the reference backpack and stall') },
   'sport-gym': { refs: [`${ROOT}icons/UI/tabs/tab-gear.webp`, `${ROOT}icons/UI/tabs/tab-fuel.webp`], prompt: ICON('a single heavy hexagonal dumbbell, navy blue rubber heads with gold rims and a knurled chrome handle, seen from a slight three-quarter angle') },
 };
 

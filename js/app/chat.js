@@ -92,8 +92,10 @@ export function setChatMode(m) { try { localStorage.setItem(MODE_KEY, m); } catc
 
 function segHtml(mode) {
   const n = { general: unreadRoom(), direct: socialState().ready ? unreadMessages() : 0, club: clubUnread() };
+  // each switch has its 3D icon (icons/UI/chat; Direct is the dock's chat icon)
+  const art = { general: 'icons/UI/chat/chat-general.webp', direct: 'icons/UI/nav/nav-chat.webp', club: 'icons/UI/chat/chat-club.webp' };
   const opt = (id, label) => `<button class="ch-seg-btn${mode === id ? ' on' : ''}" role="tab" aria-selected="${mode === id}" data-ch="mode" data-mode="${id}">
-      ${label}${n[id] ? ` <span class="ch-seg-n data-num" aria-label="${t('chat.unreadN', { n: n[id] })}">${n[id] > 9 ? '9+' : n[id]}</span>` : ''}</button>`;
+      <img class="ch-seg-img" src="${art[id]}" width="128" height="128" alt="" draggable="false"><span class="ch-seg-lbl">${label}</span>${n[id] ? ` <span class="ch-seg-n data-num" aria-label="${t('chat.unreadN', { n: n[id] })}">${n[id] > 9 ? '9+' : n[id]}</span>` : ''}</button>`;
   return `<div class="ch-seg" role="tablist" aria-label="${t('chat.chat')}">${opt('general', t('chat.general'))}${opt('direct', t('chat.direct'))}${opt('club', t('club.tab'))}</div>`;
 }
 function paintSeg() {

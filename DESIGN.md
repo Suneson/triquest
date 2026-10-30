@@ -1,3 +1,5 @@
+> **Art direction:** modern, clean 3D with no wood anywhere. See docs/ART-DIRECTION.md before making any new art.
+
 # MOSKE design system: pixel skin
 
 Status: **implemented**. Pass 1 (the pixel skin) is live; pass 2 (fixes, feel,

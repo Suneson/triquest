@@ -8,6 +8,7 @@
                       the T3 shoe, is only trimmed)
   nav-*.png|jpg    -> icons/UI/nav/<name>.webp     the bottom dock's icons (sources in icons/UI/nav/src/)
   chat-*.png       -> icons/UI/chat/<name>.webp    the Chat tab's General and Club switches
+  frame-*.png      -> icons/UI/frames/<name>.webp  a panel frame (magenta inside and out), kept to its shape, 640 px wide
   side-*.png       -> icons/UI/side/<name>.webp    the base's side buttons, 192 px: the green orb
                       (keyed from magenta) and the trophy and target icons
 
@@ -34,14 +35,15 @@ def magenta(rgb):
 
 
 def key_magenta(rgb):
-    """Key out a #FF00FF screen: alpha from how far a pixel is from magenta, with the
-    pink spill taken out of the soft edge."""
+    """Key out a #FF00FF screen: alpha from how much magenta a pixel holds (red and blue both
+    above green), and that magenta taken back out of the soft edge. Pixels with no magenta in
+    them (blues, whites, greys) are left exactly as they are."""
     f = rgb.astype(float)
-    spill = np.clip((np.minimum(f[..., 0], f[..., 2]) - f[..., 1]) / 255, 0, 1)  # 1 = pure magenta
-    alpha = np.clip((0.82 - spill) / 0.5, 0, 1)
+    excess = np.clip(np.minimum(f[..., 0], f[..., 2]) - f[..., 1], 0, None)  # the magenta in it
+    spill = excess / 255
+    alpha = np.clip((0.55 - spill) / 0.3, 0, 1)
     out = f.copy()
-    m = np.minimum(f[..., 0], f[..., 2]); lim = f[..., 1] + (m - f[..., 1]) * (1 - spill)
-    out[..., 0] = np.minimum(f[..., 0], np.maximum(lim, f[..., 1])); out[..., 2] = np.minimum(f[..., 2], np.maximum(lim, f[..., 1]))
+    out[..., 0] -= excess; out[..., 2] -= excess
     return Image.fromarray(np.dstack([out.clip(0, 255).astype(np.uint8), (alpha * 255).astype(np.uint8)]), 'RGBA')
 
 
@@ -52,7 +54,7 @@ def main():
         if ext not in ('.png', '.jpg'):
             continue
         path = os.path.join(src, f)
-        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav', 'side': 'side', 'chat': 'chat'}.get(name.split('-')[0])
+        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav', 'side': 'side', 'chat': 'chat', 'frame': 'frames'}.get(name.split('-')[0])
         if folder:
             os.makedirs(os.path.join(UI, folder), exist_ok=True)
             raw = Image.open(path)
@@ -66,6 +68,12 @@ def main():
                 a = (alpha * 255).clip(0, 255).astype(np.uint8)
                 im = Image.fromarray(np.dstack([img.clip(0, 255).astype(np.uint8), a]), 'RGBA')
             im = im.crop(im.getbbox())
+            if folder == 'frames':
+                # a panel frame keeps its shape (a 9-slice border image), 640 px wide
+                out = os.path.join(UI, folder, name + '.webp')
+                im.resize((640, round(640 * im.height / im.width)), Image.LANCZOS).save(out, 'WEBP', quality=92, method=6)
+                print(out, os.path.getsize(out), im.size)
+                continue
             s = int(max(im.size) * 1.06)
             sq = Image.new('RGBA', (s, s), (0, 0, 0, 0))
             sq.paste(im, ((s - im.width) // 2, (s - im.height) // 2), im)

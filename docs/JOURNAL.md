@@ -89,3 +89,12 @@ What's selected (a tab, a day, a room button, a switch) and the main action (Sta
 - `--act-ink`: outlined white type on it.
 
 They replace the seafoam green. The Run sport tag keeps its own colour.
+
+## The backdrop and the framed panels (`css/backdrop.css`)
+
+- **The backdrop:** the Journal and Chat sit on quilted baby-blue leather (`icons/UI/bg/quilt.webp`, from `quilt-src.jpg`). It's held still behind the scrolling view, and the header and Chat's pinned bars are frosted over it.
+- **The frame** round the Journal's panels: `icons/UI/frames/frame-panel.webp`.
+  - It's a glossy baby-blue rim from Gemini (`frame-panel` in `tools/gen-shop-ui.mjs`), cut by `cut-shop-ui.py` and drawn as a 9-slice border image.
+  - Panels wear it round two fills: the reward card's blue (This week, Daily quests, the plan offer) or the house beige (the day's session, Tomorrow).
+- **Depth:** everything on the backdrop has deep, soft shadows (`--deep` for panels, `--lift` for buttons), so it sits forward and the backdrop reads as far away.
+- **Dock icons:** the Shop and Home icons are now the modern renders `icons/UI/ref/modern-shop.jpg` and `modern-building.jpg`. Those two images are also the style references for all new art (docs/ART-DIRECTION.md).

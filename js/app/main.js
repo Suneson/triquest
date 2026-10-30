@@ -39,6 +39,7 @@ import * as auth from './auth.js';
 import { syncQuestClaims } from './quest-sync.js';
 import { openMissionBoard, maybeShowRecap, BOARD_ART } from './missions-view.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
+import { wireTabSwipe } from './tab-swipe.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName, openRoute, leaveRoute } from './nav.js';
 import { haptic } from './haptics.js';
@@ -434,6 +435,25 @@ function clearPrescribed(from, message) {
 // (tapping the tab you're already on goes to the top, as tab bars do)
 const tabScroll = new Map();
 
+/** Switch to a tab. `fromDx` carries on a finger swipe (tab-swipe.js) from where it let go. */
+function goTab(tab, { fromDx = 0 } = {}) {
+  closeAllLayers(); // a tab is the root: nothing stays open over it
+  const from = appState.tab;
+  const view = document.getElementById('view'); // #view is the scroller
+  tabScroll.set(from, view.scrollTop);
+  appState.tab = tab;
+  if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
+  if (appState.tab === 'home') appState.homeDay = null; // the Journal opens on today
+  localStorage.setItem('moske-tab', appState.tab);
+  if (appState.tab === 'progress') { appState.pgView = 'base'; resetDiorama(); autoStravaSync(); } // lands on the base; silent background pull
+  withTabTransition(from, appState.tab, () => {
+    render();
+    // each tab comes back where you left it; the calendar opens on today's row
+    if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
+    else if (appState.tab !== 'chat') view.scrollTo(0, from === appState.tab ? 0 : tabScroll.get(appState.tab) || 0);
+  }, { fromDx });
+}
+
 function onClick(e) {
   const el = e.target.closest('[data-action]');
   if (!el) return;
@@ -441,24 +461,7 @@ function onClick(e) {
   if (handleGymAction(action, el, gymDeps, 'click')) return;
 
   switch (action) {
-    case 'tab': {
-      closeAllLayers(); // a tab is the root: nothing stays open over it
-      const from = appState.tab;
-      const view = document.getElementById('view'); // #view is the scroller
-      tabScroll.set(from, view.scrollTop);
-      appState.tab = el.dataset.tab;
-      if (appState.tab === 'journal') appState.journalDate = todayISO(); // list anchors to Today
-      if (appState.tab === 'home') appState.homeDay = null; // the Journal opens on today
-      localStorage.setItem('moske-tab', appState.tab);
-      if (appState.tab === 'progress') { appState.pgView = 'base'; resetDiorama(); autoStravaSync(); } // lands on the base; silent background pull
-      withTabTransition(from, appState.tab, () => {
-        render();
-        // each tab comes back where you left it; the calendar opens on today's row
-        if (appState.tab === 'journal') document.querySelector('.jr-row.is-today')?.scrollIntoView({ block: 'start' });
-        else if (appState.tab !== 'chat') view.scrollTo(0, from === appState.tab ? 0 : tabScroll.get(appState.tab) || 0);
-      });
-      break;
-    }
+    case 'tab': goTab(el.dataset.tab); break;
     case 'jr-week':
       appState.journalDate = addDays(appState.journalDate || todayISO(), Number(el.dataset.dir) * 7);
       render();
@@ -1137,6 +1140,13 @@ async function boot() {
 
   // gear and gels: re-render when the server copy changes; a gel running out redraws too
   onGear(() => render());
+  // swipe between the dock's tabs (not over HOME's stage, nor while anything is open)
+  wireTabSwipe(document.getElementById('view'), {
+    current: () => appState.tab,
+    go: goTab,
+    blocked: () => hasLayers() || (appState.tab === 'progress' && appState.pgView === 'scene'),
+    label: (key) => t(key),
+  });
   // the stage's room buttons switch the room on the Profile tab
   document.addEventListener('dg-room', () => { if (appState.tab === 'progress') render(); });
   // where your compound items stand, from the server (another device may have moved them)

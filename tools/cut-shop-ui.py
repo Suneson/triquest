@@ -7,6 +7,7 @@
                       (sources in icons/UI/sports/src/; one that already has alpha,
                       the T3 shoe, is only trimmed)
   nav-*.png|jpg    -> icons/UI/nav/<name>.webp     the bottom dock's icons (sources in icons/UI/nav/src/)
+  chat-*.png       -> icons/UI/chat/<name>.webp    the Chat tab's General and Club switches
   side-*.png       -> icons/UI/side/<name>.webp    the base's side buttons, 192 px: the green orb
                       (keyed from magenta) and the trophy and target icons
 
@@ -51,7 +52,7 @@ def main():
         if ext not in ('.png', '.jpg'):
             continue
         path = os.path.join(src, f)
-        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav', 'side': 'side'}.get(name.split('-')[0])
+        folder = {'tab': 'tabs', 'sport': 'sports', 'nav': 'nav', 'side': 'side', 'chat': 'chat'}.get(name.split('-')[0])
         if folder:
             os.makedirs(os.path.join(UI, folder), exist_ok=True)
             raw = Image.open(path)

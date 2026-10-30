@@ -6,8 +6,12 @@
 body.jh-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
 .jh { display: grid; gap: 14px; }
 
-/* the date header sits on the green */
+/* the date header sits on the green; Calendar is the house's baby-blue button */
 .jh .home-date small { color: var(--mint-light); }
+.jh .btn.jr-btn { --b: transparent; --e: transparent; border-radius: 12px; background: var(--act-grad); color: var(--text-white); text-shadow: var(--act-ink);
+  box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 var(--act-edge); }
+.jh .btn.jr-btn:active { transform: translateY(3px); box-shadow: inset 0 2px 0 var(--act-rim), 0 1px 0 var(--act-edge); }
+.jh .gel-chip { --b: transparent; --e: transparent; border-radius: 9999px; background: var(--bg-surface-deep); color: #A9D3FF; box-shadow: inset 0 0 0 2px var(--mint-active); }
 
 /* ---- the week: seven day tokens ------------------------------------------------------------ */
 .jh-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
@@ -24,11 +28,11 @@ body.jh-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
 .jh-day.has-plan:not(.is-on)::after { content: ''; position: absolute; bottom: 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--surface-neutral-lo); }
 .jh-day.is-today:not(.is-on) { border-color: var(--mint-active); }
 .jh-day.is-on {
-  background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C); color: var(--text-white);
-  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 #1a4d33; transform: translateY(-2px);
+  background: var(--act-grad); color: var(--text-white);
+  box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge), 0 2px 0 #1C4F96; transform: translateY(-2px);
 }
 .jh-day.is-on small { opacity: 1; }
-.jh-day.is-on b, .jh-day.is-on small { text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.jh-day.is-on b, .jh-day.is-on small { text-shadow: var(--act-ink); }
 .jh-day:active { transform: translateY(2px); }
 .jh-day:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
 .jh-check { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%;
@@ -65,12 +69,12 @@ body.jh-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
 .jh-sub .ic { width: 16px; height: 16px; flex: none; }
 .jh-go {
   display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin: 2px 0 0; padding: 0 16px; border: 0; border-radius: 12px;
-  background: linear-gradient(#4CC08A, #39A672 60%, #2F9463); color: var(--text-white); cursor: pointer;
-  box-shadow: inset 0 2px 0 var(--mint-light), 0 4px 0 #236B48; transition: transform 100ms ease, box-shadow 100ms ease;
-  font: 900 16px/1 var(--font-header); font-variation-settings: 'wght' 860; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); -webkit-tap-highlight-color: transparent;
+  background: var(--act-grad); color: var(--text-white); cursor: pointer;
+  box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 var(--act-edge); transition: transform 100ms ease, box-shadow 100ms ease;
+  font: 900 16px/1 var(--font-header); font-variation-settings: 'wght' 860; text-shadow: var(--act-ink); -webkit-tap-highlight-color: transparent;
 }
 .jh-go .ic { width: 18px; height: 18px; }
-.jh-go:active { transform: translateY(4px); box-shadow: inset 0 2px 0 var(--mint-light), 0 0 0 #236B48; }
+.jh-go:active { transform: translateY(4px); box-shadow: inset 0 2px 0 var(--act-rim), 0 0 0 var(--act-edge); }
 .jh-go:focus-visible { outline: 3px solid var(--ink-green); outline-offset: 2px; }
 .jh-go.is-quiet { background: linear-gradient(#FFFFFF80, #FFFFFF40); color: var(--ink-green); text-shadow: none; box-shadow: inset 0 0 0 2px #2A1B0E33, 0 4px 0 #2A1B0E55; }
 .jh-card.is-rest .jh-tag { background: #4A3B26; }
@@ -84,8 +88,8 @@ body.jh-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
 .jh-prog-top span { font-size: 14px; color: var(--mint-light); }
 .jh-track { position: relative; height: 14px; border-radius: 9999px; background: #0A2715; overflow: hidden;
   box-shadow: inset 0 2px 3px rgba(0, 0, 0, .6), 0 1px 0 rgba(255, 255, 255, .08); }
-.jh-track i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, #39A672, #A7DBC5);
-  box-shadow: 0 0 10px rgba(167, 219, 197, .55); transition: width 400ms ease; }
+.jh-track i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, #4A8FE6, #A9D3FF);
+  box-shadow: 0 0 10px rgba(169, 211, 255, .6); transition: width 400ms ease; }
 .jh-prog-note { margin: 0; font-size: 14px; color: var(--mint-light); }
 .jh-prog-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 

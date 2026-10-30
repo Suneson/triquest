@@ -1,4 +1,4 @@
-// motion.js — the "feel" layer: tab wipes, numbers that roll in steps, meters
+// motion.js — the "feel" layer: tab slides, numbers that roll in steps, meters
 // that fill one segment at a time, busy buttons. Everything here is progressive:
 // with reduced motion (OS or in-app setting) or without the browser feature,
 // the end state appears at once and nothing else changes.
@@ -8,27 +8,64 @@ import { fmtNum } from '../core/i18n.js';
 
 const reduced = () => prefersReducedMotion() || document.body.classList.contains('rm');
 
-// ---- B1: tab changes as a 4-step pixel wipe ------------------------------------
-// The View Transitions API snapshots the old view, runs `update`, and animates
-// the swap. CSS (::view-transition-*(view)) draws the wipe; this only picks the
-// direction so the wipe travels the way the tab bar moved.
+// ---- B1: tab changes slide like a carousel ---------------------------------------
+// The old view (a still copy of it) slides out one side while the new one slides
+// in from the other, the way the tab bar moved. A finger swipe (tab-swipe.js)
+// hands over where it let go (`fromDx`), so the slide carries on from the finger.
 
-// The tab bar, left to right. The calendar ('journal') isn't on the bar any
-// more: it opens from Home, so it sits at Home's position as a level deeper.
-const TAB_ORDER = ['home', 'shop', 'progress', 'chat', 'leaderboards'];
+// The tab bar, left to right. The calendar ('journal') isn't on the bar: it opens
+// from the Journal tab ('home'), so it sits at that position as a level deeper.
+export const TAB_ORDER = ['home', 'shop', 'progress', 'chat', 'leaderboards'];
+const pos = (t) => (t === 'journal' ? TAB_ORDER.indexOf('home') + 0.5 : TAB_ORDER.indexOf(t));
 
-/** 'fwd' (the wipe travels left, like moving right along the bar) or 'back'. */
+/** 'fwd' (moving right along the bar) or 'back'. */
 export function tabDirection(from, to) {
-  const pos = (t) => (t === 'journal' ? TAB_ORDER.indexOf('home') + 0.5 : TAB_ORDER.indexOf(t));
   return pos(to) < pos(from) ? 'back' : 'fwd';
 }
 
-export function withTabTransition(from, to, update) {
-  if (!document.startViewTransition || reduced() || from === to) { update(); return; }
-  const dir = tabDirection(from, to);
-  document.documentElement.dataset.vtDir = dir;
-  const t = document.startViewTransition(update);
-  t.finished.finally(() => { delete document.documentElement.dataset.vtDir; });
+const SLIDE_MS = 260;
+const EASE = 'cubic-bezier(.2, .8, .2, 1)';
+
+export function withTabTransition(from, to, update, { fromDx = 0 } = {}) {
+  const view = document.getElementById('view');
+  if (!view || reduced() || from === to) { update(); view?.style.removeProperty('transform'); return; }
+  const dir = tabDirection(from, to) === 'fwd' ? 1 : -1;
+  const w = view.clientWidth;
+  // a still copy of the old view, laid exactly over it, keeping its look and scroll
+  const r = view.getBoundingClientRect();
+  const cs = getComputedStyle(view);
+  const ghost = view.cloneNode(true);
+  ghost.removeAttribute('id');
+  ghost.classList.add('view-ghost');
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.inert = true;
+  Object.assign(ghost.style, {
+    position: 'fixed', left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`,
+    padding: cs.padding, backgroundColor: cs.backgroundColor, overflow: 'hidden', zIndex: '2', margin: '0',
+    transform: `translateX(${fromDx}px)`,
+  });
+  const top = view.scrollTop;
+  document.querySelector('.app')?.append(ghost);
+  ghost.scrollTop = top;
+  update();
+  // the new view starts beside the old one and both move together
+  view.classList.add('is-sliding');
+  view.style.transition = 'none';
+  view.style.transform = `translateX(${dir * w + fromDx}px)`;
+  void view.offsetWidth;
+  const ms = Math.max(140, SLIDE_MS * (1 - Math.min(0.6, Math.abs(fromDx) / w)));
+  view.style.transition = ghost.style.transition = `transform ${ms}ms ${EASE}`;
+  view.style.transform = 'translateX(0)';
+  ghost.style.transform = `translateX(${-dir * w}px)`;
+  let done = false;
+  const end = () => {
+    if (done) return; done = true;
+    ghost.remove();
+    view.classList.remove('is-sliding');
+    view.style.removeProperty('transition'); view.style.removeProperty('transform');
+  };
+  view.addEventListener('transitionend', end, { once: true });
+  setTimeout(end, ms + 120);
 }
 
 // ---- B2: numbers roll, meters fill ------------------------------------------------

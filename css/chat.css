@@ -1,30 +1,35 @@
 /* chat.css — the Chat tab in the house look (art.md), like the Journal (css/journal.css):
    bottle green, with the dock's chat icon as the palette. Other people's messages are
    beige bubbles, yours MOSKE blue; the General | Direct | Club switch is the shop's
-   tab plates (beige, seafoam when on); the composer is a beige well with the
-   Journal's green Start button as Send. Scoped to body.chat-mode, so the same parts
+   tab plates (beige, baby blue when on), each with its 3D icon, pinned to the top; the composer is a beige well with the
+   Journal's Start button as Send. Scoped to body.chat-mode, so the same parts
    drawn elsewhere (the friend sheets) keep their look. */
 
 body.chat-mode { --bg: var(--bg-canvas); background: var(--bg-canvas); }
 body.chat-mode .muted { color: var(--mint-light); }
 
 /* ---- General | Direct | Club: beige plates, seafoam when on ------------------------------------- */
-body.chat-mode .ch-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; background: none; box-shadow: none; }
+/* pinned to the top of the screen while the conversation scrolls under it */
+body.chat-mode .ch-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; background: var(--bg-canvas); box-shadow: 0 8px 10px -8px rgba(0, 0, 0, .5);
+  position: sticky; top: calc(-1 * var(--sp-group)); z-index: 3; margin: 0 -16px; padding: 10px 16px 12px; }
 body.chat-mode .ch-seg-btn {
-  min-height: 44px; border-radius: 12px; color: var(--ink-green);
+  position: relative; display: grid; justify-items: center; align-content: center; gap: 2px;
+  min-height: 72px; padding: 6px 4px; border-radius: 14px; color: var(--ink-green);
   background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
   box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35);
   font-family: var(--font-header); font-variation-settings: 'wght' 860; font-size: 14px; text-transform: none; text-shadow: none;
   transition: transform 100ms ease; -webkit-tap-highlight-color: transparent;
 }
 body.chat-mode .ch-seg-btn.on {
-  background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C); color: var(--text-white);
-  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249, 0 2px 0 rgba(0, 0, 0, .35);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, .45); transform: translateY(-2px);
+  background: var(--act-grad); color: var(--text-white);
+  box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge), 0 2px 0 rgba(0, 0, 0, .35);
+  text-shadow: var(--act-ink); transform: translateY(-2px);
 }
 body.chat-mode .ch-seg-btn:active { transform: translateY(2px); }
 body.chat-mode .ch-seg-btn:focus-visible { outline: 3px solid var(--text-white); outline-offset: 2px; }
-body.chat-mode .ch-seg-n { border-radius: 9999px; }
+body.chat-mode .ch-seg-img { width: 40px; height: 40px; object-fit: contain; pointer-events: none; image-rendering: auto; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+body.chat-mode .ch-seg-lbl { font-size: 13px; line-height: 1.1; }
+body.chat-mode .ch-seg-n { position: absolute; top: 4px; right: 6px; border-radius: 9999px; }
 
 /* ---- the conversation list: beige rows ---------------------------------------------------------- */
 body.chat-mode .ch-list { gap: 8px; }
@@ -84,10 +89,10 @@ body.chat-mode .ch-in::placeholder { color: #8A7655; }
 body.chat-mode .ch-in:focus { box-shadow: inset 0 2px 3px rgba(42, 27, 14, .35), 0 0 0 2px var(--mint-active); }
 body.chat-mode .ch-send {
   --b: transparent; --e: transparent; border-radius: 12px; color: var(--text-white);
-  background: linear-gradient(#4CC08A, #39A672 60%, #2F9463); box-shadow: inset 0 2px 0 var(--mint-light), 0 4px 0 #236B48;
+  background: var(--act-grad); box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 var(--act-edge);
   transition: transform 100ms ease, box-shadow 100ms ease;
 }
-body.chat-mode .ch-send:active { transform: translateY(4px); box-shadow: inset 0 2px 0 var(--mint-light), 0 0 0 #236B48; }
+body.chat-mode .ch-send:active { transform: translateY(4px); box-shadow: inset 0 2px 0 var(--act-rim), 0 0 0 var(--act-edge); }
 body.chat-mode .ch-send:disabled { filter: grayscale(.6); }
 body.chat-mode .rm-ch-btn { --b: transparent; --e: transparent; border-radius: 12px; color: var(--ink-green);
   background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), 0 2px 0 rgba(0, 0, 0, .35); }

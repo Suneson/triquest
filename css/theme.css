@@ -15,7 +15,11 @@
   /* brand */
   --brand-blue: #0C4CAE;         /* MOSKE blue */
   --brand-blue-sky: #6EA8FF;     /* sky blue highlights */
-  --mint-active: #39A672;        /* seafoam: what's active */
+  --mint-active: #5FA3F2;        /* what's active: the baby blue of the shop's gear cards (was seafoam) */
+  --act-grad: linear-gradient(#A9D3FF, #6FAEF6 55%, #4A8FE6); /* an open tab, a go button */
+  --act-rim: #DDEEFF;            /* its lit top edge */
+  --act-edge: #2F6CC2;           /* its pressed-in bottom edge */
+  --act-ink: 0 1px 0 #1C4F96, 0 -1px 0 #1C4F96, 1px 0 0 #1C4F96, -1px 0 0 #1C4F96; /* white type on it, outlined */
   --mint-light: #A7DBC5;         /* light mint: text and lit rims */
 
   /* metallics and accents */

@@ -127,7 +127,7 @@
 .sc-wallet-name { font: 15px/1 var(--font-header); font-variation-settings: 'wght' 860; color: var(--mint-light); }
 .sc-wallet-track { position: relative; display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; min-height: 30px; padding: 4px 12px;
   border-radius: 9999px; background: rgba(0, 0, 0, .35); overflow: hidden; }
-.sc-wallet-track i { position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); background: linear-gradient(90deg, rgba(57, 166, 114, .55), rgba(167, 219, 197, .55)); }
+.sc-wallet-track i { position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); background: linear-gradient(90deg, rgba(57, 166, 114, .55), rgba(169, 211, 255, .6)); }
 .sc-wallet-track b { position: relative; font: 20px/1 var(--font-header); font-variation-settings: 'wght' 860; }
 .sc-wallet-track small { position: relative; font-size: 12px; color: var(--mint-light); }
 
@@ -164,8 +164,8 @@ body.rm .sc-card.is-go:active { transform: none; }
 /* more button kinds: mint (Wear, Aim), gold label (Build, Wearing), locked */
 .sc-buy span, .sc-buy .ic { position: relative; }
 .sc-buy .ic { width: 18px; height: 18px; }
-.sc-buy:is(.is-mint, .is-action) { background: linear-gradient(#5CD39B, var(--mint-active) 60%, #2C8A5C); color: var(--text-white); font-size: 16px;
-  box-shadow: inset 0 2px 0 var(--mint-light), 0 4px 0 #1E6B44, 0 5px 0 rgba(0, 0, 0, .3); -webkit-text-stroke: 2px #124a2e; paint-order: stroke fill; }
+.sc-buy:is(.is-mint, .is-action) { background: var(--act-grad); color: var(--text-white); font-size: 16px;
+  box-shadow: inset 0 2px 0 var(--act-rim), 0 4px 0 #1E6B44, 0 5px 0 rgba(0, 0, 0, .3); -webkit-text-stroke: 2px #124a2e; paint-order: stroke fill; }
 .sc-buy.is-gold { font-size: 16px; color: var(--text-white); -webkit-text-stroke: 2px #3a2600; paint-order: stroke fill; }
 .sc-buy:is(.is-mint, .is-action)[disabled], .sc-buy.is-gold[disabled] { opacity: .85; cursor: default; }
 .sc-buy.is-locked { cursor: not-allowed; background: linear-gradient(#9AA2AE, #6E7682); color: var(--text-white); font-size: 14px;
@@ -201,8 +201,8 @@ body.rm .sc-card.is-go:active { transform: none; }
 .gw-screen.is-shop .gw-sports .pg-sport { --b: transparent; --e: transparent; min-height: 44px; border-radius: 12px; color: var(--ink-green);
   background: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral)); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo); text-shadow: none; }
 .gw-screen.is-shop .gw-sports .pg-sport span { color: inherit; text-shadow: none; }
-.gw-screen.is-shop .gw-sports .pg-sport.active { color: var(--text-white); background: linear-gradient(#4CC08A, var(--mint-active) 60%, #2C8A5C);
-  box-shadow: inset 0 2px 0 var(--mint-light), inset 0 -3px 0 #237249; }
+.gw-screen.is-shop .gw-sports .pg-sport.active { color: var(--text-white); background: var(--act-grad);
+  box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge); }
 
 /* beige panels on the canvas: the boost total, the quadrant, the workshop, collections */
 .gw-screen.is-shop .gw-total, .gw-screen.is-shop .quad-head, .gw-screen.is-shop .ws-card, .gw-screen.is-shop .col-frame {
@@ -213,7 +213,7 @@ body.rm .sc-card.is-go:active { transform: none; }
 .gw-screen.is-shop .gw-total b, .gw-screen.is-shop .quad-lv { color: var(--brand-blue); }
 .gw-screen.is-shop .gw-total small, .gw-screen.is-shop .quad-head small, .gw-screen.is-shop .quad-head .gw-note { color: #4a5a4e; }
 .gw-screen.is-shop .gw-cap { background: rgba(10, 39, 21, .18); border-radius: 9999px; overflow: hidden; }
-.gw-screen.is-shop .gw-cap i { background: linear-gradient(90deg, var(--mint-active), var(--mint-light)); }
+.gw-screen.is-shop .gw-cap i { background: linear-gradient(90deg, #4A8FE6, #A9D3FF); }
 .gw-screen.is-shop .ws-card .gw-row-h, .gw-screen.is-shop .ws-card b { color: var(--ink-green); }
 .gw-screen.is-shop .ws-card .ws-note, .gw-screen.is-shop .ws-card small, .gw-screen.is-shop .ws-left { color: #4a5a4e; }
 .gw-screen.is-shop .ws-bay { --b: transparent; --e: transparent; background: rgba(10, 39, 21, .07); border-radius: 10px; box-shadow: none; }

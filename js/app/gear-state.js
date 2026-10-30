@@ -104,6 +104,15 @@ const loopRows = (s) => [
 export const sportLevelOf = (sport, xp) => sportLevel(xp, rawState().prestige, sport);
 
 export function onGear(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+
+/** Demo mode only: a chest opened on the device pays into the demo wallet (chests-state.js). */
+export function demoCredit(coins, carbs) {
+  if (!isDemo()) return;
+  const d = rawState();
+  const cap = GEAR_RULES.storageCap;
+  d.wallet = { ...d.wallet, coins: Math.min(cap, (Number(d.wallet?.coins) || 0) + coins), carbs: Math.min(cap, (Number(d.wallet?.carbs) || 0) + carbs) };
+  listeners.forEach((fn) => { try { fn(d); } catch (e) { console.error(e); } });
+}
 const emit = () => {
   listeners.forEach((fn) => { try { fn(state); } catch (e) { console.error(e); } });
   watchWorkshop();

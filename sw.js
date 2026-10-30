@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v83';
+const CACHE = 'triquest-v84';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS = [
   './css/theme.css',
   './css/styles.css',
   './css/shop.css',
+  './css/chests.css',
   './js/app/main.js',
   './js/app/store.js',
   './js/app/ui.js',
@@ -37,6 +38,14 @@ const ASSETS = [
   './js/app/base-view.js',
   './js/app/diorama-view.js',
   './js/app/shop-ui.js',
+  './js/app/chests-state.js',
+  './js/app/chest-view.js',
+  './js/core/rewards.js',
+  './icons/AnimatedRewards/still/Common.webp',
+  './icons/AnimatedRewards/still/Uncommon.webp',
+  './icons/AnimatedRewards/still/Rare.webp',
+  './icons/AnimatedRewards/still/Legendary.webp',
+  './icons/AnimatedRewards/still/Mythic.webp',
   './js/app/missions-view.js',
   './js/app/clubs-view.js',
   './js/app/clubs-state.js',
@@ -144,7 +153,11 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const { request } = e;
   if (request.method !== 'GET') return;
-  const sameOrigin = new URL(request.url).origin === self.location.origin;
+  const url = new URL(request.url);
+  const sameOrigin = url.origin === self.location.origin;
+  // clips and sounds (the reward chests) stream with Range requests: the browser
+  // and the server handle those, and a partial response can't be cached anyway
+  if (request.headers.has('range') || /\.(webm|mp4|mov|mp3|m4a)$/i.test(url.pathname)) return;
 
   // Network-first for same-origin app code so updates always apply when online;
   // cache is the offline fallback. (Avoids the stale-asset trap of cache-first.)

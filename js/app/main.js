@@ -60,6 +60,8 @@ import { openTrophyCase, featWonText } from './feats-view.js';
 import { refreshChallenges, stopChallenges, onChallenges } from './challenges-state.js';
 import { settleText } from './challenges-view.js';
 import { openGear, openInventory, openShop } from './gear-view.js';
+import { refreshChests, onChests, isChestAdmin, chestsEnabled } from './chests-state.js';
+import { showChestBanner, openChestQueue, adminChestTools, wireAdminTools } from './chest-view.js';
 import { startGelTicker } from './gel-chip.js';
 
 
@@ -491,6 +493,7 @@ function onClick(e) {
     case 'open-missions': openMissionBoard(buildCtx()); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
+    case 'open-chests': openChestQueue(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
@@ -678,6 +681,7 @@ function openSettings() {
         <label class="field"><span>${t('main.units')}</span><select data-set="units"><option value="metric" ${s.units === 'metric' ? 'selected' : ''}>${t('main.metric')}</option><option value="imperial" ${s.units === 'imperial' ? 'selected' : ''}>${t('main.imperial')}</option></select></label>
         <label class="field"><span>${t('main.weekStarts')}</span><select data-set="weekStart"><option value="1" ${s.weekStart === 1 ? 'selected' : ''}>${t('main.monday')}</option><option value="0" ${s.weekStart === 0 ? 'selected' : ''}>${t('main.sunday')}</option></select></label>
 
+        ${isChestAdmin() ? adminChestTools() : ''}
         <hr>
         <h3>${t('main.backup')}</h3>
         <p class="muted small">${auth.currentUser() ? t('main.backupSignedIn') : t('main.backupLocal')}</p>
@@ -731,6 +735,7 @@ function openSettings() {
     packing[el.dataset.packPreset] = el.value.split(',').map((x) => x.trim()).filter(Boolean);
     store.setSetting('packing', packing);
   }));
+  wireAdminTools(root);
   root.querySelectorAll('[data-set-do]').forEach((b) => b.addEventListener('click', () => {
     const act = b.dataset.setDo;
     if (act === 'export') doExport();
@@ -1001,7 +1006,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); refreshClub(); } else { stopSocial(); stopRoom(); stopChallenges(); stopClub(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); refreshClub(); refreshChests(); } else { stopSocial(); stopRoom(); stopChallenges(); stopClub(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();
@@ -1175,6 +1180,16 @@ async function boot() {
     if (done.some((d) => d.row?.payout && d.result.outcome === 'settled')) { playAccept(); haptic('record'); }
   });
   startGelTicker(() => render());
+  // a finished session left a chest: the banner slides down once, the Home card keeps it
+  onChests(() => { showChestBanner(); if (appState.tab === 'home') render(); });
+  // back in the app (a ride synced while it was closed): ask again, at most once a minute
+  let chestsAsked = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !chestsEnabled() || Date.now() - chestsAsked < 60000) return;
+    chestsAsked = Date.now();
+    refreshChests();
+  });
+  if (chestsEnabled()) { chestsAsked = Date.now(); refreshChests(); }
 
   if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); startRoom(); });
   else { startSocial().then(() => paintBell()); startRoom(); } // demo mode

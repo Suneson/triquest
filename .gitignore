@@ -18,3 +18,4 @@ triquest-backup-*.json
 # playwright-cli session logs
 .playwright-cli/
 docs/gear/gen/
+__pycache__/

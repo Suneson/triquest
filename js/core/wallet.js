@@ -12,6 +12,7 @@
 //   carbs for a day = min(dailyCarbCap, floor(that day's base XP × carbsPerXp))  (grams)
 //   missions        = QUEST_REWARDS, coins or carbs
 //   weekly missions = MISSION_RULES.reward, coins and carbs (missions.js)
+//   reward chests   = the bonus of each opened chest, from when it was opened (rewards.js)
 //
 // Storage: each currency holds at most storageCap. Events are taken in time
 // order (a day's earnings at the start of that day, a spend when it was made);
@@ -75,7 +76,7 @@ const spendAmount = (s) => Number(s?.amount ?? s?.coins) || 0;
  * like any other):
  * { coins, carbs, earned: { coins, carbs }, spent: { coins, carbs }, lost: { coins, carbs } }.
  */
-export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [], missions = [] } = {}) {
+export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [], missions = [], chests = [] } = {}) {
   const ev = [];
   for (const d of coinDays(workouts)) ev.push({ at: `${d.date}T00:00:00.000Z`, rank: 0, key: d.date, coins: d.coins, carbs: d.carbs });
   for (const q of questRewards(quests)) ev.push({ at: `${q.day}T00:00:00.000Z`, rank: 1, key: q.quest_id, coins: q.coins, carbs: q.carbs });
@@ -98,6 +99,12 @@ export function walletFold({ workouts = [], quests = [], spends = [], moves = []
   // weekly missions (missions.js), from the moment the server paid them
   for (const m of missionRewards(missions)) {
     ev.push({ at: new Date(Date.parse(m.at)).toISOString(), rank: 5, key: m.key, coins: m.coins, carbs: m.carbs });
+  }
+  // reward chests (rewards.js): only once opened, from the moment they were
+  for (const c of chests || []) {
+    const t = Date.parse(c?.opened_at);
+    if (!Number.isFinite(t)) continue;
+    ev.push({ at: new Date(t).toISOString(), rank: 6, key: String(c.id).padStart(12, '0'), coins: Number(c.coins) || 0, carbs: Number(c.carbs) || 0 });
   }
   ev.sort((a, b) => a.at.localeCompare(b.at) || a.rank - b.rank || a.key.localeCompare(b.key));
   const cap = GEAR_RULES.storageCap;

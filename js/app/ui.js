@@ -7,6 +7,7 @@ import { PLAN_PRINCIPLES, PACE_REFERENCE, RACES } from '../core/plan.js';
 import { shortLabel, weekdayName, addDays, diffDays, parseISO } from '../core/dates.js';
 import { weekKm, weekHours, acwr, runVolumeJump } from '../core/load.js';
 import { DISCIPLINES, INTENSITIES, paceHint } from '../core/disciplines.js';
+import { homeChestCard } from './chest-view.js';
 import { svg } from '../core/icons.js';
 import { renderLogger, hasLogger } from './gym-logger.js';
 import { mainSetIsExercises } from '../core/gym-split.js';
@@ -391,6 +392,7 @@ export function renderHome(ctx) {
   return weekPathCard(ctx)
     + homeDateHeader(ctx)
     + focusCard(ctx)
+    + homeChestCard()
     + weekStrip(ctx, ws, !!ctx.ui?.weekOpen)
     + questsPanel(ctx)
     + tomorrowGlance(ctx)

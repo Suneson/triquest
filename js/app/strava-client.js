@@ -47,6 +47,8 @@ export async function syncNow() {
   import('./gear-state.js').then((m) => m.refreshGear()).catch(() => {});
   // …and may have won a feat (the sync already asked the server to award it)
   import('./feats-state.js').then((m) => m.refreshFeats()).catch(() => {});
+  // …and has left a reward chest (the server makes it when asked)
+  import('./chests-state.js').then((m) => m.refreshChests()).catch(() => {});
   return out;
 }
 

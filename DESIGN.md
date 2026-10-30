@@ -496,7 +496,81 @@ canvas. The tokens are in `css/theme.css`, the styles are scoped to
   pops once, and an unaffordable one shakes. Reduced motion (the OS setting or
   `body.rm`) turns all three off.
 
-### Challenge card (Room and Challenges)### Challenge card (Room and Challenges)
+### Reward chests (`js/app/chest-view.js`, `css/chests.css`)
+A finished session leaves a chest (rules and art: `docs/REWARDS.md`). The
+chest's tier colour (`--tc`) runs through everything it touches:
+
+| Tier | Colour |
+| --- | --- |
+| Common | beige `#E6D7BD` |
+| Uncommon | mint `#4CC38A` |
+| Rare | blue `#5B9BFF` |
+| Epic | violet `#B57BFF` |
+| Legendary | gold `#FFC94A` |
+| Mythic | cyan `#6FF0FF`, with a moving rainbow sheen on its name |
+
+- **Banner:** a floating pill at the top in bottle green `#0F3A20` with a warm
+  beige `#E6D7BD` rim.
+  - It holds the chest's still with a pulsing gold dot, "WORKOUT RECORDED!" in
+    Franklin Heavy capitals, and a gold *OPEN* pill.
+  - It drops in with a bounce and leaves upward. It shows once per chest, and
+    folds away by itself after 12 s.
+- **Home card:** MOSKE blue (`#2F78E0` → `#0A3A8A`) with diagonal light stripes
+  and the tier's glow behind the chest, which bobs.
+  - Gold *OPEN*, and a red count when more than one is waiting.
+  - Under 400 px the button sits under the text.
+- **The opening:** full screen on a bottle-green radial lit by the tier colour.
+  1. The tier name (huge, in the tier colour) and the container name drop in,
+     and the clip plays.
+  2. The chest rests on its still, with a white flash and slowly turning conic
+     rays.
+  3. Each tap brings one reward card up out of the chest and over it, while the
+     chest dims and settles behind. The card shows the currency picture, the
+     total counting up in Franklin Heavy with tabular figures, the source line,
+     and a gold *+bonus* chip that pops in a beat later. A spray of coins (or
+     carbs) flies from the chest into the card.
+  4. *Collect* (or *Next chest*) is a full-width gold button.
+  - **Safari:** no clip; the still drops in and shakes to the sound.
+  - **Reduced motion:** nothing moves and the numbers land at once.
+
+### Challenge card (Room and Challenges)### Reward chests (`js/app/chest-view.js`, `css/chests.css`)
+A finished session leaves a chest (rules and art: `docs/REWARDS.md`). The
+chest's tier colour (`--tc`) runs through everything it touches:
+
+| Tier | Colour |
+| --- | --- |
+| Common | beige `#E6D7BD` |
+| Uncommon | mint `#4CC38A` |
+| Rare | blue `#5B9BFF` |
+| Epic | violet `#B57BFF` |
+| Legendary | gold `#FFC94A` |
+| Mythic | cyan `#6FF0FF`, with a moving rainbow sheen on its name |
+
+- **Banner:** a floating pill at the top in bottle green `#0F3A20` with a warm
+  beige `#E6D7BD` rim.
+  - It holds the chest's still with a pulsing gold dot, "WORKOUT RECORDED!" in
+    Franklin Heavy capitals, and a gold *OPEN* pill.
+  - It drops in with a bounce and leaves upward. It shows once per chest, and
+    folds away by itself after 12 s.
+- **Home card:** MOSKE blue (`#2F78E0` → `#0A3A8A`) with diagonal light stripes
+  and the tier's glow behind the chest, which bobs.
+  - Gold *OPEN*, and a red count when more than one is waiting.
+  - Under 400 px the button sits under the text.
+- **The opening:** full screen on a bottle-green radial lit by the tier colour.
+  1. The tier name (huge, in the tier colour) and the container name drop in,
+     and the clip plays.
+  2. The chest rests on its still, with a white flash and slowly turning conic
+     rays.
+  3. Each tap brings one reward card up out of the chest and over it, while the
+     chest dims and settles behind. The card shows the currency picture, the
+     total counting up in Franklin Heavy with tabular figures, the source line,
+     and a gold *+bonus* chip that pops in a beat later. A spray of coins (or
+     carbs) flies from the chest into the card.
+  4. *Collect* (or *Next chest*) is a full-width gold button.
+  - **Safari:** no clip; the still drops in and shakes to the sound.
+  - **Reduced motion:** nothing moves and the numbers land at once.
+
+### Challenge card (Room and Challenges)
 A challenge travels as a card, never as a plain message. In the Room it's a
 card row (`rm-card`) posted by the server, not the sender: the sport glyph, the
 rule in one line ("Most riding km, Tue 20 Oct – Mon 26 Oct"), the stake as a

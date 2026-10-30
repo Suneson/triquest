@@ -2986,4 +2986,66 @@ en.shop = {
   }
 };
 
+en.chest = {
+  "tier": {
+    "common": "Common",
+    "uncommon": "Uncommon",
+    "rare": "Rare",
+    "epic": "Epic",
+    "legendary": "Legendary",
+    "mythic": "Mythic"
+  },
+  "box": {
+    "common": "Kit bag",
+    "uncommon": "Cool box",
+    "rare": "Trail pack",
+    "epic": "Epic crate",
+    "legendary": "Gold chest",
+    "mythic": "Carbon vault"
+  },
+  "diff": {
+    "easy": "Easy session",
+    "moderate": "Steady session",
+    "hard": "Hard session",
+    "brutal": "Brutal session"
+  },
+  "gift": "A gift",
+  "preview": "Preview",
+  "open": "OPEN",
+  "skip": "Skip",
+  "collect": "Collect",
+  "next": "Next chest ({n} left)",
+  "coins": "Coins",
+  "carbs": "Carbs",
+  "bonus": "Bonus",
+  "bonusOnly": "chest bonus",
+  "fromSession": "{n} from your session",
+  "hint": {
+    "wait": "Opening…",
+    "open": "Tap to open",
+    "more": "Tap for more"
+  },
+  "banner": {
+    "title": "Workout recorded!",
+    "one": "You unlocked a {box}!",
+    "many": "You unlocked {n} reward chests!"
+  },
+  "home": {
+    "eyebrow": "Rewards ready",
+    "title": "Your last session rewards are ready",
+    "more": "{n} chests waiting · newest: {box}",
+    "aria": "Open your rewards: {n} waiting"
+  },
+  "admin": {
+    "title": "Admin · reward chests",
+    "note": "Play opens a chest and pays nothing. Gift makes a real chest for you (it pays when you open it). Simulate shows the banner a finished workout would.",
+    "preview": "Play",
+    "gift": "Gift",
+    "previewAria": "Play a {tier} chest (pays nothing)",
+    "giftAria": "Gift yourself a real {tier} chest",
+    "simulate": "Simulate a finished workout",
+    "gifted": "A {tier} chest is waiting for you"
+  }
+};
+
 export default en;

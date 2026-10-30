@@ -30,8 +30,13 @@ def screen_colour(rgb):
     return np.median(border, axis=0)
 
 
-def key(rgb):
-    """Alpha for a flat-screen image: distance from the screen colour, in chroma."""
+def key(rgb, min_hole=None):
+    """
+    Alpha for a flat-screen image: distance from the screen colour, in chroma.
+    Screen that touches the border is keyed; with min_hole, so is any enclosed
+    patch of screen at least that many pixels (the gap between a machine's legs),
+    while smaller screen-coloured details inside the object stay.
+    """
     img = rgb.astype(np.float32)
     scr = screen_colour(img)
     # chroma distance (brightness-independent, so shading on the screen still keys)
@@ -42,7 +47,11 @@ def key(rgb):
     near = d < 40
     labels, _ = ndimage.label(near)
     edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
-    screen = np.isin(labels, edge[edge > 0])
+    keyed = set(edge[edge > 0].tolist())
+    if min_hole:
+        sizes = ndimage.sum(near, labels, range(1, labels.max() + 1))
+        keyed |= {i + 1 for i, n in enumerate(sizes) if n >= min_hole}
+    screen = np.isin(labels, sorted(keyed))
     band = ndimage.binary_dilation(screen, iterations=4) & ~screen
     alpha = np.ones(screen.shape, np.float32)
     alpha[screen] = 0

@@ -131,12 +131,16 @@ export function boxCorners(geomKey, u, v, w = 1, h = 1) {
  * level). `fit`: how much of the footprint the object's base covers (0.8
  * when not given), so it stands inside the blue lines. `spot`: where it's first set down,
  * when that's free (else the first free tile from the middle). `opens`: what
- * tapping it opens once it's picked up ('missions').
+ * tapping it opens once it's picked up ('missions'). `runner3d`: the 3D runner
+ * stands on it (the treadmill).
  */
 export const PLACEABLES = [
   { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', fit: 0.75, art: () => `${ART}/ITEMS/coffee-machine.webp` },
   // the rider on their bike: the cycling animation, standing along the floor's v axis
   { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.62, art: (o) => o?.rider || '' },
+  // the treadmill: everyone's, in the run room, with the 3D runner on its belt
+  // (js/app/runner3d.js), its console at the front of the floor's v axis
+  { id: 'treadmill', w: 1, h: 2, gift: true, home: 'run', needsRoom: 'run', fit: 0.9, runner3d: true, art: () => `${ART}/ITEMS/treadmill.webp` },
   {
     id: 'smart-trainer', w: 2, h: 1, home: 'bike', fit: 0.7, art: () => 'icons/Pixelart/GEAR/bike-power-t3.png',
     owned: (inv) => (inv || []).some((r) => r.item_id === 'bike-power-t3'),

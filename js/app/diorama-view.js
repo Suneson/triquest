@@ -39,6 +39,9 @@ import { haptic } from './haptics.js';
 import { playPlace, prefersReducedMotion } from './effects.js';
 import * as store from './store.js';
 import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
+import { mountRunner, webglOk } from './runner3d.js';
+import { isChestAdmin } from './chests-state.js';
+import { isDemo } from './demo.js';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -155,8 +158,40 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <div class="dg-side is-right">
       <button class="dg-round" data-action="open-gear" aria-label="${esc(t('gear.shop'))}"><img src="icons/Pixelart/GEAR/btn-shop.png" width="128" height="128" alt="">${ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : ''}</button>
     </div>
+    ${room === 'run' && (isChestAdmin() || isDemo()) ? turnBar() : ''}
     ${roomNav(room)}
   </section>`;
+}
+
+// ---- the 3D runner on the treadmill (runner3d.js) -----------------------------------------
+
+const YAW_KEY = 'moske-runner-yaw';
+const runnerYaw = () => { try { return Number(localStorage.getItem(YAW_KEY)) || 0; } catch { return 0; } };
+const saveYaw = (deg) => { try { localStorage.setItem(YAW_KEY, String(deg)); } catch { /* private mode */ } };
+
+/** Admins: turn the runner 45° at a time, to check how it sits on the belt. */
+const turnBar = () => `<div class="dg-turn" role="group" aria-label="${esc(t('cp.r3d.aria'))}">
+    <button data-r3d-turn="-45" aria-label="${esc(t('cp.r3d.left'))}">${svg('back')}<span>${t('cp.r3d.left')}</span></button>
+    <b data-r3d-angle>${runnerYaw()}°</b>
+    <button data-r3d-turn="45" aria-label="${esc(t('cp.r3d.right'))}"><span>${t('cp.r3d.right')}</span>${svg('back')}</button>
+  </div>`;
+
+/**
+ * Put the runner on a treadmill item's element (once), sized by the room's floor:
+ * the canvas lives inside the element, so it moves and stacks with it.
+ */
+function placeRunner(el, it, p, geom, src, still) {
+  if (el._r3d || !webglOk()) return;
+  const a = roomPctToWorld(geom, ...Object.values(tileToPct(geom, p.u, p.v)));
+  const b1 = roomPctToWorld(geom, ...Object.values(tileToPct(geom, p.u + 1, p.v)));
+  const c = roomPctToWorld(geom, ...Object.values(tileToPct(geom, p.u + it.w / 2, p.v + it.h / 2)));
+  const box = itemBox(it, p, geom, src);
+  const img = el.querySelector('img');
+  const aspect = img?.naturalWidth ? img.naturalHeight / img.naturalWidth : 609 / 768;
+  const H = box.w * aspect;
+  // the footprint's centre, in the element's own px (its box is the picture's)
+  const anchor = { x: c[0] - (box.x - box.w / 2), y: c[1] - (box.y - H * (1 - box.pad)) };
+  el._r3d = mountRunner(el, { tile: { ux: Math.abs(b1[0] - a[0]), uy: b1[1] - a[1] }, anchor, yaw: (runnerYaw() * Math.PI) / 180, still });
 }
 
 // ---- the stage ---------------------------------------------------------------------------
@@ -284,6 +319,10 @@ export function wireDiorama(root, ctx) {
       el.setAttribute('aria-label', t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }));
       const img = el.querySelector('img'); const a = it.art(artOpts);
       if (img.getAttribute('src') !== a) img.src = a;
+      if (it.runner3d) {
+        const go = () => placeRunner(el, it, p, geom, a, reduced());
+        if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once: true });
+      }
       // the mission board carries this week's count
       if (it.opens === 'missions') {
         let tag = el.querySelector('.dg-tag');
@@ -486,6 +525,13 @@ export function wireDiorama(root, ctx) {
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
   root.querySelector('[data-dg-act]').onclick = () => { haptic('tick'); openMissionBoard(ctx); };
+  root.querySelectorAll('[data-r3d-turn]').forEach((b) => b.addEventListener('click', () => {
+    const deg = (((runnerYaw() + Number(b.dataset.r3dTurn)) % 360) + 360) % 360;
+    saveYaw(deg);
+    root.querySelector('[data-r3d-angle]').textContent = `${deg}°`;
+    worldEl.querySelectorAll('.dg-item').forEach((el) => el._r3d?.setYaw((deg * Math.PI) / 180));
+    haptic('tick');
+  }));
 
   // the rooms
   root.querySelectorAll('[data-room-go]').forEach((b) => {

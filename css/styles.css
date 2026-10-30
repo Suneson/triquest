@@ -2719,3 +2719,14 @@ body.rm .dg-item.spring, body.rm .dg-world.is-easing { transition: none; }
 .cl-leave { width: 100%; margin-top: 18px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .cl-route-on { transition: none; } }
 body.rm .cl-route-on { transition: none; }
+
+/* the 3D runner on the treadmill (js/app/runner3d.js): a canvas inside the item, over its picture */
+.dg-item .r3d-canvas { position: absolute; pointer-events: none; image-rendering: auto; }
+/* admins: turn the runner to check how it sits on the belt */
+.dg-turn { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 14px); transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 9999px; background: rgba(11, 18, 34, .72); box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+.dg-turn button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 9999px; cursor: pointer;
+  background: linear-gradient(#FFE78A, #F2C14E 60%, #C98F1E); color: #2a1c00; font: 13px/1 var(--font-display); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5); }
+.dg-turn button:last-child .ic { transform: scaleX(-1); }
+.dg-turn button .ic { width: 14px; height: 14px; }
+.dg-turn b { min-width: 44px; text-align: center; color: #F2F5FC; font: 14px/1 var(--font-display); }

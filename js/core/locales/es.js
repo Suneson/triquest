@@ -2765,7 +2765,7 @@ es.cp = {
   "roomsAria": "Salas",
   "nav": { "bike": "Ciclismo", "pool": "Natación", "run": "Carrera", "gym": "Gimnasio", "locker": "Vestuario y recuperación" },
   "room": { "gym": "Gimnasio", "pool": "Piscina", "bike": "Sala de bici", "run": "Sala de carrera", "locker": "Vestuario" },
-  "item": { "coffee-machine": "Cafetera", "smart-bike": "Tu bici", "smart-trainer": "Rodillo inteligente" },
+  "item": { "coffee-machine": "Cafetera", "smart-bike": "Tu bici", "smart-trainer": "Rodillo inteligente", "treadmill": "Cinta de correr" },
   "roledesc": "editor de la base",
   "vpAria": "Tu base. Arrastra para moverte, pellizca o usa los botones para hacer zoom. Toca un objeto para cogerlo.",
   "roomAlt": "{room}, nivel {n}",
@@ -3047,5 +3047,7 @@ es.chest = {
     "gifted": "Te espera un cofre {tier}"
   }
 };
+
+es.cp.r3d = { "aria": "Girar al corredor", "left": "Girar a la izquierda", "right": "Girar a la derecha" };
 
 export default es;

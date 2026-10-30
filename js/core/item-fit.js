@@ -54,6 +54,11 @@ export const ITEM_FIT = {
     "mid": 0.5,
     "pad": 0.0
   },
+  "icons/Pixelart/NEW/ITEMS/treadmill.webp": {
+    "w": 1.0,
+    "mid": 0.5,
+    "pad": 0.0
+  },
   "icons/Pixelart/GEAR/bike-power-t3.png": {
     "w": 0.93,
     "mid": 0.5,

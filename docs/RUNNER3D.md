@@ -38,8 +38,9 @@ swapped later without repainting every pose.
 - **Cost.**
   - three.js loads only when a runner is on screen.
   - It draws at 30 fps and pauses when the app is hidden.
-  - It frees the GPU 1.5 s after the canvas leaves the stage (another room or
-    tab).
+  - On another tab it pauses and keeps everything, so HOME picks up
+    mid-stride with no reload. It frees the GPU only when the treadmill leaves
+    the room (another room shown, or the item moved away).
 
 ## The files
 

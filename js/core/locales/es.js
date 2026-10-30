@@ -16,7 +16,7 @@ es.nav = {
   "shop": "Tienda",
   "ranks": "Ranking",
   "chat": "Chat",
-  "gym": "GYM",
+  "journal": "Diario",
   "profile": "Perfil",
   "views": "Secciones",
   "notifications": "Notificaciones",
@@ -106,6 +106,11 @@ es.date = {
 };
 
 es.ui = {
+  "minLong": "{n} min",
+  "hrZone": "Zona FC",
+  "viewSession": "Ver sesión",
+  "startWorkout": "Empezar entreno",
+  "sessionsDone": "{done} / {goal} sesiones hechas",
   "packRemove": "Quitar {item}",
   "packEmpty": "Todavía no hay nada",
   "packAddPh": "Añadir algo…",

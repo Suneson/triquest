@@ -296,7 +296,7 @@ export function wireDiorama(root, ctx) {
     // items: keep each one's node (and its decoded picture), update it in place
     const layer = worldEl.querySelector('.dg-items');
     const keep = new Set(here.map((it) => it.id));
-    layer.querySelectorAll('[data-item]').forEach((el) => { if (!keep.has(el.dataset.item)) el.remove(); });
+    layer.querySelectorAll('[data-item]').forEach((el) => { if (!keep.has(el.dataset.item)) { el._r3d?.dispose(); el.remove(); } });
     const shadows = worldEl.querySelector('.dg-shadows');
     shadows.querySelectorAll('[data-for]').forEach((el) => { if (!keep.has(el.dataset.for)) el.remove(); });
     for (const it of here) {

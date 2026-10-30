@@ -2,7 +2,7 @@
 
 Status: **built (2026-10-27)**. This replaces the multi-room compound. `0024_placements.sql` is live.
 
-The GYM tab (the middle of the tab bar; it was Profile) is a diorama: one painted isometric room at a time, standing in its plot on a generated terrain (sky, grass, the dirt cutaway). It sits under a game HUD:
+The Home tab (the middle of the dock, docs/JOURNAL.md; once Profile, then GYM) is a diorama: one painted isometric room at a time, standing in its plot on a generated terrain (sky, grass, the dirt cutaway). It sits under a game HUD:
 
 | Where | What |
 | --- | --- |
@@ -94,7 +94,7 @@ The house type is Franklin Gothic Heavy where it's installed, else Libre Frankli
 
 ## The room buttons and the tab bar
 
-- **Tab bar:** Home, Shop, **GYM** (this view, in the middle), Chat, Ranks. The view's key is still `progress`, so saved tabs and links keep working.
+- **Tab bar:** the dock: Journal, Shop, **Home** (this view, in the middle), Chat, Ranks (docs/JOURNAL.md). The view's key is still `progress`, so saved tabs and links keep working.
 - **Room buttons:** the four sports and the locker room use the shop's own tab plate (`.game-tab` in `css/tabs.css`, shared with the gear shop and inventory tabs). They're beige, and the open room's is seafoam, on a bottle-green band.
 - **Icons** (`icons/UI/sports/`, cut by `python3 tools/cut-shop-ui.py icons/UI/sports/src`):
 

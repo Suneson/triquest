@@ -265,4 +265,4 @@ Accounts+sync, Strava OAuth/webhook/polling/matching + actual-vs-planned, UX pas
 
 ## The unified compound (2026-10-27)
 
-The GYM tab (middle of the tab bar, formerly Profile) opens on the compound. docs/COMPOUND.md covers the rooms, layouts, floor grid, items and drag rules. The core is `js/core/placement.js` (pure, `tests/placement.test.js`); the view is `js/app/compound-view.js`; positions are in `user_placements` (0024). Room art is regenerated with `python3 tools/cut-rooms.py <art-raw checkout>`.
+The Home tab (middle of the dock, formerly Profile and GYM; docs/JOURNAL.md) opens on the compound, and the app lands there. The training plan is the Journal tab. docs/COMPOUND.md covers the rooms, layouts, floor grid, items and drag rules. The core is `js/core/placement.js` (pure, `tests/placement.test.js`); the view is `js/app/compound-view.js`; positions are in `user_placements` (0024). Room art is regenerated with `python3 tools/cut-rooms.py <art-raw checkout>`.

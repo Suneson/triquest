@@ -2737,3 +2737,9 @@ body.rm .cl-route-on { transition: none; }
 .dg-turn button:last-child .ic { transform: scaleX(-1); }
 .dg-turn button .ic { width: 14px; height: 14px; }
 .dg-turn b { min-width: 44px; text-align: center; color: #F2F5FC; font: 14px/1 var(--font-display); }
+
+/* the cloud bank that sweeps through a move between floors of the tower (diorama-view.js cloudMove) */
+.dg-clouds { position: fixed; inset: 0; z-index: 8; pointer-events: none; overflow: hidden; }
+.dg-clouds > div { position: absolute; left: -15%; width: 130%; top: 0; will-change: transform; }
+.dg-clouds img { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
+.dg-clouds img + img { transform: scaleX(-1); }

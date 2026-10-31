@@ -22,7 +22,7 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById,
   resolvePlacements, ROOM_GEOMETRY,
 } from '../core/placement.js';
-import { ENV, STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF } from '../core/diorama.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -156,7 +156,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
   const ready = unseenFinished().length;
   return `<section class="dg-screen" data-dg>
     <div class="dg-viewport" data-dg-vp tabindex="0" role="application" aria-roledescription="${esc(t('cp.roledesc'))}" aria-label="${esc(t('cp.vpAria'))}">
-      <div class="dg-world" data-dg-world style="width:${ENV.w}px;height:${ENV.h}px"></div>
+      <div class="dg-world" data-dg-world style="width:${envFor(room).w}px;height:${envFor(room).h}px"></div>
     </div>
     ${hud(ctx, avatarBtn)}
     ${roomPill(room, ctx)}
@@ -194,9 +194,9 @@ const turnBar = () => `<div class="dg-turn" role="group" aria-label="${esc(t('cp
  */
 function placeRunner(el, it, p, geom, src, still) {
   if (el._r3d || !webglOk()) return;
-  const a = roomPctToWorld(geom, ...Object.values(tileToPct(geom, p.u, p.v)));
-  const b1 = roomPctToWorld(geom, ...Object.values(tileToPct(geom, p.u + 1, p.v)));
-  const c = roomPctToWorld(geom, ...Object.values(tileToPct(geom, p.u + it.w / 2, p.v + it.h / 2)));
+  const a = toWorld_(geom, ...Object.values(tileToPct(geom, p.u, p.v)));
+  const b1 = toWorld_(geom, ...Object.values(tileToPct(geom, p.u + 1, p.v)));
+  const c = toWorld_(geom, ...Object.values(tileToPct(geom, p.u + it.w / 2, p.v + it.h / 2)));
   const box = itemBox(it, p, geom, src);
   const img = el.querySelector('img');
   const aspect = img?.naturalWidth ? img.naturalHeight / img.naturalWidth : 609 / 768;
@@ -210,7 +210,9 @@ function placeRunner(el, it, p, geom, src, still) {
 
 const view = { v: null, sel: null, tick: null };
 // the world's DOM, kept between renders (see wireDiorama)
-const stage = { world: null, gen: 0 };
+const stage = { world: null, gen: 0, env: envFor('locker') };
+// a point of a room's art in the world it stands in now
+const toWorld_ = (geom, x, y) => roomPctToWorld(geom, x, y, stage.env);
 
 const pt = (p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
 const poly = (corners, cls, extra = '') => `<polygon class="${cls}" points="${corners.map(pt).join(' ')}"${extra}/>`;
@@ -243,7 +245,7 @@ function arrows(geom, it, p) {
  * Returns the picture's box (x, y = the object's foot, w) and the floor shadow.
  */
 function itemBox(it, p, geom, src) {
-  const pts = boxCorners(geom, p.u, p.v, it.w, it.h).map((c) => roomPctToWorld(geom, c.x, c.y));
+  const pts = boxCorners(geom, p.u, p.v, it.w, it.h).map((c) => toWorld_(geom, c.x, c.y));
   const xs = pts.map((q) => q[0]); const ys = pts.map((q) => q[1]);
   const minX = Math.min(...xs); const maxX = Math.max(...xs);
   const minY = Math.min(...ys); const maxY = Math.max(...ys);
@@ -252,6 +254,52 @@ function itemBox(it, p, geom, src) {
   const f = fitOf(src);
   const w = ((maxX - minX) * fit) / f.w;
   return { x: cx + (0.5 - f.mid) * w, y: cy + ((maxY - minY) / 2) * fit, w, pad: f.pad, cx, cy, sw: (maxX - minX) * fit, sh: (maxY - minY) * fit };
+}
+
+// ---- moving between floors of the tower: a cloud bank sweeps through (docs/CITY.md) -----------
+
+const CLOUDS = 'icons/City/app/clouds.webp';
+// the rooms from the street up (the pool is the top floor)
+const HEIGHT = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
+let preloaded = false;
+function preloadFloors() {
+  if (preloaded) return;
+  preloaded = true;
+  const go = () => [CLOUDS, ...Object.keys(FLOOR_OF).map((r) => envFor(r).src)].forEach((src) => { const i = new Image(); i.src = src; });
+  (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(go);
+}
+const decoded = (src) => { const i = new Image(); i.src = src; return (i.decode ? i.decode() : Promise.resolve()).catch(() => {}); };
+
+/**
+ * Go up or down the tower: the floor drops away (or rises) and blurs, a cloud bank taller than
+ * the screen sweeps through it (top to bottom going up), `swap` changes the room under its cover,
+ * and the new floor settles in from the other side.
+ */
+async function cloudMove(from, to, swap) {
+  stage.moving = true;
+  const up = HEIGHT[to] > HEIGHT[from];
+  await Promise.all([decoded(CLOUDS), decoded(envFor(to).src)]);
+  const H = innerHeight; const W = innerWidth;
+  const cloudH = W * 1.3 * (1376 / 768);
+  const band = cloudH * 1.55;
+  const sky = document.createElement('div');
+  sky.className = 'dg-clouds'; sky.setAttribute('aria-hidden', 'true');
+  sky.innerHTML = `<div><img src="${CLOUDS}" alt=""><img src="${CLOUDS}" alt="" style="top:${(cloudH * 0.55).toFixed(0)}px"></div>`;
+  document.body.append(sky);
+  const bank = sky.firstElementChild;
+  bank.style.height = `${band}px`;
+  const T = 1000; const ease = 'cubic-bezier(.45, 0, .55, 1)';
+  const [y0, y1] = up ? [-band, H] : [H, -band];
+  bank.animate([{ transform: `translateY(${y0}px)` }, { transform: `translateY(${y1}px)` }], { duration: T, easing: ease, fill: 'forwards' });
+  const drop = (up ? 1 : -1) * H * 0.35;
+  const vp = () => document.querySelector('[data-dg-vp]');
+  vp()?.animate([{ transform: 'none', filter: 'none' }, { transform: `translateY(${drop}px)`, filter: 'blur(6px)' }], { duration: T / 2, easing: 'ease-in', fill: 'forwards' });
+  await new Promise((r) => setTimeout(r, T / 2));
+  swap();
+  vp()?.animate([{ transform: `translateY(${-drop}px)`, filter: 'blur(6px)' }, { transform: 'none', filter: 'none' }], { duration: T / 2, easing: 'ease-out' });
+  await new Promise((r) => setTimeout(r, T / 2 + 40));
+  sky.remove();
+  stage.moving = false;
 }
 
 /** Wire the stage in `root` (the view). */
@@ -270,7 +318,9 @@ export function wireDiorama(root, ctx) {
   let placements = resolvePlacements(STAGE_LAYOUT, items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
-  const M = roomPlacement(geom);
+  const env = envFor(room);
+  stage.env = env;
+  const M = roomPlacement(geom, env);
 
   // The world is built once and kept across renders (the app re-renders the
   // whole tab often): the terrain and the room stay painted, the floor's lines
@@ -280,13 +330,18 @@ export function wireDiorama(root, ctx) {
   stage.world = worldEl;
   const gen = ++stage.gen;
   if (!worldEl.querySelector('.dg-env')) {
-    worldEl.innerHTML = `<img class="dg-env" src="${ENV.src}" width="${ENV.w}" height="${ENV.h}" alt="" draggable="false">
+    worldEl.innerHTML = `<img class="dg-env" src="${env.src}" width="${env.w}" height="${env.h}" alt="" draggable="false">
       <div class="dg-room-art"><img alt="" draggable="false">
         <svg class="dg-floor" viewBox="0 0 100 100" preserveAspectRatio="none"><g class="dg-cells"></g><g class="dg-arrows"></g></svg>
       </div>
       <div class="dg-shadows"></div>
       <div class="dg-items"></div>`;
   }
+  // the world this room stands in (a floor of the city tower, or the terrain)
+  worldEl.style.width = `${env.w}px`; worldEl.style.height = `${env.h}px`;
+  const envImg = worldEl.querySelector('.dg-env');
+  if (envImg.getAttribute('src') !== env.src) { envImg.src = env.src; envImg.width = env.w; envImg.height = env.h; }
+  preloadFloors();
   // an item's picture and its shadow on the floor move together
   const moveEl = (el, it, u, v) => {
     const b = itemBox(it, { u, v }, geom, it.art(artOpts));
@@ -353,7 +408,7 @@ export function wireDiorama(root, ctx) {
   const box = () => vp.getBoundingClientRect();
   const apply = () => {
     const r = box();
-    view.v = clampView(view.v || homeView(r.width, r.height), r.width, r.height);
+    view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);
     worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
   };
   const artEl = worldEl.querySelector('.dg-room-art');
@@ -380,7 +435,7 @@ export function wireDiorama(root, ctx) {
     const r = box();
     const ox = cx - r.left; const oy = cy - r.top;
     const v0 = from || view.v;
-    const lo = minZoom(r.width, r.height);
+    const lo = minZoom(r.width, r.height, env);
     const s1 = Math.min(lo * MAX_ZOOM, Math.max(lo, ns));
     view.v = { s: s1, tx: ox - (ox - v0.tx) * (s1 / v0.s), ty: oy - (oy - v0.ty) * (s1 / v0.s) };
     apply();
@@ -390,7 +445,7 @@ export function wireDiorama(root, ctx) {
     draw();
     const el = worldEl.querySelector(`[data-item="${id}"]`);
     // picking something up from far away brings it closer
-    const r = box(); const lo = minZoom(r.width, r.height);
+    const r = box(); const lo = minZoom(r.width, r.height, env);
     if (el && view.v.s < lo * 1.5) {
       if (!reduced()) { worldEl.classList.add('is-easing'); setTimeout(() => worldEl.classList.remove('is-easing'), 280); }
       const e = el.getBoundingClientRect();
@@ -406,7 +461,7 @@ export function wireDiorama(root, ctx) {
   const toWorld = (cx, cy) => { const r = box(); return { x: (cx - r.left - view.v.tx) / view.v.s, y: (cy - r.top - view.v.ty) / view.v.s }; };
   const tileAt = (cx, cy, it) => {
     const p = toWorld(cx, cy);
-    const q = worldToRoomPct(geom, p.x, p.y);
+    const q = worldToRoomPct(geom, p.x, p.y, env);
     const f = pctToTile(geom, q.x, q.y);
     return { u: Math.round(f.u - it.w / 2), v: Math.round(f.v - it.h / 2) };
   };
@@ -548,10 +603,11 @@ export function wireDiorama(root, ctx) {
   // the rooms
   root.querySelectorAll('[data-room-go]').forEach((b) => {
     b.onclick = () => {
-      if (b.dataset.roomGo === activeRoom()) return;
-      setActiveRoom(b.dataset.roomGo);
+      const to = b.dataset.roomGo; const from = activeRoom();
+      if (to === from || stage.moving) return;
       haptic('tick');
-      root.dispatchEvent(new CustomEvent('dg-room', { bubbles: true }));
+      const go = () => { setActiveRoom(to); document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true })); };
+      if (reduced()) go(); else cloudMove(from, to, go);
     };
   });
 

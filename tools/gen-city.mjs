@@ -75,6 +75,8 @@ const JOBS = {
   // floors 2 and 3 (bike, run): each one row of office windows more under the same slab
   'floor-2': upFloor(2),
   'floor-3': upFloor(3),
+  // floor 4, the pool: the top floor
+  'floor-4': upFloor(4),
 };
 
 const pngB64 = async (path) => (await sharp(readFileSync(path)).png().toBuffer()).toString('base64');

@@ -2469,13 +2469,13 @@ body.rm .cp-item.spring { transition: none; }
 
 
 /* ---- the heavy game type (docs/COMPOUND.md): bold shadowed labels everywhere ---- */
-h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg-room, .dg-pill b, .dg-num {
+h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg-pill b, .dg-num {
   text-shadow: 0 2px 4px rgba(0, 0, 0, .6);
 }
 
 /* ---- THE DIORAMA STAGE (docs/COMPOUND.md) ---------------------------------------------- */
 .dg-screen { position: fixed; inset: 0; z-index: 1; background: #0b1630; overflow: hidden; }
-.dg-viewport { position: absolute; left: 0; right: 0; top: 0; bottom: calc(var(--tabs-h) + var(--dg-nav-h));
+.dg-viewport { position: absolute; left: 0; right: 0; top: 0; bottom: 0;
   overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none; }
 .dg-viewport:focus-visible { box-shadow: inset 0 0 0 3px #fff; }
 .dg-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
@@ -2565,22 +2565,30 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-orb:active { transform: translateY(3px) scale(.96); }
 .dg-orb-n { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); min-width: 26px; height: 20px; padding: 0 6px; display: grid; place-items: center;
   border-radius: 9999px; background: #16264D; color: #FFD34D; font-size: 13px; line-height: 1; box-shadow: 0 0 0 2px #0B1222; text-shadow: none; }
-.dg-orb:focus-visible, .dg-room:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-/* the rooms: four of the shop's game tabs (css/tabs.css), the locker room underneath, on a
-   bottle-green band like the shop's tab row */
-.dg-screen { --dg-nav-h: 142px; }
-.dg-rooms { position: absolute; left: 0; right: 0; bottom: var(--tabs-h); z-index: 4; display: grid; gap: 8px; padding: 10px 12px 10px;
-  background: var(--bg-canvas); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .08), 0 -3px 0 rgba(0, 0, 0, .35); }
-.dg-rooms-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.dg-room.game-tab { min-height: 70px; }
-.dg-room.game-tab:not(.is-wide) span { font-size: 13px; }
+.dg-orb:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+/* the rooms: an elevator's buttons on the right (diorama-view.js liftPanel), the pool at the top.
+   The city fills the whole screen, down behind the dock. */
+.dg-screen { --dg-nav-h: 0px; }
+.dg-lift { display: grid; gap: 10px; padding: 16px 10px; border-radius: 24px;
+  background: linear-gradient(160deg, #F4F6FA, #C3CAD6 52%, #E4E8EF);
+  box-shadow: inset 0 0 0 3px #16264D, inset 0 0 0 5px #D9B65A, inset 0 2px 8px rgba(255, 255, 255, .7), 0 4px 0 rgba(0, 0, 0, .45), 0 10px 16px rgba(0, 0, 0, .3); }
+.dg-lift-btn { position: relative; width: 50px; height: 50px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  background: radial-gradient(circle at 36% 30%, #FFFFFF, #ECE6D8 55%, #CDC3AA);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .16), 0 0 0 3px #16264D, 0 3px 0 #0B1222;
+  transition: transform 180ms cubic-bezier(.3, 1.4, .5, 1), background 180ms ease, box-shadow 180ms ease; -webkit-tap-highlight-color: transparent; }
+.dg-lift-btn img { width: 36px; height: 36px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+.dg-lift-btn.is-on { z-index: 1; transform: scale(1.2); background: var(--act-grad);
+  box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge), 0 0 0 3px #0B2A66, 0 3px 0 #0B1222, 0 0 16px rgba(120, 180, 255, .85); }
+.dg-lift-btn:active { transform: scale(.94); }
+.dg-lift-btn.is-on:active { transform: scale(1.12); }
+.dg-lift-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   .dg-item.bounce, .dg-item.landed, .dg-arrow, .dg-gauge.is-stamina .dg-fill::after { animation: none; }
-  .dg-item.spring, .dg-world.is-easing, .dg-fill { transition: none; }
+  .dg-item.spring, .dg-world.is-easing, .dg-fill, .dg-lift-btn { transition: none; }
   .dg-item.is-lift { transform: translate(-50%, var(--ty)); }
 }
 body.rm .dg-item.bounce, body.rm .dg-item.landed, body.rm .dg-arrow, body.rm .dg-gauge.is-stamina .dg-fill::after { animation: none; }
-body.rm .dg-item.spring, body.rm .dg-world.is-easing { transition: none; }
+body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-lift-btn { transition: none; }
 
 /* ---- weekly missions, seasons and the stall (docs/LOOP.md §5) ---------------------------- */
 /* on the stage: the board's weekly count, and the way into a picked-up board */
@@ -2743,3 +2751,5 @@ body.rm .cl-route-on { transition: none; }
 .dg-clouds > div { position: absolute; left: -15%; width: 130%; top: 0; will-change: transform; }
 .dg-clouds img { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
 .dg-clouds img + img { transform: scaleX(-1); }
+/* on the base the city runs down behind the dock, so the dock's band is see-through there */
+body.pg-mode:has(.dg-screen) .tabs { background: transparent; }

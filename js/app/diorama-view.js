@@ -125,7 +125,7 @@ function roomPill(room, ctx) {
 // over it and spilling past its rim, like the buttons round a game's home screen
 const orb = (src, attrs, extra = '') => `<button class="dg-orb" ${attrs}><img src="${src}" width="128" height="128" alt="" draggable="false">${extra}</button>`;
 
-/** The room's trophies (its feats won), on the right under the shop. */
+/** The room's trophies (its feats won), on the right under the elevator. */
 function trophyOrb(room) {
   if (room === 'locker') return '';
   const sport = SPORT_OF[room];
@@ -136,18 +136,17 @@ function trophyOrb(room) {
     `<b class="dg-orb-n data-num" aria-hidden="true">${won}</b>`);
 }
 
-// the room buttons: the shop's game tabs (css/tabs.css), each with its sport's
-// icon (tools/cut-shop-ui.py); the locker room is the same plate, wide
+// the rooms are floors of the city tower (docs/CITY.md), so they're an elevator's buttons on the
+// right, the pool at the top and the locker room at the street; the floor you're on is lit
+// blue and a size bigger. Each button carries its sport's icon (tools/cut-shop-ui.py).
 const SPORT_ART = { bike: 'sport-bike', pool: 'sport-swim', run: 'sport-run', gym: 'sport-gym', locker: 'sport-locker' };
 const btnArt = (room) => `icons/UI/sports/${SPORT_ART[room]}.webp`;
+const LIFT = ['pool', 'run', 'bike', 'gym', 'locker'];
 
-function roomNav(active) {
-  const btn = (room) => `<button class="dg-room game-tab${room === active ? ' is-on' : ''}${room === 'locker' ? ' is-wide' : ''}" data-room-go="${room}"
-      aria-pressed="${room === active}"><img src="${btnArt(room)}" width="128" height="128" alt="" draggable="false"><span>${t(`cp.nav.${room}`)}</span></button>`;
-  return `<nav class="dg-rooms" aria-label="${esc(t('cp.roomsAria'))}">
-    <div class="dg-rooms-row">${STAGE_ROOMS.filter((r) => r !== 'locker').map(btn).join('')}</div>
-    ${btn('locker')}
-  </nav>`;
+function liftPanel(active) {
+  const btn = (room) => `<button class="dg-lift-btn${room === active ? ' is-on' : ''}" data-room-go="${room}" aria-pressed="${room === active}"
+      aria-label="${esc(t(`cp.nav.${room}`))}" title="${esc(t(`cp.nav.${room}`))}"><img src="${btnArt(room)}" width="128" height="128" alt="" draggable="false"></button>`;
+  return `<nav class="dg-lift" aria-label="${esc(t('cp.roomsAria'))}">${LIFT.map(btn).join('')}</nav>`;
 }
 
 /** The GYM tab (it was Profile). */
@@ -163,15 +162,15 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <p class="dg-hint" data-dg-hint aria-live="polite"></p>
     <button class="dg-act" data-dg-act hidden></button>
     <div class="dg-side is-left">
+      ${orb('icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
       ${orb('icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
       ${orb('icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
     </div>
     <div class="dg-side is-right">
-      ${orb('icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
+      ${liftPanel(room)}
       ${trophyOrb(room)}
     </div>
     ${room === 'run' && (isChestAdmin() || isDemo()) ? turnBar() : ''}
-    ${roomNav(room)}
   </section>`;
 }
 
@@ -606,6 +605,8 @@ export function wireDiorama(root, ctx) {
       const to = b.dataset.roomGo; const from = activeRoom();
       if (to === from || stage.moving) return;
       haptic('tick');
+      // the new floor's button lights up straight away, the room follows under the clouds
+      root.querySelectorAll('[data-room-go]').forEach((x) => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
       const go = () => { setActiveRoom(to); document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true })); };
       if (reduced()) go(); else cloudMove(from, to, go);
     };

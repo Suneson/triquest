@@ -1,6 +1,12 @@
 # The city tower (plan and first test)
 
-**Status:** four floors are in the app (locker, gym, bike, run). The pool keeps the old terrain until it has a floor. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
+**Status:** four floors are in the app (locker, gym, bike, run). The pool keeps the old terrain until it has a floor.
+
+**On screen:**
+- The city fills the whole screen, down behind the dock.
+- The rooms are an elevator's buttons on the right, the pool at the top and the locker room at the bottom. The floor you're on is lit baby blue and a size bigger.
+- The elevator's frame is drawn in CSS for now. A Gemini-painted frame is to come (`gen-city.mjs` needs `GEMINI_API_KEY`).
+- On the left, top to bottom: the shop, the inventory and what's next. The room's trophies sit under the elevator. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
 ## The idea
 

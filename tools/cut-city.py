@@ -1,12 +1,17 @@
 """cut-city.py — key the city pictures from tools/gen-city.mjs out of their green sky (docs/CITY.md).
 
     python3 tools/cut-city.py <gen dir> <out dir>
+    python3 tools/cut-city.py align <floor.png> <floor-0.png>     (in place, keeps <floor>-raw.png)
 
   floor-N.png   -> <out>/floor-N.webp          its sky keyed out (transparent)
                 -> <out>/floor-N-preview.jpg   the whole picture over the sky, and beside it the
                                                middle 9:16 a phone shows before you swipe sideways
   sky.png       -> <out>/sky.webp
   clouds-*.png  -> <out>/clouds-*.webp         keyed out
+
+`align` scales and shifts a floor so its roof slab lands exactly on floor 0's: Gemini frames
+each new floor a little wider or higher. The slab is found as the flat concrete round the
+picture's middle.
 
 Build-time only (Pillow, numpy, scipy; the green key is cut-art.py's).
 """
@@ -26,6 +31,47 @@ def keyed(path):
     return Image.fromarray(np.dstack([img.clip(0, 255), (alpha * 255).clip(0, 255)]).astype(np.uint8), 'RGBA')
 
 
+def slab(path):
+    """The roof slab's top, bottom and centre x, in px."""
+    from scipy import ndimage
+    a = np.asarray(Image.open(path).convert('RGB')).astype(int)
+    h, w, _ = a.shape
+    # the concrete: start from the lightest flat patch near the middle of the picture
+    best = None
+    for fy in (0.30, 0.34, 0.38, 0.42):
+        for fx in (0.45, 0.5, 0.55):
+            y, x = int(h * fy), int(w * fx)
+            patch = a[y - 20:y + 20, x - 20:x + 20].reshape(-1, 3)
+            score = patch.std(0).sum() - patch.mean() / 4
+            if best is None or score < best[0]:
+                best = (score, x, y)
+    _, x, y = best
+    m = np.abs(a - a[y, x]).sum(2) < 45
+    lab, _ = ndimage.label(m)
+    m = ndimage.binary_opening(lab == lab[y, x], iterations=4)
+    ys, xs = np.where(m)
+    top, bottom = ys.min(), ys.max()
+    return top, bottom, (xs[ys == top].mean() + xs[ys == bottom].mean()) / 2
+
+
+def align(path, ref):
+    t0, b0, x0 = slab(ref)
+    t1, b1, x1 = slab(path)
+    k = max((b0 - t0) / (b1 - t1), 1.0)
+    src = Image.open(path).convert('RGB')
+    base, _ = os.path.splitext(path)
+    if not os.path.exists(base + '-raw.png'):
+        src.save(base + '-raw.png')
+    big = src.resize((round(src.width * k), round(src.height * k)), Image.LANCZOS)
+    W, H = Image.open(ref).size
+    # the shift that lands the slab, held so the picture still covers the frame (a few px off at worst)
+    ox = min(max(0, round(x1 * k - x0)), big.width - W)
+    oy = min(max(0, round(t1 * k - t0)), big.height - H)
+    out = big.crop((ox, oy, ox + W, oy + H))
+    out.save(path)
+    print(f'{os.path.basename(path)}: ×{k:.3f}, shifted {ox}, {oy}')
+
+
 def over_sky(im, sky):
     """The floor over the sky, the sky scaled to cover it."""
     k = max(im.width / sky.width, im.height / sky.height)
@@ -37,6 +83,8 @@ def over_sky(im, sky):
 
 
 def main():
+    if sys.argv[1] == 'align':
+        return align(sys.argv[2], sys.argv[3])
     src, dst = sys.argv[1], sys.argv[2]
     os.makedirs(dst, exist_ok=True)
     sky = None

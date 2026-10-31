@@ -40,3 +40,23 @@ test('zoom and pan never show past the terrain', () => {
     assert.equal(h.s, lo);
   }
 });
+
+test('the city floors: each room with a floor stands in the middle of its slab, at half its width', async () => {
+  const { envFor, FLOOR_OF } = await import('../js/core/diorama.js');
+  for (const room of Object.keys(FLOOR_OF)) {
+    const env = envFor(room);
+    assert.ok(existsSync(env.src), env.src);
+    const g = stageGeom(room); const G = ROOM_GEOMETRY[g];
+    const [mx, my] = roomPctToWorld(g, (G.right[0] + G.left[0]) / 2, (G.right[1] + G.left[1]) / 2, env);
+    assert.ok(Math.abs(mx - (env.plot.left[0] + env.plot.right[0]) / 2) < 1 && Math.abs(my - (env.plot.top[1] + env.plot.bottom[1]) / 2) < 1, `${room} centred`);
+    const [lx] = roomPctToWorld(g, ...G.left, env); const [rx] = roomPctToWorld(g, ...G.right, env);
+    assert.ok(Math.abs((rx - lx) - (env.plot.right[0] - env.plot.left[0]) / 2) < 1, `${room} floor is half the slab`);
+    const back = worldToRoomPct(g, ...roomPctToWorld(g, 30, 70, env), env);
+    assert.ok(Math.abs(back.x - 30) < 1e-9 && Math.abs(back.y - 70) < 1e-9);
+    for (const [vw, vh] of [[390, 620], [320, 520], [430, 700]]) {
+      const h = homeView(vw, vh, env);
+      assert.ok(h.s >= minZoom(vw, vh, env) - 1e-9 && h.tx <= 0 && h.ty <= 0, 'the opening view stays inside the floor');
+    }
+  }
+  assert.equal(envFor('pool'), ENV, 'the pool keeps the terrain until it has a floor');
+});

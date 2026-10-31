@@ -1,6 +1,6 @@
 # The city tower (plan and first test)
 
-**Status:** test art for the first two floors. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
+**Status:** four floors are in the app (locker, gym, bike, run). The pool keeps the old terrain until it has a floor. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
 ## The idea
 
@@ -31,16 +31,24 @@ The base becomes one tall MOSKE tower in a modern city. Each room is a floor of 
 | `icons/City/sky.webp` | The sky, behind every floor. |
 | `icons/City/floor-0.webp` | Locker room, street level: the slab sits on the glass lobby, with the street and tall towers round it. The sky is transparent. |
 | `icons/City/floor-1.webp` | Gym: the same slab in the same place, with exactly two storeys under it (an office storey plus the lobby), the street a storey lower and taller buildings around. |
+| `icons/City/floor-2.webp` | Bike room: three rows of office windows under the slab. |
+| `icons/City/floor-3.webp` | Run room: four rows of office windows under the slab. |
 | `icons/City/clouds.webp` | A chunky cloud bank, transparent, for the move between floors. |
+| `icons/City/app/` | What the app loads: each floor at 1792 × 2400 with the sky baked in, and the clouds at 768 × 1376. |
 | `icons/UI/ref/city-floor0-ref.jpg` | The picture chosen as floor 0's look. |
 | `docs/city-lift-test.gif` | Locker → gym on a phone, then a swipe out to the slab's corners. |
 | `docs/city-floor-1-preview.jpg` | The gym's whole picture with the phone's frame drawn on, and what the phone shows. |
 
-**Each floor shows one storey more than the floor below.** It is made with the floor below as its reference, and the prompt says exactly how many storeys show under the slab.
-- Gemini tends to frame the next floor a little wider, so the slab comes out smaller. The gym was scaled ×1.27 and shifted so its slab lands exactly on the locker's. Measure the slab and do the same for each new floor.
+**Each floor shows one storey more than the floor below.** It is made with the two floors below as references, and the prompt counts the rows of office windows between the lobby canopy and the slab: the gym has 2, the bike room 3, the run room 4. Asking for "storeys" didn't work, because the bike room came back with the same two rows as the gym.
+- Gemini tends to frame the next floor a little wider, so the slab comes out smaller or higher.
+  - The gym and bike room were scaled with `tools/cut-city.py align` so their slab lands on the locker's.
+  - The run room's slab sits too high to scale into place without cutting off the towers' tops, so it was left as made.
+- **In the app (`js/core/diorama.js`):** each floor's slab corners are measured in its app picture (`SLABS`).
+  - The room's 8 × 8 floor is centred on the slab at half its width (the slab is made for 16 × 16).
+  - The opening view is zoomed so the slab is a little wider than the screen (`slabView`), and you swipe to see its corners.
 - Don't ask Gemini to pin the slab's position: when we tried, it added a smaller setback storey on top instead.
 
-**Moving between floors (about 0.9 s):**
+**Moving between floors (1 s, `cloudMove` in `js/app/diorama-view.js`; skipped under reduced motion):**
 1. The old floor drops down and blurs.
 2. A cloud bank about one and a half screens tall (`clouds.webp` twice, the second one mirrored) sweeps in from the top of the screen and out at the bottom. It covers the screen while the floors swap.
 3. The new floor settles in from above.
@@ -52,11 +60,15 @@ The clouds hide the jump, so a floor only has to be one storey taller than the o
 ```
 GEMINI_API_KEY=… node tools/gen-city.mjs <gen-dir> sky clouds-a floor-0
 GEMINI_API_KEY=… node tools/gen-city.mjs <gen-dir> floor-1      # needs floor-0 in <gen-dir>
+python3 tools/cut-city.py align <gen-dir>/floor-1.png <gen-dir>/floor-0.png
+GEMINI_API_KEY=… node tools/gen-city.mjs <gen-dir> floor-2      # then floor-3, each after the one below
 python3 tools/cut-city.py <gen-dir> <out-dir>                    # keys the sky, writes the previews
 ```
 
-**Still to touch up:**
-- The gym's slab edge has a thin gold trim line.
+**Still to come:**
+- The pool's floor.
+- A cut-out of the slab's navy and gold rim, to lay over a room's floor so the room sits in the slab.
+- 16 × 16 rooms.
 - One rooftop at the gym's top right is smeared.
 
 ## How the app is built (for the 3D pipeline)

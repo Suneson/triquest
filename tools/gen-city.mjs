@@ -1,14 +1,15 @@
-// gen-city.mjs — the base's city backdrops (docs/CITY.md): one 16:9 picture per floor of
-// the MOSKE tower, plus the delivery truck, generated with Google's Gemini image model
-// at its largest size (4K). House style: docs/ART-DIRECTION.md (modern, no wood).
+// gen-city.mjs — the base's city (docs/CITY.md), generated with Google's Gemini image model
+// at its largest size. House style: docs/ART-DIRECTION.md (modern, no wood).
 //
 //   GEMINI_API_KEY=… node tools/gen-city.mjs <out-dir> [name…]
 //
-// Each floor is the same tower seen from the same isometric camera, one storey higher:
-// a flat concrete roof slab in the middle (the stage a room stands on, big enough for a
-// 16 × 16 floor), the tower's facade under it, and the city around at that height. A
-// floor is generated with the floor below it as a reference, so the tower, the city and
-// the light carry on. The key is read from the environment only and never written.
+// Every floor of the MOSKE tower is one picture, a little wider than the phone (3:4), so the
+// slab's left and right corners are in it: the phone shows the middle and the city swipes
+// sideways to the edges. The tower's flat roof slab is the stage a room stands on (big enough
+// for a 16 × 16 floor). The sky is painted flat green so it can be keyed out: the sky is its
+// own picture behind, and the clouds that cover a move between floors are their own pictures
+// in front. Each floor shows one more storey under the slab than the floor below.
+// The key is read from the environment only and never written anywhere.
 
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -22,75 +23,58 @@ const OUT = process.argv[2];
 if (!OUT) { console.error('Usage: node tools/gen-city.mjs <out-dir> [name…]'); process.exit(1); }
 mkdirSync(OUT, { recursive: true });
 
-// the house style and its references (docs/ART-DIRECTION.md)
-const MODERN = [`${ROOT}icons/UI/ref/modern-building.jpg`, `${ROOT}icons/UI/ref/modern-shop.jpg`];
-const STYLE = 'Modern, clean, cartoony stylised 3D render in the style of the reference images: soft rounded forms, smooth matte and satin plastic, glass and brushed metal, navy blue, white, warm grey and baby blue with small gold accents, soft daylight, gentle ambient occlusion. No wood anywhere, no medieval or fantasy elements, no text, no letters, no characters.';
-// the camera every room's art uses: floor edges rise 34.8 px for every 61.9 across (about 29°)
-const CAMERA = 'Orthographic isometric camera, exactly like the reference room: the ground diamond\'s edges slope at about 29 degrees from horizontal, no perspective, no vanishing points, the tower perfectly vertical.';
-// the room art, so the model sees the angle and the scale a room has on the slab
-const ROOM_REF = `${ROOT}icons/Pixelart/NEW/RUN/level-1.webp`;
-const SLAB = 'In the exact centre of the image, the flat roof of the MOSKE tower: one large, completely flat, empty, light grey concrete slab seen as an isometric diamond, about 52% of the image width and its top corner about 22% down from the top edge, with a slim navy and white parapet edge. Nothing stands on the slab: it is the stage a room will be placed on.';
-
-const floor = (storey, around) => `${STYLE} ${CAMERA} A wide 16:9 view of a modern sunny sports city. ${SLAB} Under the slab, the tower's front two facades go straight down: ${storey} Around the tower, ${around} Clear soft blue sky with a few small clouds above the slab and the skyline, filling the top quarter. The scene carries on to the left and right edges so the view can be panned sideways.`;
+// the city picture chosen as the look (icons/UI/ref/city-ref.jpg)
+const CITY_REF = `${ROOT}icons/UI/ref/city-ref.jpg`;
+const STYLE = 'Modern, clean, cartoony stylised 3D render, exactly the style, colours and materials of the reference city: soft rounded forms, smooth matte and satin plastic, glass and brushed metal, navy blue, white, warm grey and baby blue with small gold accents, soft daylight, gentle ambient occlusion. No wood anywhere, no text, no letters, no logos except the white winged bird, no people.';
+const CAMERA = 'Orthographic isometric camera exactly like the reference: ground edges slope at about 29 degrees, no perspective, every building perfectly vertical.';
+const SKY = 'Everything above the buildings is one flat, solid pure green #00FF00, with no clouds, no gradient and no haze, so the sky can be keyed out.';
+const SLAB = 'In the middle of the picture stands the MOSKE tower. Its roof is one large, completely flat, empty, light grey concrete slab seen as an isometric diamond, about 86% of the picture\'s width with its left and right corners inside the picture, its top corner about 28% down from the top edge. The slab\'s edge is a clean flat rim flush with the slab, with no railing, no parapet, no wall and nothing raised: a room will stand on it. Under the slab the tower\'s two front facades go straight down.';
+const WIDE = '3:4 portrait picture, a little wider than a phone screen, with the whole slab in it including its left and right corners.';
 
 const JOBS = {
-  truck: {
-    aspect: '1:1',
-    refs: [], // with a reference, the model copies its street plinth under the truck
-    prompt: `${STYLE} ${CAMERA} One modern delivery box truck on its own, nothing else (no signs, no road, no pavement under it), seen from the isometric camera as it drives down a street that runs from the top right to the bottom left of the frame, facing the bottom left: a rounded white cab with baby-blue trim, a navy cargo box with a simple white stylised winged bird emblem on its side, chunky dark tyres with grey hubs, a small gold accent stripe. One single object, centred, filling about 80% of the frame. Flat solid green background #00FF00, no ground, no shadow, no gradient.`,
+  // the sky behind every floor
+  sky: {
+    aspect: '16:9',
+    refs: [CITY_REF],
+    prompt: `${STYLE} A wide, soft, clear daytime sky for that city: a gentle gradient from baby blue at the top to a pale, warm, almost white blue at the bottom, with a few small, soft, rounded cartoon clouds high up. Only sky, no buildings, no ground, no birds.`,
   },
-  // the locker room: the ground floor, at street level
-  'floor-0-locker': {
-    refs: [...MODERN, ROOM_REF],
-    prompt: floor(
-      'this is the ground floor, so the slab sits low: just below it is the tower\'s glass lobby with a navy canopy carrying the white winged bird logo, automatic glass doors and a delivery bay with a roller door, and in front of it a wide two-lane street crossing the bottom of the image from the bottom left to the right, with a pavement, a crossing, kerbs and parking bays; the lowest 25% of the image is street.',
-      'neighbouring low-rise shops, cafes and offices along the same street, small round trees in planters, lamp posts and bus stops, with taller towers further back rising above the slab.'),
+  // the clouds that cover a move between floors (in front of everything)
+  'clouds-a': {
+    aspect: '9:16',
+    refs: [CITY_REF],
+    prompt: `${STYLE} A dense, tall bank of soft, fluffy, rounded cartoon clouds, white with soft pale blue shading, filling the middle three quarters of the picture from side to side, with puffy edges top and bottom. Only clouds. The background above and below the clouds is one flat, solid pure green #00FF00.`,
   },
-  // the gym: one storey up (made with the locker floor as a reference)
-  'floor-1-gym': {
-    refs: [...MODERN, ROOM_REF],
-    below: 'floor-0-locker',
-    prompt: `The first reference image is the floor below this one. Make the same picture with the camera raised by exactly one storey: the concrete roof slab stays exactly the same size and in exactly the same place in the frame, but the tower under it is now one storey taller, so one more storey of facade sits between the slab and everything that was below it, and the whole city around the tower (streets, shops, neighbouring buildings, cars) sits one storey lower in the frame than in the reference. Do not add a new building on top of the slab, the slab stays flat and empty. Keep the very same tower, colours, light and city. ${floor(
-      'one storey of the tower\'s facade, white and warm grey panels with long baby-blue windows and a navy stripe, continuing straight down out of the bottom of the image; the street is now further below and only its far edges show at the bottom corners, with small cars.',
-      'the same neighbourhood seen from one storey up: the rooftops of the low-rise shops just below, with rooftop units and planters, and the taller towers around now at about the same height.')}`,
+  'clouds-b': {
+    aspect: '9:16',
+    refs: [CITY_REF],
+    prompt: `${STYLE} A scattered layer of separate soft, fluffy, rounded cartoon clouds of different sizes, white with soft pale blue shading, spread over the whole picture with gaps between them. Only clouds. The background is one flat, solid pure green #00FF00.`,
   },
-  // the bike room: two storeys up
-  'floor-2-bike': {
-    refs: [...MODERN, ROOM_REF],
-    below: 'floor-1-gym',
-    prompt: `The first reference image is the floor below this one. Make the same picture with the camera raised by exactly one storey: the concrete roof slab stays exactly the same size and in exactly the same place in the frame, but the tower under it is now one storey taller, so one more storey of facade sits between the slab and everything that was below it, and the whole city around the tower (streets, shops, neighbouring buildings, cars) sits one storey lower in the frame than in the reference. Do not add a new building on top of the slab, the slab stays flat and empty. Keep the very same tower, colours, light and city. ${floor(
-      'one storey of the tower\'s facade, the same white and warm grey panels with long baby-blue windows, continuing straight down out of the image; no street shows any more.',
-      'mid-rise office towers with green roof terraces at about the same height, the low-rise neighbourhood well below, and a few taller glass towers behind.')}`,
+
+  // floor 0, the locker room: street level, the tall buildings round it rise out of the top
+  'floor-0': {
+    aspect: '3:4',
+    refs: [`${ROOT}icons/UI/ref/city-floor0-ref.jpg`, CITY_REF],
+    prompt: `${STYLE} ${CAMERA} ${WIDE} Repaint the first reference picture, the street-level floor of the MOSKE tower, as a slightly wider picture so the whole slab fits with its left and right corners showing, keeping everything else the same. ${SLAB} One storey shows under the slab: the tower's glass lobby with a navy canopy carrying the white winged bird, glass doors and a delivery bay with a roller door, and in front of it the wide street with pavements, crossings, trees in planters, lamp posts and bus stops filling the lower part of the picture. Behind and beside the tower, tall towers of the city rise right out of the top of the picture, so their roofs are not seen. ${SKY}`,
   },
-  // the run room: three storeys up
-  'floor-3-run': {
-    refs: [...MODERN, ROOM_REF],
-    below: 'floor-2-bike',
-    prompt: `The first reference image is the floor below this one. Make the same picture with the camera raised by exactly one storey: the concrete roof slab stays exactly the same size and in exactly the same place in the frame, but the tower under it is now one storey taller, so one more storey of facade sits between the slab and everything that was below it, and the whole city around the tower (streets, shops, neighbouring buildings, cars) sits one storey lower in the frame than in the reference. Do not add a new building on top of the slab, the slab stays flat and empty. Keep the very same tower, colours, light and city. ${floor(
-      'one storey of the tower\'s facade with a slim balcony running along it, continuing straight down out of the image.',
-      'the city spreads out further below: rooftops with running tracks and pools, a park with round trees in the distance, and only the tallest towers still rising above.')}`,
-  },
-  // the pool: the top floor
-  'floor-4-pool': {
-    refs: [...MODERN, ROOM_REF],
-    below: 'floor-3-run',
-    prompt: `The first reference image is the floor below this one. Make the same picture with the camera raised by exactly one storey, to the top of the tower: the concrete roof slab stays exactly the same size and in exactly the same place in the frame, one more storey of facade sits under it, and the whole city sits one storey lower. Do not add a new building on top of the slab. Keep the very same tower, colours, light and city. ${floor(
-      'the top storey of the tower\'s facade with a glass crown and a navy band carrying the white winged bird logo, continuing straight down out of the image.',
-      'the whole city far below: a sea of rooftops, a river with bridges, distant hills, and soft clouds drifting at the height of the slab.')}`,
+  // floor 1, the gym: one storey more under the slab, taller buildings round it. Gemini frames it a
+  // little wider, so scale it after until its slab lands on floor 0's (docs/CITY.md).
+  'floor-1': {
+    aspect: '3:4',
+    refs: ['@floor-0', CITY_REF],
+    prompt: `${STYLE} ${CAMERA} ${WIDE} The first reference picture is the street-level floor of the MOSKE tower. Paint the next floor up: the same tower, the same flat concrete roof slab (no railing) with the same size, shape and position in the picture, but now exactly two storeys show under the slab instead of one: an office storey of white and warm-grey panels with long baby-blue windows, and under it the same glass lobby with its navy canopy and roller door at street level. Because the tower is one storey taller, the street and pavements sit a storey lower in the picture and less of them shows at the bottom. The buildings round the tower are taller than on the floor below: mid-rise and high-rise towers with rooftop units and planters, and the tallest still rise out of the top of the picture. ${SKY}`,
   },
 };
 
 const pngB64 = async (path) => (await sharp(readFileSync(path)).png().toBuffer()).toString('base64');
 
-async function generate(name, { refs, prompt, aspect = '16:9', below }) {
+async function generate(name, { refs, prompt, aspect }) {
   const parts = [];
-  // the floor below goes first, so "the first reference image" is it
-  if (below) {
-    const p = `${OUT}/${below}.png`;
-    if (!existsSync(p)) throw new Error(`${name}: generate ${below} first`);
+  for (const r of refs) {
+    // '@name' is another job's output in this folder
+    const p = r.startsWith('@') ? `${OUT}/${r.slice(1)}.png` : r;
+    if (!existsSync(p)) throw new Error(`${name}: needs ${r} first`);
     parts.push({ inlineData: { mimeType: 'image/png', data: await pngB64(p) } });
   }
-  for (const r of refs) parts.push({ inlineData: { mimeType: 'image/png', data: await pngB64(r) } });
   parts.push({ text: prompt });
   const body = { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: aspect, imageSize: '4K' } } };
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -105,11 +89,11 @@ async function generate(name, { refs, prompt, aspect = '16:9', below }) {
   throw new Error(`${name}: no image`);
 }
 
-// in order: each floor needs the one below it
+// the names run side by side; a floor needs the floor below, so run it after
 const names = process.argv.slice(3).length ? process.argv.slice(3) : Object.keys(JOBS);
-for (const n of names) {
+await Promise.all(names.map(async (n) => {
   const buf = await generate(n, JOBS[n]);
   writeFileSync(`${OUT}/${n}.png`, await sharp(buf).png().toBuffer());
   const m = await sharp(`${OUT}/${n}.png`).metadata();
   console.log(`${n}: ${m.width}×${m.height}`);
-}
+}));

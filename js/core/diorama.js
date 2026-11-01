@@ -19,16 +19,17 @@ export const ENV = {
 // The city tower (docs/CITY.md): a room stands on its floor's flat roof slab. Each floor's slab
 // is measured in px of its 1792 × 2400 app picture (tools/cut-city.py). The slab is made for a
 // 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
-export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3 };
+export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
 const SLABS = [
   { top: [845, 424], right: [1791, 782], bottom: [907, 1250], left: [0, 778] },
   { top: [917, 419], right: [1791, 835], bottom: [944, 1248], left: [55, 825] },
   { top: [859, 398], right: [1738, 810], bottom: [882, 1233], left: [0, 794] },
   { top: [906, 253], right: [1582, 570], bottom: [941, 885], left: [255, 556] },
+  { top: [929, 257], right: [1580, 574], bottom: [940, 899], left: [254, 557] },
 ];
 const cityEnv = (n) => ({ src: `icons/City/app/floor-${n}.webp`, w: 1792, h: 2400, plot: SLABS[n], floorShare: 0.5, floor: n, slabView: 1.15 });
 
-/** The world a room stands in: its city floor, or the terrain while it has none (the pool). */
+/** The world a room stands in: its city floor, or the terrain for a room with no floor yet. */
 export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);
 
 export const MAX_ZOOM = 2.5; // × the smallest zoom

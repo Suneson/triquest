@@ -1,6 +1,6 @@
 # The city tower (plan and first test)
 
-**Status:** four floors are in the app (locker, gym, bike, run). The pool keeps the old terrain until it has a floor.
+**Status:** all five floors are in the app (locker, gym, bike, run, pool).
 
 **On screen:**
 - The city fills the whole screen, down behind the dock.
@@ -39,6 +39,7 @@ The base becomes one tall MOSKE tower in a modern city. Each room is a floor of 
 | `icons/City/floor-1.webp` | Gym: the same slab in the same place, with exactly two storeys under it (an office storey plus the lobby), the street a storey lower and taller buildings around. |
 | `icons/City/floor-2.webp` | Bike room: three rows of office windows under the slab. |
 | `icons/City/floor-3.webp` | Run room: four rows of office windows under the slab. |
+| `icons/City/floor-4.webp` | Pool, the top floor: five rows of office windows under the slab. |
 | `icons/City/clouds.webp` | A chunky cloud bank, transparent, for the move between floors. |
 | `icons/City/app/` | What the app loads: each floor at 1792 × 2400 with the sky baked in, and the clouds at 768 × 1376. |
 | `icons/UI/ref/city-floor0-ref.jpg` | The picture chosen as floor 0's look. |
@@ -72,7 +73,6 @@ python3 tools/cut-city.py <gen-dir> <out-dir>                    # keys the sky,
 ```
 
 **Still to come:**
-- The pool's floor.
 - A cut-out of the slab's navy and gold rim, to lay over a room's floor so the room sits in the slab.
 - 16 × 16 rooms.
 - One rooftop at the gym's top right is smeared.

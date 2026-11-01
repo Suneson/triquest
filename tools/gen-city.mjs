@@ -77,6 +77,15 @@ const JOBS = {
   'floor-3': upFloor(3),
   // floor 4, the pool: the top floor
   'floor-4': upFloor(4),
+
+  // ---- the layered city (docs/CITY.md): one plate behind, the tower stacked from pieces in front
+  // the tower on its own, cut after into its roof slab and one office storey (tools/cut-tower.py);
+  // the plate is the street floor itself, since a taller tower only covers more of the city behind it
+  tower: {
+    aspect: '3:4',
+    refs: ['@floor-4', CITY_REF],
+    prompt: `${STYLE} ${CAMERA} 3:4 portrait picture. Paint only the MOSKE tower from the first reference picture, on its own, exactly as it looks there: at the bottom the glass lobby with its navy canopy carrying the white winged bird, glass doors and the roller door; above it exactly five identical office storeys of white and warm-grey panels with long baby-blue windows; on top the completely flat light grey concrete roof slab with its navy rim and thin gold trim along the edge (no railing). The same camera, scale, materials, colours and light as the reference. The tower stands in the middle and fills about 92% of the picture's width, its left and right corners inside the picture. Nothing else at all: no street, no pavement, no ground, no shadow on the ground, no neighbouring buildings, no trees. Everything around the tower is one flat, solid pure green #00FF00.`,
+  },
 };
 
 const pngB64 = async (path) => (await sharp(readFileSync(path)).png().toBuffer()).toString('base64');

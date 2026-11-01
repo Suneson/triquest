@@ -106,3 +106,20 @@ python3 tools/cut-city.py <gen-dir> <out-dir>                    # keys the sky,
      - CSS animation for the shake, the rays and the coin spray.
    - On iPhone, Safari ignores WebM transparency, so the chest falls back to its still and shake. Exporting the clips as HEVC-with-alpha `.mov` would give iPhone the full clip.
    - See docs/REWARDS.md.
+
+## The layered city (next)
+
+Separate pictures per floor drift in colour and detail, so the city is being rebuilt from layers. Nothing in the app uses this yet.
+
+- **The plate** (`icons/City/layers/plate.webp`) is the street floor itself. In an orthographic picture a taller tower only ever covers more of the city behind it, so nothing has to be taken out of it.
+  - Expand it once in Photoshop: canvas **10752 × 8600**, anchored bottom centre.
+  - The top storeys and the sky need the extra height, and the markets, the public pool and the track go in the extra width.
+- **The tower:**
+  - Its pieces are `icons/City/layers/tower-cap.webp` (the slab with the top storey under it) and `tower-storey.webp` (one office storey, which stacks on itself without a seam).
+  - Both are cut by `tools/cut-tower.py` from `icons/City/src/tower.webp` (Gemini, `gen-city.mjs tower`).
+  - Floor N stands N storeys tall: the cap with N − 1 storeys under it, on the plate's lobby. `tower.json` says where each piece goes.
+- **One slope for everything:** 0.489, the ground falling 0.489 px per px across, which is the slope of the new room pictures.
+  - The plate is squashed a little to get there.
+  - The tower's right face is evened up with its left (Gemini drew its storeys 339 px apart on the left and 350 on the right), then stretched.
+  - The tower's colours are matched to the plate on the slab concrete.
+- **Preview:** `docs/city-layers-preview.jpg` shows floors 0 to 4 put together.

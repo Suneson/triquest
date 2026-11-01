@@ -58,5 +58,5 @@ test('the city floors: each room with a floor stands in the middle of its slab, 
       assert.ok(h.s >= minZoom(vw, vh, env) - 1e-9 && h.tx <= 0 && h.ty <= 0, 'the opening view stays inside the floor');
     }
   }
-  assert.equal(envFor('pool'), ENV, 'the pool keeps the terrain until it has a floor');
+  assert.equal(Object.keys(FLOOR_OF).length, STAGE_ROOMS.length, 'every room has its floor');
 });

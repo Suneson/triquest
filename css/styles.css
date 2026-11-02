@@ -2483,7 +2483,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-viewport { background: linear-gradient(#96CBF3, #B2DAF6); }
 .dg-far, .dg-3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
 .dg-far { overflow: hidden; }
-.dg-far img { position: absolute; left: 0; top: 0; height: auto; max-width: none; will-change: transform; -webkit-user-drag: none; }
+.dg-far img { position: absolute; height: auto; max-width: none; -webkit-user-drag: none; }
 .dg-3d.is-front { z-index: 2; }
 .dg-sign-hit { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .dg-sign-hit:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 12px; }
@@ -2493,6 +2493,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 .dg-world.is-easing { transition: transform 260ms cubic-bezier(.2, .8, .3, 1); }
 .dg-env { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
+.dg-env img { position: absolute; max-width: none; -webkit-user-drag: none; }
 /* the city tower's storeys and roof slab, stacked on the street floor (diorama.js towerPieces) */
 .dg-tower { position: absolute; inset: 0; pointer-events: none; }
 .dg-tower img { position: absolute; max-width: none; -webkit-user-drag: none; }
@@ -2768,6 +2769,6 @@ body.rm .cl-route-on { transition: none; }
 .dg-clouds img + img { transform: scaleX(-1); }
 /* on the base iPhone paints the strip under the page in the page's colour: there, the asphalt of
    the city's roads, so the street seems to carry on under the dock */
-html:has(body.pg-mode .dg-screen), body.pg-mode:has(.dg-screen) { background: #877688; }
+html.city-mode, html.city-mode body { background: #877688; }
 /* on the base the city runs down behind the dock, so the dock's band is see-through there */
 body.pg-mode:has(.dg-screen) .tabs { background: transparent; }

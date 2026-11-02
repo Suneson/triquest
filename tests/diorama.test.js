@@ -45,7 +45,7 @@ test('the city floors: each room with a floor stands in the middle of its slab, 
   const { envFor, FLOOR_OF } = await import('../js/core/diorama.js');
   for (const room of Object.keys(FLOOR_OF)) {
     const env = envFor(room);
-    assert.ok(existsSync(env.src), env.src);
+    for (const t of env.tiles) assert.ok(existsSync(t.src), t.src);
     const g = stageGeom(room); const G = ROOM_GEOMETRY[g];
     const [mx, my] = roomPctToWorld(g, (G.right[0] + G.left[0]) / 2, (G.right[1] + G.left[1]) / 2, env);
     assert.ok(Math.abs(mx - (env.plot.left[0] + env.plot.right[0]) / 2) < 1 && Math.abs(my - (env.plot.top[1] + env.plot.bottom[1]) / 2) < 1, `${room} centred`);

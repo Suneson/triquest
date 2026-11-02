@@ -17,14 +17,14 @@ export const ENV = {
   roomWidth: 0.86, // the room's art width, as a share of the terrain's
 };
 // The city (docs/CITY.md, "The layered city"): one picture of the whole city, the street floor
-// in the middle (icons/City/layers/city.webp, half the 10752 × 9960 master), and the MOSKE tower
+// in the middle (half the 10752 × 9960 master, drawn in tiles below), and the MOSKE tower
 // stacked on it from two pieces cut by tools/cut-tower.py: floor N is the cap (the roof slab and
 // the top storey) with N - 1 office storeys under it, standing on the street floor's lobby; the
 // street floor (N = 0) is the picture as it is. A room stands on its floor's slab: the slab is
 // made for a 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
 export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
 export const CITY = {
-  src: 'icons/City/layers/city.webp', w: 5376, h: 4980,
+  w: 5376, h: 4980,
   k: 0.5,                         // the app picture is half the master (px of the master × k)
   plateAt: [3584, 4072],          // the street floor's top-left corner in the master
   step: 449.01,                   // one storey, in px of the street floor (icons/City/layers/tower.json)
@@ -56,7 +56,17 @@ export function slabOf(n) {
   return Object.fromEntries(Object.entries(s).map(([k, p]) => [k, toWorld(p, up)]));
 }
 
-const cityEnv = (n) => ({ src: CITY.src, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
+// The city picture is drawn in tiles (icons/City/layers/tiles/city-<row>-<col>.webp, 4 × 4 of
+// 1344 × 1245 px of the world, stored at 3/4 size): one 5376-px picture is more than an iPhone
+// will keep decoded next to the 3D layers. Tiles that would be all sky aren't there.
+const TILE = { w: 1344, h: 1245 };
+const SKY_TILES = new Set(['0-0', '0-3']);
+export const CITY_TILES = [0, 1, 2, 3].flatMap((r) => [0, 1, 2, 3].map((c) => ({ r, c })))
+  .filter(({ r, c }) => !SKY_TILES.has(`${r}-${c}`))
+  .map(({ r, c }) => ({ src: `icons/City/layers/tiles/city-${r}-${c}.webp`, x: c * TILE.w, y: r * TILE.h,
+    w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }));
+
+const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
 export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);

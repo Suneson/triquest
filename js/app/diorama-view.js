@@ -266,7 +266,7 @@ let preloaded = false;
 function preloadFloors() {
   if (preloaded) return;
   preloaded = true;
-  const go = () => [CLOUDS, ...new Set(Object.keys(FLOOR_OF).flatMap((r) => [envFor(r).src, ...(envFor(r).tower || []).map((p) => p.src)]))].forEach((src) => { const i = new Image(); i.src = src; });
+  const go = () => [CLOUDS, ...new Set(Object.keys(FLOOR_OF).flatMap((r) => (envFor(r).tower || []).map((p) => p.src)))].forEach((src) => { const i = new Image(); i.src = src; });
   (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(go);
 }
 const decoded = (src) => { const i = new Image(); i.src = src; return (i.decode ? i.decode() : Promise.resolve()).catch(() => {}); };
@@ -279,7 +279,7 @@ const decoded = (src) => { const i = new Image(); i.src = src; return (i.decode 
 async function cloudMove(from, to, swap) {
   stage.moving = true;
   const up = HEIGHT[to] > HEIGHT[from];
-  await Promise.all([decoded(CLOUDS), decoded(envFor(to).src)]);
+  await Promise.all([decoded(CLOUDS), ...(envFor(to).tower || []).map((p) => decoded(p.src))]);
   const H = innerHeight; const W = innerWidth;
   const cloudH = W * 1.3 * (1376 / 768);
   const band = cloudH * 1.55;
@@ -331,7 +331,7 @@ export function wireDiorama(root, ctx) {
   stage.world = worldEl;
   const gen = ++stage.gen;
   if (!worldEl.querySelector('.dg-env')) {
-    worldEl.innerHTML = `<img class="dg-env" src="${env.src}" width="${env.w}" height="${env.h}" alt="" draggable="false">
+    worldEl.innerHTML = `<div class="dg-env"></div>
       <div class="dg-room-art"><img alt="" draggable="false">
         <svg class="dg-floor" viewBox="0 0 100 100" preserveAspectRatio="none"><g class="dg-cells"></g><g class="dg-arrows"></g></svg>
       </div>
@@ -341,7 +341,14 @@ export function wireDiorama(root, ctx) {
   // the world this room stands in (a floor of the city tower, or the terrain)
   worldEl.style.width = `${env.w}px`; worldEl.style.height = `${env.h}px`;
   const envImg = worldEl.querySelector('.dg-env');
-  if (envImg.getAttribute('src') !== env.src) { envImg.src = env.src; envImg.width = env.w; envImg.height = env.h; }
+  // the picture of the world: the city in tiles, or the terrain in one
+  const parts = env.tiles || [{ src: env.src, x: 0, y: 0, w: env.w, h: env.h }];
+  const envKey = parts.map((p) => p.src).join('|');
+  if (envImg.dataset.key !== envKey) {
+    envImg.dataset.key = envKey;
+    envImg.innerHTML = parts.map((p) => `<img src="${p.src}" alt="" draggable="false" decoding="async"
+      style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px">`).join('');
+  }
   // the tower's storeys and its roof slab, stacked on the street floor for this room's floor
   let towerEl = worldEl.querySelector('.dg-tower');
   if (!towerEl) { towerEl = document.createElement('div'); towerEl.className = 'dg-tower'; envImg.after(towerEl); }

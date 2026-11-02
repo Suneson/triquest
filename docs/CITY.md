@@ -139,7 +139,7 @@ The plate is built like a game map rather than expanded by an image model.
 - **The street floor's own background towers are left out.** The band painted on above them (`icons/City/src/plate-top.jpg`) ended at its top edge, so they stopped in mid-air.
 - **The kiosk at each side of the lobby** was cut in half where the street floor ends. Each was finished with one small Gemini inpaint: a 1400 px crop with just the cut strip in magenta.
   - Outpainting whole strips didn't work: Gemini drew a second building or redrew the lobby.
-- **Output:** `icons/City/layers/city.webp` is the city at half size (5376 × 4300) for the app. The full 10752 × 8600 is made by the script.
+- **Output:** the app draws the city at half the master's size (5376 × 4980) in 4 × 4 tiles stored at three-quarter resolution (`icons/City/layers/tiles/`). The two all-sky tiles are left out. The full 10752 × 9960 is made by the script.
 - **The sky** (`icons/City/sky.webp`) is a plain gradient in the painted band's colours.
   - The earlier "sky" was an old blurred city picture saved under the wrong name.
   - Every floor had been composited over it, which made the soft, faded patches. The floor pictures are now rebuilt over the real sky.
@@ -150,7 +150,8 @@ The plate is built like a game map rather than expanded by an image model.
 
 ### In the app
 
-- **The world:** the base's stage is the city picture (`icons/City/layers/city.webp`, 5376 × 4300).
+- **The world:** the base's stage is the city picture (5376 × 4980), drawn in tiles (`icons/City/layers/tiles/`).
+  - One picture that size was more than an iPhone would keep decoded next to the 3D layers: the city vanished.
 - **The tower:** stacked on the street floor for the room's floor, from half-size pieces in `icons/City/layers/app/`.
   - The locker room is the street floor as it is.
   - The gym has the cap.
@@ -189,3 +190,6 @@ The city has one more row of blocks below the street floor's crossroads, so you 
 - Under them, only their tops show at the bottom edge: the market and the pool again.
 
 On the base the page's own colour is the roads' asphalt (#877688), so the strip iPhone paints under the dock reads as street.
+
+- **The far clouds** are sized as a share of the screen from the start and drift on their own loop. If WebGL isn't available they still move, and they never show at their pictures' natural size.
+- **The 3D layers** draw at most 1.5 px per CSS pixel, without antialiasing.

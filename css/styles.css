@@ -2532,25 +2532,32 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-hud { position: absolute; left: 0; right: 0; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
   padding: calc(var(--safe-t) + 10px) 10px 0; pointer-events: none; }
 .dg-hud > * { pointer-events: auto; }
-.dg-badge { display: flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; min-width: 0; max-width: 46%;
-  background: linear-gradient(#2a3e6e, #16264d); border: 3px solid #0B1222; border-radius: 9999px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), 0 3px 0 rgba(0, 0, 0, .45); }
-.dg-badge .pg-avatar { width: 44px; height: 44px; margin: 0; flex: none; }
-.dg-who { display: grid; min-width: 0; line-height: 1.1; }
-.dg-who b { font-size: 15px; color: #fff; text-shadow: 0 2px 4px rgba(0, 0, 0, .6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dg-who i { font-style: normal; font-size: 12px; color: #FFD34D; text-shadow: 0 2px 3px rgba(0, 0, 0, .6); }
+.dg-badge { position: relative; display: flex; align-items: center; gap: 0; min-width: 0; max-width: 52%; }
+/* the round photo in a baby-blue ring, over the name's shade */
+.dg-badge .pg-avatar { position: relative; z-index: 1; width: 52px; height: 52px; margin: 0; flex: none; border: 3px solid #A9D3FF;
+  box-shadow: 0 0 0 2px #16264D, 0 3px 6px rgba(0, 0, 0, .45); }
+/* the name and level on a soft, see-through dark shade that fades out to the right */
+.dg-who { display: grid; min-width: 0; line-height: 1.1; margin-left: -14px; padding: 6px 22px 6px 22px; border-radius: 0 9999px 9999px 0;
+  background: linear-gradient(90deg, rgba(8, 20, 45, .55), rgba(8, 20, 45, .38) 70%, rgba(8, 20, 45, 0)); }
+.dg-who b { font-size: 15px; color: #fff; text-shadow: 0 2px 3px rgba(0, 0, 0, .55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dg-who i { font-style: normal; font-size: 12px; color: #A9D3FF; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
 .dg-gauges { display: grid; gap: 7px; width: min(48%, 190px); }
 .dg-gauge { position: relative; height: 30px; }
-.dg-track { position: absolute; inset: 3px 14px 3px 0; border-radius: 9999px; background: linear-gradient(#1b2338, #0e1424);
-  border: 3px solid #0B1222; box-shadow: 0 3px 0 rgba(0, 0, 0, .45); overflow: hidden; }
+.dg-track { position: absolute; inset: 4px 14px 4px 0; border-radius: 9999px; overflow: hidden;
+  background: linear-gradient(rgba(10, 18, 40, .28), rgba(10, 18, 40, .5)); border: 1.5px solid rgba(255, 255, 255, .35);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .45), 0 2px 4px rgba(0, 0, 0, .25); }
+/* the gloss: a soft white band along the top of the whole bar, over the fill */
+.dg-track::after { content: ''; position: absolute; left: 6px; right: 6px; top: 2px; height: 42%; border-radius: 9999px; pointer-events: none;
+  background: linear-gradient(rgba(255, 255, 255, .55), rgba(255, 255, 255, .08)); }
 .dg-fill { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--f) * 100%); border-radius: 9999px;
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .45), inset 0 -3px 0 rgba(0, 0, 0, .18); transition: width 400ms ease; }
-.dg-gauge.is-coins .dg-fill { background: linear-gradient(#FFE78A, #F2C14E 55%, #C98F1E); }
-.dg-gauge.is-carbs .dg-fill { background: linear-gradient(#B8E1FF, #4FA8F0 55%, #1F6FC2); }
-.dg-gauge.is-stamina .dg-fill { background: linear-gradient(#FFF59A, #FFE600 50%, #FFB800); }
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18), 0 0 10px var(--glow, transparent); transition: width 400ms ease; }
+.dg-gauge.is-coins .dg-fill { --glow: rgba(255, 210, 80, .8); background: linear-gradient(#FFE78A, #F2C14E 55%, #C98F1E); }
+.dg-gauge.is-carbs .dg-fill { --glow: rgba(120, 190, 255, .8); background: linear-gradient(#B8E1FF, #4FA8F0 55%, #1F6FC2); }
+.dg-gauge.is-stamina .dg-fill { --glow: rgba(255, 230, 60, .8); background: linear-gradient(#FFF59A, #FFE600 50%, #FFB800); }
 .dg-gauge.is-stamina .dg-fill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -40%;
   background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .7), transparent); animation: dg-sheen 2.6s ease-in-out infinite; }
 @keyframes dg-sheen { to { left: 110%; } }
-.dg-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px;
+.dg-num { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px;
   font-size: 14px; color: #fff; text-shadow: 0 2px 3px rgba(0, 0, 0, .8), 0 0 2px #000; }
 .dg-ico { position: absolute; right: 0; top: 50%; width: 34px; height: 34px; transform: translateY(-50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5)); }
 
@@ -2574,10 +2581,15 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
    over it, a little bigger than the orb so it spills past the rim, like a game's home screen */
 .dg-side { gap: 16px; }
 .dg-orb { position: relative; width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
-  background: url("../icons/UI/side/side-orb.webp") center / 100% 100% no-repeat; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .45));
+  background: url("../icons/UI/side/side-orb-blue.webp") center / 100% 100% no-repeat; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .4));
   transition: transform 100ms ease; -webkit-tap-highlight-color: transparent; }
-.dg-orb > img { position: absolute; left: 50%; top: 40%; width: 52px; height: 52px; object-fit: contain; transform: translate(-50%, -50%);
-  pointer-events: none; -webkit-user-drag: none; image-rendering: auto; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .45)); }
+/* the icon's box reaches 22 px above the orb; it shows everything above the orb's middle and,
+   below it, only what's inside the face, so its lower half sits in the orb and its top stands out */
+.dg-orb-ico { position: absolute; left: -8px; right: -8px; top: -22px; bottom: 0; pointer-events: none;
+  -webkit-mask: linear-gradient(#000, #000) top / 100% 54px no-repeat, radial-gradient(circle 25px at 50% 54px, #000 96%, transparent 100%);
+  mask: linear-gradient(#000, #000) top / 100% 54px no-repeat, radial-gradient(circle 25px at 50% 54px, #000 96%, transparent 100%); }
+.dg-orb-ico > img { position: absolute; left: 50%; bottom: 7px; width: 60px; height: 64px; object-fit: contain; object-position: bottom; transform: translateX(-50%);
+  -webkit-user-drag: none; image-rendering: auto; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .4)); }
 .dg-orb:active { transform: translateY(3px) scale(.96); }
 .dg-orb-n { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); min-width: 26px; height: 20px; padding: 0 6px; display: grid; place-items: center;
   border-radius: 9999px; background: #16264D; color: #FFD34D; font-size: 13px; line-height: 1; box-shadow: 0 0 0 2px #0B1222; text-shadow: none; }

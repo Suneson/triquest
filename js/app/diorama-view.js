@@ -123,9 +123,10 @@ function roomPill(room, ctx) {
   </div>`;
 }
 
-// the side buttons: a green orb each (icons/UI/side/side-orb.webp), the icon standing
-// over it and spilling past its rim, like the buttons round a game's home screen
-const orb = (src, attrs, extra = '') => `<button class="dg-orb" ${attrs}><img src="${src}" width="128" height="128" alt="" draggable="false">${extra}</button>`;
+// the side buttons: a baby-blue orb each (icons/UI/side/side-orb-blue.webp), the icon standing
+// in it, its top rising out past the rim, like the buttons round a game's home screen
+// the icon stands in the orb: its lower half sits inside the rim, its top rises out above it
+const orb = (src, attrs, extra = '') => `<button class="dg-orb" ${attrs}><span class="dg-orb-ico"><img src="${src}" width="128" height="128" alt="" draggable="false"></span>${extra}</button>`;
 
 /** The room's trophies (its feats won), on the right under the elevator. */
 function trophyOrb(room) {

@@ -2634,21 +2634,26 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-row { position: absolute; left: 12px; top: calc(var(--safe-t) + 84px); z-index: 4; display: flex; gap: 12px; align-items: center; }
 .dg-row .dg-orb { --o: 50px; }
 /* the shop and the kit bag down the left, the elevator on the right, over the dock */
-.dg-side { position: absolute; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 10px); z-index: 4; display: grid; gap: 18px; justify-items: center; }
+.dg-side { position: absolute; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 92px); z-index: 4; display: grid; gap: 18px; justify-items: center; }
 .dg-side.is-left { left: 12px; } .dg-side.is-right { right: 12px; }
+.dg-side .dg-orb { --o: 56px; }
 /* the rooms: an elevator's buttons (diorama-view.js liftPanel), the pool at the top. Each is a
    baby-blue ring with a light face and its icon inside; the floor you're on turns blue, a size
    bigger. The city fills the whole screen, down behind the dock. */
 .dg-screen { --dg-nav-h: 0px; }
-.dg-lift { display: grid; gap: 10px; justify-items: center; }
-.dg-lift-btn { position: relative; width: 50px; height: 50px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+.dg-lift { display: grid; gap: 12px; justify-items: center; }
+.dg-lift-btn { position: relative; width: 56px; height: 56px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  --face: #FFFFFF, #ECE6D8 60%, #CDC3AA;
   background: url("../icons/UI/side/ring-sky.webp") center / 100% 100% no-repeat,
-    radial-gradient(circle closest-side at 50% 42%, #FFFFFF, #ECE6D8 60%, #CDC3AA 94%, transparent 96%) center / 84% 84% no-repeat;
+    radial-gradient(circle closest-side at 50% 50%, var(--face) 94%, transparent 96%) center / 86% 86% no-repeat;
   filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4));
   transition: transform 180ms cubic-bezier(.3, 1.4, .5, 1), filter 180ms ease; -webkit-tap-highlight-color: transparent; }
-.dg-lift-btn img { width: 34px; height: 34px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
-.dg-lift-btn.is-on { z-index: 1; transform: scale(1.2);
-  background-image: url("../icons/UI/side/ring-sky.webp"), radial-gradient(circle closest-side at 50% 38%, #CDEBFF, #4FA8F0 58%, #1F6FC2 94%, transparent 96%);
+/* the face's highlight, up and to the middle, under the icon */
+.dg-lift-btn::before { content: ''; position: absolute; left: 22%; right: 22%; top: 13%; height: 34%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, .6), rgba(255, 255, 255, 0) 70%); }
+.dg-lift-btn img { position: relative; width: 38px; height: 38px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+.dg-lift-btn.is-on { z-index: 1; transform: scale(1.16);
+  --face: #CDEBFF, #4FA8F0 58%, #1F6FC2;
   filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)) drop-shadow(0 0 10px rgba(120, 190, 255, .9)); }
 .dg-lift-btn:active { transform: scale(.94); }
 .dg-lift-btn.is-on:active { transform: scale(1.12); }
@@ -2827,3 +2832,92 @@ body.rm .cl-route-on { transition: none; }
 html.city-mode, html.city-mode body { background: #877688; }
 /* on the base the city runs down behind the dock, so the dock's band is see-through there */
 body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
+
+/* ---- the markets round the lobby (market-view.js, docs/MARKETS.md) ---------------------------- */
+/* tap targets over the 3D markets, and coin bubbles over the bought ones (both in city px) */
+.dg-mk-hit { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dg-mk-hit:focus-visible { outline: 6px solid #fff; outline-offset: 4px; border-radius: 24px; }
+.dg-front .dg-mk-coin { pointer-events: auto; }
+.dg-mk-coin { position: absolute; z-index: 3; width: 190px; height: 222px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
+  translate: -50% -100%; -webkit-tap-highlight-color: transparent; animation: dg-bob 1.6s ease-in-out infinite; }
+/* a rounded beige bubble with a navy rim and a tail, the coin in it */
+.dg-mk-coin::before { content: ''; position: absolute; left: 0; top: 0; width: 190px; height: 190px; border-radius: 52px;
+  background: linear-gradient(#FFFDF7, #EFE4CC); box-shadow: inset 0 -10px 0 rgba(120, 92, 40, .16), 0 0 0 10px #16264D, 0 18px 30px rgba(0, 0, 0, .35); }
+.dg-mk-coin::after { content: ''; position: absolute; left: 50%; bottom: 0; translate: -50% 0; border: 30px solid transparent; border-top: 34px solid #16264D; border-bottom: 0; }
+.dg-mk-coin img { position: absolute; left: 25px; top: 22px; width: 140px; height: 140px; -webkit-user-drag: none; filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .3)); }
+.dg-mk-coin.is-full::before { box-shadow: inset 0 -10px 0 rgba(120, 92, 40, .16), 0 0 0 10px #16264D, 0 0 0 22px rgba(255, 211, 77, .55), 0 18px 30px rgba(0, 0, 0, .35); }
+.dg-mk-coin.is-taking { animation: none; opacity: .5; }
+.dg-mk-coin[hidden] { display: none; }
+/* coins flying up to the gauge, and the count */
+.mk-fly { position: fixed; z-index: 10050; width: 30px; height: 30px; pointer-events: none; }
+.mk-pop { position: fixed; z-index: 10050; translate: -50% -50%; pointer-events: none; font: 900 26px/1 var(--font-display, system-ui); color: #FFD34D;
+  text-shadow: 0 2px 0 #3a2800, 0 0 3px #3a2800, 0 4px 8px rgba(0, 0, 0, .5); animation: mk-pop 1.1s ease-out forwards; }
+@keyframes mk-pop { 0% { opacity: 0; transform: translateY(6px) scale(.6); } 18% { opacity: 1; transform: translateY(-8px) scale(1.15); } 100% { opacity: 0; transform: translateY(-70px) scale(1); } }
+
+/* the bar a tapped market brings up: its name over square, bubbly beige buttons */
+.mk-bar { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + 14px); z-index: 6; display: grid; justify-items: center; gap: 8px;
+  transform: translate(-50%, 24px); opacity: 0; transition: transform 200ms cubic-bezier(.3, 1.4, .5, 1), opacity 140ms ease; }
+.mk-bar.is-in { transform: translate(-50%, 0); opacity: 1; }
+.mk-bar-h { margin: 0; white-space: nowrap; font-size: 21px; font-weight: 900; color: #FFF3C4; letter-spacing: .01em;
+  text-shadow: 0 2px 0 #0B1222, 1.5px 0 0 #0B1222, -1.5px 0 0 #0B1222, 0 -1.5px 0 #0B1222, 0 4px 10px rgba(0, 0, 0, .5); }
+.mk-bar-btns { display: flex; gap: 12px; }
+.mk-btn { position: relative; width: 92px; height: 92px; margin: 0; padding: 8px 4px 8px; border: 0; border-radius: 22px; cursor: pointer;
+  display: grid; grid-template-rows: 1fr auto; justify-items: center; align-items: center;
+  background: linear-gradient(#FFFBF1, #EADCBF); color: #16264D;
+  box-shadow: inset 0 2px 0 #fff, inset 0 -6px 0 rgba(150, 110, 50, .22), 0 0 0 3px #16264D, 0 5px 0 #0B1222, 0 10px 16px rgba(0, 0, 0, .35);
+  transition: transform 120ms ease; -webkit-tap-highlight-color: transparent; }
+.mk-btn:active { transform: translateY(3px) scale(.96); }
+.mk-btn:disabled { cursor: default; filter: grayscale(.6); opacity: .7; }
+.mk-btn b { font-size: 14px; font-weight: 900; line-height: 1; }
+.mk-btn-ico { display: grid; place-items: center; width: 50px; height: 46px; }
+.mk-btn-ico img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .3)); }
+/* the info sign: a blue speech bubble with an i */
+.mk-btn-ico.is-info { width: 40px; height: 40px; border-radius: 50% 50% 50% 12%; font: italic 900 26px/40px Georgia, serif; color: #fff; text-align: center;
+  background: radial-gradient(circle at 40% 30%, #8FD3FF, #2C8DE0 60%, #1F5FB0); box-shadow: 0 0 0 3px #16264D, 0 3px 0 #0B1222; }
+.mk-btn > i { position: absolute; top: -12px; right: -10px; min-width: 30px; height: 26px; padding: 0 8px; display: grid; place-items: center; border-radius: 9999px;
+  background: #E5484D; color: #fff; font-style: normal; font-size: 14px; box-shadow: 0 0 0 3px #fff; }
+/* Buy: the price on a navy tag along the top */
+.mk-btn-price { position: absolute; top: -14px; left: 50%; translate: -50% 0; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
+  height: 26px; padding: 0 9px; border-radius: 9999px; background: linear-gradient(#2a3e6e, #16264D); color: #fff; font-size: 14px; box-shadow: 0 0 0 2px #0B1222; }
+.mk-btn-price img { width: 18px; height: 18px; }
+.mk-btn-price.is-short { color: #FF8A8F; }
+
+/* the info window: like a builder game's, with the ring's baby blue round the picture */
+.mk-layer .modal-backdrop { background: rgba(5, 9, 18, .62); }
+.mk-info { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(92vw, 380px); max-height: calc(100% - 40px); overflow: auto;
+  border-radius: 24px; background: #F6F1E6; box-shadow: 0 0 0 4px #16264D, 0 0 0 8px #3AB6F2, 0 0 0 11px #16264D, 0 24px 48px rgba(0, 0, 0, .5);
+  animation: mk-in 220ms cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes mk-in { from { transform: scale(.86); opacity: 0; } }
+.mk-info-head { position: relative; padding: 14px 54px 16px; border-radius: 22px 22px 0 0; text-align: center; background: linear-gradient(#2a3e6e, #16264D); }
+.mk-info-head h2 { margin: 0; font-size: 24px; font-weight: 900; color: #fff; text-shadow: 0 2px 0 #0B1222, 0 0 2px #0B1222; }
+.mk-info-head h2 em { font-style: normal; color: #FFD34D; }
+/* the level bar: full, it's as high as markets go for now */
+.mk-info-lvl { display: block; height: 10px; margin: 10px 8px 0; border-radius: 9999px; background: linear-gradient(#7BE36A, #33A852); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2), 0 0 0 2px #0B1222; }
+.mk-x { position: absolute; right: 10px; top: 10px; width: 40px; height: 40px; margin: 0; padding: 0; border: 0; border-radius: 12px; cursor: pointer;
+  font: 900 28px/38px system-ui; color: #fff; background: linear-gradient(#FF7A7F, #D93A40); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .45), inset 0 -4px 0 rgba(0, 0, 0, .2), 0 0 0 3px #0B1222, 0 3px 0 #0B1222; }
+.mk-info-body { display: grid; gap: 12px; padding: 16px; }
+.mk-pic { position: relative; margin: 0; height: 200px; display: grid; place-items: center; overflow: hidden; border-radius: 18px;
+  background: radial-gradient(circle at 50% 40%, #FFFFFF, #E4EEF8 70%, #CFDDEE); box-shadow: inset 0 0 0 4px #3AB6F2, inset 0 0 0 6px #16264D; }
+.mk-pic img { height: 176px; width: auto; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .25)); }
+.mk-pic.is-dark img { filter: grayscale(1) brightness(.45) drop-shadow(0 10px 8px rgba(0, 0, 0, .25)); }
+.mk-ribbon { position: absolute; left: -38px; top: 22px; z-index: 1; rotate: -40deg; width: 160px; padding: 5px 0; text-align: center; font-size: 13px; font-weight: 900; color: #fff;
+  background: linear-gradient(#4FA8F0, #1F6FC2); box-shadow: 0 0 0 2px #16264D; }
+.mk-stats { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mk-stat { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px 14px; border-radius: 14px; background: linear-gradient(#FFFFFF, #EDE7DA);
+  box-shadow: inset 0 -3px 0 rgba(120, 92, 40, .14), 0 0 0 2px #CFC4AE; }
+.mk-stat-ico { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 10px; background: #fff; box-shadow: 0 0 0 2px #CFC4AE; }
+.mk-stat-ico img { width: 30px; height: 30px; }
+.mk-stat-txt { display: grid; line-height: 1.1; }
+.mk-stat-txt small { font-size: 12px; font-weight: 800; color: #4a5672; }
+.mk-stat-txt b { font-size: 21px; font-weight: 900; color: #FFD34D; text-shadow: 0 2px 0 #5a3c00, 1px 0 0 #5a3c00, -1px 0 0 #5a3c00, 0 -1px 0 #5a3c00; }
+.mk-stat.is-cap .mk-stat-txt b { color: #8FD3FF; text-shadow: 0 2px 0 #0B2A66, 1px 0 0 #0B2A66, -1px 0 0 #0B2A66, 0 -1px 0 #0B2A66; }
+.mk-stat-bar { position: absolute; left: 62px; right: 12px; bottom: 6px; height: 6px; border-radius: 9999px; background: #D8CFBD; overflow: hidden; }
+.mk-stat-bar::after { content: ''; position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); border-radius: inherit; background: linear-gradient(#7BE36A, #33A852); }
+/* a jar and a clock, drawn */
+.mk-jar { width: 22px; height: 26px; border-radius: 6px 6px 9px 9px; background: linear-gradient(#B8E1FF, #4FA8F0); box-shadow: 0 0 0 2px #16264D, inset 0 -8px 0 #FFD34D; }
+.mk-clock { width: 26px; height: 26px; border-radius: 50%; background: conic-gradient(#FFD34D 0 30%, #FFF3C4 0); box-shadow: 0 0 0 2px #16264D; }
+.mk-note { margin: 0; font-size: 13px; line-height: 1.4; color: #4a5672; }
+.mk-info-foot { display: flex; justify-content: center; padding: 0 16px 18px; }
+.mk-max { padding: 10px 26px; border-radius: 16px; font-size: 16px; font-weight: 900; color: #fff; background: linear-gradient(#9AA6B8, #6E7A8E);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .4), 0 0 0 3px #0B1222, 0 4px 0 #0B1222; }
+@media (prefers-reduced-motion: reduce) { .dg-mk-coin, .mk-info, .mk-pop { animation: none !important; } .mk-bar { transition: none; } }

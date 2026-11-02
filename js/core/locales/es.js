@@ -2095,7 +2095,11 @@ es.gear = {
     "fuel_full": "Ya llevas el máximo de eso.",
     "fuel_none": "No te queda. Compra antes.",
     "fuel_active": "Ya tienes nutrición activa.",
-    "fuel_limit": "Has llegado al límite de eso esta semana."
+    "fuel_limit": "Has llegado al límite de eso esta semana.",
+    "unknown_market": "Ese mercado no está aquí.",
+    "not_owned": "Compra ese mercado primero.",
+    "market_empty": "Aún no hay nada que recoger.",
+    "wallet_full": "Tu almacén de monedas está lleno."
   },
   "shop": "Tienda de material",
   "inventory": "Inventario",
@@ -3059,5 +3063,7 @@ es.cp.r3d = { "aria": "Girar al corredor", "left": "Girar a la izquierda", "righ
 es.city = {"sign": {"title": "ENTREGA", "aria": "Entregas en camino"}, "delivery": {"title": "Entregas", "tag": "En camino", "arrives": "Llega a las {time}", "none": "No hay nada en camino. Lo que compres en la tienda se entrega aquí."}};
 
 es.city.parcel = {"title": "Entrega", "from": "Tu paquete ha llegado", "hint": "Toca para abrir", "inside": "Dentro", "collect": "Recoger", "next": "Siguiente paquete (quedan {n})", "aria": {"one": "Un paquete en la puerta. Tócalo para abrirlo.", "other": "{n} paquetes en la puerta. Tócalos para abrirlos."}};
+
+es.city.market = {"name": "Mercado", "title": "Mercado (Nivel {n})", "level": "Nivel {n}", "aria": "Mercado {n}", "collectAria": "Recoger {n} monedas", "collect": "Recoger", "buy": "Comprar", "info": "Info", "bought": "Mercado comprado. Desde ahora genera monedas.", "close": "Cerrar", "forSale": "En venta", "rate": "Producción", "perHour": "{n} por hora", "capacity": "Capacidad", "fullIn": "Lleno en", "full": "Lleno: recógelo", "price": "Precio", "about": "Tu mercado genera monedas MOSKE por sí solo. Recógelas antes de que se llene: un mercado lleno deja de generar.", "aboutBuy": "Compra este mercado por {cost} monedas y generará monedas MOSKE por ti, incluso en días de descanso.", "maxLevel": "Nivel máximo", "hm": "{h} h {m} min", "m": "{m} min"};
 
 export default es;

@@ -204,4 +204,10 @@ When the truck has brought a delivery, its parcel waits at the garage door: a bo
 
 ### The front layer
 
-The plots in front of the van's road are also drawn on a layer of their own: the right-hand column of blocks, from the pool's row down (`FRONT` in `tools/compose-city.py`, written by `… front` as `icons/City/layers/front/`). The app puts that layer over the 3D canvas with the world's own transform, so the van drives behind those buildings. The parcel bubble lives on the same layer, so it shows over the 3D sign.
+The plots in front of the van's road are also drawn on their own: the right-hand column of blocks, from the pool's row down (`FRONT` in `tools/compose-city.py`, written by `… front` and cut into the tile grid as `icons/City/layers/front/front-<row>-<col>.webp`). The app doesn't show those tiles. `tools/cut-front.py` keeps only what lies within 300 px of the van's road out and crops each tile to that, giving `van-front-*.webp` (about 4.7 MB decoded in all) and the `VAN_FRONT` list for `js/core/diorama.js`.
+
+The 3D layer draws those pieces as flat pictures on the ground, after everything else in the front scene and through its depth, so they cover the van where they stand in front of it. They load when the van is about (arriving, parked or leaving) and are let go once it's gone.
+
+Don't put a city-sized layer over the 3D canvas. That was the first version, and iPhone Safari ran out of memory and kept reloading the page ("A problem repeatedly occurred").
+
+The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-front`, with no size of its own, so it shows over the 3D sign at the cost of the bubble only.

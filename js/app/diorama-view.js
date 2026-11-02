@@ -45,6 +45,7 @@ import { isDemo } from './demo.js';
 import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
+import { mountMarkets, showCoins, marketOwned, closeBar } from './market-view.js';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -474,8 +475,12 @@ export function wireDiorama(root, ctx) {
     // the truck waits while a parcel is at the door or being opened
     parked: () => parcels().length > 0 || parcelOpen(),
     reduced,
+    // the markets round the lobby stand lit once bought (market-view.js)
+    owned: marketOwned,
     front: env.front,
   }) : null;
+  if (city) mountMarkets(worldEl, stage.front, { pulse: city.pulse, workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
+  else { stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit').forEach((el) => el.remove()); closeBar(); }
   const apply = () => {
     const r = box();
     view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);
@@ -691,6 +696,7 @@ export function wireDiorama(root, ctx) {
   view.tick = setInterval(() => {
     if (!root.isConnected) { clearInterval(view.tick); return; }
     stage.showParcel?.();
+    showCoins();
     const st = staminaAt(anchor, Date.now());
     const sg = root.querySelector('.dg-gauge.is-stamina');
     if (sg) { sg.style.setProperty('--f', (st / STAMINA.max).toFixed(4)); sg.querySelector('[data-dg-stamina]').textContent = fmtNum(st); sg.setAttribute('aria-label', t('cp.staminaAria', { n: st, max: STAMINA.max })); }

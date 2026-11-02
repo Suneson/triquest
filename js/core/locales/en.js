@@ -2095,7 +2095,11 @@ en.gear = {
     "fuel_full": "You’re holding the most of that you can.",
     "fuel_none": "You have none of that. Buy some first.",
     "fuel_active": "You already have fuel on.",
-    "fuel_limit": "You’ve used your limit of that this week."
+    "fuel_limit": "You’ve used your limit of that this week.",
+    "unknown_market": "That market isn’t here.",
+    "not_owned": "Buy that market first.",
+    "market_empty": "Nothing to collect yet.",
+    "wallet_full": "Your coin storage is full."
   },
   "shop": "Gear shop",
   "inventory": "Inventory",
@@ -3059,5 +3063,7 @@ en.cp.r3d = { "aria": "Turn the runner", "left": "Turn left", "right": "Turn rig
 en.city = {"sign": {"title": "DELIVERY", "aria": "Deliveries on their way"}, "delivery": {"title": "Deliveries", "tag": "On its way", "arrives": "Arrives at {time}", "none": "Nothing on its way. What you buy in the shop is delivered here."}};
 
 en.city.parcel = {"title": "Delivery", "from": "Your parcel has arrived", "hint": "Tap to open", "inside": "Inside", "collect": "Collect", "next": "Next parcel ({n} more)", "aria": {"one": "A parcel at the door. Tap to open it.", "other": "{n} parcels at the door. Tap to open them."}};
+
+en.city.market = {"name": "Market", "title": "Market (Level {n})", "level": "Level {n}", "aria": "Market {n}", "collectAria": "Collect {n} coins", "collect": "Collect", "buy": "Buy", "info": "Info", "bought": "Market bought. It makes coins from now on.", "close": "Close", "forSale": "For sale", "rate": "Production rate", "perHour": "{n} per hour", "capacity": "Capacity", "fullIn": "Full in", "full": "Full: collect it", "price": "Price", "about": "Your market makes MOSKE coins on its own. Collect them before it fills up: a full market stops making more.", "aboutBuy": "Buy this market for {cost} coins and it makes MOSKE coins for you on its own, even on rest days.", "maxLevel": "Max level", "hm": "{h} h {m} min", "m": "{m} min"};
 
 export default en;

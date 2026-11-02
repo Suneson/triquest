@@ -141,6 +141,7 @@ The plate is built like a game map rather than expanded by an image model.
 - **The street floor's own background towers are left out.** The band painted on above them (`icons/City/src/plate-top.jpg`) ended at its top edge, so they stopped in mid-air.
 - **The kiosk at each side of the lobby** was cut in half where the street floor ends. Each was finished with one small Gemini inpaint: a 1400 px crop with just the cut strip in magenta.
   - Outpainting whole strips didn't work: Gemini drew a second building or redrew the lobby.
+  - The four kiosks have since been painted out again (bare wall and pavement): the app stands its own 3D markets there, which you buy (docs/MARKETS.md).
   - The pavement ends past those kiosks came out soft (the left one yellow), fading into the road. Each was painted again crisp the same way (`kerb-left.webp`, `kerb-right.webp`), kept as a patch with its own alpha: the painted area and a few px round it.
 - **Output:** the app draws the city at half the master's size (5376 × 4980) in 4 × 4 tiles stored at three-quarter resolution (`icons/City/layers/tiles/`). The two all-sky tiles are left out. The full 10752 × 9960 is made by the script.
 - **The sky** (`icons/City/sky.webp`) is a plain gradient in the painted band's colours.

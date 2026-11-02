@@ -52,7 +52,10 @@ SLAB = {'top': (1690, 800), 'left': (0, 1467), 'right': (3582, 1475)}
 PATCHES = [('kiosk-left.webp', 3154, 5600), ('kiosk-right.webp', 6978, 5600),
            # the kiosks' pavement ends and kerbs, painted again crisp (they came out soft, faded
            # into the road): patches with their own alpha, the painted area and a few px round it
-           ('kerb-left.webp', 2900, 5900), ('kerb-right.webp', 6840, 5800)]
+           ('kerb-left.webp', 2900, 5900), ('kerb-right.webp', 6840, 5800),
+           # the four kiosks by the lobby taken out (painted over with bare wall and pavement):
+           # the app stands its own 3D markets there, which you buy (docs/MARKETS.md)
+           ('market-left.webp', 3200, 5600), ('market-right.webp', 6300, 5600)]
 # the blocks in front of the van's road (right of it, from the pool's row down): their plots are
 # also written to the front layer, which the app draws over the truck
 FRONT = {(1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}

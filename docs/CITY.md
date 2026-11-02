@@ -4,9 +4,8 @@
 
 **On screen:**
 - The city fills the whole screen, down behind the dock.
-- The rooms are an elevator's buttons on the right, the pool at the top and the locker room at the bottom. The floor you're on is lit baby blue and a size bigger.
-- The elevator's frame is drawn in CSS for now. A Gemini-painted frame is to come (`gen-city.mjs`).
-- On the left, top to bottom: the shop, the inventory and what's next. The room's trophies sit under the elevator. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
+- The rooms are an elevator's buttons up the right side, about mid-screen: the pool at the top and the locker room at the bottom. Each is a baby-blue ring, and the floor you're on lights up, a touch bigger, its icon popping out (docs/JOURNAL.md).
+- In a row under the name: the shop, the inventory, what's next and the room's trophies. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
 ## The idea
 
@@ -135,10 +134,13 @@ The plate is built like a game map rather than expanded by an image model.
   - Each plot is one city block on green screen, made in Gemini with the street floor as the style reference.
   - It is squashed to the slope and scaled so its base is exactly one block wide.
   - `PLOTS` says which block each one stands on.
+  - Each is clipped at its block's two front edges and side corners (a kerb's depth under them, a 1 px edge). The pictures carry a little of Gemini's own road round the block, which showed as soft ghosts of kerb on the road, cut off square.
+- **The street floor** is clipped to its own block and the two roads along its front faces with their zebras, part way across the road, before the lane line. It ran on down the side roads with kerbs of its own that didn't line up, faded out at its left and right edges: more soft ghosts.
 - **Draw order, back to front:** sky, street grid, the plots behind, the tower's block (the street floor: lobby, slab and crossroads), then the plots in front. The tower's storeys go on top in the app.
 - **The street floor's own background towers are left out.** The band painted on above them (`icons/City/src/plate-top.jpg`) ended at its top edge, so they stopped in mid-air.
 - **The kiosk at each side of the lobby** was cut in half where the street floor ends. Each was finished with one small Gemini inpaint: a 1400 px crop with just the cut strip in magenta.
   - Outpainting whole strips didn't work: Gemini drew a second building or redrew the lobby.
+  - The pavement ends past those kiosks came out soft (the left one yellow), fading into the road. Each was painted again crisp the same way (`kerb-left.webp`, `kerb-right.webp`), kept as a patch with its own alpha: the painted area and a few px round it.
 - **Output:** the app draws the city at half the master's size (5376 × 4980) in 4 × 4 tiles stored at three-quarter resolution (`icons/City/layers/tiles/`). The two all-sky tiles are left out. The full 10752 × 9960 is made by the script.
 - **The sky** (`icons/City/sky.webp`) is a plain gradient in the painted band's colours.
   - The earlier "sky" was an old blurred city picture saved under the wrong name.

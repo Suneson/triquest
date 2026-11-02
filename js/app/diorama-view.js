@@ -124,10 +124,11 @@ function roomPill(room, ctx) {
   </div>`;
 }
 
-// the side buttons: a baby-blue orb each (icons/UI/side/side-orb-blue.webp), the icon standing
-// in it, its top rising out past the rim, like the buttons round a game's home screen
-// the icon stands in the orb: its lower half sits inside the rim, its top rises out above it
-const orb = (src, attrs, extra = '') => `<button class="dg-orb" ${attrs}><span class="dg-orb-ico"><img src="${src}" width="128" height="128" alt="" draggable="false"></span>${extra}</button>`;
+// the round buttons: a glossy ring (icons/UI/side/ring-<tone>.webp: gold for the shop and the
+// kit bag, navy for the next goal and the trophies, baby blue for the elevator) over a face of
+// its own colour, a shade darker, and the icon standing in it: its lower half inside the rim,
+// its top rising out past it, like the buttons round a game's home screen
+const orb = (tone, src, attrs, extra = '', cls = '') => `<button class="dg-orb is-${tone}${cls}" ${attrs}><span class="dg-orb-ico"><img src="${src}" width="128" height="128" alt="" draggable="false"></span>${extra}</button>`;
 
 /** The room's trophies (its feats won), on the right under the elevator. */
 function trophyOrb(room) {
@@ -136,20 +137,20 @@ function trophyOrb(room) {
   const wonIds = new Set(featAwards().map((a) => a.featId));
   const feats = [...featsFor(sport), ...featsFor('cross')];
   const won = feats.filter((f) => wonIds.has(f.id)).length;
-  return orb('icons/UI/side/side-trophy.webp', `data-action="open-trophies" data-sport="${sport}" aria-label="${esc(t('feat.ui.boardAria', { n: won, total: feats.length }))}"`,
+  return orb('navy', 'icons/UI/side/side-trophy.webp', `data-action="open-trophies" data-sport="${sport}" aria-label="${esc(t('feat.ui.boardAria', { n: won, total: feats.length }))}"`,
     `<b class="dg-orb-n data-num" aria-hidden="true">${won}</b>`);
 }
 
-// the rooms are floors of the city tower (docs/CITY.md), so they're an elevator's buttons on the
-// right, the pool at the top and the locker room at the street; the floor you're on is lit
-// blue and a size bigger. Each button carries its sport's icon (tools/cut-shop-ui.py).
+// the rooms are floors of the city tower (docs/CITY.md), so they're an elevator's buttons up the
+// right, the pool at the top and the locker room at the street; the floor you're on is lit up,
+// a little bigger, its icon popping further out. Each carries its sport's icon (tools/cut-shop-ui.py).
 const SPORT_ART = { bike: 'sport-bike', pool: 'sport-swim', run: 'sport-run', gym: 'sport-gym', locker: 'sport-locker' };
 const btnArt = (room) => `icons/UI/sports/${SPORT_ART[room]}.webp`;
 const LIFT = ['pool', 'run', 'bike', 'gym', 'locker'];
 
 function liftPanel(active) {
-  const btn = (room) => `<button class="dg-lift-btn${room === active ? ' is-on' : ''}" data-room-go="${room}" aria-pressed="${room === active}"
-      aria-label="${esc(t(`cp.nav.${room}`))}" title="${esc(t(`cp.nav.${room}`))}"><img src="${btnArt(room)}" width="128" height="128" alt="" draggable="false"></button>`;
+  const btn = (room) => orb('sky', btnArt(room), `data-room-go="${room}" aria-pressed="${room === active}"
+      aria-label="${esc(t(`cp.nav.${room}`))}" title="${esc(t(`cp.nav.${room}`))}"`, '', ` dg-lift-btn${room === active ? ' is-on' : ''}`);
   return `<nav class="dg-lift" aria-label="${esc(t('cp.roomsAria'))}">${LIFT.map(btn).join('')}</nav>`;
 }
 
@@ -165,15 +166,13 @@ export function renderDiorama(ctx, avatarBtn = '') {
     ${roomPill(room, ctx)}
     <p class="dg-hint" data-dg-hint aria-live="polite"></p>
     <button class="dg-act" data-dg-act hidden></button>
-    <div class="dg-side is-left">
-      ${orb('icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
-      ${orb('icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
-      ${orb('icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
-    </div>
-    <div class="dg-side is-right">
-      ${liftPanel(room)}
+    <div class="dg-row">
+      ${orb('gold', 'icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
+      ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
+      ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
     </div>
+    ${liftPanel(room)}
     ${room === 'run' && (isChestAdmin() || isDemo()) ? turnBar() : ''}
   </section>`;
 }

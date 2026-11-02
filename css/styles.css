@@ -2766,5 +2766,8 @@ body.rm .cl-route-on { transition: none; }
 .dg-clouds > div { position: absolute; left: -15%; width: 130%; top: 0; will-change: transform; }
 .dg-clouds img { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
 .dg-clouds img + img { transform: scaleX(-1); }
+/* on the base iPhone paints the strip under the page in the page's colour: there, the asphalt of
+   the city's roads, so the street seems to carry on under the dock */
+html:has(body.pg-mode .dg-screen), body.pg-mode:has(.dg-screen) { background: #877688; }
 /* on the base the city runs down behind the dock, so the dock's band is see-through there */
 body.pg-mode:has(.dg-screen) .tabs { background: transparent; }

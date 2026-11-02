@@ -173,9 +173,19 @@ What's on them:
   - Its white panel counts down to the next delivery: every shop order is a workshop job with a finish time (`js/core/deliveries.js`).
   - Tapping it opens the list of deliveries on their way (`js/app/delivery-view.js`), as beige cards like the Journal's.
 - **The MOSKE truck** (`models/city/truck.glb`) brings whichever delivery is ending (`truckAt`).
-  - It drives in from the bottom right in the last few seconds, round the corner to the garage door, and arrives as the countdown ends.
-  - It waits there 8 s, turns round and drives off down the same road, out at the bottom.
-  - The route is `ROUTE_IN` and `ROUTE_OUT`, in px of the city picture.
+  - It drives in from the right along the road between the stadium and the pool, turns at the stadium's crossing onto the road past the garage, and arrives at the door as the countdown ends.
+  - It waits there 8 s, then carries on down the same road and out at the bottom left.
+  - The route is `ROUTE_IN` and `ROUTE_OUT`, given as street-grid coordinates (`lat(a, b)`).
 - **Reduced motion:** the clouds stand still and the truck only appears parked.
 
 **Models:** export GLB from Meshy, then run `npx @gltf-transform/cli optimize in.glb out.glb --texture-compress webp --texture-size 1024 --compress meshopt`. The five models went from 42 MB to under 0.9 MB.
+
+### The row below
+
+The city has one more row of blocks below the street floor's crossroads, so you can scroll down to the market and the pool. The canvas is now 10752 × 9960.
+- Straight below: `apartments-green`.
+- Far left: `apartments-small`.
+- Far right: `apartments`.
+- Under them, only their tops show at the bottom edge: the market and the pool again.
+
+On the base the page's own colour is the roads' asphalt (#877688), so the strip iPhone paints under the dock reads as street.

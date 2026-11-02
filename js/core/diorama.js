@@ -17,14 +17,14 @@ export const ENV = {
   roomWidth: 0.86, // the room's art width, as a share of the terrain's
 };
 // The city (docs/CITY.md, "The layered city"): one picture of the whole city, the street floor
-// in the middle (icons/City/layers/city.webp, half the 10752 × 8600 master), and the MOSKE tower
+// in the middle (icons/City/layers/city.webp, half the 10752 × 9960 master), and the MOSKE tower
 // stacked on it from two pieces cut by tools/cut-tower.py: floor N is the cap (the roof slab and
 // the top storey) with N - 1 office storeys under it, standing on the street floor's lobby; the
 // street floor (N = 0) is the picture as it is. A room stands on its floor's slab: the slab is
 // made for a 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
 export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
 export const CITY = {
-  src: 'icons/City/layers/city.webp', w: 5376, h: 4300,
+  src: 'icons/City/layers/city.webp', w: 5376, h: 4980,
   k: 0.5,                         // the app picture is half the master (px of the master × k)
   plateAt: [3584, 4072],          // the street floor's top-left corner in the master
   step: 449.01,                   // one storey, in px of the street floor (icons/City/layers/tower.json)

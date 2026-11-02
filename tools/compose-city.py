@@ -4,6 +4,7 @@ the plot pictures standing on its blocks (docs/CITY.md, "The layered city").
     python3 tools/compose-city.py <in dir> <out.png> [scale] [nosky]
 
 `nosky` leaves the sky transparent: the app draws the sky and the clouds behind the city.
+`front` also writes <out>-front.png: the plots in FRONT alone, drawn over the 3D truck.
 
 <in dir> holds
   plate.png        the street floor, at the slope (tools/cut-tower.py), its sky still green
@@ -49,6 +50,9 @@ SLAB = {'top': (1690, 800), 'left': (0, 1467), 'right': (3582, 1475)}
 # (x, y) on the full canvas with its left and right 50 px faded in: the kiosks cut where the
 # street floor ended
 PATCHES = [('kiosk-left.webp', 3154, 5600), ('kiosk-right.webp', 6978, 5600)]
+# the blocks in front of the van's road (right of it, from the pool's row down): their plots are
+# also written to the front layer, which the app draws over the truck
+FRONT = {(1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
 ROAD_RGB = None                  # sampled from the plate's crossroads when None
 FEATHER = 90                     # px: the plate's left and right edges fade into the grid
 KEEP_PLATE_BEHIND = False        # the plate's own towers behind the tower's block (they end at its top)
@@ -238,6 +242,9 @@ def main():
         paste(canvas, behind_im, *at)
     tower_row = 0
     order = sorted(PLOTS, key=lambda p: p[0][0] + p[0][1])
+    # the plots that stand in front of the van's road, also on a layer of their own for the app
+    # to draw over the 3D truck (`front` in argv: written next to the output as <out>-front.png)
+    front = Image.new('RGBA', canvas.size) if 'front' in sys.argv[4:] else None
     drawn_front = False
     for (i, j), name in order:
         if i + j > tower_row and not drawn_front:
@@ -247,6 +254,8 @@ def main():
         cx, cy = block_centre(c0, pitch, i, j)
         corner = (cx * k, (cy + SLOPE * BLOCK) * k)       # the block's front corner
         paste(canvas, spr, corner[0] - fx, corner[1] - fy)
+        if front is not None and (i, j) in FRONT:
+            paste(front, spr, corner[0] - fx, corner[1] - fy)
     if not drawn_front:
         paste(canvas, front_im, *at)
     # the patches, faded in at their left and right edges
@@ -263,6 +272,8 @@ def main():
             pt = pt.resize((round(pt.width * k), round(pt.height * k)), Image.LANCZOS)
         paste(canvas, pt, px * k, py * k)
     (canvas if 'nosky' in sys.argv[4:] else canvas.convert('RGB')).save(dst)
+    if front is not None:
+        front.save(os.path.splitext(dst)[0] + '-front.png')
     print('wrote', dst, canvas.size)
 
 

@@ -28,7 +28,7 @@ export function leaderboardShell(view, today) {
   const countdown = view === 'season'
     ? `<div class="lb-countdown">${svg('clock')} ${t('lb.daysLeft', { n: s.daysRemaining, s: s.number })}</div>` : '';
   return `<div class="day-header"><h2>${t('lb.title')}</h2></div>
-    <div class="lb-banner">${svg('trophy')}<div><b>${t('lb.monthly')}</b>${t('lb.prize')}</div></div>
+    <div class="lb-banner"><img class="lb-banner-art" src="icons/UI/ranks/season.webp" width="256" height="256" alt="" draggable="false"><div><b>${t('lb.monthly')}</b>${t('lb.prize')}</div></div>
     <div class="lb-toggle">
       <button class="lb-tab ${view === 'season' ? 'on' : ''}" data-action="lb-toggle" data-view="season">${t('lb.season')}</button>
       <button class="lb-tab ${view === 'all' ? 'on' : ''}" data-action="lb-toggle" data-view="all">${t('lb.allTime')}</button>
@@ -152,7 +152,7 @@ function podiumBlock(rows, me) {
   if (!top.length) return '';
   return `<div class="lb-podium" role="list" aria-label="${t('lb.top3')}">${top.map((r) => `
     <button class="pod pod-r${r.rank}${r.user_id === me ? ' me' : ''}" role="listitem" ${rowAttrs(r)} aria-label="${esc(t('lb.podAria', { rank: r.rank, name: r.display_name, xp: xp(r.xp) }))}">
-      ${r.rank === 1 ? `<span class="pod-crown" aria-hidden="true">${svg('trophy')}</span>` : ''}
+      <img class="pod-medal" src="icons/UI/ranks/medal-${r.rank}.webp" width="256" height="256" alt="" aria-hidden="true" draggable="false">
       ${avatar(r)}
       <b class="pod-name">${esc((r.display_name || '').split(' ')[0])}</b>
       <small class="pod-xp">${xp(r.xp)} XP</small>${proofChip(r)}

@@ -66,7 +66,13 @@ export const CITY_TILES = [0, 1, 2, 3].flatMap((r) => [0, 1, 2, 3].map((c) => ({
   .map(({ r, c }) => ({ src: `icons/City/layers/tiles/city-${r}-${c}.webp`, x: c * TILE.w, y: r * TILE.h,
     w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }));
 
-const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
+// the plots in front of the van's road, on their own (tools/compose-city.py front): drawn over the
+// 3D truck so it passes behind them
+const FRONT_TILES = ['2-1', '2-2', '2-3', '3-0', '3-1', '3-2', '3-3'].map((k) => k.split('-').map(Number))
+  .map(([r, c]) => ({ src: `icons/City/layers/front/front-${r}-${c}.webp`, x: c * TILE.w, y: r * TILE.h,
+    w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }));
+
+const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: FRONT_TILES, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
 export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);

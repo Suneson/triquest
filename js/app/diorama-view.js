@@ -373,14 +373,28 @@ export function wireDiorama(root, ctx) {
     Object.assign(signHit.style, { left: `${SIGN_AT[0] - 55}px`, top: `${SIGN_AT[1] - SIGN_HEIGHT - 10}px`, width: '110px', height: `${SIGN_HEIGHT + 20}px` });
   } else signHit?.remove();
   // the parcel the truck brought: a bubble over the garage door until it's opened
-  let bubble = worldEl.querySelector('.dg-parcel');
+  // over everything in the world, the 3D layer included: the plots in front of the van's road
+  // (so it drives behind them) and the parcel bubble (so it shows over the sign)
+  let front = stage.front;
+  if (!front) { front = stage.front = document.createElement('div'); front.className = 'dg-front'; front.innerHTML = '<div class="dg-front-tiles"></div>'; }
+  vp.append(front);
+  Object.assign(front.style, { width: `${env.w}px`, height: `${env.h}px` });
+  const fparts = env.front || [];
+  const fkey = fparts.map((p) => p.src).join('|');
+  const ftiles = front.firstElementChild;
+  if (ftiles.dataset.key !== fkey) {
+    ftiles.dataset.key = fkey;
+    ftiles.innerHTML = fparts.map((p) => `<img src="${p.src}" alt="" draggable="false" decoding="async"
+      style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px">`).join('');
+  }
+  let bubble = front.querySelector('.dg-parcel');
   if (env.floor != null) {
     if (!bubble) {
       bubble = document.createElement('button');
       bubble.className = 'dg-parcel';
       bubble.innerHTML = '<img src="icons/City/parcel/parcel-shut.webp" alt="" draggable="false"><b class="data-num"></b>';
       bubble.addEventListener('click', (e) => { e.stopPropagation(); openParcel(parcels(), () => showParcel()); });
-      worldEl.querySelector('.dg-items').after(bubble);
+      front.append(bubble);
     }
     Object.assign(bubble.style, { left: `${TRUCK_STOP[0]}px`, top: `${TRUCK_STOP[1] - 300}px` });
   } else bubble?.remove();
@@ -472,6 +486,7 @@ export function wireDiorama(root, ctx) {
     const r = box();
     view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);
     worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
+    if (stage.front) stage.front.style.transform = worldEl.style.transform;
     city?.setView(view.v, r.width, r.height);
   };
   const artEl = worldEl.querySelector('.dg-room-art');
@@ -510,7 +525,7 @@ export function wireDiorama(root, ctx) {
     // picking something up from far away brings it closer
     const r = box(); const lo = minZoom(r.width, r.height, env);
     if (el && view.v.s < lo * 1.5) {
-      if (!reduced()) { worldEl.classList.add('is-easing'); setTimeout(() => worldEl.classList.remove('is-easing'), 280); }
+      if (!reduced()) { [worldEl, stage.front].forEach((el) => el?.classList.add('is-easing')); setTimeout(() => [worldEl, stage.front].forEach((el) => el?.classList.remove('is-easing')), 280); }
       const e = el.getBoundingClientRect();
       zoomAt(lo * 1.8, e.left + e.width / 2, e.top + e.height / 2);
     }

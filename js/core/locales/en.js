@@ -3056,4 +3056,6 @@ en.chest = {
 
 en.cp.r3d = { "aria": "Turn the runner", "left": "Turn left", "right": "Turn right" };
 
+en.city = {"sign": {"title": "DELIVERY", "aria": "Deliveries on their way"}, "delivery": {"title": "Deliveries", "tag": "On its way", "arrives": "Arrives at {time}", "none": "Nothing on its way. What you buy in the shop is delivered here."}};
+
 export default en;

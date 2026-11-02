@@ -42,6 +42,8 @@ import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
 import { mountRunner, webglOk } from './runner3d.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
+import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT } from './city3d.js';
+import { deliveryEnds } from '../core/deliveries.js';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -350,6 +352,17 @@ export function wireDiorama(root, ctx) {
     towerEl.innerHTML = pieces.map((p) => `<img src="${p.src}" width="${p.w}" height="${p.h}" alt="" draggable="false"
       style="left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px;width:${p.w}px;height:${p.h}px">`).join('');
   }
+  // the delivery sign's tap target (the sign itself is drawn in 3D over the world)
+  let signHit = worldEl.querySelector('.dg-sign-hit');
+  if (env.floor != null) {
+    if (!signHit) {
+      signHit = document.createElement('button');
+      signHit.className = 'dg-sign-hit'; signHit.dataset.action = 'open-deliveries';
+      worldEl.querySelector('.dg-items').before(signHit);
+    }
+    signHit.setAttribute('aria-label', t('city.sign.aria'));
+    Object.assign(signHit.style, { left: `${SIGN_AT[0] - 55}px`, top: `${SIGN_AT[1] - SIGN_HEIGHT - 10}px`, width: '110px', height: `${SIGN_HEIGHT + 20}px` });
+  } else signHit?.remove();
   preloadFloors();
   // an item's picture and its shadow on the floor move together
   const moveEl = (el, it, u, v) => {
@@ -415,10 +428,19 @@ export function wireDiorama(root, ctx) {
   };
 
   const box = () => vp.getBoundingClientRect();
+  // the city's clouds, the delivery sign and the truck (city3d.js), on the city's floors
+  const city = env.floor != null && webglOk() ? mountCity3d(vp, {
+    worldW: env.w,
+    deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
+    now: serverNow,
+    label: { title: t('city.sign.title'), clock: clockLeft },
+    reduced,
+  }) : null;
   const apply = () => {
     const r = box();
     view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);
     worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
+    city?.setView(view.v, r.width, r.height);
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');

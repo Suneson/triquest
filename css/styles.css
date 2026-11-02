@@ -2478,6 +2478,18 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-viewport { position: absolute; left: 0; right: 0; top: 0; bottom: 0;
   overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none; }
 .dg-viewport:focus-visible { box-shadow: inset 0 0 0 3px #fff; }
+/* the city's sky, its far clouds and its 3D layers (city3d.js): the sky and what's behind the
+   buildings under the world (the city picture's sky is transparent), the rest over it */
+.dg-viewport { background: linear-gradient(#96CBF3, #B2DAF6); }
+.dg-far, .dg-3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+.dg-far { overflow: hidden; }
+.dg-far img { position: absolute; left: 0; top: 0; height: auto; max-width: none; will-change: transform; -webkit-user-drag: none; }
+.dg-3d.is-front { z-index: 2; }
+.dg-sign-hit { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dg-sign-hit:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 12px; }
+/* the deliveries sheet: one beige card each (delivery-view.js) */
+.dl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.dl-row .jh-title { font-size: 18px; }
 .dg-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 .dg-world.is-easing { transition: transform 260ms cubic-bezier(.2, .8, .3, 1); }
 .dg-env { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }

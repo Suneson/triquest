@@ -21,6 +21,7 @@ import { openPublicProfile } from './profile.js';
 import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER, avatarButton } from './profile-game.js';
 import { openWhatNext } from './base-view.js';
 import { renderDiorama, wireDiorama, resetDiorama } from './diorama-view.js';
+import { openDeliveries } from './delivery-view.js';
 import { refreshPlacements, onPlacements } from './placement-state.js';
 import { PRESTIGE, canPrestige } from '../core/collections.js';
 import { onSwipe, nextSport } from './swipe.js';
@@ -489,6 +490,7 @@ function onClick(e) {
     case 'open-base': openShop(buildCtx(), { tab: 'base', sport: el.dataset.sport || appState.pgSport, focus: el.dataset.bp ? 'bp' : '' }); break;
     case 'enter-scene': enterScene(el.dataset.sport); break;
     case 'open-next': openWhatNext(buildCtx()); break;
+    case 'open-deliveries': openDeliveries(); break;
     case 'open-missions': openMissionBoard(buildCtx()); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;

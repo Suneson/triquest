@@ -158,3 +158,24 @@ The plate is built like a game map rather than expanded by an image model.
 - **The code:** `towerPieces(n)` and `slabOf(n)` in `js/core/diorama.js` place the pieces and the slab, and the room's 8 × 8 floor stands in the middle of the slab at half its width.
 - **Swiping:** you can swipe across the whole city.
 - **Moving between floors:** still covered by the cloud bank.
+
+### What moves (`js/app/city3d.js`)
+
+Two transparent WebGL canvases cover the stage.
+- **The back canvas** sits under the city picture, whose sky is transparent (`compose-city.py … nosky`). What it draws shows only through the sky, so its clouds pass behind the buildings.
+- **The front canvas** sits over the city picture.
+- **The camera:** orthographic and tied to the stage's pan and zoom. The 3D ground is the city's own: X runs along e1 = (1, 0.489) world px, Z along e2 = (−1, 0.489), and Y up.
+
+What's on them:
+- **Far clouds:** six flat clouds (`icons/City/sky-clouds/`, keyed from your two green-screen pictures). They drift right to left in screen space, slowest of all.
+- **3D clouds:** the three cloud models (`models/city/cloud-*.glb`), with their textures dropped for a soft white material of their own and their normals recomputed. They drift right to left over the city, six behind the buildings and two in front.
+- **The delivery sign** (`models/city/sign.glb`) stands on the pavement left of the garage door, its panel facing out.
+  - Its white panel counts down to the next delivery: every shop order is a workshop job with a finish time (`js/core/deliveries.js`).
+  - Tapping it opens the list of deliveries on their way (`js/app/delivery-view.js`), as beige cards like the Journal's.
+- **The MOSKE truck** (`models/city/truck.glb`) brings whichever delivery is ending (`truckAt`).
+  - It drives in from the bottom right in the last few seconds, round the corner to the garage door, and arrives as the countdown ends.
+  - It waits there 8 s, turns round and drives off down the same road, out at the bottom.
+  - The route is `ROUTE_IN` and `ROUTE_OUT`, in px of the city picture.
+- **Reduced motion:** the clouds stand still and the truck only appears parked.
+
+**Models:** export GLB from Meshy, then run `npx @gltf-transform/cli optimize in.glb out.glb --texture-compress webp --texture-size 1024 --compress meshopt`. The five models went from 42 MB to under 0.9 MB.

@@ -2592,7 +2592,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-ico { position: absolute; right: 0; top: 50%; width: 34px; height: 34px; transform: translateY(-50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5)); }
 
 /* the room's plate, under the HUD */
-.dg-pill { position: absolute; left: 50%; top: calc(var(--safe-t) + 204px); transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; }
+.dg-pill { position: absolute; left: 50%; top: calc(var(--safe-t) + 150px); transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; }
 .dg-pill-name, .dg-pill-chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px; padding: 4px 14px; border: 3px solid #0B1222; border-radius: 9999px;
   background: linear-gradient(#2a3e6e, #16264d); color: #fff; font-size: 13px; cursor: pointer; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), 0 3px 0 rgba(0, 0, 0, .45); }
 .dg-pill-name i, .dg-pill-chip { color: #FFD34D; font-style: normal; }
@@ -2630,28 +2630,36 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-orb-n { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); min-width: 24px; height: 19px; padding: 0 6px; display: grid; place-items: center;
   border-radius: 9999px; background: #16264D; color: #FFD34D; font-size: 12px; line-height: 1; box-shadow: 0 0 0 2px #0B1222; text-shadow: none; }
 .dg-orb:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-/* the shop, the kit bag, the next goal and the trophies: a row under the name */
-/* (below the gauges' foot, so the row can run under both) */
-.dg-row { position: absolute; left: 12px; top: calc(var(--safe-t) + 132px); z-index: 4; display: flex; gap: 12px; align-items: center; }
+/* the next goal and the trophies: a row under the name, beside the gauges */
+.dg-row { position: absolute; left: 12px; top: calc(var(--safe-t) + 84px); z-index: 4; display: flex; gap: 12px; align-items: center; }
 .dg-row .dg-orb { --o: 50px; }
-/* the rooms: an elevator's buttons up the right side, about the middle of the screen, the pool at
-   the top (diorama-view.js liftPanel). The city fills the whole screen, down behind the dock. */
+/* the shop and the kit bag down the left, the elevator on the right, over the dock */
+.dg-side { position: absolute; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 10px); z-index: 4; display: grid; gap: 18px; justify-items: center; }
+.dg-side.is-left { left: 12px; } .dg-side.is-right { right: 12px; }
+/* the rooms: an elevator's buttons (diorama-view.js liftPanel), the pool at the top. Each is a
+   baby-blue ring with a light face and its icon inside; the floor you're on turns blue, a size
+   bigger. The city fills the whole screen, down behind the dock. */
 .dg-screen { --dg-nav-h: 0px; }
-.dg-lift { position: absolute; right: 12px; top: 46%; z-index: 4; display: grid; gap: 14px; justify-items: center; transform: translateY(-50%); }
-.dg-lift-btn { --o: 48px; }
-/* the floor you're on: the ring a touch bigger, its face lit from inside, its icon bigger and
-   popping further out over the rim */
-.dg-lift-btn.is-on { z-index: 1; transform: scale(1.1); --face-hi: #C9F1FF; --face-lo: #2C8DE0;
-  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)) drop-shadow(0 0 10px var(--glow)); }
-.dg-lift-btn.is-on .dg-orb-ico > img { transform: translateX(-50%) translateY(calc(var(--o) * -.1)) scale(1.22); }
-.dg-lift-btn.is-on:active { transform: scale(1.04); }
+.dg-lift { display: grid; gap: 10px; justify-items: center; }
+.dg-lift-btn { position: relative; width: 50px; height: 50px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  background: url("../icons/UI/side/ring-sky.webp") center / 100% 100% no-repeat,
+    radial-gradient(circle closest-side at 50% 42%, #FFFFFF, #ECE6D8 60%, #CDC3AA 94%, transparent 96%) center / 84% 84% no-repeat;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4));
+  transition: transform 180ms cubic-bezier(.3, 1.4, .5, 1), filter 180ms ease; -webkit-tap-highlight-color: transparent; }
+.dg-lift-btn img { width: 34px; height: 34px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+.dg-lift-btn.is-on { z-index: 1; transform: scale(1.2);
+  background-image: url("../icons/UI/side/ring-sky.webp"), radial-gradient(circle closest-side at 50% 38%, #CDEBFF, #4FA8F0 58%, #1F6FC2 94%, transparent 96%);
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)) drop-shadow(0 0 10px rgba(120, 190, 255, .9)); }
+.dg-lift-btn:active { transform: scale(.94); }
+.dg-lift-btn.is-on:active { transform: scale(1.12); }
+.dg-lift-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   .dg-item.bounce, .dg-item.landed, .dg-arrow, .dg-gauge.is-stamina .dg-fill::after { animation: none; }
-  .dg-item.spring, .dg-world.is-easing, .dg-fill, .dg-orb, .dg-orb-ico > img { transition: none; }
+  .dg-item.spring, .dg-world.is-easing, .dg-fill, .dg-orb, .dg-orb-ico > img, .dg-lift-btn { transition: none; }
   .dg-item.is-lift { transform: translate(-50%, var(--ty)); }
 }
 body.rm .dg-item.bounce, body.rm .dg-item.landed, body.rm .dg-arrow, body.rm .dg-gauge.is-stamina .dg-fill::after { animation: none; }
-body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-orb, body.rm .dg-orb-ico > img { transition: none; }
+body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-orb, body.rm .dg-orb-ico > img, body.rm .dg-lift-btn { transition: none; }
 
 /* ---- weekly missions, seasons and the stall (docs/LOOP.md §5) ---------------------------- */
 /* on the stage: the board's weekly count, and the way into a picked-up board */

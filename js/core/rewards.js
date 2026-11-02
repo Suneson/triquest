@@ -158,8 +158,8 @@ export function chestSessions(workouts) {
 
 /**
  * The art for a tier (icons/AnimatedRewards): its clip and sound, the shut and
- * open stills (the clip's first and last frames), and the clip as an animated
- * WebP for Safari.
+ * open stills (the clip's first and last frames), and the clip for Safari: a stacked
+ * H.264 MP4, or (without WebGL) an animated WebP.
  */
 export const chestArt = (tier) => {
   const name = tier[0].toUpperCase() + tier.slice(1);
@@ -169,6 +169,8 @@ export const chestArt = (tier) => {
     still: `icons/AnimatedRewards/still/${name}.webp`,
     open: `icons/AnimatedRewards/still/${name}-open.webp`,
     anim: `icons/AnimatedRewards/WEBP/${name}.webp`,
+    // the same clip for iPhone: H.264, colour on top and transparency below (alpha-video.js)
+    mp4: `icons/AnimatedRewards/MP4/${name}.mp4`,
   };
 };
 

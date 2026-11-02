@@ -3058,4 +3058,6 @@ es.cp.r3d = { "aria": "Girar al corredor", "left": "Girar a la izquierda", "righ
 
 es.city = {"sign": {"title": "ENTREGA", "aria": "Entregas en camino"}, "delivery": {"title": "Entregas", "tag": "En camino", "arrives": "Llega a las {time}", "none": "No hay nada en camino. Lo que compres en la tienda se entrega aquí."}};
 
+es.city.parcel = {"title": "Entrega", "from": "Tu paquete ha llegado", "hint": "Toca para abrir", "inside": "Dentro", "collect": "Recoger", "next": "Siguiente paquete (quedan {n})", "aria": {"one": "Un paquete en la puerta. Tócalo para abrirlo.", "other": "{n} paquetes en la puerta. Tócalos para abrirlos."}};
+
 export default es;

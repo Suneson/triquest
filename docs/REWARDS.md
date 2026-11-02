@@ -155,3 +155,21 @@ opened. An unopened chest is worth nothing yet.
   - *Simulate a finished workout*: shows the banner for a made-up hard session.
 - **Demo** (`?demo=1`): two waiting chests (a Legendary from a long run, a Rare
   from a ride) that open on the device.
+
+## The clip on iPhone (stacked MP4)
+
+Safari can't draw a WebM's transparency. The animated WebP it used to fall back to is decoded frame by frame on the CPU, and it shared that work with the chest's CSS shake and scale, so it stuttered.
+
+- **The new file:** `icons/AnimatedRewards/MP4/<Tier>.mp4` is the same 24 fps clip as ordinary H.264, which every iPhone decodes in hardware. It's 720 × 1440: the colour on top and the transparency, as grey, underneath.
+- **The player:** `js/app/alpha-video.js` puts the two halves back together in a small WebGL shader, one video frame at a time.
+- **Fallback:** the WebP is only used where there's no WebGL.
+
+To make one from a WebM with transparency:
+
+```
+ffmpeg -c:v libvpx-vp9 -i Tier.webm -filter_complex "[0:v]scale=720:720,format=rgba,split[c][m];[m]alphaextract,format=yuv420p[mm];[c]format=yuv420p[cc];[cc][mm]vstack=inputs=2,format=yuv420p[out]" -map "[out]" -an -c:v libx264 -preset slow -crf 21 -r 24 -movflags +faststart Tier.mp4
+```
+
+**The taps:**
+- Taps past the third are ignored. Before, each one started the clip again.
+- After the third tap the chest finishes its shake and springs back to its size, and only then does the clip start, on the chest at rest.

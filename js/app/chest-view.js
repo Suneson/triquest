@@ -23,6 +23,7 @@ import * as store from './store.js';
 import { pendingChests, openChest, giftChest, previewChest, markAnnounced, unannounced } from './chests-state.js';
 import { gearError } from './gear-state.js';
 import { CUR_ART } from './shop-ui.js';
+import { makeAlphaVideo, alphaVideoOk } from './alpha-video.js';
 
 export const TIER_COLOR = { common: '#E6D7BD', uncommon: '#4CC38A', rare: '#5B9BFF', epic: '#B57BFF', legendary: '#FFC94A', mythic: '#6FF0FF' };
 const ENABLED = TIERS.filter((x) => CHEST_RULES.enabled[x]);
@@ -184,6 +185,9 @@ const TAPS = 3;
 export function openChestModal(chest, { queue = [] } = {}) {
   const art = chestArt(chest.tier);
   const webm = alphaVideo();
+  // Safari: the stacked MP4 through WebGL (smooth, decoded by the phone's video hardware);
+  // only without WebGL the animated WebP (decoded on the CPU, which stutters)
+  const stacked = !webm && alphaVideoOk();
   const calm = prefersReducedMotion();
   const color = TIER_COLOR[chest.tier];
   const seconds = CLIP_SECONDS[chest.tier] || 4;
@@ -197,7 +201,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
   audio?.load();
   const root = openLayer('chest', {
     className: 'cx-layer', instant: true, reuse: false,
-    onClose: () => { audio?.pause(); timers.forEach(clearTimeout); if (animUrl) URL.revokeObjectURL(animUrl); },
+    onClose: () => { audio?.pause(); av?.stop(); timers.forEach(clearTimeout); if (animUrl) URL.revokeObjectURL(animUrl); },
   });
   root.innerHTML = `<div class="cx tier-${chest.tier}${calm ? ' is-calm' : ''}" role="dialog" aria-modal="true" aria-labelledby="cx-title" style="--tc:${color}">
     <div class="cx-bg" aria-hidden="true"><i class="cx-rays"></i><i class="cx-flash"></i></div>
@@ -231,10 +235,21 @@ export function openChestModal(chest, { queue = [] } = {}) {
   const collect = root.querySelector('[data-cx-collect]');
   const skipBtn = root.querySelector('[data-cx-skip]');
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  // the iPhone clip, loading while the chest is being tapped
+  let av = null;
+  if (stacked) {
+    av = makeAlphaVideo(art.mp4, {
+      onFirstFrame: () => { wiggle.classList.add('is-playing'); if (audio && Math.abs(audio.currentTime - av.video.currentTime) > 0.08) audio.currentTime = av.video.currentTime; },
+      onEnded: () => { wiggle.classList.add('is-clip-end'); toReady(); },
+    });
+    av.canvas.className = 'cx-anim';
+    wiggle.append(av.canvas, av.video);
+    av.video.load();
+  }
 
   // Safari's animation: fetched now, while the chest is being tapped; each opening
   // gets its own object URL so it starts from its first frame
-  const animBlob = webm ? null : fetch(art.anim).then((r) => (r.ok ? r.blob() : null)).catch(() => null);
+  const animBlob = webm || stacked ? null : fetch(art.anim).then((r) => (r.ok ? r.blob() : null)).catch(() => null);
   new Image().src = art.open;
 
   // the server opens the chest on the first tap (closing before that opens nothing)
@@ -248,7 +263,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     if (phase !== 'play') return;
     phase = 'ready';
     // the open chest stays: the clip on its last frame, or the same frame as a still
-    if (!vid || !vid.ended) { openStill.hidden = false; wiggle.classList.add('is-ended'); }
+    if (av ? !wiggle.classList.contains('is-clip-end') : (!vid || !vid.ended)) { openStill.hidden = false; wiggle.classList.add('is-ended'); }
     stage.classList.add('is-ready');
     hint.textContent = t('chest.hint.collect');
     haptic(['legendary', 'mythic'].includes(chest.tier) ? 'levelUp' : 'record');
@@ -256,10 +271,12 @@ export function openChestModal(chest, { queue = [] } = {}) {
 
   const play = async () => {
     phase = 'play';
-    pips.hidden = true;
-    hint.textContent = '';
-    squash.style.removeProperty('--sq');
-    box.classList.add('is-pop');
+    if (av) {
+      av.play().catch(() => { openStill.hidden = false; toReady(); });
+      audio?.play().catch(() => {});
+      later(toReady, (seconds + 2) * 1000); // a clip that stalls still ends
+      return;
+    }
     if (vid) {
       // the clip and its sound start together; if the clip had to wait for data,
       // the sound catches up with it the moment it plays
@@ -286,7 +303,26 @@ export function openChestModal(chest, { queue = [] } = {}) {
     later(toReady, seconds * 1000);
   };
 
+  // after the third tap the chest finishes its shake and springs back to its size, and only
+  // then does the clip start: it begins on the chest's own first frame, at rest
+  const settle = (el, event, ms) => new Promise((res) => {
+    let done = false; const end = () => { if (!done) { done = true; res(); } };
+    el.addEventListener(event, end, { once: true }); later(end, ms);
+  });
+  const arm = async () => {
+    phase = 'arming';
+    pips.hidden = true;
+    hint.textContent = '';
+    if (!calm) await settle(wiggle, 'animationend', 450);
+    if (phase !== 'arming') return;
+    box.classList.add('is-pop');
+    squash.style.removeProperty('--sq');
+    if (!calm) await settle(squash, 'transitionend', 360);
+    if (phase !== 'arming') return;
+    play();
+  };
   const tap = () => {
+    if (taps >= TAPS) return;
     taps += 1;
     if (taps === 1) openOnServer();
     pips.children[taps - 1]?.classList.add('on');
@@ -295,7 +331,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     void wiggle.offsetWidth; // restart the wiggle
     wiggle.classList.add('is-hit');
     haptic(taps >= TAPS ? 'record' : 'tick');
-    if (taps >= TAPS) later(play, calm ? 0 : 260);
+    if (taps >= TAPS) arm();
   };
 
   const row = (cur, r) => `<div class="cx-row is-${cur}${r.base ? '' : ' is-flat'}">
@@ -334,10 +370,12 @@ export function openChestModal(chest, { queue = [] } = {}) {
     timers.forEach(clearTimeout);
     audio?.pause();
     vid?.pause();
+    av?.stop();
     phase = 'play';
     pips.hidden = true;
     squash.style.removeProperty('--sq');
     wiggle.querySelector('.cx-anim')?.remove();
+    av?.video.remove();
     if (vid) vid.hidden = true;
     toReady();
     stage.classList.add('is-open');

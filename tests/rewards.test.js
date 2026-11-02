@@ -3,6 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import {
   CHEST_RULES, TIERS, workoutDifficulty, chestOdds, rollChestTier, chestBonus, chestSessions, sessionBase, topTier, chestArt,
 } from '../js/core/rewards.js';
@@ -105,7 +106,9 @@ test('art and the top tier', () => {
   assert.deepEqual(chestArt('rare'), {
     webm: 'icons/AnimatedRewards/WEBM/Rare.webm', mp3: 'icons/AnimatedRewards/mp3/Rare.mp3',
     still: 'icons/AnimatedRewards/still/Rare.webp', open: 'icons/AnimatedRewards/still/Rare-open.webp', anim: 'icons/AnimatedRewards/WEBP/Rare.webp',
+    mp4: 'icons/AnimatedRewards/MP4/Rare.mp4',
   });
+  for (const tier of ['common', 'uncommon', 'rare', 'legendary', 'mythic']) assert.ok(existsSync(chestArt(tier).mp4), `${tier} has its iPhone clip`);
   assert.equal(topTier([{ tier: 'common' }, { tier: 'legendary' }, { tier: 'rare' }]), 'legendary');
   assert.equal(topTier([]), 'common');
 });

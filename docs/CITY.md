@@ -193,3 +193,11 @@ On the base the page's own colour is the roads' asphalt (#877688), so the strip 
 
 - **The far clouds** are sized as a share of the screen from the start and drift on their own loop. If WebGL isn't available they still move, and they never show at their pictures' natural size.
 - **The 3D layers** draw at most 1.5 px per CSS pixel, without antialiasing.
+
+### Parcels
+
+When the truck has brought a delivery, its parcel waits at the garage door: a bobbing bubble over where the truck stops, with a count when there are several.
+- **Tapping it** (`openParcel` in `js/app/delivery-view.js`): the parcel (`icons/City/parcel/`, made with Gemini) sits on the chest's stage. Two taps shake it, and the third bursts it open, with what was in it rising out under its name.
+- **Next parcel:** Collect moves on to the next parcel.
+- **Which parcels wait:** deliveries from the last 3 days that haven't been opened (`parcelsWaiting` in `js/core/deliveries.js`). Opened ones are remembered on the device.
+- **A real opening animation** can replace the two stills later: same place, same timing.

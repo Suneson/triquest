@@ -109,15 +109,18 @@ let shared = null;   // the canvases and the far clouds, kept across the stage's
  *   label         { title, clock(ms) }: the sign's words and its countdown format
  *   parked()      true while a parcel waits at the door: the truck stays until it's opened
  *   reduced()     true under reduced motion: no drifting, the truck only appears parked
+ *   front         the buildings in front of its road out, [{ src, x, y, w, h }] in px of the city
+ *                 picture: drawn over the truck while it's about (and gone again after), so it
+ *                 drives off behind them
  * Returns { setView(v, w, h) }.
  */
-export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced }) {
+export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced, front: frontArt = [] }) {
   if (!shared) shared = makeShared();
   const { far, back, front } = shared;
   // into this render's viewport: the far clouds and the back canvas under the world, the front over it
   const world = vp.querySelector('[data-dg-world]');
   vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
-  shared.opts = { worldW, deliveries, now, label, parked, reduced };
+  shared.opts = { worldW, deliveries, now, label, parked, reduced, front: frontArt };
   if (!shared.farLoop) farLoop();
   if (!shared.started) start();
   return {
@@ -236,6 +239,36 @@ async function start() {
     truckObj = truck;
   }
 
+  // the buildings in front of the truck's road out: flat pictures on the ground, drawn after
+  // everything else in the front scene and through it, so they cover the truck where they stand
+  // in front of it. Loaded while the truck is about, let go once it's gone.
+  let cover = null;
+  const coverOn = (on) => {
+    if (on && !cover) {
+      const live = cover = { meshes: [] };
+      const tl = new THREE.TextureLoader();
+      for (const p of shared.opts?.front || []) {
+        tl.load(new URL(`../../${p.src}`, import.meta.url).href, (tex) => {
+          if (cover !== live) { tex.dispose(); return; }
+          tex.colorSpace = THREE.SRGBColorSpace;
+          const c = [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.h], [p.x, p.y + p.h]].map(ground);
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(c.flatMap((q) => [q.x, 0, q.z]), 3));
+          geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
+          geo.setIndex([0, 3, 1, 1, 3, 2]);
+          const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+          const m = new THREE.Mesh(geo, mat);
+          m.renderOrder = 10; m.frustumCulled = false;
+          frontScene.add(m); live.meshes.push(m);
+          shared.dirty = true;
+        });
+      }
+    } else if (!on && cover) {
+      for (const m of cover.meshes) { frontScene.remove(m); m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); }
+      cover = null;
+    }
+  };
+
   let lastText = '';
   const drawPanel = (text, sub) => {
     if (!panelCanvas || text === lastText) return;
@@ -298,6 +331,7 @@ async function start() {
       }
       const show = at && (!still || !at.moving);
       truckObj.visible = !!show;
+      coverOn(tr.mode !== 'off');
       if (show) {
         const p = ground(at.p); const d = ground([at.p[0] + at.dir[0], at.p[1] + at.dir[1]]);
         const dX = d.x - p.x; const dZ = d.z - p.z;

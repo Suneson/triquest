@@ -2486,8 +2486,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-far img { position: absolute; height: auto; max-width: none; -webkit-user-drag: none; }
 .dg-3d.is-front { z-index: 2; }
 /* the world's front layer, over the 3D one: it moves with the world (the same transform) */
-.dg-front { position: absolute; left: 0; top: 0; z-index: 3; transform-origin: 0 0; pointer-events: none; }
-.dg-front-tiles img { position: absolute; max-width: none; -webkit-user-drag: none; }
+.dg-front { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; transform-origin: 0 0; pointer-events: none; }
 .dg-front .dg-parcel { pointer-events: auto; }
 .dg-sign-hit { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .dg-sign-hit:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 12px; }

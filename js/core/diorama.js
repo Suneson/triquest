@@ -66,13 +66,19 @@ export const CITY_TILES = [0, 1, 2, 3].flatMap((r) => [0, 1, 2, 3].map((c) => ({
   .map(({ r, c }) => ({ src: `icons/City/layers/tiles/city-${r}-${c}.webp`, x: c * TILE.w, y: r * TILE.h,
     w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }));
 
-// the plots in front of the van's road, on their own (tools/compose-city.py front): drawn over the
-// 3D truck so it passes behind them
-const FRONT_TILES = ['2-1', '2-2', '2-3', '3-0', '3-1', '3-2', '3-3'].map((k) => k.split('-').map(Number))
-  .map(([r, c]) => ({ src: `icons/City/layers/front/front-${r}-${c}.webp`, x: c * TILE.w, y: r * TILE.h,
-    w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }));
+// the buildings in front of the van's road out, only where they can cover the van
+// (tools/cut-front.py): the 3D layer draws them over the van while it drives off, so it passes
+// behind them. Small pieces, loaded only then: a layer the size of the city over the 3D canvas
+// was more than an iPhone could keep.
+export const VAN_FRONT = [
+  { src: 'icons/City/layers/front/van-front-2-1.webp', x: 2490.7, y: 3659.3, w: 197.3, h: 76.0 },
+  { src: 'icons/City/layers/front/van-front-2-2.webp', x: 2688.0, y: 3663.3, w: 594.7, h: 72.0 },
+  { src: 'icons/City/layers/front/van-front-3-0.webp', x: 596.0, y: 4643.0, w: 748.0, h: 337.3 },
+  { src: 'icons/City/layers/front/van-front-3-1.webp', x: 1344.0, y: 3735.0, w: 1344.0, h: 1114.7 },
+  { src: 'icons/City/layers/front/van-front-3-2.webp', x: 2688.0, y: 3735.0, w: 594.7, h: 458.7 },
+];
 
-const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: FRONT_TILES, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
+const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: VAN_FRONT, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
 export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);

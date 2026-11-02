@@ -372,21 +372,12 @@ export function wireDiorama(root, ctx) {
     signHit.setAttribute('aria-label', t('city.sign.aria'));
     Object.assign(signHit.style, { left: `${SIGN_AT[0] - 55}px`, top: `${SIGN_AT[1] - SIGN_HEIGHT - 10}px`, width: '110px', height: `${SIGN_HEIGHT + 20}px` });
   } else signHit?.remove();
-  // the parcel the truck brought: a bubble over the garage door until it's opened
-  // over everything in the world, the 3D layer included: the plots in front of the van's road
-  // (so it drives behind them) and the parcel bubble (so it shows over the sign)
+  // the parcel the truck brought: a bubble over the garage door until it's opened, over the 3D
+  // layer too (so it shows over the sign). Its layer has no size of its own, so it costs only the
+  // bubble: one the size of the city over the 3D canvas was more than an iPhone could keep.
   let front = stage.front;
-  if (!front) { front = stage.front = document.createElement('div'); front.className = 'dg-front'; front.innerHTML = '<div class="dg-front-tiles"></div>'; }
+  if (!front) { front = stage.front = document.createElement('div'); front.className = 'dg-front'; }
   vp.append(front);
-  Object.assign(front.style, { width: `${env.w}px`, height: `${env.h}px` });
-  const fparts = env.front || [];
-  const fkey = fparts.map((p) => p.src).join('|');
-  const ftiles = front.firstElementChild;
-  if (ftiles.dataset.key !== fkey) {
-    ftiles.dataset.key = fkey;
-    ftiles.innerHTML = fparts.map((p) => `<img src="${p.src}" alt="" draggable="false" decoding="async"
-      style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px">`).join('');
-  }
   let bubble = front.querySelector('.dg-parcel');
   if (env.floor != null) {
     if (!bubble) {
@@ -481,6 +472,7 @@ export function wireDiorama(root, ctx) {
     // the truck waits while a parcel is at the door or being opened
     parked: () => parcels().length > 0 || parcelOpen(),
     reduced,
+    front: env.front,
   }) : null;
   const apply = () => {
     const r = box();

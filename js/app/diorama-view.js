@@ -43,7 +43,7 @@ import { mountRunner, webglOk } from './runner3d.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
 import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
-import { parcels, openParcel } from './delivery-view.js';
+import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 
 const ROOM_KEY = 'moske-room';
@@ -464,6 +464,8 @@ export function wireDiorama(root, ctx) {
     deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
     now: serverNow,
     label: { title: t('city.sign.title'), clock: clockLeft },
+    // the truck waits while a parcel is at the door or being opened
+    parked: () => parcels().length > 0 || parcelOpen(),
     reduced,
   }) : null;
   const apply = () => {

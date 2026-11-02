@@ -22,6 +22,7 @@ const EL = Math.asin(SLOPE);              // the camera's tilt: a ground edge fa
 const SIGMA = Math.SQRT2;                 // world px per camera unit (X runs 1 px across per unit)
 const UP = Math.cos(EL) * SIGMA;          // world px a point rises on screen per unit of height
 const FPS = 30;
+const CLOUD_UP = 2400;                    // how high the 3D clouds fly (units: above the tallest roof)
 
 // in px of the city picture (5376 × 4980; drawn in tiles, icons/City/layers/tiles/)
 export const SIGN_AT = [2940, 3548];             // on the pavement, left of the garage door
@@ -106,16 +107,17 @@ let shared = null;   // the canvases and the far clouds, kept across the stage's
  *   deliveries()  when each delivery ends (epoch ms): those still coming and those just come
  *   now()         the server's time (epoch ms)
  *   label         { title, clock(ms) }: the sign's words and its countdown format
+ *   parked()      true while a parcel waits at the door: the truck stays until it's opened
  *   reduced()     true under reduced motion: no drifting, the truck only appears parked
  * Returns { setView(v, w, h) }.
  */
-export function mountCity3d(vp, { worldW, deliveries, now, label, reduced }) {
+export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced }) {
   if (!shared) shared = makeShared();
   const { far, back, front } = shared;
   // into this render's viewport: the far clouds and the back canvas under the world, the front over it
   const world = vp.querySelector('[data-dg-world]');
   vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
-  shared.opts = { worldW, deliveries, now, label, reduced };
+  shared.opts = { worldW, deliveries, now, label, parked, reduced };
   if (!shared.farLoop) farLoop();
   if (!shared.started) start();
   return {
@@ -198,6 +200,8 @@ async function start() {
     // its width on screen is about the model's X extent across (1 px per unit of X)
     const k = c.w / Math.max(s.x, s.z);
     g.scale.setScalar(k);
+    // long side square to the screen, so it drifts across it like the far clouds
+    g.rotation.y = Math.PI / 4;
     (c.front ? frontScene : backScene).add(g);
     return { ...c, g };
   });
@@ -267,8 +271,10 @@ async function start() {
     for (const c of clouds) {
       if (!still) c.at = [c.at[0] - c.v * dt, c.at[1]];
       if (c.at[0] < -c.w) c.at = [W + c.w, c.at[1]];
-      const p = ground(c.at);
-      c.g.position.set(p.x, 0, p.z);
+      // high in the sky, above every roof: the point under it on the ground is CLOUD_UP lower
+      // on screen, so it shows where `at` says
+      const p = ground([c.at[0], c.at[1] + CLOUD_UP * UP]);
+      c.g.position.set(p.x, CLOUD_UP, p.z);
     }
 
     // the sign counts down to the next delivery; the truck brings whichever is ending now
@@ -276,9 +282,20 @@ async function start() {
     const ends = (o.deliveries?.() || []).slice().sort((a, b) => a - b);
     const next = ends.find((e) => e > t);
     if (signObj) drawPanel(next == null ? '—' : o.label?.clock(next - t) || '', o.label?.title || '');
+    // the truck: drives in during a delivery's last seconds, then waits at the door for as long
+    // as a parcel is waiting there (or its opening is on screen), then drives off
     if (truckObj) {
-      const end = ends.find((e) => (t - e) / 1000 >= -IN_S && (t - e) / 1000 <= TRUCK_AFTER);
-      const at = end == null ? null : truckAt((t - end) / 1000);
+      const tr = shared.truck ||= { mode: 'off', t0: 0 };
+      const nowS = now / 1000;
+      const arriving = ends.find((e) => (t - e) / 1000 >= -IN_S && (t - e) / 1000 < 0);
+      let at = null;
+      if (arriving != null) { at = truckAt((t - arriving) / 1000); tr.mode = 'in'; }
+      else if (o.parked?.()) { const a = along(ROUTE_IN, Infinity); at = { p: a.p, dir: a.dir, moving: false }; tr.mode = 'park'; }
+      else if (tr.mode === 'in' || tr.mode === 'park') { tr.mode = 'out'; tr.t0 = nowS; }
+      if (tr.mode === 'out') {
+        const d = (nowS - tr.t0) * SPEED;
+        if (d > routeLength(ROUTE_OUT)) tr.mode = 'off'; else at = { ...along(ROUTE_OUT, d), moving: true };
+      }
       const show = at && (!still || !at.moving);
       truckObj.visible = !!show;
       if (show) {

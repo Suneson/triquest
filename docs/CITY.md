@@ -169,13 +169,13 @@ Two transparent WebGL canvases cover the stage.
 
 What's on them:
 - **Far clouds:** six flat clouds (`icons/City/sky-clouds/`, keyed from your two green-screen pictures). They drift right to left in screen space, slowest of all.
-- **3D clouds:** the three cloud models (`models/city/cloud-*.glb`), with their textures dropped for a soft white material of their own and their normals recomputed. They drift right to left over the city, six behind the buildings and two in front.
+- **3D clouds:** the three cloud models (`models/city/cloud-*.glb`), with their textures dropped for a soft white material of their own and their normals recomputed. They fly high above every roof (`CLOUD_UP`), turned with their long side square to the screen, and drift right to left across it like the far clouds: six behind the buildings and two in front.
 - **The delivery sign** (`models/city/sign.glb`) stands on the pavement left of the garage door, its panel facing out.
   - Its white panel counts down to the next delivery: every shop order is a workshop job with a finish time (`js/core/deliveries.js`).
   - Tapping it opens the list of deliveries on their way (`js/app/delivery-view.js`), as beige cards like the Journal's.
 - **The MOSKE truck** (`models/city/truck.glb`) brings whichever delivery is ending (`truckAt`).
   - It drives in from the right along the road between the stadium and the pool, turns at the stadium's crossing onto the road past the garage, and arrives at the door as the countdown ends.
-  - It waits there 8 s, then carries on down the same road and out at the bottom left.
+  - It waits at the door, under its parcel bubble, for as long as a parcel is waiting there or being opened. Once you've opened it and closed the screen, it carries on down the same road and out at the bottom left.
   - The route is `ROUTE_IN` and `ROUTE_OUT`, given as street-grid coordinates (`lat(a, b)`).
 - **Reduced motion:** the clouds stand still and the truck only appears parked.
 

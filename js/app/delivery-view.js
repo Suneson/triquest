@@ -69,12 +69,17 @@ const itemArt = (id) => gearById(id)?.art || propById(id)?.art || rareById(id)?.
 /** The parcels waiting at the door, soonest first. */
 export const parcels = () => parcelsWaiting(gearState().jobs, serverNow(), openedParcels(), jobKey);
 
+let opening = false;
+/** Is a parcel's opening on screen? (The truck waits until it's closed.) */
+export const parcelOpen = () => opening;
+
 export function openParcel(list = parcels(), onDone = null) {
   const job = list[0];
   if (!job) return null;
   const calm = prefersReducedMotion();
   let taps = 0;
-  const root = openLayer('parcel', { className: 'cx-layer', instant: true, reuse: false, onClose: () => onDone?.() });
+  opening = true;
+  const root = openLayer('parcel', { className: 'cx-layer', instant: true, reuse: false, onClose: () => { opening = false; onDone?.(); } });
   const art = itemArt(job.item_id);
   root.innerHTML = `<div class="cx pc${calm ? ' is-calm' : ''}" role="dialog" aria-modal="true" aria-labelledby="pc-title" style="--tc:#7FB8F5">
     <div class="cx-bg" aria-hidden="true"><i class="cx-rays"></i><i class="cx-flash"></i></div>

@@ -35,7 +35,7 @@ cut_art = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cut_art)
 
 SLOPE = 0.489
-CANVAS = (10752, 8600)
+CANVAS = (10752, 9960)            # one row of blocks more below the street floor: scroll down to it
 PLATE_AT = (3584, 4072)          # the plate's top-left corner on the canvas (bottom centre)
 # on the plate (px of plate.png): a point on each of the two roads that leave it, measured on
 # their lane dashes, and where the tower's block's front corner is
@@ -62,6 +62,13 @@ PLOTS = [
     ((1, -1), 'apartments'),      # level with the tower, far right
     ((0, 1), 'market'),           # in front, left
     ((1, 0), 'pool'),             # in front, right
+    # the row below the crossroads
+    ((1, 1), 'apartments-green'), # straight below
+    ((0, 2), 'apartments-small'), # below, far left
+    ((2, 0), 'apartments'),       # below, far right
+    # the row under that: only its tops show at the bottom edge, so low plots
+    ((1, 2), 'market'),
+    ((2, 1), 'pool'),
 ]
 
 
@@ -137,7 +144,8 @@ def plot_sprite(path, k):
     low = np.array([np.where(m[:, i])[0].max() if m[:, i].any() else -1 for i in xs])
     ok = low > 0
     fx = int(xs[ok][np.argmax(low[ok])]); x0, x1 = xs[ok].min(), xs[ok].max()
-    L = ok & (xs < fx - 120) & (xs > x0 + 120); R = ok & (xs > fx + 120) & (xs < x1 - 120)
+    mg = max(8, round(0.05 * im.width))       # keep clear of the corners: 5% of the picture
+    L = ok & (xs < fx - mg) & (xs > x0 + mg); R = ok & (xs > fx + mg) & (xs < x1 - mg)
     slope = (np.polyfit(xs[L], low[L], 1)[0] - np.polyfit(xs[R], low[R], 1)[0]) / 2
     sx = (2 * BLOCK * k) / (x1 - x0)
     sy = sx * SLOPE / slope
@@ -234,7 +242,8 @@ def main():
     for (i, j), name in order:
         if i + j > tower_row and not drawn_front:
             paste(canvas, front_im, *at); drawn_front = True
-        spr, (fx, fy) = plot_sprite(os.path.join(src, f'{name}.png'), k)
+        path = next((os.path.join(src, f'{name}.{e}') for e in ('png', 'webp', 'jpg') if os.path.exists(os.path.join(src, f'{name}.{e}'))), None)
+        spr, (fx, fy) = plot_sprite(path, k)
         cx, cy = block_centre(c0, pitch, i, j)
         corner = (cx * k, (cy + SLOPE * BLOCK) * k)       # the block's front corner
         paste(canvas, spr, corner[0] - fx, corner[1] - fy)

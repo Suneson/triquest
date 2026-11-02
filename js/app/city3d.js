@@ -28,8 +28,15 @@ export const SIGN_AT = [2940, 3548];             // on the pavement, left of the
 export const SIGN_HEIGHT = 320;                  // px tall on screen
 // the truck's road: in from the bottom right, round the corner, to the garage door; then it
 // turns round and drives off down the same road, out at the bottom
-const ROUTE_IN = [[4100, 4620], [2700, 3935], [3060, 3752]];
-const ROUTE_OUT = [[3060, 3752], [2960, 3740], [2840, 3820], [2700, 3935], [1700, 4430]];
+// The street grid (tools/compose-city.py) in px of the city picture: block (a, b) has its centre
+// at C0 + (a − b) P across and (a + b) SLOPE P down; the roads run along a = ±½ and b = ±½.
+const GRID = { c0: [2691.5, 3245.5], P: 1391 };
+const lat = (a, b) => [GRID.c0[0] + (a - b) * GRID.P, GRID.c0[1] + (a + b) * SLOPE * GRID.P];
+// in from the right along the road between the stadium and the pool (b = −½), round the corner
+// by the stadium onto the road past the garage (a = ½), stopping at its door; then on down that
+// road and out at the bottom. Each leg keeps to the lane on the tower's side.
+const ROUTE_IN = [lat(1.6, -0.45), lat(0.45, -0.45), lat(0.45, 0.24)];
+const ROUTE_OUT = [lat(0.45, 0.24), lat(0.45, 2.3)];
 const TRUCK_LEN = 250;                    // px along the road
 const SPEED = 150;                        // px of the city picture per second
 const WAIT = 8;                           // s at the garage door

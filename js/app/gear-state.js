@@ -127,7 +127,11 @@ const finishListeners = new Set();
 export const onWorkshopFinish = (fn) => { finishListeners.add(fn); return () => finishListeners.delete(fn); };
 const readIds = (k) => { try { return new Set(JSON.parse(localStorage.getItem(k)) || []); } catch { return new Set(); } };
 const writeIds = (k, ids) => { try { localStorage.setItem(k, JSON.stringify([...ids].slice(-200))); } catch { /* private mode */ } };
-const jobKey = (j) => `${rawState().uid || 'x'}:${j.id}`;
+export const jobKey = (j) => `${rawState().uid || 'x'}:${j.id}`;
+/** The parcels you've opened at the garage door (delivery-view.js). */
+const PARCEL_KEY = 'moske-parcels-opened';
+export const openedParcels = () => readIds(PARCEL_KEY);
+export function markParcelOpened(j) { const s = readIds(PARCEL_KEY); s.add(jobKey(j)); writeIds(PARCEL_KEY, s); }
 
 /** Finished jobs you haven't seen in the shop yet (the dot on the shop button). */
 export function unseenFinished() {

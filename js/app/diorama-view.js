@@ -42,7 +42,8 @@ import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
 import { mountRunner, webglOk } from './runner3d.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
-import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT } from './city3d.js';
+import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
+import { parcels, openParcel } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 
 const ROOM_KEY = 'moske-room';
@@ -371,6 +372,27 @@ export function wireDiorama(root, ctx) {
     signHit.setAttribute('aria-label', t('city.sign.aria'));
     Object.assign(signHit.style, { left: `${SIGN_AT[0] - 55}px`, top: `${SIGN_AT[1] - SIGN_HEIGHT - 10}px`, width: '110px', height: `${SIGN_HEIGHT + 20}px` });
   } else signHit?.remove();
+  // the parcel the truck brought: a bubble over the garage door until it's opened
+  let bubble = worldEl.querySelector('.dg-parcel');
+  if (env.floor != null) {
+    if (!bubble) {
+      bubble = document.createElement('button');
+      bubble.className = 'dg-parcel';
+      bubble.innerHTML = '<img src="icons/City/parcel/parcel-shut.webp" alt="" draggable="false"><b class="data-num"></b>';
+      bubble.addEventListener('click', (e) => { e.stopPropagation(); openParcel(parcels(), () => showParcel()); });
+      worldEl.querySelector('.dg-items').after(bubble);
+    }
+    Object.assign(bubble.style, { left: `${TRUCK_STOP[0]}px`, top: `${TRUCK_STOP[1] - 300}px` });
+  } else bubble?.remove();
+  function showParcel() {
+    if (!bubble?.isConnected) return;
+    const n = parcels().length;
+    bubble.hidden = !n;
+    bubble.querySelector('b').textContent = n > 1 ? String(n) : '';
+    bubble.setAttribute('aria-label', t('city.parcel.aria', { n }));
+  }
+  showParcel();
+  stage.showParcel = showParcel;
   preloadFloors();
   // an item's picture and its shadow on the floor move together
   const moveEl = (el, it, u, v) => {
@@ -657,6 +679,7 @@ export function wireDiorama(root, ctx) {
   const anchor = staminaAnchor();
   view.tick = setInterval(() => {
     if (!root.isConnected) { clearInterval(view.tick); return; }
+    stage.showParcel?.();
     const st = staminaAt(anchor, Date.now());
     const sg = root.querySelector('.dg-gauge.is-stamina');
     if (sg) { sg.style.setProperty('--f', (st / STAMINA.max).toFixed(4)); sg.querySelector('[data-dg-stamina]').textContent = fmtNum(st); sg.setAttribute('aria-label', t('cp.staminaAria', { n: st, max: STAMINA.max })); }

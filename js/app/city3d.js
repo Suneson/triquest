@@ -37,6 +37,8 @@ const lat = (a, b) => [GRID.c0[0] + (a - b) * GRID.P, GRID.c0[1] + (a + b) * SLO
 // road and out at the bottom. Each leg keeps to the lane on the tower's side.
 const ROUTE_IN = [lat(1.6, -0.45), lat(0.45, -0.45), lat(0.45, 0.24)];
 const ROUTE_OUT = [lat(0.45, 0.24), lat(0.45, 2.3)];
+/** Where the truck stops at the garage door (px of the city picture): the parcels wait there. */
+export const TRUCK_STOP = ROUTE_IN[ROUTE_IN.length - 1];
 const TRUCK_LEN = 250;                    // px along the road
 const SPEED = 150;                        // px of the city picture per second
 const WAIT = 8;                           // s at the garage door

@@ -57,7 +57,7 @@ PATCHES = [('kiosk-left.webp', 3154, 5600), ('kiosk-right.webp', 6978, 5600),
 # also written to the front layer, which the app draws over the truck
 FRONT = {(1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
 ROAD_RGB = None                  # sampled from the plate's crossroads when None
-CLIP_MARGIN = 6                  # px: how far under its block's front edges a plot may reach (its kerb)
+CLIP_MARGIN = 16                 # px: how far under its block's front edges a plot may reach (its kerb)
 FEATHER = 90                     # px: the plate's left and right edges fade into the grid
 KEEP_PLATE_BEHIND = False        # the plate's own towers behind the tower's block (they end at its top)
 
@@ -166,9 +166,14 @@ def plate_keep(w, h, plate_y, c0, pitch, road):
 
     The street floor's picture goes on past its block, down the roads beside it, and has kerbs and
     pavement of its own painted there that don't line up with the grid's blocks: faded out at its
-    left and right edges, they showed as soft ghosts of kerb on the road, cut off square. So it
-    stops part way across the road round its block (in plain asphalt, where it and the grid are the
-    same colour, before the lane line), and keeps the two roads along its front faces with their crossroads, zebras and all.
+    left and right edges, they showed as soft ghosts of kerb on the road, cut off square. So, in
+    front of its block's two front faces, it stops part way across the road (in plain asphalt,
+    where it and the grid are the same colour, before the lane line), and keeps the two roads along
+    those faces with their crossroads, zebras and all.
+
+    Only in front: what stands on the block (the lobby, the kiosks, the slab) rises up the picture
+    over the ground behind it, so behind its front faces nothing is cut. (Cutting round all four
+    sides took the lobby's kiosks and slab away and showed the road through the street floor.)
     """
     s = SLOPE
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
@@ -180,10 +185,12 @@ def plate_keep(w, h, plate_y, c0, pitch, road):
     edge = hb + 0.55 * hr                        # past the kerb, short of the lane line
     def inside(d, lim):
         return np.clip((lim - d) / soft + 0.5, 0, 1)
-    block = inside(np.abs(a), edge) * inside(np.abs(b), edge)
+    # only on its two front sides: everything standing on the block (the lobby, the kiosks, the
+    # slab) rises up the picture over the ground behind it, so behind it nothing may be cut
+    block = inside(a, edge) * inside(b, edge)
     # the two roads along its front faces, as far as the crossroads past them: their zebras
-    arm_a = inside(np.abs(a - 0.5), hr + 0.02) * inside(np.abs(b), 0.5 + hr)
-    arm_b = inside(np.abs(b - 0.5), hr + 0.02) * inside(np.abs(a), 0.5 + hr)
+    arm_a = inside(np.abs(a - 0.5), hr + 0.02) * inside(b, 0.5 + hr)
+    arm_b = inside(np.abs(b - 0.5), hr + 0.02) * inside(a, 0.5 + hr)
     return np.maximum(block, np.maximum(arm_a, arm_b))
 
 

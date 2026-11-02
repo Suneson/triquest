@@ -71,12 +71,12 @@ The Chat tab is bottle green too, scoped to `body.chat-mode`, and takes its colo
 
 | Where | Buttons | Ring |
 | --- | --- | --- |
-| A row under the name and the gauges | Shop, kit bag | Gold |
-| The same row | Next up (the target), this room's trophies (with the count) | Navy |
-| Up the right side, about mid-screen | The elevator: pool, run, bike, gym, locker room | Baby blue |
+| A row under the name, beside the gauges | Next up (the target), this room's trophies (with the count) | Navy |
+| Down the left, over the dock | Shop, kit bag | Gold |
+| Down the right, over the dock | The elevator: pool, run, bike, gym, locker room | Baby blue |
 
 - **The look:** like the buttons round a game's home screen. Each is a glossy ring (`icons/UI/side/ring-gold|navy|sky.webp`, keyed off green) over a face of its own colour, a shade darker, in a gradient. The 3D icon fills the face: its lower half sits inside the rim, its top rises out past it.
-- **The floor you're on:** its ring is a touch bigger and its face lights up. Its icon grows and pops further out over the rim.
+- **The elevator is different:** its faces are light beige, its icons stay inside the ring, and there's no panel behind it. The floor you're on turns blue, a size bigger, with a soft glow.
 - **The trophies** moved here from the chip next to the room's name.
 - **The art:** the trophy and the target come from `tools/gen-shop-ui.mjs` (`side-*`). They're cut by `python3 tools/cut-shop-ui.py icons/UI/side/src`. The rings were made by hand, on green.
 

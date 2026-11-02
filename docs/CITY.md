@@ -4,8 +4,8 @@
 
 **On screen:**
 - The city fills the whole screen, down behind the dock.
-- The rooms are an elevator's buttons up the right side, about mid-screen: the pool at the top and the locker room at the bottom. Each is a baby-blue ring, and the floor you're on lights up, a touch bigger, its icon popping out (docs/JOURNAL.md).
-- In a row under the name: the shop, the inventory, what's next and the room's trophies. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
+- The rooms are an elevator's buttons on the right, the pool at the top and the locker room at the bottom: baby-blue rings with light faces. The floor you're on turns blue and a size bigger (docs/JOURNAL.md).
+- In a row under the name: what's next and the room's trophies. Down the left: the shop and the inventory. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
 ## The idea
 
@@ -135,7 +135,8 @@ The plate is built like a game map rather than expanded by an image model.
   - It is squashed to the slope and scaled so its base is exactly one block wide.
   - `PLOTS` says which block each one stands on.
   - Each is clipped at its block's two front edges and side corners (a kerb's depth under them, a 1 px edge). The pictures carry a little of Gemini's own road round the block, which showed as soft ghosts of kerb on the road, cut off square.
-- **The street floor** is clipped to its own block and the two roads along its front faces with their zebras, part way across the road, before the lane line. It ran on down the side roads with kerbs of its own that didn't line up, faded out at its left and right edges: more soft ghosts.
+- **The street floor** is clipped in front of its block's two front faces, part way across the road before the lane line, keeping the two roads along those faces with their zebras. It ran on down the side roads with kerbs of its own that didn't line up, faded out at its left and right edges: more soft ghosts.
+  - Never clip it behind or beside those faces. The lobby, kiosks and slab rise up the picture over the ground behind the block, so a clip there cuts them away (it did once, and the road showed through the street floor).
 - **Draw order, back to front:** sky, street grid, the plots behind, the tower's block (the street floor: lobby, slab and crossroads), then the plots in front. The tower's storeys go on top in the app.
 - **The street floor's own background towers are left out.** The band painted on above them (`icons/City/src/plate-top.jpg`) ended at its top edge, so they stopped in mid-air.
 - **The kiosk at each side of the lobby** was cut in half where the street floor ends. Each was finished with one small Gemini inpaint: a 1400 px crop with just the cut strip in magenta.

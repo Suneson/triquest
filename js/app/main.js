@@ -288,6 +288,9 @@ function render() {
   document.documentElement.classList.toggle('city-mode', appState.tab === 'progress' && appState.pgView === 'base');
   document.body.classList.toggle('jh-mode', appState.tab === 'home'); // the Journal is bottle green, like the shop
   document.body.classList.toggle('chat-mode', appState.tab === 'chat'); // the + button would cover the composer
+  // the shop and the ranks sit on the Journal's quilted backdrop too (css/backdrop.css)
+  document.body.classList.toggle('shop-mode', appState.tab === 'shop');
+  document.body.classList.toggle('lb-mode', appState.tab === 'leaderboards');
 
   const view = document.getElementById('view');
   if (appState.tab === 'leaderboards') {

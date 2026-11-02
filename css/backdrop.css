@@ -12,13 +12,13 @@
   --panel-beige: linear-gradient(var(--surface-neutral-hi), var(--surface-neutral));
 }
 
-body.jh-mode, body.chat-mode { --bg: #557BA8; background: #4C719E; }
-body.jh-mode .app, body.chat-mode .app { background: #557BA8 url("../icons/UI/bg/quilt.webp") center top / cover no-repeat; }
-body.jh-mode .view, body.chat-mode .view { background: transparent; }
-body.jh-mode .tabs, body.chat-mode .tabs { background: transparent; }
-body.jh-mode .app-header, body.chat-mode .app-header { background: linear-gradient(rgba(10, 32, 74, .72), rgba(10, 32, 74, .45)); border-bottom: 0;
+body.jh-mode, body.chat-mode, body.shop-mode, body.lb-mode { --bg: #557BA8; background: #4C719E; }
+body.jh-mode .app, body.chat-mode .app, body.shop-mode .app, body.lb-mode .app { background: #557BA8 url("../icons/UI/bg/quilt.webp") center top / cover no-repeat; }
+body.jh-mode .view, body.chat-mode .view, body.shop-mode .view, body.lb-mode .view { background: transparent; }
+body.jh-mode .tabs, body.chat-mode .tabs, body.shop-mode .tabs, body.lb-mode .tabs { background: transparent; }
+body.jh-mode .app-header, body.chat-mode .app-header, body.shop-mode .app-header, body.lb-mode .app-header { background: linear-gradient(rgba(10, 32, 74, .72), rgba(10, 32, 74, .45)); border-bottom: 0;
   box-shadow: 0 8px 18px rgba(8, 25, 60, .35); }
-body.jh-mode .muted, body.chat-mode .muted { color: #E4EEFB; }
+body.jh-mode .muted, body.chat-mode .muted, body.shop-mode .muted, body.lb-mode .muted { color: #E4EEFB; }
 
 /* ---- framed panels ---------------------------------------------------------------------------- */
 /* the Journal's panels */
@@ -80,3 +80,43 @@ body.chat-mode .rm-ch-bar .btn, body.chat-mode .ch-add-btn {
   --b: transparent; --e: transparent; border-radius: 12px; color: var(--ink-green); text-shadow: none;
   background: var(--panel-beige); box-shadow: inset 0 -3px 0 var(--surface-neutral-lo), var(--lift);
 }
+
+/* ---- the shop on the backdrop: framed white cards, the photo, the price on a navy bar ------------ */
+body.shop-mode .day-header h2, body.lb-mode .day-header h2 { color: #fff; text-shadow: 0 3px 8px rgba(8, 25, 60, .5); }
+body.shop-mode .shop-grid { gap: 14px; }
+body.shop-mode .shop-card {
+  --b: transparent; --e: transparent; margin: 0; padding: 0; color: #16264D; text-align: center;
+  border: 14px solid transparent; border-image: url("../icons/UI/frames/frame-panel.webp") 76 / 14px stretch; border-radius: 18px;
+  background: #fff; background-clip: padding-box; box-shadow: var(--deep);
+}
+body.shop-mode .shop-card img, body.shop-mode .shop-noimg { background: #fff; object-fit: contain; border-radius: 8px; }
+body.shop-mode .shop-info { padding: 8px 4px 4px; gap: 8px; }
+body.shop-mode .shop-title { color: #16264D; font-size: 13px; font-weight: 800; }
+/* the price: white on a navy bar, like the shop's buy buttons */
+body.shop-mode .shop-price { display: grid; place-items: center; min-height: 36px; padding: 4px 10px; border-radius: 10px;
+  background: linear-gradient(#2a3e6e, #16264d); color: #fff; font: 900 17px/1 var(--font-header); font-variation-settings: 'wght' 860;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), 0 3px 0 #0B1222; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+body.shop-mode .shop-card.is-sk .shop-price { background: #E8EEF7; box-shadow: none; }
+
+/* ---- the ranks on the backdrop ---------------------------------------------------------------------- */
+body.lb-mode .lb-banner, body.lb-mode .lb-countdown, body.lb-mode .lb-rival, body.lb-mode .lb-list li.lb-row {
+  --b: transparent; --e: transparent; margin: 0 0 10px;
+  border: 14px solid transparent; border-image: url("../icons/UI/frames/frame-panel.webp") 76 / 14px stretch; border-radius: 18px;
+  background-clip: padding-box; box-shadow: var(--deep);
+}
+body.lb-mode .lb-banner { display: flex; align-items: center; gap: 12px; padding: 4px 8px; background: var(--panel-blue); color: #E4EEFB; }
+body.lb-mode .lb-banner b { color: #FFD34D; }
+body.lb-mode .lb-banner .lb-banner-art { width: 72px; height: 72px; flex: none; margin: -14px 0; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .35)); }
+body.lb-mode .lb-toggle { --b: transparent; background: rgba(10, 32, 74, .55); border-radius: 14px; padding: 5px; box-shadow: var(--deep); }
+body.lb-mode .lb-tab { border-radius: 10px; color: #E4EEFB; }
+body.lb-mode .lb-tab.on { background: var(--act-grad); color: #fff; text-shadow: var(--act-ink); box-shadow: inset 0 2px 0 var(--act-rim), 0 3px 0 var(--act-edge); }
+body.lb-mode .lb-countdown { background: var(--panel-beige); color: #4A3B26; padding: 4px 8px; }
+body.lb-mode .lb-countdown b { color: var(--ink-green); }
+body.lb-mode .lb-list li.lb-row { background: var(--panel-beige); color: var(--ink-green); padding: 4px 8px; }
+body.lb-mode .lb-list li.lb-row.me { background: var(--panel-blue); color: #fff; }
+body.lb-mode .lb-rival { background: var(--panel-beige); color: var(--ink-green); }
+body.lb-mode .lb-legend { color: #E4EEFB; }
+body.lb-mode .pod-name, body.lb-mode .pod-xp { color: #fff; text-shadow: 0 2px 4px rgba(8, 25, 60, .6); }
+body.lb-mode .pod-block { background: var(--panel-blue); color: #fff; border-radius: 12px 12px 0 0; box-shadow: var(--deep); }
+.pod-medal { width: 44px; height: 44px; margin-bottom: -6px; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .35)); }
+.pod-r1 .pod-medal { width: 56px; height: 56px; }

@@ -201,3 +201,7 @@ When the truck has brought a delivery, its parcel waits at the garage door: a bo
 - **Next parcel:** Collect moves on to the next parcel.
 - **Which parcels wait:** deliveries from the last 3 days that haven't been opened (`parcelsWaiting` in `js/core/deliveries.js`). Opened ones are remembered on the device.
 - **A real opening animation** can replace the two stills later: same place, same timing.
+
+### The front layer
+
+The plots in front of the van's road are also drawn on a layer of their own: the right-hand column of blocks, from the pool's row down (`FRONT` in `tools/compose-city.py`, written by `… front` as `icons/City/layers/front/`). The app puts that layer over the 3D canvas with the world's own transform, so the van drives behind those buildings. The parcel bubble lives on the same layer, so it shows over the 3D sign.

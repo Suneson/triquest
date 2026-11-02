@@ -16,7 +16,8 @@ import sharp from 'sharp';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image';
 const KEY = process.env.GEMINI_API_KEY;
-if (!KEY) { console.error('Set GEMINI_API_KEY'); process.exit(1); }
+// no key here: the environment's network secret for generativelanguage.googleapis.com adds it on the way out
+if (!KEY) console.warn('No GEMINI_API_KEY: relying on the network secret for generativelanguage.googleapis.com');
 const OUT = process.argv[2];
 if (!OUT) { console.error('Usage: node tools/gen-shop-ui.mjs <out-dir> [name…]'); process.exit(1); }
 mkdirSync(OUT, { recursive: true });
@@ -57,7 +58,7 @@ async function generate(name, { refs, prompt }) {
   const body = { contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '1:1' } } };
   for (let attempt = 1; attempt <= 3; attempt++) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-      method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY }, body: JSON.stringify(body),
+      method: 'POST', headers: { 'content-type': 'application/json', ...(KEY ? { 'x-goog-api-key': KEY } : {}) }, body: JSON.stringify(body),
     });
     const json = await res.json().catch(() => ({}));
     const part = json?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);

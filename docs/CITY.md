@@ -5,7 +5,7 @@
 **On screen:**
 - The city fills the whole screen, down behind the dock.
 - The rooms are an elevator's buttons on the right, the pool at the top and the locker room at the bottom. The floor you're on is lit baby blue and a size bigger.
-- The elevator's frame is drawn in CSS for now. A Gemini-painted frame is to come (`gen-city.mjs` needs `GEMINI_API_KEY`).
+- The elevator's frame is drawn in CSS for now. A Gemini-painted frame is to come (`gen-city.mjs`).
 - On the left, top to bottom: the shop, the inventory and what's next. The room's trophies sit under the elevator. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
 ## The idea
@@ -106,3 +106,45 @@ python3 tools/cut-city.py <gen-dir> <out-dir>                    # keys the sky,
      - CSS animation for the shake, the rays and the coin spray.
    - On iPhone, Safari ignores WebM transparency, so the chest falls back to its still and shake. Exporting the clips as HEVC-with-alpha `.mov` would give iPhone the full clip.
    - See docs/REWARDS.md.
+
+## The layered city (next)
+
+Separate pictures per floor drift in colour and detail, so the city is being rebuilt from layers. Nothing in the app uses this yet.
+
+- **The plate** (`icons/City/layers/plate.webp`) is the street floor itself. In an orthographic picture a taller tower only ever covers more of the city behind it, so nothing has to be taken out of it.
+  - Expand it once in Photoshop: canvas **10752 × 8600**, anchored bottom centre.
+  - The top storeys and the sky need the extra height, and the markets, the public pool and the track go in the extra width.
+- **The tower:**
+  - Its pieces are `icons/City/layers/tower-cap.webp` (the slab with the top storey under it) and `tower-storey.webp` (one office storey, which stacks on itself without a seam).
+  - Both are cut by `tools/cut-tower.py` from `icons/City/src/tower.webp` (Gemini, `gen-city.mjs tower`).
+  - Floor N stands N storeys tall: the cap with N − 1 storeys under it, on the plate's lobby. `tower.json` says where each piece goes.
+- **One slope for everything:** 0.489, the ground falling 0.489 px per px across, which is the slope of the new room pictures.
+  - The plate is squashed a little to get there.
+  - The tower's right face is evened up with its left (Gemini drew its storeys 339 px apart on the left and 350 on the right), then stretched.
+  - The tower's colours are matched to the plate on the slab concrete.
+- **Preview:** `docs/city-layers-preview.jpg` shows floors 0 to 4 put together.
+
+### The city plate (`tools/compose-city.py`)
+
+The plate is built like a game map rather than expanded by an image model.
+
+- **The street grid:** a lattice of square blocks at the slope. Its first two roads are the ones that leave the street floor on the left and the right, measured on their lane dashes, so the roads carry straight on.
+  - Blocks are 2150 px across, roads 632 px wide, and the pitch is 2782 px, all at full size.
+  - The road and pavement colours are sampled from the street floor.
+- **The plots** (`icons/City/plots/`) each stand on one block: the market and café, the public pool, the stadium, and the apartments (used four times for now).
+  - Each plot is one city block on green screen, made in Gemini with the street floor as the style reference.
+  - It is squashed to the slope and scaled so its base is exactly one block wide.
+  - `PLOTS` says which block each one stands on.
+- **Draw order, back to front:** sky, street grid, the plots behind, the tower's block (the street floor: lobby, slab and crossroads), then the plots in front. The tower's storeys go on top in the app.
+- **The street floor's own background towers are left out.** The band painted on above them (`icons/City/src/plate-top.jpg`) ended at its top edge, so they stopped in mid-air.
+- **The kiosk at each side of the lobby** was cut in half where the street floor ends. Each was finished with one small Gemini inpaint: a 1400 px crop with just the cut strip in magenta.
+  - Outpainting whole strips didn't work: Gemini drew a second building or redrew the lobby.
+- **Output:** `icons/City/layers/city.webp` is the city at half size (5376 × 4300) for the app. The full 10752 × 8600 is made by the script.
+- **The sky** (`icons/City/sky.webp`) is a plain gradient in the painted band's colours.
+  - The earlier "sky" was an old blurred city picture saved under the wrong name.
+  - Every floor had been composited over it, which made the soft, faded patches. The floor pictures are now rebuilt over the real sky.
+
+**Still to do:**
+- More plots, so the apartments aren't repeated: tall towers for behind the tower, offices and a park.
+- The yellow kerb that the left kiosk fix added.
+- Putting the tower stack and the city into the app.

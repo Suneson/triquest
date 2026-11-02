@@ -22,7 +22,8 @@ const OUT = `${ROOT}icons/Pixelart/GEAR/`;
 const RAW = `${ROOT}docs/gear/gen/`;
 const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image';
 const KEY = process.env.GEMINI_API_KEY;
-if (!KEY) { console.error('Set GEMINI_API_KEY'); process.exit(1); }
+// no key here: the environment's network secret for generativelanguage.googleapis.com adds it on the way out
+if (!KEY) console.warn('No GEMINI_API_KEY: relying on the network secret for generativelanguage.googleapis.com');
 
 const STYLE = `Style: detailed pixel art game item icon, the same pixel-art language as the first reference image
 (clean dark 1-pixel outlines, soft cel shading with 3-4 tones per colour, a warm light from the top left).
@@ -76,7 +77,7 @@ async function generate(name, prompt) {
   };
   for (let attempt = 1; attempt <= 3; attempt++) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-      method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': KEY }, body: JSON.stringify(body),
+      method: 'POST', headers: { 'content-type': 'application/json', ...(KEY ? { 'x-goog-api-key': KEY } : {}) }, body: JSON.stringify(body),
     });
     const json = await res.json().catch(() => ({}));
     const part = json?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data);

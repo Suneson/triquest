@@ -37,6 +37,9 @@ const loadLib = () => (lib ||= Promise.all([
   import(`${VENDOR}meshopt_decoder.module.js`),
 ]).then(([THREE, { GLTFLoader }, { MeshoptDecoder }]) => ({ THREE, GLTFLoader, MeshoptDecoder })));
 
+/** three.js, its glTF loader and the meshopt decoder, loaded once (city3d.js shares them). */
+export const loadThree = () => loadLib();
+
 let model = null;
 const loadModel = (L) => (model ||= new Promise((res, rej) => {
   const loader = new L.GLTFLoader();

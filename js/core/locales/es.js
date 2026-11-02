@@ -3056,4 +3056,6 @@ es.chest = {
 
 es.cp.r3d = { "aria": "Girar al corredor", "left": "Girar a la izquierda", "right": "Girar a la derecha" };
 
+es.city = {"sign": {"title": "ENTREGA", "aria": "Entregas en camino"}, "delivery": {"title": "Entregas", "tag": "En camino", "arrives": "Llega a las {time}", "none": "No hay nada en camino. Lo que compres en la tienda se entrega aquí."}};
+
 export default es;

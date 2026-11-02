@@ -1,7 +1,9 @@
 """compose-city.py — the city plate: the street floor in the middle, a street grid round it and
 the plot pictures standing on its blocks (docs/CITY.md, "The layered city").
 
-    python3 tools/compose-city.py <in dir> <out.png> [scale]
+    python3 tools/compose-city.py <in dir> <out.png> [scale] [nosky]
+
+`nosky` leaves the sky transparent: the app draws the sky and the clouds behind the city.
 
 <in dir> holds
   plate.png        the street floor, at the slope (tools/cut-tower.py), its sky still green
@@ -43,6 +45,10 @@ TOWER_FRONT = (1830, 3470)       # the tower block's front corner (its kerb)
 BLOCK = 2150                     # a block's half-diagonal across (px): its base is 2 * BLOCK wide
 # the slab's outline on the plate: the tower's block is everything under it (lobby, shops, street)
 SLAB = {'top': (1690, 800), 'left': (0, 1467), 'right': (3582, 1475)}
+# small fixes painted in by Gemini (a 1400 px crop with the strip in magenta), each pasted at
+# (x, y) on the full canvas with its left and right 50 px faded in: the kiosks cut where the
+# street floor ended
+PATCHES = [('kiosk-left.webp', 3154, 5600), ('kiosk-right.webp', 6978, 5600)]
 ROAD_RGB = None                  # sampled from the plate's crossroads when None
 FEATHER = 90                     # px: the plate's left and right edges fade into the grid
 KEEP_PLATE_BEHIND = False        # the plate's own towers behind the tower's block (they end at its top)
@@ -158,6 +164,8 @@ def main():
     sky = Image.open(os.path.join(src, 'sky.png')).convert('RGB')
     sk = max(W / sky.width, H / sky.height)
     canvas = sky.resize((round(sky.width * sk), round(sky.height * sk)), Image.LANCZOS).crop((0, 0, W, H)).convert('RGBA')
+    if 'nosky' in sys.argv[4:]:
+        canvas = Image.new('RGBA', (W, H))
     g = ground((W, H), c0, pitch, road, k, colours).convert('RGBA')
     # the ground is the tower's block, every plot's block and everything in front of the tower's
     # row, each with half a road round it; past that is sky
@@ -232,7 +240,20 @@ def main():
         paste(canvas, spr, corner[0] - fx, corner[1] - fy)
     if not drawn_front:
         paste(canvas, front_im, *at)
-    canvas.convert('RGB').save(dst)
+    # the patches, faded in at their left and right edges
+    for name, px, py in PATCHES:
+        path = os.path.join(src, name)
+        if not os.path.exists(path):
+            continue
+        pt = Image.open(path).convert('RGBA')
+        a = np.asarray(pt).astype(np.float32)
+        ramp = np.clip(np.minimum(np.arange(pt.width), pt.width - 1 - np.arange(pt.width)) / 50, 0, 1)
+        a[..., 3] = 255 * ramp[None, :]
+        pt = Image.fromarray(a.astype(np.uint8), 'RGBA')
+        if k != 1:
+            pt = pt.resize((round(pt.width * k), round(pt.height * k)), Image.LANCZOS)
+        paste(canvas, pt, px * k, py * k)
+    (canvas if 'nosky' in sys.argv[4:] else canvas.convert('RGB')).save(dst)
     print('wrote', dst, canvas.size)
 
 

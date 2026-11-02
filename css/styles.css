@@ -2592,7 +2592,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-ico { position: absolute; right: 0; top: 50%; width: 34px; height: 34px; transform: translateY(-50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5)); }
 
 /* the room's plate, under the HUD */
-.dg-pill { position: absolute; left: 50%; top: calc(var(--safe-t) + 128px); transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; }
+.dg-pill { position: absolute; left: 50%; top: calc(var(--safe-t) + 204px); transform: translateX(-50%); z-index: 4; display: flex; gap: 6px; }
 .dg-pill-name, .dg-pill-chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px; padding: 4px 14px; border: 3px solid #0B1222; border-radius: 9999px;
   background: linear-gradient(#2a3e6e, #16264d); color: #fff; font-size: 13px; cursor: pointer; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .18), 0 3px 0 rgba(0, 0, 0, .45); }
 .dg-pill-name i, .dg-pill-chip { color: #FFD34D; font-style: normal; }
@@ -2604,49 +2604,54 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
   padding: 6px 14px; border-radius: 9999px; background: rgba(11, 18, 34, .9); color: #fff; font-size: 13px; text-align: center; pointer-events: none;
   opacity: 0; transition: opacity 160ms ease; }
 .dg-hint.on { opacity: 1; }
-/* round buttons over the stage */
-.dg-side { position: absolute; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 10px); z-index: 4; display: grid; gap: 8px; justify-items: center; }
-.dg-side.is-left { left: 10px; } .dg-side.is-right { right: 10px; }
-/* each one is a glossy green orb (icons/UI/side/side-orb.webp) with its 3D icon standing
-   over it, a little bigger than the orb so it spills past the rim, like a game's home screen */
-.dg-side { gap: 16px; }
-.dg-orb { position: relative; width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
-  background: url("../icons/UI/side/side-orb-blue.webp") center / 100% 100% no-repeat; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .4));
-  transition: transform 100ms ease; -webkit-tap-highlight-color: transparent; }
-/* the icon's box reaches 22 px above the orb; it shows everything above the orb's middle and,
-   below it, only what's inside the face, so its lower half sits in the orb and its top stands out */
-.dg-orb-ico { position: absolute; left: -8px; right: -8px; top: -22px; bottom: 0; pointer-events: none;
-  -webkit-mask: linear-gradient(#000, #000) top / 100% 54px no-repeat, radial-gradient(circle 25px at 50% 54px, #000 96%, transparent 100%);
-  mask: linear-gradient(#000, #000) top / 100% 54px no-repeat, radial-gradient(circle 25px at 50% 54px, #000 96%, transparent 100%); }
-.dg-orb-ico > img { position: absolute; left: 50%; bottom: 7px; width: 60px; height: 64px; object-fit: contain; object-position: bottom; transform: translateX(-50%);
-  -webkit-user-drag: none; image-rendering: auto; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .4)); }
-.dg-orb:active { transform: translateY(3px) scale(.96); }
-.dg-orb-n { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); min-width: 26px; height: 20px; padding: 0 6px; display: grid; place-items: center;
-  border-radius: 9999px; background: #16264D; color: #FFD34D; font-size: 13px; line-height: 1; box-shadow: 0 0 0 2px #0B1222; text-shadow: none; }
+/* round buttons over the stage (diorama-view.js orb): a glossy ring over a face of its own colour,
+   a shade darker, the icon standing in it. --o is the ring's size; the icon's box reaches 34% of
+   it above the ring and shows everything above the ring's middle and, below it, only what's
+   inside the face, so its lower half sits in the ring and its top rises out past the rim. */
+.dg-orb { --o: 54px; --face-hi: #6A7BD6; --face-lo: #1A2160; --glow: rgba(120, 140, 255, .9);
+  position: relative; flex: none; width: var(--o); height: var(--o); margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: url("../icons/UI/side/ring-navy.webp") center / 100% 100% no-repeat,
+    radial-gradient(circle closest-side at 50% 50%, var(--face-hi), var(--face-lo) 94%, transparent 96%) center / 82% 82% no-repeat;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)); transition: transform 180ms cubic-bezier(.3, 1.4, .5, 1), filter 180ms ease;
+  -webkit-tap-highlight-color: transparent; }
+.dg-orb.is-gold { --face-hi: #FFC94A; --face-lo: #B8700E; --glow: rgba(255, 205, 80, .95);
+  background-image: url("../icons/UI/side/ring-gold.webp"), radial-gradient(circle closest-side at 50% 50%, var(--face-hi), var(--face-lo) 94%, transparent 96%); }
+.dg-orb.is-navy { --face-hi: #5566C8; --face-lo: #161C55; }
+.dg-orb.is-sky { --face-hi: #6FD4FF; --face-lo: #1668B8; --glow: rgba(110, 210, 255, .95);
+  background-image: url("../icons/UI/side/ring-sky.webp"), radial-gradient(circle closest-side at 50% 50%, var(--face-hi), var(--face-lo) 94%, transparent 96%); }
+.dg-orb-ico { position: absolute; left: -12%; right: -12%; top: calc(var(--o) * -.34); bottom: 0; pointer-events: none;
+  -webkit-mask: linear-gradient(#000, #000) top / 100% calc(var(--o) * .84) no-repeat, radial-gradient(circle calc(var(--o) * .37) at 50% calc(var(--o) * .84), #000 96%, transparent 100%);
+  mask: linear-gradient(#000, #000) top / 100% calc(var(--o) * .84) no-repeat, radial-gradient(circle calc(var(--o) * .37) at 50% calc(var(--o) * .84), #000 96%, transparent 100%); }
+/* the icon fills the face: about as wide as the ring, standing on its lower rim */
+.dg-orb-ico > img { position: absolute; left: 50%; bottom: calc(var(--o) * .1); width: calc(var(--o) * .96); height: calc(var(--o) * 1.08);
+  object-fit: contain; object-position: bottom; transform: translateX(-50%); transform-origin: 50% 100%;
+  transition: transform 220ms cubic-bezier(.3, 1.5, .5, 1); -webkit-user-drag: none; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .4)); }
+.dg-orb:active { transform: translateY(2px) scale(.95); }
+.dg-orb-n { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); min-width: 24px; height: 19px; padding: 0 6px; display: grid; place-items: center;
+  border-radius: 9999px; background: #16264D; color: #FFD34D; font-size: 12px; line-height: 1; box-shadow: 0 0 0 2px #0B1222; text-shadow: none; }
 .dg-orb:focus-visible, .dg-pill button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-/* the rooms: an elevator's buttons on the right (diorama-view.js liftPanel), the pool at the top.
-   The city fills the whole screen, down behind the dock. */
+/* the shop, the kit bag, the next goal and the trophies: a row under the name */
+/* (below the gauges' foot, so the row can run under both) */
+.dg-row { position: absolute; left: 12px; top: calc(var(--safe-t) + 132px); z-index: 4; display: flex; gap: 12px; align-items: center; }
+.dg-row .dg-orb { --o: 50px; }
+/* the rooms: an elevator's buttons up the right side, about the middle of the screen, the pool at
+   the top (diorama-view.js liftPanel). The city fills the whole screen, down behind the dock. */
 .dg-screen { --dg-nav-h: 0px; }
-.dg-lift { display: grid; gap: 10px; padding: 16px 10px; border-radius: 24px;
-  background: linear-gradient(160deg, #F4F6FA, #C3CAD6 52%, #E4E8EF);
-  box-shadow: inset 0 0 0 3px #16264D, inset 0 0 0 5px #D9B65A, inset 0 2px 8px rgba(255, 255, 255, .7), 0 4px 0 rgba(0, 0, 0, .45), 0 10px 16px rgba(0, 0, 0, .3); }
-.dg-lift-btn { position: relative; width: 50px; height: 50px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
-  background: radial-gradient(circle at 36% 30%, #FFFFFF, #ECE6D8 55%, #CDC3AA);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .16), 0 0 0 3px #16264D, 0 3px 0 #0B1222;
-  transition: transform 180ms cubic-bezier(.3, 1.4, .5, 1), background 180ms ease, box-shadow 180ms ease; -webkit-tap-highlight-color: transparent; }
-.dg-lift-btn img { width: 36px; height: 36px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
-.dg-lift-btn.is-on { z-index: 1; transform: scale(1.2); background: var(--act-grad);
-  box-shadow: inset 0 2px 0 var(--act-rim), inset 0 -3px 0 var(--act-edge), 0 0 0 3px #0B2A66, 0 3px 0 #0B1222, 0 0 16px rgba(120, 180, 255, .85); }
-.dg-lift-btn:active { transform: scale(.94); }
-.dg-lift-btn.is-on:active { transform: scale(1.12); }
-.dg-lift-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.dg-lift { position: absolute; right: 12px; top: 46%; z-index: 4; display: grid; gap: 14px; justify-items: center; transform: translateY(-50%); }
+.dg-lift-btn { --o: 48px; }
+/* the floor you're on: the ring a touch bigger, its face lit from inside, its icon bigger and
+   popping further out over the rim */
+.dg-lift-btn.is-on { z-index: 1; transform: scale(1.1); --face-hi: #C9F1FF; --face-lo: #2C8DE0;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)) drop-shadow(0 0 10px var(--glow)); }
+.dg-lift-btn.is-on .dg-orb-ico > img { transform: translateX(-50%) translateY(calc(var(--o) * -.1)) scale(1.22); }
+.dg-lift-btn.is-on:active { transform: scale(1.04); }
 @media (prefers-reduced-motion: reduce) {
   .dg-item.bounce, .dg-item.landed, .dg-arrow, .dg-gauge.is-stamina .dg-fill::after { animation: none; }
-  .dg-item.spring, .dg-world.is-easing, .dg-fill, .dg-lift-btn { transition: none; }
+  .dg-item.spring, .dg-world.is-easing, .dg-fill, .dg-orb, .dg-orb-ico > img { transition: none; }
   .dg-item.is-lift { transform: translate(-50%, var(--ty)); }
 }
 body.rm .dg-item.bounce, body.rm .dg-item.landed, body.rm .dg-arrow, body.rm .dg-gauge.is-stamina .dg-fill::after { animation: none; }
-body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-lift-btn { transition: none; }
+body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-orb, body.rm .dg-orb-ico > img { transition: none; }
 
 /* ---- weekly missions, seasons and the stall (docs/LOOP.md §5) ---------------------------- */
 /* on the stage: the board's weekly count, and the way into a picked-up board */

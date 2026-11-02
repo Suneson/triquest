@@ -67,18 +67,18 @@ The Chat tab is bottle green too, scoped to `body.chat-mode`, and takes its colo
 - **A challenge posted in General:** a beige quest card with a gold rim (blue while it's running).
 - **The composer:** a beige well with the Journal's button as Send.
 
-## The base's side buttons (`diorama-view.js`, `css/styles.css` `.dg-orb`)
+## The base's round buttons (`diorama-view.js` `orb`, `css/styles.css` `.dg-orb`)
 
-The round buttons on either side of the base:
+| Where | Buttons | Ring |
+| --- | --- | --- |
+| A row under the name and the gauges | Shop, kit bag | Gold |
+| The same row | Next up (the target), this room's trophies (with the count) | Navy |
+| Up the right side, about mid-screen | The elevator: pool, run, bike, gym, locker room | Baby blue |
 
-| Side | Buttons |
-| --- | --- |
-| Left | Inventory, then next up (the target) |
-| Right | Shop, then this room's trophies (with the count) |
-
-- **The look:** like the buttons round a game's home screen. Each is a glossy green orb (`icons/UI/side/side-orb.webp`), with its 3D icon standing over it and spilling just past the rim.
+- **The look:** like the buttons round a game's home screen. Each is a glossy ring (`icons/UI/side/ring-gold|navy|sky.webp`, keyed off green) over a face of its own colour, a shade darker, in a gradient. The 3D icon fills the face: its lower half sits inside the rim, its top rises out past it.
+- **The floor you're on:** its ring is a touch bigger and its face lights up. Its icon grows and pops further out over the rim.
 - **The trophies** moved here from the chip next to the room's name.
-- **The art:** the orb, the trophy and the target come from `tools/gen-shop-ui.mjs` (`side-*`). They're cut by `python3 tools/cut-shop-ui.py icons/UI/side/src`; the orb was painted on magenta, so it's keyed from that.
+- **The art:** the trophy and the target come from `tools/gen-shop-ui.mjs` (`side-*`). They're cut by `python3 tools/cut-shop-ui.py icons/UI/side/src`. The rings were made by hand, on green.
 
 ## Colours: what's open or "go" is baby blue
 

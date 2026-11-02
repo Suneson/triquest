@@ -49,11 +49,15 @@ SLAB = {'top': (1690, 800), 'left': (0, 1467), 'right': (3582, 1475)}
 # small fixes painted in by Gemini (a 1400 px crop with the strip in magenta), each pasted at
 # (x, y) on the full canvas with its left and right 50 px faded in: the kiosks cut where the
 # street floor ended
-PATCHES = [('kiosk-left.webp', 3154, 5600), ('kiosk-right.webp', 6978, 5600)]
+PATCHES = [('kiosk-left.webp', 3154, 5600), ('kiosk-right.webp', 6978, 5600),
+           # the kiosks' pavement ends and kerbs, painted again crisp (they came out soft, faded
+           # into the road): patches with their own alpha, the painted area and a few px round it
+           ('kerb-left.webp', 2900, 5900), ('kerb-right.webp', 6840, 5800)]
 # the blocks in front of the van's road (right of it, from the pool's row down): their plots are
 # also written to the front layer, which the app draws over the truck
 FRONT = {(1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
 ROAD_RGB = None                  # sampled from the plate's crossroads when None
+CLIP_MARGIN = 6                  # px: how far under its block's front edges a plot may reach (its kerb)
 FEATHER = 90                     # px: the plate's left and right edges fade into the grid
 KEEP_PLATE_BEHIND = False        # the plate's own towers behind the tower's block (they end at its top)
 
@@ -157,6 +161,53 @@ def plot_sprite(path, k):
     return out, ((fx) * sx, (low[fx] + 1) * sy)
 
 
+def plate_keep(w, h, plate_y, c0, pitch, road):
+    """How much of the street floor to keep at each of its px: its own block and its crossroads.
+
+    The street floor's picture goes on past its block, down the roads beside it, and has kerbs and
+    pavement of its own painted there that don't line up with the grid's blocks: faded out at its
+    left and right edges, they showed as soft ghosts of kerb on the road, cut off square. So it
+    stops part way across the road round its block (in plain asphalt, where it and the grid are the
+    same colour, before the lane line), and keeps the two roads along its front faces with their crossroads, zebras and all.
+    """
+    s = SLOPE
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    X = xx + PLATE_AT[0] - c0[0]; Y = yy + plate_y - c0[1]
+    a = (X / pitch + Y / (s * pitch)) / 2        # lattice coordinates: the tower's block at 0, 0
+    b = (Y / (s * pitch) - X / pitch) / 2
+    hb = BLOCK / (2 * pitch); hr = road / (2 * pitch)
+    soft = 0.02                                  # the blend into the grid's asphalt
+    edge = hb + 0.55 * hr                        # past the kerb, short of the lane line
+    def inside(d, lim):
+        return np.clip((lim - d) / soft + 0.5, 0, 1)
+    block = inside(np.abs(a), edge) * inside(np.abs(b), edge)
+    # the two roads along its front faces, as far as the crossroads past them: their zebras
+    arm_a = inside(np.abs(a - 0.5), hr + 0.02) * inside(np.abs(b), 0.5 + hr)
+    arm_b = inside(np.abs(b - 0.5), hr + 0.02) * inside(np.abs(a), 0.5 + hr)
+    return np.maximum(block, np.maximum(arm_a, arm_b))
+
+
+def clip_to_block(spr, ox, oy, cx, cy, k):
+    """Everything of a plot below its block's two front edges, or past its side corners, taken out.
+
+    The plot pictures carry a little of Gemini's own road and kerb round their block; pasted on the
+    grid, that showed as a soft ghost of kerb on the road, cut off square where the picture ended.
+    Above those edges the block's buildings rise, so they stay. `ox, oy`: where the sprite's top
+    left lands on the canvas; `cx, cy`: the block's centre (px of the full canvas).
+    """
+    a = np.asarray(spr).astype(np.float32).copy()
+    h, w = a.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    X = xx + ox; Y = yy + oy
+    fx, fy = cx * k, (cy + SLOPE * BLOCK) * k            # the block's front corner
+    edge = fy - SLOPE * np.abs(X - fx) + CLIP_MARGIN * k  # its two front edges, a kerb's depth lower
+    keep = np.clip(edge - Y + 0.5, 0, 1)                 # one px of soft edge: sharp, not jagged
+    side = BLOCK * k + CLIP_MARGIN * k
+    keep *= np.clip(side - np.abs(X - fx) + 0.5, 0, 1)
+    a[..., 3] *= keep
+    return Image.fromarray(a.clip(0, 255).astype(np.uint8), 'RGBA')
+
+
 def main():
     src, dst = sys.argv[1], sys.argv[2]
     k = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
@@ -228,7 +279,7 @@ def main():
     fm = fm.filter(ImageFilter.GaussianBlur(3))
     fmask = np.asarray(fm).astype(np.float32) / 255
     behind = pa.copy(); behind[..., 3] *= (1 - fmask)
-    front = pa.copy(); front[..., 3] *= fmask
+    front = pa.copy(); front[..., 3] *= fmask * plate_keep(plate.width, plate.height, plate_y, c0, pitch, road)
     def place(arr):
         im = Image.fromarray(arr.clip(0, 255).astype(np.uint8), 'RGBA')
         if k != 1:
@@ -253,9 +304,11 @@ def main():
         spr, (fx, fy) = plot_sprite(path, k)
         cx, cy = block_centre(c0, pitch, i, j)
         corner = (cx * k, (cy + SLOPE * BLOCK) * k)       # the block's front corner
-        paste(canvas, spr, corner[0] - fx, corner[1] - fy)
+        ox, oy = round(corner[0] - fx), round(corner[1] - fy)
+        spr = clip_to_block(spr, ox, oy, cx, cy, k)
+        paste(canvas, spr, ox, oy)
         if front is not None and (i, j) in FRONT:
-            paste(front, spr, corner[0] - fx, corner[1] - fy)
+            paste(front, spr, ox, oy)
     if not drawn_front:
         paste(canvas, front_im, *at)
     # the patches, faded in at their left and right edges
@@ -265,8 +318,9 @@ def main():
             continue
         pt = Image.open(path).convert('RGBA')
         a = np.asarray(pt).astype(np.float32)
-        ramp = np.clip(np.minimum(np.arange(pt.width), pt.width - 1 - np.arange(pt.width)) / 50, 0, 1)
-        a[..., 3] = 255 * ramp[None, :]
+        if a[..., 3].min() > 250:                 # no alpha of its own: fade its sides in
+            ramp = np.clip(np.minimum(np.arange(pt.width), pt.width - 1 - np.arange(pt.width)) / 50, 0, 1)
+            a[..., 3] = 255 * ramp[None, :]
         pt = Image.fromarray(a.astype(np.uint8), 'RGBA')
         if k != 1:
             pt = pt.resize((round(pt.width * k), round(pt.height * k)), Image.LANCZOS)

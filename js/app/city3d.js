@@ -23,7 +23,7 @@ const SIGMA = Math.SQRT2;                 // world px per camera unit (X runs 1 
 const UP = Math.cos(EL) * SIGMA;          // world px a point rises on screen per unit of height
 const FPS = 30;
 
-// in px of the city picture (icons/City/layers/city.webp)
+// in px of the city picture (5376 × 4980; drawn in tiles, icons/City/layers/tiles/)
 export const SIGN_AT = [2940, 3548];             // on the pavement, left of the garage door
 export const SIGN_HEIGHT = 320;                  // px tall on screen
 // the truck's road: in from the bottom right, round the corner, to the garage door; then it
@@ -77,23 +77,23 @@ export function truckAt(t) {
 }
 
 const FAR = [
-  { src: 'icons/City/sky-clouds/cloud-1.webp', y: 0.06, w: 0.95, v: 5 },
-  { src: 'icons/City/sky-clouds/cloud-2.webp', y: 0.24, w: 0.85, v: 4 },
-  { src: 'icons/City/sky-clouds/cloud-4.webp', y: 0.15, w: 0.45, v: 7 },
-  { src: 'icons/City/sky-clouds/cloud-3.webp', y: 0.32, w: 0.26, v: 9 },
-  { src: 'icons/City/sky-clouds/cloud-5.webp', y: 0.02, w: 0.22, v: 10 },
-  { src: 'icons/City/sky-clouds/cloud-6.webp', y: 0.4, w: 0.14, v: 12 },
+  { src: 'icons/City/sky-clouds/cloud-1.webp', y: 0.05, w: 0.42, v: 5 },
+  { src: 'icons/City/sky-clouds/cloud-2.webp', y: 0.2, w: 0.36, v: 4 },
+  { src: 'icons/City/sky-clouds/cloud-4.webp', y: 0.12, w: 0.22, v: 7 },
+  { src: 'icons/City/sky-clouds/cloud-3.webp', y: 0.28, w: 0.14, v: 9 },
+  { src: 'icons/City/sky-clouds/cloud-5.webp', y: 0.02, w: 0.12, v: 10 },
+  { src: 'icons/City/sky-clouds/cloud-6.webp', y: 0.34, w: 0.08, v: 12 },
 ];
 // the 3D clouds: which model, where (px of the city picture), how wide (px), and how fast (px/s)
 const CLOUDS = [
-  { m: 'a', at: [700, 900], w: 520, v: 22, front: false },
-  { m: 'b', at: [2300, 600], w: 760, v: 18, front: false },
-  { m: 'c', at: [4100, 1050], w: 640, v: 20, front: false },
-  { m: 'b', at: [3300, 1500], w: 560, v: 24, front: false },
-  { m: 'a', at: [1500, 1900], w: 420, v: 26, front: false },
-  { m: 'c', at: [4900, 2100], w: 480, v: 23, front: false },
-  { m: 'a', at: [3900, 300], w: 380, v: 28, front: true },
-  { m: 'c', at: [1200, 2700], w: 420, v: 30, front: true },
+  { m: 'a', at: [700, 900], w: 170, v: 16, front: false },
+  { m: 'b', at: [2300, 650], w: 240, v: 13, front: false },
+  { m: 'c', at: [4100, 1050], w: 210, v: 15, front: false },
+  { m: 'b', at: [3300, 1500], w: 190, v: 18, front: false },
+  { m: 'a', at: [1500, 1900], w: 140, v: 20, front: false },
+  { m: 'c', at: [4900, 2100], w: 160, v: 17, front: false },
+  { m: 'a', at: [3900, 350], w: 120, v: 22, front: true },
+  { m: 'c', at: [1200, 2700], w: 140, v: 24, front: true },
 ];
 
 let shared = null;   // the canvases and the far clouds, kept across the stage's re-renders
@@ -114,6 +114,7 @@ export function mountCity3d(vp, { worldW, deliveries, now, label, reduced }) {
   const world = vp.querySelector('[data-dg-world]');
   vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
   shared.opts = { worldW, deliveries, now, label, reduced };
+  if (!shared.farLoop) farLoop();
   if (!shared.started) start();
   return {
     setView(v, w, h) { shared.view = { v, w, h }; shared.dirty = true; },
@@ -124,9 +125,30 @@ function makeShared() {
   const far = document.createElement('div');
   far.className = 'dg-far';
   far.setAttribute('aria-hidden', 'true');
-  far.innerHTML = FAR.map((c) => `<img src="${c.src}" alt="" draggable="false">`).join('');
+  // each one sized as a share of the viewport straight away (never its picture's natural size)
+  far.innerHTML = FAR.map((c, i) => `<img src="${c.src}" alt="" draggable="false"
+    style="width:${(c.w * 100).toFixed(1)}%;left:${((i / FAR.length) * 100).toFixed(1)}%;top:${(c.y * 100).toFixed(1)}%">`).join('');
   const canvas = (cls) => { const c = document.createElement('canvas'); c.className = `dg-3d ${cls}`; c.setAttribute('aria-hidden', 'true'); return c; };
   return { far, back: { canvas: canvas('is-back') }, front: { canvas: canvas('is-front') }, view: null, dirty: true, t0: performance.now(), farX: FAR.map((c, i) => i / FAR.length) };
+}
+
+/** The far clouds drift on their own, WebGL or not (left as a share of the viewport). */
+function farLoop() {
+  shared.farLoop = true;
+  let last = performance.now();
+  const step = (now) => {
+    requestAnimationFrame(step);
+    const dt = Math.min(0.2, (now - last) / 1000); last = now;
+    if (!shared.far.isConnected || shared.opts?.reduced?.()) return;
+    const vw = shared.far.clientWidth || 1;
+    [...shared.far.children].forEach((el, i) => {
+      const c = FAR[i];
+      shared.farX[i] -= (c.v * dt) / vw;
+      if (shared.farX[i] < -c.w) shared.farX[i] = 1 + Math.random() * 0.3;
+      el.style.left = `${(shared.farX[i] * 100).toFixed(2)}%`;
+    });
+  };
+  requestAnimationFrame(step);
 }
 
 async function start() {
@@ -138,7 +160,7 @@ async function start() {
   const load = (name) => new Promise((res, rej) => loader.load(new URL(`../../models/city/${name}.glb`, import.meta.url).href, (g) => res(g.scene), undefined, rej));
 
   const mkRenderer = (canvas) => {
-    const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+    const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
     r.setClearColor(0x000000, 0);
     return r;
   };
@@ -230,8 +252,8 @@ async function start() {
     const still = o.reduced?.();
     const vw = shared.view?.w || 1; const vh = shared.view?.h || 1; const v = shared.view?.v;
     if (!v) return;
-    // the canvases fill the viewport at the device's pixel ratio (at most 2)
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // the canvases fill the viewport at the device's pixel ratio (at most 1.5: they're soft shapes)
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1);
     for (const r of [backR, frontR]) { const c = r.domElement; if (c.width !== Math.round(vw * dpr) || c.height !== Math.round(vh * dpr)) { r.setPixelRatio(dpr); r.setSize(vw, vh, false); } }
     // the camera shows exactly the part of the city the stage shows
     cam.left = (-v.tx / v.s) / SIGMA; cam.right = ((vw - v.tx) / v.s) / SIGMA;
@@ -246,15 +268,6 @@ async function start() {
       const p = ground(c.at);
       c.g.position.set(p.x, 0, p.z);
     }
-    // the far clouds, in screen space, slower than everything
-    const imgs = shared.far.children;
-    FAR.forEach((c, i) => {
-      if (!still) shared.farX[i] -= (c.v * dt) / Math.max(1, vw);
-      if (shared.farX[i] < -c.w) shared.farX[i] = 1 + Math.random() * 0.3;
-      const el = imgs[i]; if (!el) return;
-      el.style.width = `${c.w * vw}px`;
-      el.style.transform = `translate(${(shared.farX[i] * vw).toFixed(1)}px, ${(c.y * vh).toFixed(1)}px)`;
-    });
 
     // the sign counts down to the next delivery; the truck brings whichever is ending now
     const t = o.now?.() ?? Date.now();

@@ -284,6 +284,8 @@ function render() {
 
   // Profile tab is a sealed full-screen game viewport: hide app chrome, lock scroll.
   document.body.classList.toggle('pg-mode', appState.tab === 'progress');
+  // on the base the page itself is asphalt-coloured: iPhone paints the strip under the dock in it
+  document.documentElement.classList.toggle('city-mode', appState.tab === 'progress' && appState.pgView === 'base');
   document.body.classList.toggle('jh-mode', appState.tab === 'home'); // the Journal is bottle green, like the shop
   document.body.classList.toggle('chat-mode', appState.tab === 'chat'); // the + button would cover the composer
 

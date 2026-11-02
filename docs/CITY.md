@@ -147,4 +147,14 @@ The plate is built like a game map rather than expanded by an image model.
 **Still to do:**
 - More plots, so the apartments aren't repeated: tall towers for behind the tower, offices and a park.
 - The yellow kerb that the left kiosk fix added.
-- Putting the tower stack and the city into the app.
+
+### In the app
+
+- **The world:** the base's stage is the city picture (`icons/City/layers/city.webp`, 5376 × 4300).
+- **The tower:** stacked on the street floor for the room's floor, from half-size pieces in `icons/City/layers/app/`.
+  - The locker room is the street floor as it is.
+  - The gym has the cap.
+  - The bike room, run room and pool add one office storey each.
+- **The code:** `towerPieces(n)` and `slabOf(n)` in `js/core/diorama.js` place the pieces and the slab, and the room's 8 × 8 floor stands in the middle of the slab at half its width.
+- **Swiping:** you can swipe across the whole city.
+- **Moving between floors:** still covered by the cloud bank.

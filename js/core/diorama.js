@@ -1,5 +1,5 @@
-// diorama.js — the Profile tab's stage: one room at a time, standing in its
-// plot on a generated terrain (docs/COMPOUND.md). Pure.
+// diorama.js — the base's stage: one room at a time, standing on its floor of the
+// city tower (docs/CITY.md; the old terrain is docs/COMPOUND.md). Pure.
 //
 // The world is the terrain image (sky, grass round a foundation plot, the dirt
 // cutaway). The room's art is scaled, never skewed, and centred on the plot.
@@ -16,20 +16,49 @@ export const ENV = {
   plot: { top: [426, 510], right: [810, 730], bottom: [430, 950], left: [36, 740] },
   roomWidth: 0.86, // the room's art width, as a share of the terrain's
 };
-// The city tower (docs/CITY.md): a room stands on its floor's flat roof slab. Each floor's slab
-// is measured in px of its 1792 × 2400 app picture (tools/cut-city.py). The slab is made for a
-// 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
+// The city (docs/CITY.md, "The layered city"): one picture of the whole city, the street floor
+// in the middle (icons/City/layers/city.webp, half the 10752 × 8600 master), and the MOSKE tower
+// stacked on it from two pieces cut by tools/cut-tower.py: floor N is the cap (the roof slab and
+// the top storey) with N - 1 office storeys under it, standing on the street floor's lobby; the
+// street floor (N = 0) is the picture as it is. A room stands on its floor's slab: the slab is
+// made for a 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
 export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
-const SLABS = [
-  { top: [845, 424], right: [1791, 782], bottom: [907, 1250], left: [0, 778] },
-  { top: [917, 419], right: [1791, 835], bottom: [944, 1248], left: [55, 825] },
-  { top: [859, 398], right: [1738, 810], bottom: [882, 1233], left: [0, 794] },
-  { top: [906, 253], right: [1582, 570], bottom: [941, 885], left: [255, 556] },
-  { top: [929, 257], right: [1580, 574], bottom: [940, 899], left: [254, 557] },
-];
-const cityEnv = (n) => ({ src: `icons/City/app/floor-${n}.webp`, w: 1792, h: 2400, plot: SLABS[n], floorShare: 0.5, floor: n, slabView: 1.15 });
+export const CITY = {
+  src: 'icons/City/layers/city.webp', w: 5376, h: 4300,
+  k: 0.5,                         // the app picture is half the master (px of the master × k)
+  plateAt: [3584, 4072],          // the street floor's top-left corner in the master
+  step: 449.01,                   // one storey, in px of the street floor (icons/City/layers/tower.json)
+  cap: { src: 'icons/City/layers/app/tower-cap.webp', w: 1996, h: 1324, at: [-152.6, -199.1] },
+  storey: { src: 'icons/City/layers/app/tower-storey.webp', w: 2014, h: 720, at: [-188.6, 1455.9] },
+  // the slabs, in px of the street floor: its own, and the cap's when the tower is one storey tall
+  slab0: { top: [1690, 800], right: [3582, 1475], bottom: [1814, 2358], left: [0, 1468] },
+  slab1: { top: [1804, 16], right: [3658, 833], bottom: [1829, 1725], left: [63, 821] },
+};
+const toWorld = ([x, y], up = 0) => [(x + CITY.plateAt[0]) * CITY.k, (y - up + CITY.plateAt[1]) * CITY.k];
 
-/** The world a room stands in: its city floor, or the terrain for a room with no floor yet. */
+/** The tower's pieces for floor n, bottom first, each { src, x, y, w, h } in px of the city picture. */
+export function towerPieces(n) {
+  if (n < 1) return [];
+  const out = [];
+  for (let i = 0; i < n - 1; i++) {
+    const [x, y] = toWorld(CITY.storey.at, (i + 1) * CITY.step);
+    out.push({ src: CITY.storey.src, x, y, w: CITY.storey.w, h: CITY.storey.h });
+  }
+  const [x, y] = toWorld(CITY.cap.at, (n - 1) * CITY.step);
+  out.push({ src: CITY.cap.src, x, y, w: CITY.cap.w, h: CITY.cap.h });
+  return out;
+}
+
+/** Floor n's slab, in px of the city picture. */
+export function slabOf(n) {
+  const s = n < 1 ? CITY.slab0 : CITY.slab1;
+  const up = n < 1 ? 0 : (n - 1) * CITY.step;
+  return Object.fromEntries(Object.entries(s).map(([k, p]) => [k, toWorld(p, up)]));
+}
+
+const cityEnv = (n) => ({ src: CITY.src, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
+
+/** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
 export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);
 
 export const MAX_ZOOM = 2.5; // × the smallest zoom

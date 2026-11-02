@@ -264,7 +264,7 @@ let preloaded = false;
 function preloadFloors() {
   if (preloaded) return;
   preloaded = true;
-  const go = () => [CLOUDS, ...Object.keys(FLOOR_OF).map((r) => envFor(r).src)].forEach((src) => { const i = new Image(); i.src = src; });
+  const go = () => [CLOUDS, ...new Set(Object.keys(FLOOR_OF).flatMap((r) => [envFor(r).src, ...(envFor(r).tower || []).map((p) => p.src)]))].forEach((src) => { const i = new Image(); i.src = src; });
   (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(go);
 }
 const decoded = (src) => { const i = new Image(); i.src = src; return (i.decode ? i.decode() : Promise.resolve()).catch(() => {}); };
@@ -340,6 +340,16 @@ export function wireDiorama(root, ctx) {
   worldEl.style.width = `${env.w}px`; worldEl.style.height = `${env.h}px`;
   const envImg = worldEl.querySelector('.dg-env');
   if (envImg.getAttribute('src') !== env.src) { envImg.src = env.src; envImg.width = env.w; envImg.height = env.h; }
+  // the tower's storeys and its roof slab, stacked on the street floor for this room's floor
+  let towerEl = worldEl.querySelector('.dg-tower');
+  if (!towerEl) { towerEl = document.createElement('div'); towerEl.className = 'dg-tower'; envImg.after(towerEl); }
+  const pieces = env.tower || [];
+  const key = pieces.map((p) => `${p.src}@${p.x},${p.y}`).join('|');
+  if (towerEl.dataset.key !== key) {
+    towerEl.dataset.key = key;
+    towerEl.innerHTML = pieces.map((p) => `<img src="${p.src}" width="${p.w}" height="${p.h}" alt="" draggable="false"
+      style="left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px;width:${p.w}px;height:${p.h}px">`).join('');
+  }
   preloadFloors();
   // an item's picture and its shadow on the floor move together
   const moveEl = (el, it, u, v) => {

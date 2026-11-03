@@ -215,3 +215,12 @@ The 3D layer draws those pieces as flat pictures on the ground, after everything
 Don't put a city-sized layer over the 3D canvas. That was the first version, and iPhone Safari ran out of memory and kept reloading the page ("A problem repeatedly occurred").
 
 The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-front`, with no size of its own, so it shows over the 3D sign at the cost of the bubble only.
+
+## The railing
+
+Each floor's roof slab has a railing round it: a navy kerb with gold rails (`icons/City/rail/`, cut by `tools/cut-rail.py`).
+
+- **Fitting:** the picture is warped so its kerb's outer top corners land on the slab's corners. There are two versions: the street floor's slab, and the roof slab every floor above stands on. The second moves up a storey with each floor (`railOf()` in `js/core/diorama.js`).
+- **Splitting:** it's cut along the line between its left and right corners. The back half goes behind the room. The front half, with its rails, goes over the room and what stands in it, so the room stands inside the railing.
+- **The old railing:** the one painted into the floor pictures sits under the new kerb, which hides it.
+

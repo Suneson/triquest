@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { MARKET_RULES, marketStock, marketCollect, marketFullIn, marketIn, isMarketSlot } from '../js/core/markets.js';
+import { MARKET_RULES, marketStock, marketCollect, marketFullIn, marketIn, isMarketSlot, marketNext, marketUpgrade } from '../js/core/markets.js';
 
 let PGlite = null;
 try { ({ PGlite } = await import('@electric-sql/pglite')); } catch { /* not installed */ }
@@ -125,4 +125,38 @@ test('the JS side: collecting, how long till full, which slot', () => {
   assert.equal(marketIn([m], 3), m);
   assert.equal(marketIn([m], 2), null);
   assert.ok(isMarketSlot(4) && !isMarketSlot(0) && !isMarketSlot(5));
+});
+
+test('upgrading: to level 2 for its price, keeping what was made, making more an hour', { skip }, async () => {
+  const L2 = MARKET_RULES.levels[1];
+  const db = await freshDb(2000);
+  const up = (slot) => db.query('select public.upgrade_market($1) as w', [slot]);
+  assert.equal(await code(up(1)), 'not_owned');
+  await buy(db, 1);
+  await ago(db, 1, 5);                       // 10 coins waiting at level 1
+  const before = await coins(db);
+  assert.equal(await code(up(1)), 'ok');
+  assert.equal(await coins(db), before - L2.cost);
+  const row = (await db.query('select level, extract(epoch from now() - collected_at) as s from public.user_markets where slot = 1')).rows[0];
+  assert.equal(row.level, 2);
+  // still 10 waiting, now at 3 an hour
+  assert.equal(Math.floor((row.s / 3600) * L2.perHour + 1e-6), 5 * L1.perHour);
+  assert.equal(await code(up(1)), 'market_max');
+  // it holds more now
+  await ago(db, 1, 1000);
+  assert.equal((await collect(db, 1)).coins, L2.capacity);
+  // a second market can't be upgraded without the coins
+  const poor = await freshDb(MARKET_RULES.cost - 300 + 100);
+  await buy(poor, 2);
+  assert.equal(await code(poor.query('select public.upgrade_market(2)')), 'insufficient');
+});
+
+test('the JS side of upgrading', () => {
+  const at = '2026-11-02T12:00:00.000Z'; const t = Date.parse(at);
+  const m = { slot: 1, level: 1, collected_at: at };
+  assert.equal(marketNext(m).level, 2);
+  assert.equal(marketNext({ ...m, level: 2 }), null);
+  const u = marketUpgrade(m, t + 5 * 3600e3);
+  assert.equal(u.level, 2);
+  assert.equal(marketStock({ ...m, ...u }, t + 5 * 3600e3), 10);
 });

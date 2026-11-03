@@ -7,12 +7,13 @@
 --   user_markets      the markets you've bought: which slot, its level, what it cost, and the
 --                     clock it makes coins from (collected_at)
 --   market_collects   every collection, the coins it paid
---   wallet_fold()     as in 0027, with two more kinds of event: a market bought (rank 7, paid
---                     out) and a market collected (rank 8, paid in)
+--   market_upgrades   every upgrade, the level it reached and what it cost
+--   wallet_fold()     as in 0027, with three more kinds of event: a market bought (rank 7, paid
+--                     out), collected (rank 8, paid in) and upgraded (rank 9, paid out)
 
 create or replace function public.market_rules()
 returns jsonb language sql immutable set search_path = public as $$
-  select '{"cost":400,"slots":[1,2,3,4],"levels":[{"level":1,"perHour":2,"capacity":24}]}'::jsonb;
+  select '{"cost":400,"slots":[1,2,3,4],"levels":[{"level":1,"perHour":2,"capacity":24},{"level":2,"perHour":3,"capacity":36,"cost":600}]}'::jsonb;
 $$;
 
 create table if not exists public.user_markets (
@@ -41,6 +42,20 @@ alter table public.market_collects enable row level security;
 drop policy if exists market_collects_own on public.market_collects;
 create policy market_collects_own on public.market_collects for select using (user_id = auth.uid());
 grant select on public.market_collects to authenticated;
+
+create table if not exists public.market_upgrades (
+  id          bigint generated always as identity primary key,
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  slot        smallint not null,
+  level       smallint not null,
+  cost        int not null check (cost >= 0),
+  upgraded_at timestamptz not null default now()
+);
+create index if not exists market_upgrades_user on public.market_upgrades (user_id);
+alter table public.market_upgrades enable row level security;
+drop policy if exists market_upgrades_own on public.market_upgrades;
+create policy market_upgrades_own on public.market_upgrades for select using (user_id = auth.uid());
+grant select on public.market_upgrades to authenticated;
 
 -- the rules at a level (the top one past the last)
 create or replace function public.market_level(p_level int)
@@ -112,7 +127,39 @@ begin
 end;
 $$;
 
--- ---- the wallet: markets bought (rank 7) and collected (rank 8) ----------------------------
+-- up a level, for the next level's price: the market keeps what it has made so far, now making
+-- coins at the new rate (its clock is set back so that what's waiting stays the same)
+create or replace function public.upgrade_market(p_slot int)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  uid   uuid := auth.uid();
+  m     public.user_markets;
+  nx    jsonb;
+  cost  int;
+  bal   bigint;
+  stock int;
+  t     timestamptz := now();
+begin
+  if uid is null then raise exception 'gear:not_signed_in' using errcode = '28000'; end if;
+  perform pg_advisory_xact_lock(hashtext('gear:' || uid::text));
+  select * into m from public.user_markets where user_id = uid and slot = p_slot;
+  if not found then raise exception 'gear:not_owned' using errcode = '22023'; end if;
+  nx := public.market_rules() -> 'levels' -> m.level;      -- the next level (0-based: level n is at n - 1)
+  if nx is null then raise exception 'gear:market_max' using errcode = '22023'; end if;
+  cost := (nx ->> 'cost')::int;
+  select f.coins into bal from public.wallet_fold(uid) f;
+  if bal < cost then raise exception 'gear:insufficient' using errcode = '22023'; end if;
+  stock := public.market_stock(m.level, m.collected_at, t);
+  update public.user_markets
+     set level = (nx ->> 'level')::int,
+         collected_at = t - make_interval(secs => stock / (nx ->> 'perHour')::numeric * 3600)
+   where user_id = uid and slot = p_slot;
+  insert into public.market_upgrades (user_id, slot, level, cost, upgraded_at) values (uid, p_slot, (nx ->> 'level')::int, cost, t);
+  return public.wallet_for(uid);
+end;
+$$;
+
+-- ---- the wallet: markets bought (rank 7), collected (rank 8) and upgraded (rank 9) ---------
 
 create or replace function public.wallet_fold(p_user uuid)
 returns table (coins bigint, carbs bigint, earned_coins bigint, earned_carbs bigint,
@@ -172,6 +219,11 @@ begin
       select to_char(x.collected_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), 8,
              lpad(x.id::text, 12, '0'), x.coins::bigint, 0
       from public.market_collects x where x.user_id = p_user
+      union all
+      -- an upgrade is paid for when it's made
+      select to_char(u.upgraded_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'), 9,
+             lpad(u.id::text, 12, '0'), -u.cost::bigint, 0
+      from public.market_upgrades u where u.user_id = p_user
     )
     select * from ev order by at collate "C", rank, key collate "C"
   loop
@@ -193,4 +245,4 @@ end;
 $$;
 
 grant execute on function public.market_rules(), public.market_level(int), public.market_stock(int, timestamptz, timestamptz) to authenticated, anon;
-grant execute on function public.buy_market(int), public.collect_market(int) to authenticated;
+grant execute on function public.buy_market(int), public.collect_market(int), public.upgrade_market(int) to authenticated;

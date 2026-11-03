@@ -22,6 +22,7 @@ import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER, avat
 import { openWhatNext } from './base-view.js';
 import { renderDiorama, wireDiorama, resetDiorama } from './diorama-view.js';
 import { openDeliveries } from './delivery-view.js';
+import { openExpansions } from './expansion-view.js';
 import { refreshPlacements, onPlacements } from './placement-state.js';
 import { PRESTIGE, canPrestige } from '../core/collections.js';
 import { onSwipe, nextSport } from './swipe.js';
@@ -501,6 +502,7 @@ function onClick(e) {
     case 'open-inventory': openInventory(); break;
     case 'open-chests': openChestQueue(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
+    case 'open-expansions': openExpansions(store.getWorkouts()); break;
     case 'ai-onboard': startAIPlan(); break;
     case 'hub-signout':
       if (confirm(t('main.signOutConfirm'))) { auth.signOut(); closeAllLayers(); }

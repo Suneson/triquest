@@ -17,7 +17,8 @@ import { seasonKitsWon } from '../core/seasons.js';
 import { stallItemById, stallFor, stallDay } from '../core/stall.js';
 import { weekOf, missionsToClaim, MISSION_RULES } from '../core/missions.js';
 import { addDays, todayISO } from '../core/dates.js';
-import { MARKET_RULES, marketIn, marketStock, marketCollect, isMarketSlot } from '../core/markets.js';
+import { MARKET_RULES, marketIn, marketStock, marketCollect, isMarketSlot, marketNext, marketUpgrade } from '../core/markets.js';
+import { EXPANSION_RULES, expansionReady, isExpanded } from '../core/expansions.js';
 import { t } from '../core/i18n.js';
 
 const KEY = 'moske-gear';
@@ -26,7 +27,7 @@ const KEY = 'moske-gear';
 // blueprints (rare props built) and prestige (stars) come from 0023 (docs/LOOP.md §4)
 // missions (weekly missions paid) come from 0025 (§5)
 // markets (the four round the lobby, bought) and marketCollects come from 0028 (docs/MARKETS.md)
-const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [], missions: [], markets: [], marketCollects: [] };
+const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [], missions: [], markets: [], marketCollects: [], marketUpgrades: [], expansions: [] };
 const listeners = new Set();
 
 function load() {
@@ -69,7 +70,7 @@ function demoState() {
   const missions = [3, 3, 2, 2, 1].map((n, i) => ({ week: addDays(wk, -7 * n), mission_id: ['w-sessions-3', 'w-rest-2', 'w-hours-4', 'w-recovery', 'w-km-40'][i], claimed_at: ago(24 * 7 * n - 30 - i) }));
   // the markets: the near one on the right bought yesterday and making coins since this morning
   const markets = [{ slot: 3, level: 1, cost: MARKET_RULES.cost, bought_at: ago(26), collected_at: ago(7.2) }];
-  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions, markets, marketCollects: [] };
+  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions, markets, marketCollects: [], marketUpgrades: [], expansions: [] };
 }
 
 /** Can this device talk to the workshop at all (signed in, or demo)? */
@@ -186,7 +187,7 @@ export async function refreshGear() {
     const t0 = Date.now();
     const ws = await c.rpc('workshop');
     const t1 = Date.now();
-    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx] = await Promise.all([
+    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
@@ -197,6 +198,8 @@ export async function refreshGear() {
       c.from('mission_claims').select('week, mission_id, claimed_at'),
       c.from('user_markets').select('slot, level, cost, bought_at, collected_at'),
       c.from('market_collects').select('id, slot, coins, collected_at'),
+      c.from('market_upgrades').select('id, slot, level, cost, upgraded_at'),
+      c.from('user_expansions').select('room, cost, bought_at'),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -210,7 +213,9 @@ export async function refreshGear() {
       // before 0025 is live there are no weekly missions
       missions: mc.error ? [] : mc.data || [],
       // before 0028 is live there are no markets to buy
-      markets: mk.error ? [] : mk.data || [], marketsLive: !mk.error, marketCollects: mx.error ? [] : mx.data || [] };
+      markets: mk.error ? [] : mk.data || [], marketsLive: !mk.error, marketCollects: mx.error ? [] : mx.data || [], marketUpgrades: mu.error ? [] : mu.data || [],
+      // before 0029 is live no room can be expanded
+      expansions: ex.error ? [] : ex.data || [], expansionsLive: !ex.error };
     save(state);
     emit();
   } catch (e) {
@@ -274,6 +279,30 @@ function demoCall(fn, args) {
     s.wallet = { ...s.wallet, coins: s.wallet.coins + got.coins };
     listeners.forEach((f) => f(s));
     return { coins: got.coins };
+  }
+  if (fn === 'upgrade_market') {
+    const m = marketIn(s.markets, args.p_slot);
+    if (!m) throw new Error('gear:not_owned');
+    const next = marketNext(m);
+    if (!next) throw new Error('gear:market_max');
+    if (s.wallet.coins < next.cost) throw new Error('gear:insufficient');
+    const now = serverNow();
+    Object.assign(m, marketUpgrade(m, now));
+    (s.marketUpgrades ||= []).push({ id: s.marketUpgrades.length + 1, slot: m.slot, level: m.level, cost: next.cost, upgraded_at: new Date(now).toISOString() });
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - next.cost };
+    listeners.forEach((f) => f(s));
+    return { coins: 0 };
+  }
+  if (fn === 'buy_expansion') {
+    const room = args.p_room;
+    if (!EXPANSION_RULES.rooms.includes(room)) throw new Error('gear:unknown_room');
+    if (!expansionReady(room)) throw new Error('gear:coming_soon');
+    if (isExpanded(s.expansions, room)) throw new Error('gear:owned');
+    if (s.wallet.coins < EXPANSION_RULES.cost) throw new Error('gear:insufficient');
+    (s.expansions ||= []).push({ room, cost: EXPANSION_RULES.cost, bought_at: new Date(serverNow()).toISOString() });
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - EXPANSION_RULES.cost };
+    listeners.forEach((f) => f(s));
+    return { coins: 0 };
   }
   if (fn === 'buy_stall') {
     const it = stallItemById(args.p_item);
@@ -365,6 +394,23 @@ export async function buyMarket(slot) {
   await call('buy_market', { p_slot: slot });
   return { coins: 0 };
 }
+/** The rooms you've expanded to 16 × 16 ({ room, cost, bought_at }). */
+export const myExpansions = () => rawState().expansions || [];
+/** Can rooms be expanded here? (Demo, or a server with 0029 live.) */
+export const expansionsOpen = () => isDemo() || (gearEnabled() && rawState().expansionsLive !== false);
+/** Expand a room to 16 × 16 (docs/ROOMS3D.md). Throws with a `gear:` code. */
+export async function buyExpansion(room) {
+  if (isDemo()) return demoCall('buy_expansion', { p_room: room });
+  await call('buy_expansion', { p_room: room });
+  return { coins: 0 };
+}
+
+/** Take a market up a level (docs/MARKETS.md). Throws with a `gear:` code. */
+export async function upgradeMarket(slot) {
+  if (isDemo()) return demoCall('upgrade_market', { p_slot: slot });
+  await call('upgrade_market', { p_slot: slot });
+  return { coins: 0 };
+}
 /** Take what a market has made into the wallet. Resolves to { coins } taken; throws with a `gear:` code. */
 export async function collectMarket(slot) {
   if (isDemo()) return demoCall('collect_market', { p_slot: slot });
@@ -434,7 +480,7 @@ export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_
 export function walletNow(workouts) {
   const s = gearState();
   const w = s.wallet;
-  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions, markets: s.markets, marketCollects: s.marketCollects });
+  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions, markets: s.markets, marketCollects: s.marketCollects, marketUpgrades: s.marketUpgrades, expansions: s.expansions });
   const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id, s.jobs)]));
   return {
     coins: Number(w ? w.coins : local.coins) || 0,

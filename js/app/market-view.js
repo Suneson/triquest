@@ -4,23 +4,24 @@
 //   - a tap target over each market (in the world, so it pans and zooms with the city)
 //   - a coin bubble over each bought one that has coins waiting; tapping it collects them
 //   - the bar that slides up when a market is tapped: its name and level over square buttons
-//     (Info, and Collect or Buy)
+//     (Info, then Buy; or Upgrade while there's a level above, and Collect)
 //   - the info window: its picture beside what it makes and holds
 
 import { esc } from './ui.js';
+import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
-import { MARKET_RULES, marketIn, marketStock, marketLevel, marketFullIn } from '../core/markets.js';
-import { myMarkets, marketsOpen, buyMarket, collectMarket, serverNow, walletNow, gearError, onGear } from './gear-state.js';
+import { MARKET_RULES, marketIn, marketStock, marketLevel, marketFullIn, marketNext } from '../core/markets.js';
+import { myMarkets, marketsOpen, buyMarket, collectMarket, upgradeMarket, serverNow, walletNow, gearError, onGear } from './gear-state.js';
 import { MARKETS, MARKET_HEIGHT } from './city3d.js';
 import { openLayer } from './nav.js';
 import { haptic } from './haptics.js';
 import { toast, prefersReducedMotion } from './effects.js';
 
 const COIN = 'icons/Pixelart/GEAR/coin.png';
-const PICTURE = 'icons/City/market/market.webp';
-const owned = (slot) => !!marketIn(myMarkets(), slot);
-/** Is the market in this slot bought? (city3d.js lights it.) */
-export const marketOwned = owned;
+// the market at each level as a picture (rendered from its model): 0 is one not bought yet
+const picture = (m) => `icons/City/market/market-${m ? Number(m.level) || 1 : 0}.webp`;
+/** The level of the market in this slot: 0 until it's bought (city3d.js shows the model for it). */
+export const marketLevelIn = (slot) => { const m = marketIn(myMarkets(), slot); return m ? Number(m.level) || 1 : 0; };
 
 let ctx = { pulse: () => {}, workouts: () => [], screen: null };
 
@@ -153,12 +154,15 @@ function refreshBar() {
   const lv = marketLevel(m);
   const n = m ? marketStock(m, serverNow()) : 0;
   const coins = walletNow(ctx.workouts()).coins;
+  const next = marketNext(m);
+  const price = (cost) => `<span class="mk-btn-price data-num${coins < cost ? ' is-short' : ''}">${fmtNum(cost)}<img src="${COIN}" alt=""></span>`;
+  const upgrade = next ? `<button class="mk-btn is-buy" data-mk-upgrade ${!marketsOpen() ? 'disabled' : ''}>${price(next.cost)}
+         <span class="mk-btn-ico"><img src="${picture({ level: next.level })}" alt=""></span><b>${esc(t('city.market.upgrade'))}</b></button>` : '';
   const action = m
-    ? `<button class="mk-btn" data-mk-collect ${n < 1 ? 'disabled' : ''}>
+    ? `${upgrade}<button class="mk-btn" data-mk-collect ${n < 1 ? 'disabled' : ''}>
          <span class="mk-btn-ico"><img src="${COIN}" alt=""></span><b>${esc(t('city.market.collect'))}</b>${n ? `<i class="data-num">${fmtNum(n)}</i>` : ''}</button>`
-    : `<button class="mk-btn is-buy" data-mk-buy ${!marketsOpen() ? 'disabled' : ''}>
-         <span class="mk-btn-price data-num${coins < MARKET_RULES.cost ? ' is-short' : ''}">${fmtNum(MARKET_RULES.cost)}<img src="${COIN}" alt=""></span>
-         <span class="mk-btn-ico"><img src="${PICTURE}" alt=""></span><b>${esc(t('city.market.buy'))}</b></button>`;
+    : `<button class="mk-btn is-buy" data-mk-buy ${!marketsOpen() ? 'disabled' : ''}>${price(MARKET_RULES.cost)}
+         <span class="mk-btn-ico"><img src="${picture({ level: 1 })}" alt=""></span><b>${esc(t('city.market.buy'))}</b></button>`;
   bar.innerHTML = `<h2 id="mk-bar-h" class="mk-bar-h">${esc(t('city.market.title', { n: lv.level }))}</h2>
     <div class="mk-bar-btns">
       <button class="mk-btn" data-mk-info><span class="mk-btn-ico is-info" aria-hidden="true">i</span><b>${esc(t('city.market.info'))}</b></button>
@@ -167,6 +171,24 @@ function refreshBar() {
   bar.querySelector('[data-mk-info]').addEventListener('click', () => openInfo(slot));
   bar.querySelector('[data-mk-collect]')?.addEventListener('click', (e) => collect(slot, e.currentTarget));
   bar.querySelector('[data-mk-buy]')?.addEventListener('click', () => buy(slot));
+  bar.querySelector('[data-mk-upgrade]')?.addEventListener('click', () => upgrade_(slot));
+}
+
+async function upgrade_(slot) {
+  document.querySelectorAll('[data-mk-upgrade]').forEach((b) => { b.disabled = true; });
+  try {
+    await upgradeMarket(slot);
+    haptic('record');
+    ctx.pulse(slot);
+    const m = marketIn(myMarkets(), slot);
+    toast(esc(t('city.market.upgraded', { n: marketLevel(m).level })), { icon: svg('check') });
+    document.querySelector('.mk-layer [data-layer-close]')?.click();
+  } catch (e) {
+    toast(esc(gearError(e)));
+  } finally {
+    showCoins();
+    refreshBar();
+  }
 }
 
 async function buy(slot) {
@@ -176,7 +198,7 @@ async function buy(slot) {
     await buyMarket(slot);
     haptic('record');
     ctx.pulse(slot);
-    toast(esc(t('city.market.bought')), { icon: 'check' });
+    toast(esc(t('city.market.bought')), { icon: svg('check') });
   } catch (e) {
     toast(esc(gearError(e)));
   } finally {
@@ -193,6 +215,8 @@ export function openInfo(slot) {
   const now = serverNow();
   const n = m ? marketStock(m, now) : 0;
   const full = m ? marketFullIn(m, now) : 0;
+  const next = marketNext(m);
+  const coins = walletNow(ctx.workouts()).coins;
   const root = openLayer('market-info', { className: 'mk-layer', reuse: false });
   const stat = (ico, label, value, frac, cls = '') => `<li class="mk-stat ${cls}">
       <span class="mk-stat-ico" aria-hidden="true">${ico}</span>
@@ -210,7 +234,7 @@ export function openInfo(slot) {
       <div class="mk-info-body">
         <figure class="mk-pic${m ? '' : ' is-dark'}">
           ${m ? '' : `<span class="mk-ribbon">${esc(t('city.market.forSale'))}</span>`}
-          <img src="${PICTURE}" alt="" draggable="false">
+          <img src="${picture(m)}" alt="" draggable="false">
         </figure>
         <ul class="mk-stats">
           ${stat(coinIco, t('city.market.rate'), t('city.market.perHour', { n: fmtNum(lv.perHour) }), lv.perHour / 4)}
@@ -221,8 +245,13 @@ export function openInfo(slot) {
         </ul>
         <p class="mk-note">${esc(t(m ? 'city.market.about' : 'city.market.aboutBuy', { cost: fmtNum(MARKET_RULES.cost) }))}</p>
       </div>
-      <footer class="mk-info-foot"><span class="mk-max">${esc(t('city.market.maxLevel'))}</span></footer>
+      <footer class="mk-info-foot">${m && next
+        ? `<p class="mk-next">${esc(t('city.market.nextLevel', { n: next.level, rate: fmtNum(next.perHour), cap: fmtNum(next.capacity) }))}</p>
+           <button class="mk-up" data-mk-upgrade ${!marketsOpen() ? 'disabled' : ''}><b>${esc(t('city.market.upgrade'))}</b>
+             <span class="data-num${coins < next.cost ? ' is-short' : ''}">${fmtNum(next.cost)}<img src="${COIN}" alt=""></span></button>`
+        : m ? `<span class="mk-max">${esc(t('city.market.maxLevel'))}</span>` : ''}</footer>
     </div>`;
+  root.querySelector('[data-mk-upgrade]')?.addEventListener('click', () => upgrade_(slot));
   return root;
 }
 

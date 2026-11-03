@@ -10,8 +10,12 @@
 export const MARKET_RULES = {
   cost: 400,                // coins, each
   slots: [1, 2, 3, 4],      // left far, left near, right near, right far (city3d.js MARKETS)
-  // what a market makes at each level: coins an hour, and the most it holds before it stops
-  levels: [{ level: 1, perHour: 2, capacity: 24 }],
+  // what a market makes at each level: coins an hour, and the most it holds before it stops;
+  // `cost` is the upgrade's price to reach that level (level 1 is the market's own price)
+  levels: [
+    { level: 1, perHour: 2, capacity: 24 },
+    { level: 2, perHour: 3, capacity: 36, cost: 600 },
+  ],
 };
 
 /** The rules at a market's level (level 1 when it has none yet). */
@@ -52,4 +56,19 @@ export function marketCollect(m, nowMs, room = Infinity) {
   const from = Date.parse(m.collected_at);
   const at = stock >= L.capacity && coins === stock ? nowMs : from + (coins / L.perHour) * 3600e3;
   return { coins, collected_at: new Date(Math.min(at, nowMs)).toISOString() };
+}
+
+/** The level a market can be upgraded to next (its rules), or null at the top level. */
+export const marketNext = (m) => (m ? MARKET_RULES.levels[(Number(m.level) || 1)] || null : null);
+
+/**
+ * Upgrading: the market goes up a level and keeps the coins it has made so far, now making them
+ * at the new rate. Returns { level, collected_at } (its new clock, set so that what's waiting
+ * stays the same).
+ */
+export function marketUpgrade(m, nowMs) {
+  const next = marketNext(m);
+  if (!next) return null;
+  const stock = marketStock(m, nowMs);
+  return { level: next.level, collected_at: new Date(nowMs - (stock / next.perHour) * 3600e3).toISOString() };
 }

@@ -40,12 +40,17 @@ export const ROOM_GEOMETRY = {
   run: floor([51, 45], [96, 70], [5, 70]),
   'locker-square': floor([50, 37], [97, 63], [3, 63]),
   'locker-landscape': floor([69, 30], [98, 54], [2, 71], 8, 16),
+  // the expanded locker room: its 16 × 16 model, rendered from the city's camera (docs/ROOMS3D.md),
+  // its floor's inner corners measured on the model itself. It fills the roof: `share` is its
+  // floor's width as a share of the slab's, which puts the outside of its walls (96.6% of the
+  // picture's width to the floor's 91.1%) just under the railing's inner edge (86.1% of the slab)
+  'locker-16': { ...floor([50.61, 32.52], [95.78, 62.71], [4.71, 63.2], 16, 16), share: 0.818 },
 };
 
 /** Art size of each room shape (px of the exported WebP), for laying the compound out. */
 export const ROOM_SIZE = {
   gym: [1100, 1052], pool: [1100, 991], bike: [1100, 1051], run: [1100, 1115],
-  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677],
+  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-16': [2200, 1610],
 };
 
 // levels with no art yet fall back to the nearest one below (the gym has no 7)

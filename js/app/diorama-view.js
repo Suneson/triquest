@@ -22,7 +22,8 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById,
   resolvePlacements, ROOM_GEOMETRY,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF, LOCKER_3D_ART } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF } from '../core/diorama.js';
+import { isExpanded, EXPANDED_ART } from '../core/expansions.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -30,7 +31,7 @@ import { featsFor } from '../core/feats.js';
 import { gearById } from '../core/gear.js';
 import { building } from '../core/base.js';
 import { quadrantLevel } from '../core/workshop.js';
-import { gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow } from './gear-state.js';
+import { gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow, myExpansions } from './gear-state.js';
 import { featAwards } from './feats-state.js';
 import { clockLeft } from './gear-view.js';
 import { savedPlacements, savePlacement } from './placement-state.js';
@@ -69,8 +70,11 @@ function levelOf(room, ctx) {
   return Math.min(10, sportLevelOf(sport, ctx.boost?.sportXp?.[sport] || 0).artLevel);
 }
 
-// every room, for working out where items stand (the locker is the square one on the stage)
-const STAGE_LAYOUT = { rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: stageGeom(room), col: i, span: 1, landscape: false }))] };
+// a room expanded to 16 × 16 (expansions.js) shows its model in place of its painted 8 × 8 room
+const expanded = (room) => isExpanded(myExpansions(), room) && !!EXPANDED_ART[room];
+const geomOf = (room) => stageGeom(room, expanded(room));
+// every room, for working out where items stand
+const stageLayout = () => ({ rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
 // ---- stamina: anchored once, then it fills on its own -----------------------------------
 
@@ -131,12 +135,11 @@ function roomPill(room, ctx) {
 // the rim, its top rising out past it, like the buttons round a game's home screen
 const orb = (tone, src, attrs, extra = '', cls = '') => `<button class="dg-orb is-${tone}${cls}" ${attrs}><span class="dg-orb-ico"><img src="${src}" width="128" height="128" alt="" draggable="false"></span>${extra}</button>`;
 
-/** The room's trophies (its feats won), on the right under the elevator. */
+/** The room's trophies (its feats won); in the locker room, the ones for all three together. */
 function trophyOrb(room) {
-  if (room === 'locker') return '';
-  const sport = SPORT_OF[room];
+  const sport = room === 'locker' ? 'cross' : SPORT_OF[room];
   const wonIds = new Set(featAwards().map((a) => a.featId));
-  const feats = [...featsFor(sport), ...featsFor('cross')];
+  const feats = room === 'locker' ? featsFor('cross') : [...featsFor(sport), ...featsFor('cross')];
   const won = feats.filter((f) => wonIds.has(f.id)).length;
   return orb('navy', 'icons/UI/side/side-trophy.webp', `data-action="open-trophies" data-sport="${sport}" aria-label="${esc(t('feat.ui.boardAria', { n: won, total: feats.length }))}"`,
     `<b class="dg-orb-n data-num" aria-hidden="true">${won}</b>`);
@@ -171,6 +174,8 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <div class="dg-row">
       ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
+      ${orb('navy', 'icons/UI/side/side-expand.webp', `data-action="open-expansions" aria-label="${esc(t('cp.expand.aria'))}"`,
+        `<b class="dg-orb-n is-grow" aria-hidden="true">16²</b>`)}
     </div>
     <div class="dg-side is-left">
       ${orb('gold', 'icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
@@ -316,12 +321,12 @@ export function wireDiorama(root, ctx) {
   if (!vp || !worldEl) return;
   const reduced = () => prefersReducedMotion() || document.body.classList.contains('rm');
   const room = activeRoom();
-  const geom = stageGeom(room);
+  const geom = geomOf(room);
   const s = gearState();
   const inv = s.inventory;
   const items = placeablesFor(inv, STAGE_ROOMS);
   const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '' };
-  let placements = resolvePlacements(STAGE_LAYOUT, items, savedPlacements());
+  let placements = resolvePlacements(stageLayout(), items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
   const env = envFor(room);
@@ -504,7 +509,7 @@ export function wireDiorama(root, ctx) {
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
-  const src = geom === 'locker-3d' ? LOCKER_3D_ART : roomArt(room, levelOf(room, ctx));
+  const src = expanded(room) ? EXPANDED_ART[room] : roomArt(room, levelOf(room, ctx));
   const showRoom = () => {
     artEl.className = `dg-room-art is-${room}`;
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;

@@ -76,7 +76,7 @@ const spendAmount = (s) => Number(s?.amount ?? s?.coins) || 0;
  * like any other):
  * { coins, carbs, earned: { coins, carbs }, spent: { coins, carbs }, lost: { coins, carbs } }.
  */
-export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [], missions = [], chests = [], markets = [], marketCollects = [], marketUpgrades = [] } = {}) {
+export function walletFold({ workouts = [], quests = [], spends = [], moves = [], awards = [], missions = [], chests = [], markets = [], marketCollects = [], marketUpgrades = [], expansions = [] } = {}) {
   const ev = [];
   for (const d of coinDays(workouts)) ev.push({ at: `${d.date}T00:00:00.000Z`, rank: 0, key: d.date, coins: d.coins, carbs: d.carbs });
   for (const q of questRewards(quests)) ev.push({ at: `${q.day}T00:00:00.000Z`, rank: 1, key: q.quest_id, coins: q.coins, carbs: q.carbs });
@@ -121,6 +121,12 @@ export function walletFold({ workouts = [], quests = [], spends = [], moves = []
     const t = Date.parse(u?.upgraded_at);
     if (!Number.isFinite(t)) continue;
     ev.push({ at: new Date(t).toISOString(), rank: 9, key: String(u.id).padStart(12, '0'), coins: -(Number(u.cost) || 0), carbs: 0 });
+  }
+  // rooms expanded to 16 × 16 (expansions.js), paid for when bought
+  for (const x of expansions || []) {
+    const t = Date.parse(x?.bought_at);
+    if (!Number.isFinite(t)) continue;
+    ev.push({ at: new Date(t).toISOString(), rank: 10, key: `expand:${x.room}`, coins: -(Number(x.cost) || 0), carbs: 0 });
   }
   ev.sort((a, b) => a.at.localeCompare(b.at) || a.rank - b.rank || a.key.localeCompare(b.key));
   const cap = GEAR_RULES.storageCap;

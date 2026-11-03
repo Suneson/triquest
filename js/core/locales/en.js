@@ -2100,7 +2100,9 @@ en.gear = {
     "not_owned": "Buy that market first.",
     "market_empty": "Nothing to collect yet.",
     "wallet_full": "Your coin storage is full.",
-    "market_max": "That market is already at its top level."
+    "market_max": "That market is already at its top level.",
+    "unknown_room": "That room isn’t here.",
+    "coming_soon": "That room’s expansion is coming soon."
   },
   "shop": "Gear shop",
   "inventory": "Inventory",
@@ -3066,5 +3068,7 @@ en.city = {"sign": {"title": "DELIVERY", "aria": "Deliveries on their way"}, "de
 en.city.parcel = {"title": "Delivery", "from": "Your parcel has arrived", "hint": "Tap to open", "inside": "Inside", "collect": "Collect", "next": "Next parcel ({n} more)", "aria": {"one": "A parcel at the door. Tap to open it.", "other": "{n} parcels at the door. Tap to open them."}};
 
 en.city.market = {"upgrade": "Upgrade", "upgraded": "Market upgraded to level {n}.", "nextLevel": "Level {n}: {rate} per hour, holds {cap}", "name": "Market", "title": "Market (Level {n})", "level": "Level {n}", "aria": "Market {n}", "collectAria": "Collect {n} coins", "collect": "Collect", "buy": "Buy", "info": "Info", "bought": "Market bought. It makes coins from now on.", "close": "Close", "forSale": "For sale", "rate": "Production rate", "perHour": "{n} per hour", "capacity": "Capacity", "fullIn": "Full in", "full": "Full: collect it", "price": "Price", "about": "Your market makes MOSKE coins on its own. Collect them before it fills up: a full market stops making more.", "aboutBuy": "Buy this market for {cost} coins and it makes MOSKE coins for you on its own, even on rest days.", "maxLevel": "Max level", "hm": "{h} h {m} min", "m": "{m} min"};
+
+en.cp.expand = {"aria": "Expand your rooms", "title": "Expand your rooms", "about": "Take a room from 8 × 8 to 16 × 16: it grows to fill its whole floor, right up to the railing, with room for four times as much.", "size": "8 × 8 → 16 × 16", "sizeDone": "16 × 16", "buy": "Expand", "owned": "Expanded", "soon": "Coming soon", "done": "{room} expanded to 16 × 16."};
 
 export default en;

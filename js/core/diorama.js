@@ -102,21 +102,14 @@ export const MAX_ZOOM = 2.5; // × the smallest zoom
 
 /** The rooms you can visit, in the bottom bar's order (the locker last, on its own row). */
 export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
-/** A room's art geometry on the stage (the locker is the square one here). */
 /**
- * The 3D locker room preview (docs/ROOMS3D.md): on with ?room3d=1 in the address, off with
- * ?room3d=0, remembered on the device in between. Off everywhere else (and in tests).
+ * A room's art geometry on the stage: the painted 8 × 8 room (the locker's is the square one),
+ * or its 16 × 16 model once the room is expanded (expansions.js; only the locker has one yet).
  */
-export const LOCKER_3D = (() => {
-  try {
-    const q = new URLSearchParams(globalThis.location?.search || '').get('room3d');
-    if (q != null) globalThis.localStorage?.setItem('moske-room3d', q === '0' ? '0' : '1');
-    return globalThis.localStorage?.getItem('moske-room3d') === '1';
-  } catch { return false; }
-})();
-export const stageGeom = (room) => (room === 'locker' ? (LOCKER_3D ? 'locker-3d' : 'locker-square') : room);
-/** The 3D locker's picture (only level 10 is modelled so far). */
-export const LOCKER_3D_ART = 'icons/Pixelart/NEW/LOCKER/model-10.webp';
+export const stageGeom = (room, expanded = false) => {
+  if (room === 'locker') return expanded ? 'locker-16' : 'locker-square';
+  return room;
+};
 
 /** The middle of a world's plot (or slab). */
 const plotCentre = (env) => (env.floorShare
@@ -130,9 +123,11 @@ const plotCentre = (env) => (env.floorShare
 export function roomPlacement(geom, env = ENV) {
   const [w, h] = ROOM_SIZE[geom];
   const g = ROOM_GEOMETRY[geom];
-  // scaled by the art's width, or (on a slab) so the floor takes its share of the slab's
+  // scaled by the art's width, or (on a slab) so the floor takes its share of the slab's: an
+  // 8 × 8 room half of it, a 16 × 16 room (its own `share`) all of it inside the railing
+  const share = g.share ?? env.floorShare;
   const s = env.floorShare
-    ? (env.floorShare * (env.plot.right[0] - env.plot.left[0])) / ((g.right[0] - g.left[0]) * w / 100)
+    ? (share * (env.plot.right[0] - env.plot.left[0])) / ((g.right[0] - g.left[0]) * w / 100)
     : (env.roomWidth * env.w) / w;
   const fx = ((g.right[0] + g.left[0]) / 2) * w / 100;
   const fy = ((g.right[1] + g.left[1]) / 2) * h / 100;

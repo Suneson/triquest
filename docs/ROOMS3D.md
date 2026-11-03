@@ -1,8 +1,35 @@
-# Rooms as 3D models (a preview)
+# Expanding rooms to 16 × 16
 
-The rooms are painted pictures today. This trial shows one as a 3D model instead: the 16 × 16 locker room at level 10 (`LOCKER_LVL10.glb`, from Meshy).
+Every room starts as its painted 8 × 8 room, standing in the middle of its floor's roof and taking half its width. Expanding a room swaps it for a 16 × 16 room made from a 3D model, which fills the whole roof up to the railing. It's bought once per room, for good.
 
-- **Seeing it:** open the app with `?room3d=1` in the address. The device remembers it until `?room3d=0`. Without it, everyone sees the painted locker room as before.
-- **The picture** (`icons/Pixelart/NEW/LOCKER/model-10.webp`, 2200 × 1610) is the model rendered from the city's own camera: orthographic, at the room pictures' slope (0.489), from its front corner. Its floor's inner corners were found on the model itself, by casting rays straight down (`ROOM_GEOMETRY['locker-3d']` in `js/core/placement.js`). So the floor grid and the items stand on it as on the painted rooms.
-- **It's a still**, not live 3D: one picture per room level, made once. A live model would cost the phone a second WebGL scene for little gain, since the room doesn't move.
-- **Next:** if this looks right, the other rooms' models are rendered the same way, one picture per level.
+| | |
+| --- | --- |
+| Price | 1,000 coins a room |
+| Ready | The locker room (`LOCKER_LVL10.glb`, from Meshy) |
+| Coming soon | Gym, bike room, run room, pool: no 16 × 16 model yet |
+| Levels | One 16 × 16 locker room for everyone, whatever its level |
+
+The rules live in `js/core/expansions.js` (`EXPANSION_RULES`) and in `expansion_rules()` in `supabase/migrations/0029_expansions.sql`. `tests/expansions-sql.test.js` fails if the two disagree, and checks that the 16 × 16 room fills the roof.
+
+## Buying
+
+- **The Expand button** sits in the row under your name, right of the trophy. It shows the 16 × 16 room with a "16²" tag. In the locker room, the trophy shows the feats for all three sports together.
+- **The Expand window** (`expansion-view.js`) lists the five rooms: Expand with its price for a ready room, Expanded once it's bought, and Coming soon for the rest.
+- **Buying** charges the coins (`buy_expansion(room)`: `gear:coming_soon`, `gear:owned`, `gear:insufficient`) and takes you straight to the room, now 16 × 16.
+- **On the server:** `user_expansions` holds what you've bought. `wallet_fold()` counts a room expanded as rank 10, paid out, and `js/core/wallet.js` does the same offline.
+- **Before 0029 is live**, Expand is greyed out.
+
+## The 16 × 16 room's picture
+
+- **Rendering:** the picture (`icons/Pixelart/NEW/LOCKER/model-10.webp`, 2200 × 1610) is the model rendered from the city's own camera: orthographic, at the room pictures' slope (0.489), from its front corner. It's a still, made once; a live model would cost the phone a second WebGL scene for a room that doesn't move.
+- **Its floor:** the inner corners were found on the model by casting rays straight down (`ROOM_GEOMETRY['locker-16']` in `js/core/placement.js`). It's a 16 × 16 grid, so a tile is the same size as in an 8 × 8 room and an expanded room holds four times as much. Things already placed keep their spots.
+- **Its size:** its floor takes `share` 0.818 of the slab's width. That puts the outside of its walls (96.6% of the picture's width, to the floor's 91.1%) just under the railing's inner edge (86.1% of the slab). The railing's front half, with its gold rails, stands in front of it.
+
+## Next rooms
+
+Each room needs its own 16 × 16 model, rendered the same way, then its name added to `ready` in both rule sets. A room's levels can come later, from three models per room:
+- broken, for levels 1–3;
+- repaired, for 4–6;
+- finished, for 7–10.
+
+Textures and props vary within each band.

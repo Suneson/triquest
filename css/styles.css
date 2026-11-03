@@ -2957,3 +2957,19 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .xp-owned .ic { width: 16px; height: 16px; }
 /* the 16² tag on the Expand button */
 .dg-orb-n.is-grow { color: #fff; background: linear-gradient(#4FA8F0, #1F6FC2); }
+/* the markets round the lobby as pictures (market-view.js): their layer over the tower, each
+   growing and springing back when tapped, from its foot */
+.dg-mks { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.dg-mk, .dg-mk-prop { position: absolute; max-width: none; height: auto; -webkit-user-drag: none; }
+.dg-mk { transform-origin: 57% 100%; }
+.dg-mk.is-tap { animation: dg-mk-tap 520ms cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes dg-mk-tap {
+  0% { transform: scale(1, 1); }
+  30% { transform: scale(1.14, 1.16); }
+  55% { transform: scale(.96, .95); }
+  78% { transform: scale(1.03, 1.03); }
+  100% { transform: scale(1, 1); }
+}
+/* the tap targets over them */
+.dg-mk-hit { z-index: 5; }
+@media (prefers-reduced-motion: reduce) { .dg-mk.is-tap { animation: none; } }

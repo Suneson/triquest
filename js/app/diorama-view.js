@@ -46,7 +46,7 @@ import { isDemo } from './demo.js';
 import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
-import { mountMarkets, showCoins, marketLevelIn, closeBar } from './market-view.js';
+import { mountMarkets, showCoins, closeBar } from './market-view.js';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -494,12 +494,11 @@ export function wireDiorama(root, ctx) {
     // the truck waits while a parcel is at the door or being opened
     parked: () => parcels().length > 0 || parcelOpen(),
     reduced,
-    // the markets round the lobby, at their levels (market-view.js)
-    level: marketLevelIn,
     front: env.front,
   }) : null;
-  if (city) mountMarkets(worldEl, stage.front, { pulse: city.pulse, workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
-  else { stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit').forEach((el) => el.remove()); closeBar(); }
+  // the markets round the lobby (market-view.js): pictures in the city, on every floor of it
+  if (env.floor != null) mountMarkets(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
+  else { stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }
   const apply = () => {
     const r = box();
     view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);

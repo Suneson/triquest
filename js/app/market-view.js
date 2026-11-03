@@ -1,7 +1,10 @@
 // market-view.js — the four markets round the tower's lobby (docs/MARKETS.md).
 //
-// city3d.js draws them (lit once bought, dark until then). Here is what you touch:
-//   - a tap target over each market (in the world, so it pans and zooms with the city)
+// Each is a painted picture standing in the city where the painted kiosks were: shut until it's
+// bought, then blue at level 1 and gold at level 2 (icons/City/market/kiosk-0|1|2.webp, made with
+// Gemini from the original kiosk). A tree and lamp posts stand in front of them, as before. Here:
+//   - the pictures, in the world (so they pan and zoom with the city), and a tap target on each:
+//     tapped, a market grows and springs back
 //   - a coin bubble over each bought one that has coins waiting; tapping it collects them
 //   - the bar that slides up when a market is tapped: its name and level over square buttons
 //     (Info, then Buy; or Upgrade while there's a level above, and Collect)
@@ -12,26 +15,84 @@ import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { MARKET_RULES, marketIn, marketStock, marketLevel, marketFullIn, marketNext } from '../core/markets.js';
 import { myMarkets, marketsOpen, buyMarket, collectMarket, upgradeMarket, serverNow, walletNow, gearError, onGear } from './gear-state.js';
-import { MARKETS, MARKET_HEIGHT } from './city3d.js';
 import { openLayer } from './nav.js';
 import { haptic } from './haptics.js';
 import { toast, prefersReducedMotion } from './effects.js';
 
 const COIN = 'icons/Pixelart/GEAR/coin.png';
-// the market at each level as a picture (rendered from its model): 0 is one not bought yet
-const picture = (m) => `icons/City/market/market-${m ? Number(m.level) || 1 : 0}.webp`;
-/** The level of the market in this slot: 0 until it's bought (city3d.js shows the model for it). */
-export const marketLevelIn = (slot) => { const m = marketIn(myMarkets(), slot); return m ? Number(m.level) || 1 : 0; };
+// the market at each level as a picture: 0 is one not bought yet
+const picture = (m) => `icons/City/market/kiosk-${m ? Number(m.level) || 1 : 0}.webp`;
+const levelIn = (slot) => { const m = marketIn(myMarkets(), slot); return m ? Number(m.level) || 1 : 0; };
 
-let ctx = { pulse: () => {}, workouts: () => [], screen: null };
+// In px of the city picture (5376 × 4980), where the painted kiosks stood: each market's front
+// corner on the ground (`foot`, the lowest point of its picture) and how wide it stands. All four
+// face down-left, like the originals, so the light falls on them as on the rest of the city.
+export const MARKETS = [
+  { slot: 1, foot: [1828, 3232], w: 286 },
+  { slot: 2, foot: [2078, 3354], w: 310 },
+  { slot: 3, foot: [3356, 3384], w: 314 },
+  { slot: 4, foot: [3590, 3238], w: 312 },
+];
+// each picture's size and where its foot is in it (fractions of its width and height)
+const ART = {
+  kiosk: { w: 640, h: 714, foot: [0.5727, 1] },
+  tree: { w: 300, h: 535, foot: [0.5033, 1] },
+  lamp: { w: 200, h: 677, foot: [0.78, 1] },
+};
+// the trees and lamp posts in front of the markets (where the painted ones stood), by their foot
+// and width; they stand in front of the markets or behind them by how far down the picture they are
+const DRESSING = [
+  { src: 'tree', foot: [1895, 3297], w: 74 },
+  { src: 'lamp', foot: [1840, 3307], w: 36 },
+  { src: 'lamp', foot: [2095, 3457], w: 38 },
+  { src: 'tree', foot: [3242, 3402], w: 118 },
+  { src: 'lamp', foot: [3340, 3447], w: 40 },
+  { src: 'tree', foot: [3535, 3268], w: 64 },
+];
+/** Where a picture stands: its box in px of the city picture, from its foot and width. */
+function boxOf(kind, foot, w) {
+  const a = ART[kind];
+  const h = (w * a.h) / a.w;
+  return { left: foot[0] - a.foot[0] * w, top: foot[1] - a.foot[1] * h, w, h };
+}
+/** How tall a market stands (its coin bubble floats over it). */
+const marketBox = (m) => boxOf('kiosk', m.foot, m.w);
+
+let ctx = { workouts: () => [], screen: null };
+
+/** A tapped market grows and springs back. */
+function pulse(slot) {
+  const el = document.querySelector(`.dg-mk[data-mk="${slot}"]`);
+  if (!el || prefersReducedMotion()) return;
+  el.classList.remove('is-tap'); void el.offsetWidth; el.classList.add('is-tap');
+}
 
 /**
- * Put the markets' tap targets in the world and their coin bubbles on the front layer.
- * `pulse(slot)` bounces the 3D market; `screen` is the base's screen (the bar slides up in it).
+ * Put the markets in the world (their pictures, the trees and lamps in front of them, and a tap
+ * target on each) and their coin bubbles on the front layer. `screen` is the base's screen (the
+ * bar slides up in it).
  */
-export function mountMarkets(worldEl, front, { pulse, workouts, screen }) {
-  ctx = { pulse: pulse || (() => {}), workouts: workouts || (() => []), screen };
+export function mountMarkets(worldEl, front, { workouts, screen }) {
+  ctx = { workouts: workouts || (() => []), screen };
+  let layer = worldEl.querySelector('.dg-mks');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.className = 'dg-mks';
+    // drawn further down the picture = nearer: markets, trees and lamps in that order
+    const parts = [
+      ...MARKETS.map((m) => ({ y: m.foot[1], html: `<img class="dg-mk" data-mk="${m.slot}" alt="" draggable="false" decoding="async">`, m })),
+      ...DRESSING.map((d) => ({ y: d.foot[1], html: (() => { const b = boxOf(d.src, d.foot, d.w); return `<img class="dg-mk-prop" src="icons/City/market/${d.src}.webp" alt="" draggable="false" decoding="async" style="left:${b.left.toFixed(1)}px;top:${b.top.toFixed(1)}px;width:${b.w}px">`; })() })),
+    ].sort((a, b) => a.y - b.y);
+    layer.innerHTML = parts.map((p) => p.html).join('');
+    for (const m of MARKETS) {
+      const b = marketBox(m);
+      Object.assign(layer.querySelector(`.dg-mk[data-mk="${m.slot}"]`).style, { left: `${b.left.toFixed(1)}px`, top: `${b.top.toFixed(1)}px`, width: `${b.w}px` });
+    }
+    worldEl.querySelector('.dg-tower').after(layer);
+  }
+  showMarkets();
   for (const m of MARKETS) {
+    const b = marketBox(m);
     let hit = worldEl.querySelector(`.dg-mk-hit[data-mk="${m.slot}"]`);
     if (!hit) {
       hit = document.createElement('button');
@@ -40,7 +101,7 @@ export function mountMarkets(worldEl, front, { pulse, workouts, screen }) {
       worldEl.querySelector('.dg-items').before(hit);
     }
     hit.setAttribute('aria-label', t('city.market.aria', { n: m.slot }));
-    Object.assign(hit.style, { left: `${m.at[0] - 140}px`, top: `${m.at[1] - MARKET_HEIGHT - 40}px`, width: '280px', height: `${MARKET_HEIGHT + 110}px` });
+    Object.assign(hit.style, { left: `${b.left.toFixed(1)}px`, top: `${b.top.toFixed(1)}px`, width: `${b.w}px`, height: `${b.h.toFixed(1)}px` });
     let coin = front.querySelector(`.dg-mk-coin[data-mk="${m.slot}"]`);
     if (!coin) {
       coin = document.createElement('button');
@@ -49,10 +110,18 @@ export function mountMarkets(worldEl, front, { pulse, workouts, screen }) {
       coin.addEventListener('click', (e) => { e.stopPropagation(); collect(m.slot, coin); });
       front.append(coin);
     }
-    Object.assign(coin.style, { left: `${m.at[0]}px`, top: `${m.at[1] - MARKET_HEIGHT - 30}px` });
+    Object.assign(coin.style, { left: `${(b.left + b.w / 2).toFixed(1)}px`, top: `${(b.top + 10).toFixed(1)}px` });
   }
   showCoins();
-  if (!mountMarkets.watching) { mountMarkets.watching = true; onGear(() => { showCoins(); refreshBar(); }); }
+  if (!mountMarkets.watching) { mountMarkets.watching = true; onGear(() => { showMarkets(); showCoins(); refreshBar(); }); }
+}
+
+/** Each market's picture for its level. */
+function showMarkets() {
+  document.querySelectorAll('.dg-mk').forEach((el) => {
+    const src = picture(levelIn(el.dataset.mk) ? { level: levelIn(el.dataset.mk) } : null);
+    if (el.getAttribute('src') !== src) el.src = src;
+  });
 }
 
 /** Show a coin over each bought market with coins waiting (call every so often: they fill up). */
@@ -116,7 +185,7 @@ let bar = null;
 let barSlot = null;
 
 function tapMarket(slot) {
-  ctx.pulse(slot);
+  pulse(slot);
   haptic('tick');
   if (barSlot === slot && bar?.isConnected) { closeBar(); return; }
   openBar(slot);
@@ -179,7 +248,7 @@ async function upgrade_(slot) {
   try {
     await upgradeMarket(slot);
     haptic('record');
-    ctx.pulse(slot);
+    pulse(slot);
     const m = marketIn(myMarkets(), slot);
     toast(esc(t('city.market.upgraded', { n: marketLevel(m).level })), { icon: svg('check') });
     document.querySelector('.mk-layer [data-layer-close]')?.click();
@@ -197,7 +266,7 @@ async function buy(slot) {
   try {
     await buyMarket(slot);
     haptic('record');
-    ctx.pulse(slot);
+    pulse(slot);
     toast(esc(t('city.market.bought')), { icon: svg('check') });
   } catch (e) {
     toast(esc(gearError(e)));

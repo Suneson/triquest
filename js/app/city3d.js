@@ -8,9 +8,6 @@
 //                  counting down to the next delivery; tap it for the list (delivery-view.js)
 //   the truck      the MOSKE van (models/city/truck.glb): it drives in from the bottom right as a
 //                  delivery's countdown runs out, waits at the garage door, and drives off
-//   the markets    four small shops round the lobby, two each side: dark until bought
-//                  (models/city/market-locked.glb), then blue at level 1 (market-1.glb) and gold
-//                  at level 2 (market-2.glb). Tapped, it bounces (docs/MARKETS.md)
 //
 // Two transparent WebGL canvases cover the stage's viewport: one under the city picture (the
 // clouds behind the buildings show only through its transparent sky) and one over it. Their
@@ -47,18 +44,6 @@ const TRUCK_LEN = 250;                    // px along the road
 const SPEED = 150;                        // px of the city picture per second
 const WAIT = 8;                           // s at the garage door
 
-// the markets round the lobby, by slot (js/core/markets.js): where each one's footprint is
-// centred on the ground (px of the city picture, where the painted kiosks stood) and which way
-// its shop front faces: down-left (+Z) on the left of the lobby, down-right (+X) on the right
-export const MARKETS = [
-  { slot: 1, at: [1820, 3161], face: 'z' },
-  { slot: 2, at: [2067, 3277], face: 'z' },
-  { slot: 3, at: [3352, 3305], face: 'x' },
-  { slot: 4, at: [3586, 3160], face: 'x' },
-];
-const MARKET_WIDE = 272;                         // px across on screen, like the painted kiosks
-/** How tall a market stands on screen (px of the city picture): its coin bubble floats over it. */
-export const MARKET_HEIGHT = 230;
 
 /** A world px point on the ground as a 3D point. */
 const ground = ([wx, wy]) => ({ x: (wx + wy / SLOPE) / 2, z: (wy / SLOPE - wx) / 2 });
@@ -125,24 +110,22 @@ let shared = null;   // the canvases and the far clouds, kept across the stage's
  *   label         { title, clock(ms) }: the sign's words and its countdown format
  *   parked()      true while a parcel waits at the door: the truck stays until it's opened
  *   reduced()     true under reduced motion: no drifting, the truck only appears parked
- *   level(slot)   that market's level: 0 until it's bought (it stands dark), then 1, 2…
  *   front         the buildings in front of its road out, [{ src, x, y, w, h }] in px of the city
  *                 picture: drawn over the truck while it's about (and gone again after), so it
  *                 drives off behind them
- * Returns { setView(v, w, h), pulse(slot) } — pulse() bounces a market, as when it's tapped.
+ * Returns { setView(v, w, h) }.
  */
-export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced, level, front: frontArt = [] }) {
+export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced, front: frontArt = [] }) {
   if (!shared) shared = makeShared();
   const { far, back, front } = shared;
   // into this render's viewport: the far clouds and the back canvas under the world, the front over it
   const world = vp.querySelector('[data-dg-world]');
   vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
-  shared.opts = { worldW, deliveries, now, label, parked, reduced, level, front: frontArt };
+  shared.opts = { worldW, deliveries, now, label, parked, reduced, front: frontArt };
   if (!shared.farLoop) farLoop();
   if (!shared.started) start();
   return {
     setView(v, w, h) { shared.view = { v, w, h }; shared.dirty = true; },
-    pulse(slot) { (shared.pulses ||= {})[slot] = performance.now(); shared.dirty = true; },
   };
 }
 
@@ -205,7 +188,7 @@ async function start() {
   // the clouds: their own soft white, not the model's texture
   const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, emissive: 0xdfe9fb, emissiveIntensity: 0.18 });
   const models = {};
-  const [ca, cb, cc, sign, truck, ...shops] = await Promise.all(['cloud-a', 'cloud-b', 'cloud-c', 'sign', 'truck', 'market-locked', 'market-1', 'market-2'].map((n) => load(n).catch(() => null)));
+  const [ca, cb, cc, sign, truck] = await Promise.all(['cloud-a', 'cloud-b', 'cloud-c', 'sign', 'truck'].map((n) => load(n).catch(() => null)));
   // smooth normals of their own: the compressed model's are packed integers, so they're dropped
   // and worked out again in full floats
   const prepCloud = (g) => {
@@ -287,37 +270,6 @@ async function start() {
     }
   };
 
-  // the markets: one model per level in each slot (whichever shows is its level), standing on a
-  // soft shadow. The models stand on y = 0 with their shop front facing −X.
-  const markets = [];
-  if (shops.every(Boolean)) {
-    const s = size(shops[0]);
-    const k = MARKET_WIDE / (s.x + s.z);
-    const blob = document.createElement('canvas'); blob.width = blob.height = 128;
-    const bg = blob.getContext('2d'); const grad = bg.createRadialGradient(64, 64, 8, 64, 64, 64);
-    grad.addColorStop(0, 'rgba(20,24,48,.42)'); grad.addColorStop(.6, 'rgba(20,24,48,.18)'); grad.addColorStop(1, 'rgba(20,24,48,0)');
-    bg.fillStyle = grad; bg.fillRect(0, 0, 128, 128);
-    const shadowMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(blob), transparent: true, depthWrite: false, toneMapped: false });
-    for (const m of MARKETS) {
-      const g = new THREE.Group();
-      const at = ground(m.at);
-      g.position.set(at.x, 0, at.z);
-      const byLevel = shops.map((model) => {
-        const o = model.clone();
-        o.scale.setScalar(k);
-        // turned so the shop front faces down-left (+Z) on the left of the lobby, down-right (+X) on its right
-        o.rotation.y = m.face === 'x' ? Math.PI : Math.PI / 2;
-        g.add(o);
-        return o;
-      });
-      const sh = new THREE.Mesh(new THREE.PlaneGeometry(s.x * 1.45 * k, s.z * 1.45 * k), shadowMat);
-      sh.rotation.x = -Math.PI / 2; sh.position.y = 0.5; sh.renderOrder = -1;
-      g.add(sh);
-      frontScene.add(g);
-      markets.push({ ...m, g, byLevel });
-    }
-  }
-
   let lastText = '';
   const drawPanel = (text, sub) => {
     if (!panelCanvas || text === lastText) return;
@@ -388,19 +340,6 @@ async function start() {
         // the model faces −X: turn it so it faces the way it drives
         truckObj.rotation.y = Math.atan2(dZ, -dX);
       }
-    }
-    // the markets at their levels; a tapped one bounces (a quick squash and spring back)
-    for (const m of markets) {
-      const lv = Math.max(0, Math.min(m.byLevel.length - 1, Number(o.level?.(m.slot)) || 0));
-      m.byLevel.forEach((x, i) => { x.visible = i === lv; });
-      const t0 = shared.pulses?.[m.slot];
-      let sy = 1; let sxz = 1;
-      if (t0 != null) {
-        const u = (now - t0) / 420;
-        if (u >= 1 || still) delete shared.pulses[m.slot];
-        else { const w = Math.sin(u * Math.PI * 2.5) * (1 - u); sy = 1 + 0.14 * w; sxz = 1 - 0.07 * w; shared.dirty = true; }
-      }
-      m.g.scale.set(sxz, sy, sxz);
     }
     shared.dirty = false;
     backR.render(backScene, cam);

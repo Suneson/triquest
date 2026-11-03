@@ -2099,7 +2099,8 @@ en.gear = {
     "unknown_market": "That market isn’t here.",
     "not_owned": "Buy that market first.",
     "market_empty": "Nothing to collect yet.",
-    "wallet_full": "Your coin storage is full."
+    "wallet_full": "Your coin storage is full.",
+    "market_max": "That market is already at its top level."
   },
   "shop": "Gear shop",
   "inventory": "Inventory",
@@ -3064,6 +3065,6 @@ en.city = {"sign": {"title": "DELIVERY", "aria": "Deliveries on their way"}, "de
 
 en.city.parcel = {"title": "Delivery", "from": "Your parcel has arrived", "hint": "Tap to open", "inside": "Inside", "collect": "Collect", "next": "Next parcel ({n} more)", "aria": {"one": "A parcel at the door. Tap to open it.", "other": "{n} parcels at the door. Tap to open them."}};
 
-en.city.market = {"name": "Market", "title": "Market (Level {n})", "level": "Level {n}", "aria": "Market {n}", "collectAria": "Collect {n} coins", "collect": "Collect", "buy": "Buy", "info": "Info", "bought": "Market bought. It makes coins from now on.", "close": "Close", "forSale": "For sale", "rate": "Production rate", "perHour": "{n} per hour", "capacity": "Capacity", "fullIn": "Full in", "full": "Full: collect it", "price": "Price", "about": "Your market makes MOSKE coins on its own. Collect them before it fills up: a full market stops making more.", "aboutBuy": "Buy this market for {cost} coins and it makes MOSKE coins for you on its own, even on rest days.", "maxLevel": "Max level", "hm": "{h} h {m} min", "m": "{m} min"};
+en.city.market = {"upgrade": "Upgrade", "upgraded": "Market upgraded to level {n}.", "nextLevel": "Level {n}: {rate} per hour, holds {cap}", "name": "Market", "title": "Market (Level {n})", "level": "Level {n}", "aria": "Market {n}", "collectAria": "Collect {n} coins", "collect": "Collect", "buy": "Buy", "info": "Info", "bought": "Market bought. It makes coins from now on.", "close": "Close", "forSale": "For sale", "rate": "Production rate", "perHour": "{n} per hour", "capacity": "Capacity", "fullIn": "Full in", "full": "Full: collect it", "price": "Price", "about": "Your market makes MOSKE coins on its own. Collect them before it fills up: a full market stops making more.", "aboutBuy": "Buy this market for {cost} coins and it makes MOSKE coins for you on its own, even on rest days.", "maxLevel": "Max level", "hm": "{h} h {m} min", "m": "{m} min"};
 
 export default en;

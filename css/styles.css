@@ -2921,3 +2921,18 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .mk-max { padding: 10px 26px; border-radius: 16px; font-size: 16px; font-weight: 900; color: #fff; background: linear-gradient(#9AA6B8, #6E7A8E);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .4), 0 0 0 3px #0B1222, 0 4px 0 #0B1222; }
 @media (prefers-reduced-motion: reduce) { .dg-mk-coin, .mk-info, .mk-pop { animation: none !important; } .mk-bar { transition: none; } }
+/* the info window's upgrade: what the next level makes, and its price on a green button */
+.mk-info-foot { flex-direction: column; align-items: center; gap: 8px; }
+.mk-next { margin: 0; font-size: 13px; font-weight: 800; color: #16264D; }
+.mk-up { display: grid; justify-items: center; gap: 2px; min-width: 170px; margin: 0; padding: 8px 22px 9px; border: 0; border-radius: 16px; cursor: pointer;
+  background: linear-gradient(#9BEA7A, #3FB354); color: #fff; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -4px 0 rgba(0, 0, 0, .18), 0 0 0 3px #0B1222, 0 4px 0 #0B1222; }
+.mk-up b { font-size: 17px; font-weight: 900; text-shadow: 0 2px 0 #1d5a2a; }
+.mk-up span { display: inline-flex; align-items: center; gap: 4px; font-size: 18px; font-weight: 900; color: #fff; text-shadow: 0 2px 0 #1d5a2a; }
+.mk-up span.is-short { color: #FFD1D3; }
+.mk-up img { width: 22px; height: 22px; }
+.mk-up:disabled { filter: grayscale(.7); opacity: .7; cursor: default; }
+.mk-up:active { transform: translateY(2px); }
+/* the railing round the slab (diorama-view.js): back half under the room, front half over it */
+.dg-rail { position: absolute; max-width: none; pointer-events: none; -webkit-user-drag: none; }
+.dg-rail.is-back { z-index: 0; }
+.dg-rail.is-front { z-index: 3; }

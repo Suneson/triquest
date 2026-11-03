@@ -49,6 +49,21 @@ export function towerPieces(n) {
   return out;
 }
 
+// the railing round the slab (tools/cut-rail.py): its back half stands behind the room, its front
+// half in front of it; in px of the city picture for the street floor and for floor 1 (the roof
+// slab every floor above stands on, a storey higher each floor)
+const RAIL = {
+  street: { back: { x: 1858.0, y: 2432.0, w: 1652.0, h: 305.3 }, front: { x: 1779.3, y: 2733.3, w: 1829.3, h: 561.3 } },
+  roof: { back: { x: 1880.3, y: 2039.3, w: 1678.7, h: 373.3 }, front: { x: 1817.7, y: 2407.3, w: 1814.7, h: 564.0 } },
+};
+/** Floor n's railing: { back, front }, each { src, x, y, w, h } in px of the city picture. */
+export function railOf(n) {
+  const kind = n < 1 ? 'street' : 'roof';
+  const up = n < 1 ? 0 : (n - 1) * CITY.step * CITY.k;
+  const at = (part) => ({ src: `icons/City/rail/${kind}-${part}.webp`, ...RAIL[kind][part], y: +(RAIL[kind][part].y - up).toFixed(1) });
+  return { back: at('back'), front: at('front') };
+}
+
 /** Floor n's slab, in px of the city picture. */
 export function slabOf(n) {
   const s = n < 1 ? CITY.slab0 : CITY.slab1;
@@ -78,7 +93,7 @@ export const VAN_FRONT = [
   { src: 'icons/City/layers/front/van-front-3-2.webp', x: 2688.0, y: 3735.0, w: 594.7, h: 458.7 },
 ];
 
-const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: VAN_FRONT, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
+const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: VAN_FRONT, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n), rail: railOf(n) });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
 export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);
@@ -88,7 +103,20 @@ export const MAX_ZOOM = 2.5; // × the smallest zoom
 /** The rooms you can visit, in the bottom bar's order (the locker last, on its own row). */
 export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
 /** A room's art geometry on the stage (the locker is the square one here). */
-export const stageGeom = (room) => (room === 'locker' ? 'locker-square' : room);
+/**
+ * The 3D locker room preview (docs/ROOMS3D.md): on with ?room3d=1 in the address, off with
+ * ?room3d=0, remembered on the device in between. Off everywhere else (and in tests).
+ */
+export const LOCKER_3D = (() => {
+  try {
+    const q = new URLSearchParams(globalThis.location?.search || '').get('room3d');
+    if (q != null) globalThis.localStorage?.setItem('moske-room3d', q === '0' ? '0' : '1');
+    return globalThis.localStorage?.getItem('moske-room3d') === '1';
+  } catch { return false; }
+})();
+export const stageGeom = (room) => (room === 'locker' ? (LOCKER_3D ? 'locker-3d' : 'locker-square') : room);
+/** The 3D locker's picture (only level 10 is modelled so far). */
+export const LOCKER_3D_ART = 'icons/Pixelart/NEW/LOCKER/model-10.webp';
 
 /** The middle of a world's plot (or slab). */
 const plotCentre = (env) => (env.floorShare

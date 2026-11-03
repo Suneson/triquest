@@ -22,7 +22,7 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById,
   resolvePlacements, ROOM_GEOMETRY,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF, LOCKER_3D_ART } from '../core/diorama.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -45,7 +45,7 @@ import { isDemo } from './demo.js';
 import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
-import { mountMarkets, showCoins, marketOwned, closeBar } from './market-view.js';
+import { mountMarkets, showCoins, marketLevelIn, closeBar } from './market-view.js';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -364,6 +364,20 @@ export function wireDiorama(root, ctx) {
     towerEl.innerHTML = pieces.map((p) => `<img src="${p.src}" width="${p.w}" height="${p.h}" alt="" draggable="false"
       style="left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px;width:${p.w}px;height:${p.h}px">`).join('');
   }
+  // the railing round the slab: its back half behind the room, its front half in front of it
+  // (over the room and what stands in it), so the room stands inside it
+  for (const part of ['back', 'front']) {
+    let el = worldEl.querySelector(`.dg-rail.is-${part}`);
+    const r = env.rail?.[part];
+    if (!r) { el?.remove(); continue; }
+    if (!el) {
+      el = document.createElement('img');
+      el.className = `dg-rail is-${part}`; el.alt = ''; el.draggable = false; el.decoding = 'async';
+      if (part === 'back') worldEl.querySelector('.dg-room-art').before(el); else worldEl.querySelector('.dg-items').after(el);
+    }
+    if (el.getAttribute('src') !== r.src) el.src = r.src;
+    Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+  }
   // the delivery sign's tap target (the sign itself is drawn in 3D over the world)
   let signHit = worldEl.querySelector('.dg-sign-hit');
   if (env.floor != null) {
@@ -475,8 +489,8 @@ export function wireDiorama(root, ctx) {
     // the truck waits while a parcel is at the door or being opened
     parked: () => parcels().length > 0 || parcelOpen(),
     reduced,
-    // the markets round the lobby stand lit once bought (market-view.js)
-    owned: marketOwned,
+    // the markets round the lobby, at their levels (market-view.js)
+    level: marketLevelIn,
     front: env.front,
   }) : null;
   if (city) mountMarkets(worldEl, stage.front, { pulse: city.pulse, workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
@@ -490,7 +504,7 @@ export function wireDiorama(root, ctx) {
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
-  const src = roomArt(room, levelOf(room, ctx));
+  const src = geom === 'locker-3d' ? LOCKER_3D_ART : roomArt(room, levelOf(room, ctx));
   const showRoom = () => {
     artEl.className = `dg-room-art is-${room}`;
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;

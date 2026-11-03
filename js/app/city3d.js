@@ -8,9 +8,9 @@
 //                  counting down to the next delivery; tap it for the list (delivery-view.js)
 //   the truck      the MOSKE van (models/city/truck.glb): it drives in from the bottom right as a
 //                  delivery's countdown runs out, waits at the garage door, and drives off
-//   the markets    four small shops round the lobby (models/city/market.glb), two each side; one
-//                  you haven't bought stands there dark (market-dark.glb). Tapped, it bounces
-//                  (docs/MARKETS.md)
+//   the markets    four small shops round the lobby, two each side: dark until bought
+//                  (models/city/market-locked.glb), then blue at level 1 (market-1.glb) and gold
+//                  at level 2 (market-2.glb). Tapped, it bounces (docs/MARKETS.md)
 //
 // Two transparent WebGL canvases cover the stage's viewport: one under the city picture (the
 // clouds behind the buildings show only through its transparent sky) and one over it. Their
@@ -125,19 +125,19 @@ let shared = null;   // the canvases and the far clouds, kept across the stage's
  *   label         { title, clock(ms) }: the sign's words and its countdown format
  *   parked()      true while a parcel waits at the door: the truck stays until it's opened
  *   reduced()     true under reduced motion: no drifting, the truck only appears parked
- *   owned(slot)   true when that market is bought (it stands lit; otherwise dark)
+ *   level(slot)   that market's level: 0 until it's bought (it stands dark), then 1, 2…
  *   front         the buildings in front of its road out, [{ src, x, y, w, h }] in px of the city
  *                 picture: drawn over the truck while it's about (and gone again after), so it
  *                 drives off behind them
  * Returns { setView(v, w, h), pulse(slot) } — pulse() bounces a market, as when it's tapped.
  */
-export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced, owned, front: frontArt = [] }) {
+export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced, level, front: frontArt = [] }) {
   if (!shared) shared = makeShared();
   const { far, back, front } = shared;
   // into this render's viewport: the far clouds and the back canvas under the world, the front over it
   const world = vp.querySelector('[data-dg-world]');
   vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
-  shared.opts = { worldW, deliveries, now, label, parked, reduced, owned, front: frontArt };
+  shared.opts = { worldW, deliveries, now, label, parked, reduced, level, front: frontArt };
   if (!shared.farLoop) farLoop();
   if (!shared.started) start();
   return {
@@ -205,7 +205,7 @@ async function start() {
   // the clouds: their own soft white, not the model's texture
   const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, emissive: 0xdfe9fb, emissiveIntensity: 0.18 });
   const models = {};
-  const [ca, cb, cc, sign, truck, shop, shopDark] = await Promise.all(['cloud-a', 'cloud-b', 'cloud-c', 'sign', 'truck', 'market', 'market-dark'].map((n) => load(n).catch(() => null)));
+  const [ca, cb, cc, sign, truck, ...shops] = await Promise.all(['cloud-a', 'cloud-b', 'cloud-c', 'sign', 'truck', 'market-locked', 'market-1', 'market-2'].map((n) => load(n).catch(() => null)));
   // smooth normals of their own: the compressed model's are packed integers, so they're dropped
   // and worked out again in full floats
   const prepCloud = (g) => {
@@ -287,13 +287,12 @@ async function start() {
     }
   };
 
-  // the markets: a lit one and a dark one in each slot (whichever shows says if it's bought),
-  // standing on a soft shadow
+  // the markets: one model per level in each slot (whichever shows is its level), standing on a
+  // soft shadow. The models stand on y = 0 with their shop front facing −X.
   const markets = [];
-  if (shop && shopDark) {
-    const s = size(shop);
+  if (shops.every(Boolean)) {
+    const s = size(shops[0]);
     const k = MARKET_WIDE / (s.x + s.z);
-    const lift = -new THREE.Box3().setFromObject(shop).min.y * k;
     const blob = document.createElement('canvas'); blob.width = blob.height = 128;
     const bg = blob.getContext('2d'); const grad = bg.createRadialGradient(64, 64, 8, 64, 64, 64);
     grad.addColorStop(0, 'rgba(20,24,48,.42)'); grad.addColorStop(.6, 'rgba(20,24,48,.18)'); grad.addColorStop(1, 'rgba(20,24,48,0)');
@@ -303,19 +302,19 @@ async function start() {
       const g = new THREE.Group();
       const at = ground(m.at);
       g.position.set(at.x, 0, at.z);
-      const lit = shop.clone(); const dark = shopDark.clone();
-      for (const o of [lit, dark]) {
+      const byLevel = shops.map((model) => {
+        const o = model.clone();
         o.scale.setScalar(k);
-        o.position.y = lift;
-        // the model's shop front faces +Z; on the right of the lobby it faces +X
-        o.rotation.y = m.face === 'x' ? Math.PI / 2 : 0;
+        // turned so the shop front faces down-left (+Z) on the left of the lobby, down-right (+X) on its right
+        o.rotation.y = m.face === 'x' ? Math.PI : Math.PI / 2;
         g.add(o);
-      }
-      const sh = new THREE.Mesh(new THREE.PlaneGeometry((s.x + 0.4) * k, (s.z + 0.4) * k), shadowMat);
+        return o;
+      });
+      const sh = new THREE.Mesh(new THREE.PlaneGeometry(s.x * 1.45 * k, s.z * 1.45 * k), shadowMat);
       sh.rotation.x = -Math.PI / 2; sh.position.y = 0.5; sh.renderOrder = -1;
       g.add(sh);
       frontScene.add(g);
-      markets.push({ ...m, g, lit, dark });
+      markets.push({ ...m, g, byLevel });
     }
   }
 
@@ -390,10 +389,10 @@ async function start() {
         truckObj.rotation.y = Math.atan2(dZ, -dX);
       }
     }
-    // the markets: lit once bought; a tapped one bounces (a quick squash and spring back)
+    // the markets at their levels; a tapped one bounces (a quick squash and spring back)
     for (const m of markets) {
-      const on = !!o.owned?.(m.slot);
-      m.lit.visible = on; m.dark.visible = !on;
+      const lv = Math.max(0, Math.min(m.byLevel.length - 1, Number(o.level?.(m.slot)) || 0));
+      m.byLevel.forEach((x, i) => { x.visible = i === lv; });
       const t0 = shared.pulses?.[m.slot];
       let sy = 1; let sxz = 1;
       if (t0 != null) {

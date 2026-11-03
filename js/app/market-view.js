@@ -1,8 +1,8 @@
 // market-view.js — the four markets round the tower's lobby (docs/MARKETS.md).
 //
 // Each is a painted picture standing in the city where the painted kiosks were: shut until it's
-// bought, then blue at level 1 and gold at level 2 (icons/City/market/kiosk-0|1|2.webp, made with
-// Gemini from the original kiosk). A tree and lamp posts stand in front of them, as before. Here:
+// bought, then blue at level 1 and gold at level 2 (icons/City/market/kiosk-<level>-<l|r>.webp,
+// facing down-left on the lobby's left, down-right on its right). A tree and lamp posts stand in front of them, as before. Here:
 //   - the pictures, in the world (so they pan and zoom with the city), and a tap target on each:
 //     tapped, a market grows and springs back
 //   - a coin bubble over each bought one that has coins waiting; tapping it collects them
@@ -20,22 +20,29 @@ import { haptic } from './haptics.js';
 import { toast, prefersReducedMotion } from './effects.js';
 
 const COIN = 'icons/Pixelart/GEAR/coin.png';
-// the market at each level as a picture: 0 is one not bought yet
-const picture = (m) => `icons/City/market/kiosk-${m ? Number(m.level) || 1 : 0}.webp`;
+// a market's picture for its level (0: not bought yet) and the way it faces: the left pair of
+// markets face down-left, along the lobby's left wall; the right pair down-right, along its right
+const picture = (m, face = 'l') => `icons/City/market/kiosk-${m ? Number(m.level) || 1 : 0}-${face}.webp`;
+const faceOf = (slot) => MARKETS.find((x) => x.slot === Number(slot))?.face || 'l';
 const levelIn = (slot) => { const m = marketIn(myMarkets(), slot); return m ? Number(m.level) || 1 : 0; };
 
 // In px of the city picture (5376 × 4980), where the painted kiosks stood: each market's front
-// corner on the ground (`foot`, the lowest point of its picture) and how wide it stands. All four
-// face down-left, like the originals, so the light falls on them as on the rest of the city.
+// corner on the ground (`foot`, the lowest point of its picture), how wide it stands and which
+// way it faces
 export const MARKETS = [
-  { slot: 1, foot: [1828, 3232], w: 286 },
-  { slot: 2, foot: [2078, 3354], w: 310 },
-  { slot: 3, foot: [3356, 3384], w: 314 },
-  { slot: 4, foot: [3590, 3238], w: 312 },
+  { slot: 1, foot: [1828, 3232], w: 286, face: 'l' },
+  { slot: 2, foot: [2078, 3354], w: 310, face: 'l' },
+  { slot: 3, foot: [3356, 3384], w: 314, face: 'r' },
+  { slot: 4, foot: [3590, 3238], w: 312, face: 'r' },
 ];
 // each picture's size and where its foot is in it (fractions of its width and height)
 const ART = {
-  kiosk: { w: 640, h: 714, foot: [0.5727, 1] },
+  'kiosk-0-l': { w: 640, h: 807, foot: [0.5445, 1] },
+  'kiosk-1-l': { w: 640, h: 747, foot: [0.5508, 1] },
+  'kiosk-2-l': { w: 640, h: 747, foot: [0.5516, 1] },
+  'kiosk-0-r': { w: 640, h: 804, foot: [0.4523, 1] },
+  'kiosk-1-r': { w: 640, h: 776, foot: [0.4359, 1] },
+  'kiosk-2-r': { w: 640, h: 776, foot: [0.4383, 1] },
   tree: { w: 300, h: 535, foot: [0.5033, 1] },
   lamp: { w: 200, h: 677, foot: [0.78, 1] },
 };
@@ -55,8 +62,8 @@ function boxOf(kind, foot, w) {
   const h = (w * a.h) / a.w;
   return { left: foot[0] - a.foot[0] * w, top: foot[1] - a.foot[1] * h, w, h };
 }
-/** How tall a market stands (its coin bubble floats over it). */
-const marketBox = (m) => boxOf('kiosk', m.foot, m.w);
+/** Where a market's picture stands for its level (its coin bubble floats over it). */
+const marketBox = (m) => boxOf(`kiosk-${levelIn(m.slot)}-${m.face}`, m.foot, m.w);
 
 let ctx = { workouts: () => [], screen: null };
 
@@ -84,10 +91,6 @@ export function mountMarkets(worldEl, front, { workouts, screen }) {
       ...DRESSING.map((d) => ({ y: d.foot[1], html: (() => { const b = boxOf(d.src, d.foot, d.w); return `<img class="dg-mk-prop" src="icons/City/market/${d.src}.webp" alt="" draggable="false" decoding="async" style="left:${b.left.toFixed(1)}px;top:${b.top.toFixed(1)}px;width:${b.w}px">`; })() })),
     ].sort((a, b) => a.y - b.y);
     layer.innerHTML = parts.map((p) => p.html).join('');
-    for (const m of MARKETS) {
-      const b = marketBox(m);
-      Object.assign(layer.querySelector(`.dg-mk[data-mk="${m.slot}"]`).style, { left: `${b.left.toFixed(1)}px`, top: `${b.top.toFixed(1)}px`, width: `${b.w}px` });
-    }
     worldEl.querySelector('.dg-tower').after(layer);
   }
   showMarkets();
@@ -112,16 +115,28 @@ export function mountMarkets(worldEl, front, { workouts, screen }) {
     }
     Object.assign(coin.style, { left: `${(b.left + b.w / 2).toFixed(1)}px`, top: `${(b.top + 10).toFixed(1)}px` });
   }
+  showMarkets();
   showCoins();
   if (!mountMarkets.watching) { mountMarkets.watching = true; onGear(() => { showMarkets(); showCoins(); refreshBar(); }); }
 }
 
-/** Each market's picture for its level. */
+/** Each market's picture for its level, where it stands, and its tap target and coin over it. */
 function showMarkets() {
-  document.querySelectorAll('.dg-mk').forEach((el) => {
-    const src = picture(levelIn(el.dataset.mk) ? { level: levelIn(el.dataset.mk) } : null);
-    if (el.getAttribute('src') !== src) el.src = src;
-  });
+  for (const m of MARKETS) {
+    const lv = levelIn(m.slot);
+    const b = marketBox(m);
+    const el = document.querySelector(`.dg-mk[data-mk="${m.slot}"]`);
+    if (el) {
+      const src = picture(lv ? { level: lv } : null, m.face);
+      if (el.getAttribute('src') !== src) el.src = src;
+      el.style.transformOrigin = `${(ART[`kiosk-${lv}-${m.face}`].foot[0] * 100).toFixed(1)}% 100%`;
+      Object.assign(el.style, { left: `${b.left.toFixed(1)}px`, top: `${b.top.toFixed(1)}px`, width: `${b.w}px` });
+    }
+    const hit = document.querySelector(`.dg-mk-hit[data-mk="${m.slot}"]`);
+    if (hit) Object.assign(hit.style, { left: `${b.left.toFixed(1)}px`, top: `${b.top.toFixed(1)}px`, width: `${b.w}px`, height: `${b.h.toFixed(1)}px` });
+    const coin = document.querySelector(`.dg-mk-coin[data-mk="${m.slot}"]`);
+    if (coin) Object.assign(coin.style, { left: `${(b.left + b.w / 2).toFixed(1)}px`, top: `${(b.top + 10).toFixed(1)}px` });
+  }
 }
 
 /** Show a coin over each bought market with coins waiting (call every so often: they fill up). */
@@ -226,12 +241,12 @@ function refreshBar() {
   const next = marketNext(m);
   const price = (cost) => `<span class="mk-btn-price data-num${coins < cost ? ' is-short' : ''}">${fmtNum(cost)}<img src="${COIN}" alt=""></span>`;
   const upgrade = next ? `<button class="mk-btn is-buy" data-mk-upgrade ${!marketsOpen() ? 'disabled' : ''}>${price(next.cost)}
-         <span class="mk-btn-ico"><img src="${picture({ level: next.level })}" alt=""></span><b>${esc(t('city.market.upgrade'))}</b></button>` : '';
+         <span class="mk-btn-ico"><img src="${picture({ level: next.level }, faceOf(slot))}" alt=""></span><b>${esc(t('city.market.upgrade'))}</b></button>` : '';
   const action = m
     ? `${upgrade}<button class="mk-btn" data-mk-collect ${n < 1 ? 'disabled' : ''}>
          <span class="mk-btn-ico"><img src="${COIN}" alt=""></span><b>${esc(t('city.market.collect'))}</b>${n ? `<i class="data-num">${fmtNum(n)}</i>` : ''}</button>`
     : `<button class="mk-btn is-buy" data-mk-buy ${!marketsOpen() ? 'disabled' : ''}>${price(MARKET_RULES.cost)}
-         <span class="mk-btn-ico"><img src="${picture({ level: 1 })}" alt=""></span><b>${esc(t('city.market.buy'))}</b></button>`;
+         <span class="mk-btn-ico"><img src="${picture({ level: 1 }, faceOf(slot))}" alt=""></span><b>${esc(t('city.market.buy'))}</b></button>`;
   bar.innerHTML = `<h2 id="mk-bar-h" class="mk-bar-h">${esc(t('city.market.title', { n: lv.level }))}</h2>
     <div class="mk-bar-btns">
       <button class="mk-btn" data-mk-info><span class="mk-btn-ico is-info" aria-hidden="true">i</span><b>${esc(t('city.market.info'))}</b></button>
@@ -303,7 +318,7 @@ export function openInfo(slot) {
       <div class="mk-info-body">
         <figure class="mk-pic${m ? '' : ' is-dark'}">
           ${m ? '' : `<span class="mk-ribbon">${esc(t('city.market.forSale'))}</span>`}
-          <img src="${picture(m)}" alt="" draggable="false">
+          <img src="${picture(m, faceOf(slot))}" alt="" draggable="false">
         </figure>
         <ul class="mk-stats">
           ${stat(coinIco, t('city.market.rate'), t('city.market.perHour', { n: fmtNum(lv.perHour) }), lv.perHour / 4)}

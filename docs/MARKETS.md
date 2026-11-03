@@ -4,9 +4,9 @@ Four small shops stand round the MOSKE tower's lobby, two on each side. Everyone
 
 | Level | Price | Makes | Holds | Picture |
 | --- | --- | --- | --- | --- |
-| Not bought | | | | `kiosk-0.webp`: shutter down, a for-sale board |
-| 1 | 400 coins (buy) | 2 coins an hour | 24 (full in 12 h) | `kiosk-1.webp`: blue, like the original kiosk |
-| 2 | 600 coins (upgrade) | 3 coins an hour | 36 (full in 12 h) | `kiosk-2.webp`: vivid yellow, darker beige |
+| Not bought | | | | `kiosk-0-l|r.webp`: shutter down, a for-sale sign |
+| 1 | 400 coins (buy) | 2 coins an hour | 24 (full in 12 h) | `kiosk-1-l|r.webp`: blue, the MOSKE logo on its sign |
+| 2 | 600 coins (upgrade) | 3 coins an hour | 36 (full in 12 h) | `kiosk-2-l|r.webp`: vivid yellow, the MOSKE logo, a flower box |
 
 Each market is bought and upgraded on its own. At level 2 the info window says "Max level".
 
@@ -28,8 +28,7 @@ The numbers live in `js/core/markets.js` (`MARKET_RULES`) and in `market_rules()
 
 - **The markets are painted pictures** (`icons/City/market/`, `MARKETS` in `market-view.js`), standing where the city picture's own kiosks were.
   - The kiosks were painted out of the city picture with Gemini, leaving bare wall and pavement (`market-left.webp`, `market-right.webp` in `tools/compose-city.py` `PATCHES`).
-  - Each level's picture was made with Gemini from a crop of the original kiosk as its style reference, on green, then keyed.
-  - All four face down-left like the originals, so the light falls on them as on the rest of the city.
+  - Six pictures, one per level and facing, generated on green and keyed. The left pair (`-l`) face down-left, along the lobby's left wall; the right pair (`-r`) face down-right, along its right wall.
   - Each stands by its foot (its front corner, the picture's lowest point) on the ground where its kiosk's corner was.
   - 3D models were tried first and dropped: real-time light and blob shadows made them look pasted on next to the painted city.
 - **Trees and lamp posts** (`tree.webp`, `lamp.webp`, also from Gemini) stand where the painted ones were before the kiosks were painted out. They're drawn in depth order with the markets, so the nearer ones stand in front.
@@ -38,6 +37,6 @@ The numbers live in `js/core/markets.js` (`MARKET_RULES`) and in `market_rules()
   - A bought market has Collect, with the coins waiting, and Upgrade (with its price) while there's a level above.
   - One not bought yet has Buy, with its price on a navy tag.
 - **The coin bubble** over a bought market shows once it has a coin waiting. It glows when the market is full. Tapping it collects, and the coins fly up to the coin gauge.
-- **The info window** is laid out like a builder game's: a navy header with the name and level and a full level bar, the picture for its level (`kiosk-0|1|2.webp`) in a baby-blue frame, then production rate, capacity and time till full (or the price). At its foot: what the next level makes and a green Upgrade button with its price, or "Max level".
+- **The info window** is laid out like a builder game's: a navy header with the name and level and a full level bar, the picture for its level and facing (`kiosk-<level>-<l|r>.webp`) in a baby-blue frame, then production rate, capacity and time till full (or the price). At its foot: what the next level makes and a green Upgrade button with its price, or "Max level".
 - **Before 0028 is live**, the markets stand dark and Buy is greyed out.
 - **Demo mode** has the near right market bought, with coins waiting.

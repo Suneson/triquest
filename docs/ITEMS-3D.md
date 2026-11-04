@@ -25,6 +25,9 @@ The lighting and polish happen in step 3. So the concept should be **evenly lit,
   - **Texture Quality: 2K** is plenty for a sprite about 600 px across. 4K does no harm if it costs the same.
   - **8K: no.**
 - **PBR: on.** Proper materials (metal, roughness), so Blender's lights react the way they should.
+- **Polygon count: about 200,000** (100k to 300k), up to about 500k for a big detailed item (a power rack, a cable machine).
+  - More is invisible in a picture about 600 px across.
+  - 2 million makes the files huge and the renders slow.
 - **Topology: Triangle.** It's fine for rendering. Quad only matters for re-modelling or animating.
 - **Generate in Parts: off.**
 - **Input:** single image. If the back or sides come out wrong, use the multi-image tab with a second view of the same item.

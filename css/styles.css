@@ -2537,9 +2537,12 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-arrow { fill: #6EA8FF; stroke: #0B1222; stroke-width: 2.5px; vector-effect: non-scaling-stroke; stroke-linejoin: round;
   pointer-events: all; cursor: pointer; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .45)); animation: dg-arrow 900ms ease-in-out infinite alternate; }
 @keyframes dg-arrow { from { opacity: .85; } to { opacity: 1; } }
-.dg-items { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+/* the layers over the room (and the runner's 3D canvas in it) have no size of their own: their
+   pieces stand out of them. A city-sized layer over a 3D canvas makes iPhone Safari give it a
+   city-sized backing, and the page runs out of memory ("A problem repeatedly occurred") */
+.dg-items { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2; pointer-events: none; }
 /* a soft shadow on the floor under each item, the size of its base: it ties the item to the tiles */
-.dg-shadows { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.dg-shadows { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 2; pointer-events: none; }
 .dg-shadow { position: absolute; transform: translate(-50%, -50%); border-radius: 50%;
   background: radial-gradient(closest-side, rgba(8, 10, 20, .55), rgba(8, 10, 20, .28) 60%, transparent); }
 .dg-item { position: absolute; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto;
@@ -2959,7 +2962,8 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .dg-orb-n.is-grow { color: #fff; background: linear-gradient(#4FA8F0, #1F6FC2); }
 /* the markets round the lobby as pictures (market-view.js): their layer over the tower, each
    growing and springing back when tapped, from its foot */
-.dg-mks { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+/* no size of its own (like .dg-items): a city-sized layer over the runner's 3D canvas crashes iPhone Safari */
+.dg-mks { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 4; pointer-events: none; }
 .dg-mk, .dg-mk-prop { position: absolute; max-width: none; height: auto; -webkit-user-drag: none; }
 .dg-mk { transform-origin: 57% 100%; }
 .dg-mk.is-tap { animation: dg-mk-tap 520ms cubic-bezier(.3, 1.5, .5, 1); }

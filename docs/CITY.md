@@ -216,6 +216,13 @@ Don't put a city-sized layer over a 3D canvas, the city's or the runner's on the
 
 The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-front`, with no size of its own, so it shows over the 3D sign at the cost of the bubble only.
 
+## Editing the lobby
+
+The lobby round the tower's base is four city tiles: `city-1-1`, `city-1-2`, `city-2-1` and `city-2-2`. Laid out 2 × 2 they make a 2016 × 1868 px picture.
+
+- To retouch it, put those four tiles side by side, edit the result (keeping its size and transparency), and cut it back with `tools/lobby-tiles.py`.
+- The seams left where the kiosks were painted out were cleaned up this way, in Photoshop with Generative Fill.
+
 ## The railing
 
 Each floor's roof slab has a railing round it: a navy kerb with gold rails (`icons/City/rail/`, cut by `tools/cut-rail.py`).

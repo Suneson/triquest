@@ -15,15 +15,19 @@ The lighting and polish happen in step 3. So the concept should be **evenly lit,
 - **Model type: HD Model** (not Smart Mesh).
   - Smart Mesh makes a light, low-poly mesh for objects that move live in a game.
   - Ours are only rendered to stills, so the polygon count never reaches the phone. Take the detail.
-- **Input:** the first tab (single image). If a shape comes out wrong at the back or sides, use the multi-image tab with a second view of the same item.
-- **Geometry & Texture:**
-  - texture on;
-  - PBR on, if it's offered;
-  - any "remove lighting" or "de-light" option on.
-- **8K Texture: off.** A sprite is about 600 px across, so 8K adds nothing but cost. 2K is plenty.
+- **AI Model:** V3.1.
+- **Privacy:** Private. This is unreleased game art.
+- **Ultra Mesh Quality: on.** It gives sharper edges and bevels, which is what the renders show.
+- **AI Complete: on**, if it fills in the sides the concept doesn't show.
+  - The second facing is the item turned 90°, so its side is on screen.
+  - Turn it off if it adds parts that aren't in the concept.
+- **Texture: on.**
+  - **Texture Quality: 2K** is plenty for a sprite about 600 px across. 4K does no harm if it costs the same.
+  - **8K: no.**
+- **PBR: on.** Proper materials (metal, roughness), so Blender's lights react the way they should.
+- **Topology: Triangle.** It's fine for rendering. Quad only matters for re-modelling or animating.
 - **Generate in Parts: off.**
-- **Privacy:** Private, if your plan allows it. This is unreleased game art.
-- **AI Model:** the newest.
+- **Input:** single image. If the back or sides come out wrong, use the multi-image tab with a second view of the same item.
 - **Export:** GLB. Name it like the concept image (`coffee-machine-t1.glb`) and drop it in the shared Drive folder.
 
 ## The general prompt

@@ -48,11 +48,18 @@ const loadModel = (L) => (model ||= new Promise((res, rej) => {
 }));
 
 /** Can this device draw WebGL at all? (Without it the treadmill simply stands empty.) */
+// Asked once and remembered: each test makes a WebGL context, and iPhone Safari keeps only a
+// few, so asking on every render piled them up until the page ran out of memory.
+let glOk = null;
 export function webglOk() {
+  if (glOk !== null) return glOk;
   try {
     const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch { return false; }
+    const gl = c.getContext('webgl2') || c.getContext('webgl');
+    glOk = !!gl;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch { glOk = false; }
+  return glOk;
 }
 
 /**

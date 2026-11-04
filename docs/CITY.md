@@ -212,7 +212,7 @@ The plots in front of the van's road are also drawn on their own: the right-hand
 
 The 3D layer draws those pieces as flat pictures on the ground, after everything else in the front scene and through its depth, so they cover the van where they stand in front of it. They load when the van is about (arriving, parked or leaving) and are let go once it's gone.
 
-Don't put a city-sized layer over the 3D canvas. That was the first version, and iPhone Safari ran out of memory and kept reloading the page ("A problem repeatedly occurred").
+Don't put a city-sized layer over a 3D canvas, the city's or the runner's on the run room's treadmill (inside `.dg-items`). The layers over the room (`.dg-shadows`, `.dg-items`, `.dg-mks`) have no size of their own; their pieces stand out of them. Also, `webglOk()` asks for WebGL once and remembers the answer, since each test makes a context. That was the first version, and iPhone Safari ran out of memory and kept reloading the page ("A problem repeatedly occurred").
 
 The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-front`, with no size of its own, so it shows over the 3D sign at the cost of the bubble only.
 

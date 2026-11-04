@@ -2,7 +2,7 @@
 //
 // Each is a painted picture standing in the city where the painted kiosks were: shut until it's
 // bought, then blue at level 1 and gold at level 2 (icons/City/market/kiosk-<level>-<l|r>.webp,
-// facing down-left on the lobby's left, down-right on its right). A tree and lamp posts stand in front of them, as before. Here:
+// facing down-left on the lobby's left, down-right on its right). The painted trees and lamp posts stand round them, as before. Here:
 //   - the pictures, in the world (so they pan and zoom with the city), and a tap target on each:
 //     tapped, a market grows and springs back
 //   - a coin bubble over each bought one that has coins waiting; tapping it collects them
@@ -43,18 +43,21 @@ const ART = {
   'kiosk-0-r': { w: 640, h: 804, foot: [0.4523, 1] },
   'kiosk-1-r': { w: 640, h: 776, foot: [0.4359, 1] },
   'kiosk-2-r': { w: 640, h: 776, foot: [0.4383, 1] },
-  tree: { w: 300, h: 535, foot: [0.5033, 1] },
-  lamp: { w: 200, h: 677, foot: [0.78, 1] },
 };
-// the trees and lamp posts in front of the markets (where the painted ones stood), by their foot
-// and width; they stand in front of the markets or behind them by how far down the picture they are
+// the trees and lamp posts round the markets, cut from the city picture as it was painted, before
+// its kiosks were painted out (icons/City/market/prop-N.webp, docs/MARKETS.md): each stands
+// exactly where it was, its box in px of the city picture, and in front of the markets or behind
+// them by how far down the picture its foot is
 const DRESSING = [
-  { src: 'tree', foot: [1895, 3297], w: 74 },
-  { src: 'lamp', foot: [1840, 3307], w: 36 },
-  { src: 'lamp', foot: [2095, 3457], w: 38 },
-  { src: 'tree', foot: [3242, 3402], w: 118 },
-  { src: 'lamp', foot: [3340, 3447], w: 40 },
-  { src: 'tree', foot: [3535, 3268], w: 64 },
+  { src: 'prop-0', left: 1615.5, top: 3018.0, w: 89.5, foot: 3176.0 },
+  { src: 'prop-1', left: 1860.5, top: 3142.5, w: 89.5, foot: 3301.5 },
+  { src: 'prop-2', left: 1813.5, top: 3186.0, w: 45.0, foot: 3333.5 },
+  { src: 'prop-3', left: 2132.5, top: 3221.5, w: 122.0, foot: 3437.5 },
+  { src: 'prop-4', left: 2062.5, top: 3312.5, w: 45.0, foot: 3459.5 },
+  { src: 'prop-5', left: 3773.5, top: 3062.0, w: 58.0, foot: 3222.5 },
+  { src: 'prop-6', left: 3488.5, top: 3145.0, w: 79.5, foot: 3300.0 },
+  { src: 'prop-7', left: 3181.5, top: 3207.0, w: 119.0, foot: 3424.0 },
+  { src: 'prop-8', left: 3330.5, top: 3300.0, w: 43.0, foot: 3451.0 },
 ];
 /** Where a picture stands: its box in px of the city picture, from its foot and width. */
 function boxOf(kind, foot, w) {
@@ -88,7 +91,7 @@ export function mountMarkets(worldEl, front, { workouts, screen }) {
     // drawn further down the picture = nearer: markets, trees and lamps in that order
     const parts = [
       ...MARKETS.map((m) => ({ y: m.foot[1], html: `<img class="dg-mk" data-mk="${m.slot}" alt="" draggable="false" decoding="async">`, m })),
-      ...DRESSING.map((d) => ({ y: d.foot[1], html: (() => { const b = boxOf(d.src, d.foot, d.w); return `<img class="dg-mk-prop" src="icons/City/market/${d.src}.webp" alt="" draggable="false" decoding="async" style="left:${b.left.toFixed(1)}px;top:${b.top.toFixed(1)}px;width:${b.w}px">`; })() })),
+      ...DRESSING.map((d) => ({ y: d.foot, html: `<img class="dg-mk-prop" src="icons/City/market/${d.src}.webp" alt="" draggable="false" decoding="async" style="left:${d.left}px;top:${d.top}px;width:${d.w}px">` })),
     ].sort((a, b) => a.y - b.y);
     layer.innerHTML = parts.map((p) => p.html).join('');
     worldEl.querySelector('.dg-tower').after(layer);

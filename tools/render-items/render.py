@@ -18,8 +18,8 @@ def build(model):
     if model != 'rollers':
         root, ms = load(f'{RAW}/{model.replace("_", "-")}.glb'); return root, ms
     # the road bike on balance rollers: front wheel on the single drum, back wheel between the pair
-    bike, bm = load(f'{RAW}/road_bike_t1.glb'); ground(bike, bm)
-    tr, tm = load(f'{RAW}/bike_trainer.glb'); ground(tr, tm)
+    bike, bm = load(f'{RAW}/road-bike-t1.glb'); ground(bike, bm)
+    tr, tm = load(f'{RAW}/bike-trainer.glb'); ground(tr, tm)
     k = 0.772
     tr.rotation_euler[2] = math.pi; tr.scale = (k, k, k)
     bike.location.y += 0.042; bike.location.z += 0.094

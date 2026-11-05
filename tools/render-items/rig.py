@@ -68,14 +68,14 @@ def setup(meshes, px_per_unit=600, margin=0.06, samples=64, shadow=True):
     sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'
     # world: soft lavender-blue sky light, like the base's ambient
     world = bpy.data.worlds.new('w'); sc.world = world; world.use_nodes = True
-    bg = world.node_tree.nodes['Background']; bg.inputs[0].default_value = (0.78, 0.80, 0.95, 1); bg.inputs[1].default_value = 1.05
+    bg = world.node_tree.nodes['Background']; bg.inputs[0].default_value = (0.9, 0.9, 0.9, 1); bg.inputs[1].default_value = 1.05
     # key: warm sun from the top left (the room's left, behind the camera's left shoulder)
     key = bpy.data.objects.new('key', bpy.data.lights.new('key', 'SUN')); sc.collection.objects.link(key)
-    key.data.energy = 3.8; key.data.color = (1.0, 0.95, 0.86); key.data.angle = math.radians(8)
+    key.data.energy = 3.8; key.data.color = (1.0, 1.0, 1.0); key.data.angle = math.radians(8)
     key.rotation_euler = (Vector((-0.2, 1.0, 1.25))).normalized().to_track_quat('Z', 'Y').to_euler()
     # rim: cool, from behind on the right
     rim = bpy.data.objects.new('rim', bpy.data.lights.new('rim', 'SUN')); sc.collection.objects.link(rim)
-    rim.data.energy = 1.4; rim.data.color = (0.75, 0.85, 1.0); rim.data.angle = math.radians(15)
+    rim.data.energy = 1.4; rim.data.color = (1.0, 1.0, 1.0); rim.data.angle = math.radians(15)
     rim.rotation_euler = (Vector((-1.0, -0.6, 0.8))).normalized().to_track_quat('Z', 'Y').to_euler()
     if shadow:
         bpy.ops.mesh.primitive_plane_add(size=50, location=(0, 0, 0))

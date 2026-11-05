@@ -163,6 +163,86 @@ export const ITEM_FIT = {
     "w": 0.882,
     "mid": 0.559,
     "pad": 0.021
+  },
+  "icons/Items/coffee-machine-t1-a.webp": {
+    "w": 0.994,
+    "mid": 0.499,
+    "pad": 0.008
+  },
+  "icons/Items/coffee-machine-t1-b.webp": {
+    "w": 0.991,
+    "mid": 0.498,
+    "pad": 0.008
+  },
+  "icons/Items/coffee-machine-t2-a.webp": {
+    "w": 0.848,
+    "mid": 0.574,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-machine-t2-b.webp": {
+    "w": 0.846,
+    "mid": 0.575,
+    "pad": 0.001
+  },
+  "icons/Items/coffee-machine-t3-a.webp": {
+    "w": 0.906,
+    "mid": 0.545,
+    "pad": 0.121
+  },
+  "icons/Items/coffee-machine-t3-b.webp": {
+    "w": 0.912,
+    "mid": 0.542,
+    "pad": 0.003
+  },
+  "icons/Items/road-bike-rollers-t1-a.webp": {
+    "w": 0.997,
+    "mid": 0.5,
+    "pad": 0.001
+  },
+  "icons/Items/road-bike-rollers-t1-b.webp": {
+    "w": 0.997,
+    "mid": 0.5,
+    "pad": 0.001
+  },
+  "icons/Items/road-bike-stand-a.webp": {
+    "w": 0.928,
+    "mid": 0.531,
+    "pad": 0.014
+  },
+  "icons/Items/road-bike-stand-b.webp": {
+    "w": 0.922,
+    "mid": 0.538,
+    "pad": 0.003
+  },
+  "icons/Items/treadmill-t1-a.webp": {
+    "w": 0.996,
+    "mid": 0.501,
+    "pad": 0.018
+  },
+  "icons/Items/treadmill-t1-b.webp": {
+    "w": 0.997,
+    "mid": 0.5,
+    "pad": 0.011
+  },
+  "icons/Items/treadmill-t2-a.webp": {
+    "w": 0.935,
+    "mid": 0.531,
+    "pad": 0.029
+  },
+  "icons/Items/treadmill-t2-b.webp": {
+    "w": 0.936,
+    "mid": 0.531,
+    "pad": 0.021
+  },
+  "icons/Items/trophy-gold-mountain-a.webp": {
+    "w": 0.906,
+    "mid": 0.546,
+    "pad": 0.001
+  },
+  "icons/Items/trophy-gold-mountain-b.webp": {
+    "w": 0.939,
+    "mid": 0.529,
+    "pad": 0.001
   }
 };
 

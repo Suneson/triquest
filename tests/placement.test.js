@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
   compoundLayout, roomsOf, roomArt, normalizeDisciplines, ROOM_GEOMETRY, ROOM_SIZE, tileToPct, pctToTile, boxCorners,
-  canPlace, firstFree, footprint, placeableById, placeablesFor, resolvePlacements, PLACEABLES, DISCIPLINES,
+  canPlace, firstFree, footprint, placeableById, placeablesFor, resolvePlacements, PLACEABLES, DISCIPLINES, orient, turned, tierFor,
 } from '../js/core/placement.js';
 
 const shape = (l) => l.rows.map((r) => r.map((c) => `${c.room}${c.landscape ? ':wide' : ''}`).join(' ')).join(' / ');
@@ -77,11 +77,11 @@ test('placing: walls and edges, the pool, other items', () => {
 test('the gifts and the trainer; a spot for each, kept when it still fits', () => {
   // the mission boards are checked on their own below
   const ids = (list) => list.map((p) => p.id).filter((id) => !id.startsWith('mission-board-'));
-  assert.deepEqual(ids(placeablesFor([])), ['coffee-machine', 'smart-bike', 'treadmill'], 'everyone has the coffee machine, their bike and their treadmill');
-  assert.deepEqual(ids(placeablesFor([], ['run', 'locker'])), ['coffee-machine', 'treadmill'], 'no bike room, no bike');
-  assert.deepEqual(ids(placeablesFor([], ['bike', 'locker'])), ['coffee-machine', 'smart-bike'], 'no run room, no treadmill');
-  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t2' }])), ['coffee-machine', 'smart-bike', 'treadmill'], 'pedals are not a trainer');
-  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t3' }])), ['coffee-machine', 'smart-bike', 'treadmill', 'smart-trainer']);
+  assert.deepEqual(ids(placeablesFor([])), ['coffee-machine', 'smart-bike', 'treadmill', 'road-bike-stand', 'trophy-gold-mountain'], 'everyone has the coffee machine, their bike and their treadmill');
+  assert.deepEqual(ids(placeablesFor([], ['run', 'locker'])), ['coffee-machine', 'treadmill', 'trophy-gold-mountain'], 'no bike room, no bike');
+  assert.deepEqual(ids(placeablesFor([], ['bike', 'locker'])), ['coffee-machine', 'smart-bike', 'road-bike-stand', 'trophy-gold-mountain'], 'no run room, no treadmill');
+  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t2' }])), ['coffee-machine', 'smart-bike', 'treadmill', 'road-bike-stand', 'trophy-gold-mountain'], 'pedals are not a trainer');
+  assert.deepEqual(ids(placeablesFor([{ item_id: 'bike-power-t3' }])), ['coffee-machine', 'smart-bike', 'treadmill', 'road-bike-stand', 'trophy-gold-mountain', 'smart-trainer']);
   const items = placeablesFor([{ item_id: 'bike-power-t3' }]);
   const full = compoundLayout(DISCIPLINES);
   const at = resolvePlacements(full, items, {});
@@ -89,12 +89,12 @@ test('the gifts and the trainer; a spot for each, kept when it still fits', () =
   assert.equal(at['smart-bike'].room, 'bike');
   assert.equal(at['smart-trainer'].room, 'bike');
   assert.equal(at.treadmill.room, 'run');
-  assert.ok(canPlace('run', 'run', placeableById('treadmill'), at.treadmill.u, at.treadmill.v, at).ok);
+  assert.ok(canPlace('run', 'run', orient(placeableById('treadmill'), at.treadmill.face), at.treadmill.u, at.treadmill.v, at).ok);
   assert.ok(canPlace('bike', 'bike', placeableById('smart-trainer'), at['smart-trainer'].u, at['smart-trainer'].v, at).ok);
-  assert.ok(canPlace('bike', 'bike', placeableById('smart-bike'), at['smart-bike'].u, at['smart-bike'].v, at).ok, 'they do not overlap');
+  assert.ok(canPlace('bike', 'bike', orient(placeableById('smart-bike'), at['smart-bike'].face), at['smart-bike'].u, at['smart-bike'].v, at).ok, 'they do not overlap');
   // a saved spot stays; one that no longer fits (or whose room is gone) moves
   const kept = resolvePlacements(full, items, { 'coffee-machine': { room: 'pool', u: 0, v: 7 } });
-  assert.deepEqual(kept['coffee-machine'], { room: 'pool', u: 0, v: 7 });
+  assert.deepEqual(kept['coffee-machine'], { room: 'pool', u: 0, v: 7, face: 'a' });
   const runOnly = resolvePlacements(compoundLayout(['run']), placeablesFor([{ item_id: 'bike-power-t3' }], ['run', 'locker']), { 'coffee-machine': { room: 'pool', u: 0, v: 7 } });
   assert.equal(runOnly['coffee-machine'].room, 'locker');
   assert.equal(runOnly['smart-trainer'].room, 'locker', 'no bike room: the trainer waits in the locker');
@@ -113,4 +113,21 @@ test('a mission board stands in every room, at the back, and only in rooms you h
   }
   const runOnly = placeablesFor([], ['run', 'locker']).map((p) => p.id).filter((id) => id.startsWith('mission-board-'));
   assert.deepEqual(runOnly, ['mission-board-run', 'mission-board-locker']);
+});
+
+test('facings: turning an item turns its footprint, and a saved facing is kept', () => {
+  const tm = placeableById('treadmill');
+  assert.deepEqual([orient(tm).face, orient(tm).w, orient(tm).h], ['b', 1, 2], 'the treadmill stands long along v at first');
+  assert.deepEqual([orient(tm, 'a').w, orient(tm, 'a').h], [2, 1]);
+  assert.equal(turned('a'), 'b'); assert.equal(turned('b'), 'a');
+  assert.equal(orient(placeableById('smart-trainer'), 'b').w, 2, 'one facing: as it is');
+  assert.equal(tierFor(1, [4, 7]), 1); assert.equal(tierFor(4, [4, 7]), 2); assert.equal(tierFor(9, [4, 7]), 3);
+  assert.match(tm.art({ face: 'a', levels: { run: 6 } }), /treadmill-t2-a\.webp$/);
+  const full = compoundLayout(DISCIPLINES);
+  const items = placeablesFor([]);
+  const at = resolvePlacements(full, items, { treadmill: { room: 'run', u: 2, v: 2, face: 'a' } });
+  assert.deepEqual(at.treadmill, { room: 'run', u: 2, v: 2, face: 'a' });
+  // two turned items can't overlap: the coffee machine beside a turned treadmill
+  const cells = footprint(orient(tm, 'a'), 2, 2).map((c) => c.join(','));
+  assert.deepEqual(cells, ['2,2', '3,2']);
 });

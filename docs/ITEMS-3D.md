@@ -346,3 +346,23 @@ These are good next items:
   - a foam roller and yoga mat stand.
 - **Run room:** a stretching rack.
 - **Pool:** a lane rope reel.
+
+## In the app
+
+The first nine models are in the base, as pictures in `icons/Items/` (`<item>-<a|b>.webp`). They were rendered with `tools/render-items/`, repainted in Gemini, then cut out.
+
+| Item | Room | Footprint (facing a) | Tiers |
+| --- | --- | --- | --- |
+| Coffee machine | locker | 1 × 1 | t1 to t3, by the locker room's level (t2 from 4, t3 from 7) |
+| Road bike on balance rollers (`smart-bike`) | bike | 1 × 2 | t1 |
+| Treadmill, with the 3D runner on its belt | run | 2 × 1 (it starts facing b, 1 × 2) | t1 to t2, by the run room's level (t2 from 5) |
+| Bike on a stand | bike | 2 × 2 | |
+| Gold mountain trophy | locker | 1 × 1 | |
+
+- **Picking up an item** with two facings shows a round rotate button (`icons/UI/rotate.webp`, from Gemini) over the dock.
+  - It turns the item 90° on the spot it stands on, if the turned footprint still fits there.
+  - The other facing's picture shows the item from its other side (`orient()` in `js/core/placement.js`).
+- **The 3D runner** stands on the treadmill's belt and faces its console in both facings (`runner` on the treadmill in `PLACEABLES`, `spot` and `foot` in `mountRunner`).
+- **Saving the facing:** it's stored with the item's spot, on the device and in `user_placements.face` (`0030_placement_face.sql`, null for the item's default facing).
+- **Measuring:** `tools/measure-items.py` measures these pictures by the object only (alpha above 200), leaving out the soft ground shadow.
+- **Smart bike:** the rollers bike replaces the old animated rider.

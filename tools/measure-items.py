@@ -14,12 +14,14 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FILES = sorted(glob.glob(os.path.join(ROOT, 'icons/Pixelart/NEW/ITEMS/*.webp'))) + [
     os.path.join(ROOT, 'icons/Pixelart/GEAR/bike-power-t3.png'),
-] + sorted(glob.glob(os.path.join(ROOT, 'icons/Pixelart/BIKE/CHARACTERS/bikelvl*_char*.webp')))
+] + sorted(glob.glob(os.path.join(ROOT, 'icons/Pixelart/BIKE/CHARACTERS/bikelvl*_char*.webp'))) + sorted(
+    glob.glob(os.path.join(ROOT, 'icons/Items/*.webp')))
 
 out = {}
 for f in FILES:
     im = Image.open(f).convert('RGBA')
-    a = np.asarray(im)[..., 3] > 40
+    # the rendered items (icons/Items) carry a soft shadow on the ground: measure the object only
+    a = np.asarray(im)[..., 3] > (200 if '/Items/' in f else 40)
     H, W = a.shape
     rows = np.where(a.any(1))[0]
     cols = np.where(a.any(0))[0]

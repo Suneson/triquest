@@ -68,9 +68,13 @@ export function webglOk() {
  *   anchor    where the footprint's centre is in host px: { x, y }
  *   yaw       the runner's turn in radians (0 faces the console)
  *   still     draw one frame and stop (reduced motion)
+ *   spot      where on the footprint it stands and which way it faces: { u, v, yaw } in tiles from
+ *             the footprint's back corner and radians (RUNNER_SPOT, facing +v, when not given)
+ *   foot      the footprint in tiles, { w, h } (1 x 2 when not given)
  * Returns { setYaw, layout, dispose } at once; the model appears when loaded.
  */
-export function mountRunner(host, { tile, anchor, yaw = 0, still = false } = {}) {
+export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot = null, foot = { w: 1, h: 2 } } = {}) {
+  const at = { ...RUNNER_SPOT, yaw: 0, ...(spot || {}) };
   let disposed = false;
   let api = null;
   const canvas = document.createElement('canvas');
@@ -109,8 +113,8 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false } = {})
     });
     const rig = new THREE.Group();
     rig.add(runner);
-    rig.position.set(RUNNER_SPOT.u, RUNNER_SPOT.y, RUNNER_SPOT.v);
-    rig.scale.setScalar(RUNNER_SPOT.scale);
+    rig.position.set(at.u, at.y, at.v);
+    rig.scale.setScalar(at.scale);
     scene.add(rig);
 
     const mixer = new THREE.AnimationMixer(runner);
@@ -120,7 +124,7 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false } = {})
 
     // the camera: from the floor's front corner, 45° round, tilted to the art's slant
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -50, 50);
-    const target = new THREE.Vector3(0.5, 0, 1); // the footprint's centre on the floor
+    const target = new THREE.Vector3(foot.w / 2, 0, foot.h / 2); // the footprint's centre on the floor
     const dir = new THREE.Vector3(Math.cos(ISO_TILT) * Math.SQRT1_2, Math.sin(ISO_TILT), Math.cos(ISO_TILT) * Math.SQRT1_2);
     camera.position.copy(target).addScaledVector(dir, 20);
     camera.up.set(0, 1, 0);
@@ -142,7 +146,7 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false } = {})
       camera.top = (h * (1 - FRAME.below)) / s; camera.bottom = -(h * FRAME.below) / s;
       camera.updateProjectionMatrix();
     };
-    const setYaw = (r) => { pending.yaw = r; rig.rotation.y = r; };
+    const setYaw = (r) => { pending.yaw = r; rig.rotation.y = at.yaw + r; };
     setYaw(pending.yaw);
     layout();
 

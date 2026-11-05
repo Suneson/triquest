@@ -14,7 +14,7 @@ const uid = () => (isDemo() ? 'demo' : currentUser()?.id || 'local');
 function readAll() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
 function writeAll(all) { try { localStorage.setItem(KEY, JSON.stringify(all)); } catch { /* private mode */ } }
 
-/** Saved positions: { itemId: { room, u, v } }. */
+/** Saved positions: { itemId: { room, u, v, face? } } (face: 'a' or 'b', for items with two facings). */
 export const savedPlacements = () => readAll()[uid()] || {};
 
 export function onPlacements(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -23,14 +23,15 @@ const emit = () => listeners.forEach((fn) => { try { fn(); } catch (e) { console
 /** Remember a move (and send it to the server when signed in). */
 export async function savePlacement(itemId, p) {
   const all = readAll();
-  all[uid()] = { ...(all[uid()] || {}), [itemId]: { room: p.room, u: p.u, v: p.v } };
+  all[uid()] = { ...(all[uid()] || {}), [itemId]: { room: p.room, u: p.u, v: p.v, ...(p.face ? { face: p.face } : {}) } };
   writeAll(all);
   if (isDemo() || !SYNC_ENABLED || !currentUser()) return;
   try {
     const c = await client();
-    const { error } = await c.from('user_placements').upsert(
-      { user_id: currentUser().id, item_id: itemId, room: p.room, u: p.u, v: p.v, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,item_id' });
+    const row = { user_id: currentUser().id, item_id: itemId, room: p.room, u: p.u, v: p.v, updated_at: new Date().toISOString() };
+    let { error } = await c.from('user_placements').upsert({ ...row, face: p.face || null }, { onConflict: 'user_id,item_id' });
+    // before 0030 is live there's no face column: keep the spot, the facing stays on this device
+    if (error && /face/.test(error.message || '')) ({ error } = await c.from('user_placements').upsert(row, { onConflict: 'user_id,item_id' }));
     if (error) throw error;
   } catch (e) { console.warn('placement not saved to the server', e); }
 }
@@ -40,10 +41,14 @@ export async function refreshPlacements() {
   if (isDemo() || !SYNC_ENABLED || !currentUser()) return savedPlacements();
   try {
     const c = await client();
-    const { data, error } = await c.from('user_placements').select('item_id, room, u, v');
+    let { data, error } = await c.from('user_placements').select('item_id, room, u, v, face');
+    if (error && /face/.test(error.message || '')) ({ data, error } = await c.from('user_placements').select('item_id, room, u, v'));
     if (error) throw error;
     const all = readAll();
-    all[uid()] = Object.fromEntries((data || []).map((r) => [r.item_id, { room: r.room, u: r.u, v: r.v }]));
+    const mine = all[uid()] || {};
+    // the server's spot; its facing, or this device's when the server has none yet
+    all[uid()] = Object.fromEntries((data || []).map((r) => [r.item_id, { room: r.room, u: r.u, v: r.v,
+      ...((r.face || mine[r.item_id]?.face) ? { face: r.face || mine[r.item_id].face } : {}) }]));
     writeAll(all);
     emit();
   } catch (e) { console.warn('placements refresh failed', e); }

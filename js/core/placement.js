@@ -139,13 +139,31 @@ export function boxCorners(geomKey, u, v, w = 1, h = 1) {
  * tapping it opens once it's picked up ('missions'). `runner3d`: the 3D runner
  * stands on it (the treadmill).
  */
+// the items rendered from 3D models in Blender and repainted (docs/ITEMS-3D.md): each has two
+// facings, `a` (its front down-left) and `b` (its front down-right, the item turned 90 degrees)
+const ITEM3D = 'icons/Items';
+/** Which tier of an item a room's level shows: 1 below the first band, 2 below the second, then 3. */
+export const tierFor = (level, bands) => 1 + bands.filter((b) => (Number(level) || 1) >= b).length;
+
 export const PLACEABLES = [
-  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', fit: 0.75, art: () => `${ART}/ITEMS/coffee-machine.webp` },
-  // the rider on their bike: the cycling animation, standing along the floor's v axis
-  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.62, art: (o) => o?.rider || '' },
-  // the treadmill: everyone's, in the run room, with the 3D runner on its belt
-  // (js/app/runner3d.js), its console at the front of the floor's v axis
-  { id: 'treadmill', w: 1, h: 2, gift: true, home: 'run', needsRoom: 'run', fit: 0.9, runner3d: true, art: () => `${ART}/ITEMS/treadmill.webp` },
+  // the coffee machine: tier 1 to 3 with the locker room's level (4 and 7 step it up)
+  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
+    art: (o) => `${ITEM3D}/coffee-machine-t${tierFor(o?.levels?.locker, [4, 7])}-${o?.face || 'a'}.webp` },
+  // the road bike on balance rollers: long along v when facing a
+  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.78, faces: true, face: 'a',
+    art: (o) => `${ITEM3D}/road-bike-rollers-t1-${o?.face || 'a'}.webp` },
+  // the treadmill: everyone's, in the run room, with the 3D runner on its belt (js/app/runner3d.js).
+  // Long along u when facing a, its console at the u = 0 end; facing b (the first one) it's long
+  // along v, its console at the v = 0 end. Tier 2 from run room level 5. `runner`: where the runner
+  // stands (tiles from the footprint's back corner) and which way it faces, for each facing.
+  { id: 'treadmill', w: 2, h: 1, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, faces: true, face: 'b',
+    runner: { a: { u: 1.12, v: 0.5, yaw: -Math.PI / 2 }, b: { u: 0.5, v: 1.12, yaw: Math.PI } },
+    art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, [5])}-${o?.face || 'b'}.webp` },
+  // two showpieces, gifts while the base items are being tried out
+  { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',
+    art: (o) => `${ITEM3D}/road-bike-stand-${o?.face || 'a'}.webp` },
+  { id: 'trophy-gold-mountain', w: 1, h: 1, gift: true, home: 'locker', fit: 0.8, faces: true, face: 'a',
+    art: (o) => `${ITEM3D}/trophy-gold-mountain-${o?.face || 'a'}.webp` },
   {
     id: 'smart-trainer', w: 2, h: 1, home: 'bike', fit: 0.7, art: () => 'icons/Pixelart/GEAR/bike-power-t3.png',
     owned: (inv) => (inv || []).some((r) => r.item_id === 'bike-power-t3'),
@@ -163,6 +181,18 @@ export const PLACEABLES = [
   })),
 ];
 export const placeableById = (id) => PLACEABLES.find((p) => p.id === id) || null;
+
+/**
+ * An item as it stands in one of its facings: facing b is the item turned 90 degrees, so its
+ * footprint is turned too (w and h swap). Items with one facing are as they are.
+ */
+export function orient(item, face) {
+  if (!item?.faces) return item;
+  const f = face === 'a' || face === 'b' ? face : (item.face || 'a');
+  return f === 'b' ? { ...item, face: f, w: item.h, h: item.w } : { ...item, face: f };
+}
+/** The other facing. */
+export const turned = (face) => (face === 'b' ? 'a' : 'b');
 
 /** The items this athlete has to place: gifts, and anything their inventory gives (in rooms they have). */
 export const placeablesFor = (inventory, rooms = null) => PLACEABLES.filter((p) => (p.gift || p.owned?.(inventory))
@@ -192,7 +222,7 @@ export function canPlace(geomKey, room, item, u, v, placements = {}) {
   const taken = new Set();
   for (const [id, p] of Object.entries(placements || {})) {
     if (id === item.id || p?.room !== room) continue;
-    const other = placeableById(id);
+    const other = orient(placeableById(id), p.face);
     if (other) footprint(other, p.u, p.v).forEach(([a, b]) => taken.add(`${a},${b}`));
   }
   if (cells.some(([a, b]) => taken.has(`${a},${b}`))) return { ok: false, cells, reason: 'occupied' };
@@ -224,14 +254,16 @@ export function resolvePlacements(layout, items, saved = {}) {
   for (const it of items) {
     const s = saved?.[it.id];
     const geom = s && geomOf(s.room);
-    if (geom && canPlace(geom, s.room, it, s.u, s.v, out).ok) out[it.id] = { room: s.room, u: s.u, v: s.v };
+    const o = orient(it, s?.face);
+    if (geom && canPlace(geom, s.room, o, s.u, s.v, out).ok) out[it.id] = { room: s.room, u: s.u, v: s.v, ...(o.faces ? { face: o.face } : {}) };
     else pending.push(it);
   }
-  for (const it of pending) {
+  for (const it0 of pending) {
+    const it = orient(it0, saved?.[it0.id]?.face);
     const room = geomOf(it.home) ? it.home : 'locker';
     const pref = it.spot && canPlace(geomOf(room), room, it, it.spot[0], it.spot[1], out).ok ? { room, u: it.spot[0], v: it.spot[1] } : null;
     const spot = pref || firstFree(geomOf(room), room, it, out) || firstFree(geomOf('locker'), 'locker', it, out);
-    if (spot) out[it.id] = spot;
+    if (spot) out[it.id] = it.faces ? { ...spot, face: it.face } : spot;
   }
   return out;
 }

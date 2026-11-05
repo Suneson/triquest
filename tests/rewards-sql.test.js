@@ -45,7 +45,9 @@ const day = (base, n) => new Date(Date.parse(`${base}T12:00:00Z`) + n * 864e5).t
 const utcToday = () => new Date().toISOString().slice(0, 10);
 
 // a session as the app holds it, and the row the server stores
-const S = (o) => ({ id: o.id, date: o.date || utcToday(), type: 'run', intensity: 'steady', durationMin: 50, completed: true, strava_activity_id: o.strava ?? 900 + Math.floor(Math.random() * 1e6), ...o });
+// each session its own Strava id: drawn at random they could collide (workouts_user_strava_uniq)
+let stravaSeq = 900;
+const S = (o) => ({ id: o.id, date: o.date || utcToday(), type: 'run', intensity: 'steady', durationMin: 50, completed: true, strava_activity_id: o.strava ?? ++stravaSeq, ...o });
 async function put(db, ws, uid = UID) {
   for (const w of ws) {
     await db.query(`insert into public.workouts (id, user_id, date, type, intensity, duration_min, distance_km, completed, completed_at, strava_activity_id, source, actual)

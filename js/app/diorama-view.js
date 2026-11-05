@@ -19,7 +19,7 @@ import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import {
-  roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById,
+  roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY,
 } from '../core/placement.js';
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF } from '../core/diorama.js';
@@ -171,6 +171,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     ${roomPill(room, ctx)}
     <p class="dg-hint" data-dg-hint aria-live="polite"></p>
     <button class="dg-act" data-dg-act hidden></button>
+    <button class="dg-rot" data-dg-rot hidden aria-label="${esc(t('cp.rotate'))}"><img src="icons/UI/rotate.webp" alt="" width="64" height="64" draggable="false"></button>
     <div class="dg-row">
       ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
@@ -204,7 +205,9 @@ const turnBar = () => `<div class="dg-turn" role="group" aria-label="${esc(t('cp
  * the canvas lives inside the element, so it moves and stacks with it.
  */
 function placeRunner(el, it, p, geom, src, still) {
-  if (el._r3d || !webglOk()) return;
+  if (el._r3d && el._r3dFace === it.face) return;
+  el._r3d?.dispose(); el._r3d = null;
+  if (!webglOk()) return;
   const a = toWorld_(geom, ...Object.values(tileToPct(geom, p.u, p.v)));
   const b1 = toWorld_(geom, ...Object.values(tileToPct(geom, p.u + 1, p.v)));
   const c = toWorld_(geom, ...Object.values(tileToPct(geom, p.u + it.w / 2, p.v + it.h / 2)));
@@ -214,7 +217,9 @@ function placeRunner(el, it, p, geom, src, still) {
   const H = box.w * aspect;
   // the footprint's centre, in the element's own px (its box is the picture's)
   const anchor = { x: c[0] - (box.x - box.w / 2), y: c[1] - (box.y - H * (1 - box.pad)) };
-  el._r3d = mountRunner(el, { tile: { ux: Math.abs(b1[0] - a[0]), uy: b1[1] - a[1] }, anchor, yaw: (runnerYaw() * Math.PI) / 180, still });
+  el._r3d = mountRunner(el, { tile: { ux: Math.abs(b1[0] - a[0]), uy: b1[1] - a[1] }, anchor, yaw: (runnerYaw() * Math.PI) / 180, still,
+    spot: it.runner?.[it.face] || null, foot: { w: it.w, h: it.h } });
+  el._r3dFace = it.face;
 }
 
 // ---- the stage ---------------------------------------------------------------------------
@@ -325,7 +330,11 @@ export function wireDiorama(root, ctx) {
   const s = gearState();
   const inv = s.inventory;
   const items = placeablesFor(inv, STAGE_ROOMS);
-  const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '' };
+  const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '',
+    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx) } };
+  // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
+  const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
+  const artOf = (it) => it.art({ ...artOpts, face: it.face });
   let placements = resolvePlacements(stageLayout(), items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
@@ -423,7 +432,7 @@ export function wireDiorama(root, ctx) {
   preloadFloors();
   // an item's picture and its shadow on the floor move together
   const moveEl = (el, it, u, v) => {
-    const b = itemBox(it, { u, v }, geom, it.art(artOpts));
+    const b = itemBox(it, { u, v }, geom, artOf(it));
     el.style.left = `${b.x.toFixed(1)}px`; el.style.top = `${b.y.toFixed(1)}px`; el.style.width = `${b.w.toFixed(1)}px`;
     el.style.setProperty('--lift', b.pad);
     el.style.zIndex = String(it.flat ? 1 : Math.round(b.y));
@@ -434,7 +443,7 @@ export function wireDiorama(root, ctx) {
   const draw = () => {
     const shown = roomImg.getAttribute('src') === src;
     const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];
-    const chosen = shown && view.sel ? placeableById(view.sel) : null;
+    const chosen = shown && view.sel ? itemAt(view.sel) : null;
     worldEl.querySelector('.dg-cells').innerHTML = chosen ? footprint(chosen, placements[view.sel].u, placements[view.sel].v).map(([a, b]) => poly(boxCorners(geom, a, b), 'dg-cell is-ok')).join('') : '';
     const ar = worldEl.querySelector('.dg-arrows');
     ar.innerHTML = chosen ? arrows(geom, chosen, placements[view.sel]) : '';
@@ -445,7 +454,8 @@ export function wireDiorama(root, ctx) {
     layer.querySelectorAll('[data-item]').forEach((el) => { if (!keep.has(el.dataset.item)) { el._r3d?.dispose(); el.remove(); } });
     const shadows = worldEl.querySelector('.dg-shadows');
     shadows.querySelectorAll('[data-for]').forEach((el) => { if (!keep.has(el.dataset.for)) el.remove(); });
-    for (const it of here) {
+    for (const it0 of here) {
+      const it = itemAt(it0.id);
       let el = layer.querySelector(`[data-item="${it.id}"]`);
       if (!el) {
         el = document.createElement('button');
@@ -463,7 +473,7 @@ export function wireDiorama(root, ctx) {
       moveEl(el, it, p.u, p.v);
       el.setAttribute('aria-pressed', String(sel));
       el.setAttribute('aria-label', t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }));
-      const img = el.querySelector('img'); const a = it.art(artOpts);
+      const img = el.querySelector('img'); const a = artOf(it);
       if (img.getAttribute('src') !== a) img.src = a;
       if (it.runner3d) {
         const go = () => placeRunner(el, it, p, geom, a, reduced());
@@ -478,6 +488,8 @@ export function wireDiorama(root, ctx) {
       }
     }
     // a picked-up item that opens something shows the way in
+    const rot = root.querySelector('[data-dg-rot]');
+    if (rot) rot.hidden = !chosen?.faces;
     const act = root.querySelector('[data-dg-act]');
     const opens = chosen?.opens;
     act.hidden = !opens;
@@ -564,7 +576,9 @@ export function wireDiorama(root, ctx) {
     const g = worldEl.querySelector('.dg-cells');
     if (g) g.innerHTML = it ? footprint(it, u, v).map(([a, b]) => poly(boxCorners(geom, a, b), `dg-cell ${ok ? 'is-ok' : 'is-bad'}`)).join('') : '';
   };
-  const place = (id, to) => {
+  const place = (id, to0) => {
+    const face = to0.face || placements[id]?.face;
+    const to = face ? { ...to0, face } : to0;
     placements = { ...placements, [id]: to };
     savePlacement(id, to);
     haptic('place');
@@ -577,7 +591,7 @@ export function wireDiorama(root, ctx) {
   const refuse = (reason) => { haptic('refuse'); say(t(`cp.why.${reason || 'bounds'}`)); };
   const nudge = (dir) => {
     const id = view.sel; if (!id) return;
-    const it = placeableById(id); const p = placements[id];
+    const it = itemAt(id); const p = placements[id];
     const to = { room, u: p.u + (dir === '+u' ? 1 : dir === '-u' ? -1 : 0), v: p.v + (dir === '+v' ? 1 : dir === '-v' ? -1 : 0) };
     const c = canPlace(geom, room, it, to.u, to.v, placements);
     if (c.ok) place(id, to); else refuse(c.reason);
@@ -601,7 +615,7 @@ export function wireDiorama(root, ctx) {
     const itemEl = e.target.closest('[data-item]');
     vp.setPointerCapture?.(e.pointerId);
     if (itemEl && itemEl.dataset.item === view.sel) {
-      g = { mode: 'drag', id: view.sel, it: placeableById(view.sel), el: itemEl, from: placements[view.sel], at: placements[view.sel], ok: true, x0: e.clientX, y0: e.clientY, moved: false };
+      g = { mode: 'drag', id: view.sel, it: itemAt(view.sel), el: itemEl, from: placements[view.sel], at: placements[view.sel], ok: true, x0: e.clientX, y0: e.clientY, moved: false };
       itemEl.classList.add('is-lift');
       return;
     }
@@ -687,6 +701,17 @@ export function wireDiorama(root, ctx) {
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
   root.querySelector('[data-dg-act]').onclick = () => { haptic('tick'); openMissionBoard(ctx); };
+  // turn the picked-up item round to face the other wall, on the spot it stands (if it still fits there)
+  const rotBtn = root.querySelector('[data-dg-rot]');
+  if (rotBtn) rotBtn.onclick = (e) => {
+    e.stopPropagation();
+    const id = view.sel; const p = placements[id]; if (!id || !p) return;
+    const next = orient(placeableById(id), turned(itemAt(id).face));
+    const c = canPlace(geom, room, next, p.u, p.v, placements);
+    if (!c.ok) { refuse(c.reason); return; }
+    place(id, { room, u: p.u, v: p.v, face: next.face });
+    if (!reduced()) { rotBtn.classList.remove('spin'); void rotBtn.offsetWidth; rotBtn.classList.add('spin'); }
+  };
   root.querySelectorAll('[data-r3d-turn]').forEach((b) => b.addEventListener('click', () => {
     const deg = (((runnerYaw() + Number(b.dataset.r3dTurn)) % 360) + 360) % 360;
     saveYaw(deg);

@@ -147,17 +147,17 @@ export const tierFor = (level, bands) => 1 + bands.filter((b) => (Number(level) 
 
 export const PLACEABLES = [
   // the coffee machine: tier 1 to 3 with the locker room's level (4 and 7 step it up)
-  { id: 'coffee-machine', w: 1, h: 1, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
+  { id: 'coffee-machine', w: 2, h: 2, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/coffee-machine-t${tierFor(o?.levels?.locker, [4, 7])}-${o?.face || 'a'}.webp` },
   // the road bike on balance rollers: long along v when facing a
-  { id: 'smart-bike', w: 1, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.78, faces: true, face: 'a',
+  { id: 'smart-bike', w: 2, h: 3, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.78, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/road-bike-rollers-t1-${o?.face || 'a'}.webp` },
   // the treadmill: everyone's, in the run room, with the 3D runner on its belt (js/app/runner3d.js).
-  // Long along u when facing a, its console at the u = 0 end; facing b (the first one) it's long
-  // along v, its console at the v = 0 end. Tier 2 from run room level 5. `runner`: where the runner
+  // 3 x 2: long along u when facing a, its console at the u = 0 end; facing b (the first one) it's
+  // long along v, its console at the v = 0 end. Tier 2 from run room level 5. `runner`: where the runner
   // stands (tiles from the footprint's back corner) and which way it faces, for each facing.
-  { id: 'treadmill', w: 2, h: 1, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, faces: true, face: 'b',
-    runner: { a: { u: 1.12, v: 0.5, yaw: -Math.PI / 2 }, b: { u: 0.5, v: 1.12, yaw: Math.PI } },
+  { id: 'treadmill', w: 3, h: 2, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, faces: true, face: 'b',
+    runner: { a: { u: 1.65, v: 1, yaw: -Math.PI / 2, y: 0.3, scale: 1.26 }, b: { u: 1, v: 1.65, yaw: Math.PI, y: 0.3, scale: 1.26 } },
     art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, [5])}-${o?.face || 'b'}.webp` },
   // two showpieces, gifts while the base items are being tried out
   { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',

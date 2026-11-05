@@ -134,7 +134,7 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
       pending.tile = tl; pending.anchor = an;
       // one tile along u is 1/√2 scene units across the screen: px per scene unit
       const s = tl.ux / Math.SQRT1_2;
-      const footW = tl.ux * 3; // 1 tile along u plus 2 along v, across the screen
+      const footW = tl.ux * (foot.w + foot.h); // the footprint's tiles along u plus along v, across the screen
       const w = footW * FRAME.w; const h = footW * FRAME.h;
       canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
       canvas.style.left = `${an.x - w / 2}px`;

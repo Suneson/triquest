@@ -3,12 +3,16 @@
 ## Items
 
 Attach two images:
-1. One render (`<item>-<a|b>-grey.jpg`).
+1. The item's sheet (`<item>.jpg`, from batch 2 on): facing a on the left, facing b on the right, on green.
 2. The MOSKE logo, only if the item should carry it.
 
 Then paste:
 
 ```
+The attached sheet shows the same object twice, from two sides: paint both
+identically, the same colours, materials and details on each, and keep the two
+apart exactly where they are.
+
 Repaint the attached 3D render as a finished game item for a premium mobile
 strategy game, in the style of Supercell's Clash of Clans buildings.
 
@@ -40,7 +44,7 @@ Palette:
 Keep the MOSKE bird logo where it already is, small, flat and crisp. Never add
 a second one, and never add any other text.
 
-Background: replace the grey with one flat solid pure green #00FF00 everywhere
+Background: keep one flat solid pure green #00FF00 everywhere
 around the object, no gradient, no glow or green spill on the object, a hard
 clean edge. The contact shadow is a darker green on the ground.
 ```
@@ -89,6 +93,6 @@ For the locker room, use:
 
 ## Rules
 
-- **One render per chat.** Do facing **a** first. Then do facing **b** with that first result attached too, and add: `Match the attached finished item's colours and materials exactly; it's the same object seen from the other side.`
+- **One sheet per chat:** both facings are painted together. For the first batch's single renders, do facing **a** first. Then do facing **b** with that result attached, and add: `Match the attached finished item's colours and materials exactly; it's the same object seen from the other side.`
 - **Send it back if** the outline moved, a part was added, or the shadow changed. Ask again with: `Keep the outline exactly as in the render.`
-- **Send me back** the finished images, named like the render (`treadmill-t1-a.png`).
+- **Send me back** the finished sheets, named like the sheet (`treadmill-t1.png`). I split them into the two facings.

@@ -104,10 +104,11 @@ export const MAX_ZOOM = 2.5; // × the smallest zoom
 export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
 /**
  * A room's art geometry on the stage: the painted 8 × 8 room (the locker's is the square one),
- * or its 16 × 16 model once the room is expanded (expansions.js; only the locker has one yet).
+ * or its 16 × 16 model once the room is expanded (expansions.js; only the locker has one yet),
+ * or that model taped off to its back 8 × 8 (`taped`, expansions.js).
  */
-export const stageGeom = (room, expanded = false) => {
-  if (room === 'locker') return expanded ? 'locker-16' : 'locker-square';
+export const stageGeom = (room, expanded = false, taped = false) => {
+  if (room === 'locker') return taped ? 'locker-16-tape' : expanded ? 'locker-16' : 'locker-square';
   return room;
 };
 

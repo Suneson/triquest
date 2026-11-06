@@ -21,6 +21,9 @@ import {
   SLOTS, SLOT_ICON, GEAR_RULES, KITS, FUELS, SPORTS, CATALOG, FEAT_ITEMS, featItemById, ownedTier, nextTier, ownedKits, gearById, tierId, kitArt, fuelById,
 } from '../core/gear.js';
 import { featById } from '../core/feats.js';
+import { placeablesFor, stashedItems, orient } from '../core/placement.js';
+import { savedPlacements, baseItemRows } from './placement-state.js';
+import { takeFromStash, itemLevels } from './diorama-view.js';
 import { featItems } from './feats-state.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
 import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen, buildBlueprint, buyStall } from './gear-state.js';
@@ -708,7 +711,7 @@ export const openGear = (ctx, sport) => openShop(ctx, { tab: 'gear', sport });
 
 // ---- the inventory ------------------------------------------------------------------------
 
-const INV_TABS = ['fuel', 'clothes', 'gear'];
+const INV_TABS = ['fuel', 'clothes', 'gear', 'stash'];
 
 /** A fitted gear slot in the inventory: its tier and picture, and that it's on. */
 function gearInvCard(sport, slot, tier) {
@@ -721,9 +724,18 @@ function gearInvCard(sport, slot, tier) {
   });
 }
 
+/** A base item in the stash: its picture, and a tap sets it down in the room you're looking at. */
+function stashCard(it) {
+  const name = t(`cp.item.${it.id}`);
+  return shopCard({
+    id: it.id, kind: 'stash', title: name, art: it.art({ levels: itemLevels(), face: it.face }), st: {}, info: false,
+    button: { kind: 'go', tone: 'action', tray: `<b>${esc(t('gear.place'))}</b>`, label: t('gear.placeAria', { name }), attrs: `data-stash-place="${esc(it.id)}"` },
+  });
+}
+
 /**
  * Open the inventory: what you hold, on the shop's cards (docs/SHOP.md,
- * phase 5). Fuel to use, clothes to wear, gear fitted, one tab each.
+ * phase 5). Fuel to use, clothes to wear, gear fitted, base items stashed, one tab each.
  */
 export function openInventory({ tab = 'fuel' } = {}) {
   let off = null;
@@ -735,7 +747,7 @@ export function openInventory({ tab = 'fuel' } = {}) {
     const s = gearState();
     const w = walletNow(workouts);
     const empty = (txt, to) => `<div class="sc-empty"><p>${txt}</p>${tapButton(actionButton(t('gear.toShop'), `data-inv-shop="${to}"`, { icon: 'stall', variant: 'gold' }))}</div>`;
-    const tabs = `<div class="gw-tabs sh-tabs is-three" role="tablist" aria-label="${t('gear.inventory')}">${INV_TABS.map((v) =>
+    const tabs = `<div class="gw-tabs sh-tabs is-four" role="tablist" aria-label="${t('gear.inventory')}">${INV_TABS.map((v) =>
       `<button class="gw-tab sh-tab game-tab${v === view ? ' active' : ''}" role="tab" id="inv-tab-${v}" aria-selected="${v === view}" aria-controls="inv-panel" data-inv-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
         <img src="${TAB_ART(v)}" width="128" height="128" alt="" draggable="false"><span>${t(`gear.tab.${v}`)}</span></button>`).join('')}</div>`;
     let panel;
@@ -754,6 +766,10 @@ export function openInventory({ tab = 'fuel' } = {}) {
         ...seasonal.map((k) => seasonKitShopCard(k, true, worn === k.id)),
       ];
       panel = cards.length ? `<div class="sc-grid">${cards.join('')}</div>` : empty(t('gear.invNoClothes'), 'clothes');
+    } else if (view === 'stash') {
+      const saved = savedPlacements();
+      const held = stashedItems(placeablesFor([...s.inventory, ...baseItemRows()]), saved).map((it) => orient(it, saved[it.id]?.face));
+      panel = held.length ? `<div class="sc-grid">${held.map(stashCard).join('')}</div>` : `<div class="sc-empty"><p>${esc(t('gear.invNoStash'))}</p></div>`;
     } else {
       const groups = SPORTS.map((sport) => {
         const slots = SLOTS[sport].map((slot) => ({ slot, tier: ownedTier(s.inventory, sport, slot) })).filter((r) => r.tier > 0);
@@ -778,6 +794,14 @@ export function openInventory({ tab = 'fuel' } = {}) {
     if (tb) { view = tb.dataset.invTab; draw(); root.querySelector(`[data-inv-tab="${view}"]`)?.focus({ preventScroll: true }); return; }
     const go = e.target.closest('[data-inv-shop]');
     if (go) { openShop(null, { tab: go.dataset.invShop }); return; }
+    const put = e.target.closest('[data-stash-place]');
+    if (put) {
+      if (!takeFromStash(put.dataset.stashPlace)) { haptic('refuse'); toast(esc(t('gear.noRoomForIt'))); return; }
+      haptic('place');
+      closeLayer(root);
+      document.dispatchEvent(new CustomEvent('dg-show-base', { bubbles: true }));
+      return;
+    }
     const info = e.target.closest('[data-shop-info]');
     if (info) { cardInfo(info, draw); return; }
     await handleCommon(e, draw);

@@ -3072,4 +3072,13 @@ en.city.market = {"upgrade": "Upgrade", "upgraded": "Market upgraded to level {n
 
 en.cp.expand = {"aria": "Expand your rooms", "title": "Expand your rooms", "about": "Take a room from 8 × 8 to 16 × 16: it grows to fill its whole floor, right up to the railing, with room for four times as much.", "size": "8 × 8 → 16 × 16", "sizeDone": "16 × 16", "buy": "Expand", "owned": "Expanded", "soon": "Coming soon", "done": "{room} expanded to 16 × 16."};
 
+// ---- base items, the stash and the trophy cabinet (docs/ITEMS-3D.md) ----
+Object.assign(en.cp.item, {"lockers-t1": "Lockers", "lockers-t2": "Lockers T2", "drinks-fridge": "Drinks fridge", "massage-table": "Massage table", "ice-bath": "Ice bath", "trophy-cabinet-t1": "Trophy cabinet", "trophy-cabinet-t2": "Trophy cabinet T2", "dumbbell-rack": "Dumbbell rack", "kettlebell-set": "Kettlebell set", "punching-bag": "Punching bag", "rowing-machine": "Rowing machine", "race-podium": "Race podium", "shoe-rack": "Shoe rack", "bike-workstand": "Bike workstand", "start-block": "Starting block", "treadmill-t1": "Treadmill T1", "treadmill-t2": "Treadmill T2", "treadmill-t3": "Treadmill T3", "treadmill-t4": "Treadmill T4", "coffee-machine-t1": "Coffee machine T1", "coffee-machine-t2": "Coffee machine T2", "coffee-machine-t3": "Coffee machine T3"});
+en.cp.menu = {"rotate": "Rotate", "stash": "Stash", "stashAria": "Put it away in your stash", "display": "Display"};
+en.cp.stashed = "{name} is in your stash";
+en.cp.display = {"title": "Trophy cabinet", "about": "Pick the {n} trophies people see when they visit your base.", "shelfAria": "{n} of {slots} trophies on show", "yours": "Your trophies", "none": "Win a trophy first: it will wait for you here.", "full": "The cabinet is full: it holds {n}. Take one off first.", "remove": "Take {name} off the shelf"};
+Object.assign(en.cp.expand, {"tapeOn": "Admin: preview the taped 8 × 8", "tapeOff": "Admin: stop the tape preview"});
+en.gear.tab["stash"] = "Stash";
+Object.assign(en.gear, {"place": "Place", "placeAria": "Place {name} in this room", "invNoStash": "Nothing stashed. Tap an item in your base and press Stash.", "noRoomForIt": "No room for it here. Try another room, or stash something."});
+
 export default en;

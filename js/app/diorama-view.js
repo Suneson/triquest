@@ -20,10 +20,10 @@ import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
-  resolvePlacements, ROOM_GEOMETRY,
+  resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF } from '../core/diorama.js';
-import { isExpanded, EXPANDED_ART } from '../core/expansions.js';
+import { isExpanded, EXPANDED_ART, tapedRoom } from '../core/expansions.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -34,7 +34,8 @@ import { quadrantLevel } from '../core/workshop.js';
 import { gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow, myExpansions } from './gear-state.js';
 import { featAwards } from './feats-state.js';
 import { clockLeft } from './gear-view.js';
-import { savedPlacements, savePlacement } from './placement-state.js';
+import { savedPlacements, savePlacement, stashPlacement, baseItemRows } from './placement-state.js';
+import { openTrophyDisplay, trophiesShown } from './trophy-display-view.js';
 import { currentUser } from './auth.js';
 import { haptic } from './haptics.js';
 import { playPlace, prefersReducedMotion } from './effects.js';
@@ -72,7 +73,12 @@ function levelOf(room, ctx) {
 
 // a room expanded to 16 × 16 (expansions.js) shows its model in place of its painted 8 × 8 room
 const expanded = (room) => isExpanded(myExpansions(), room) && !!EXPANDED_ART[room];
-const geomOf = (room) => stageGeom(room, expanded(room));
+// the taped-off 8 × 8 inside the 16 × 16 picture (expansions.js): admins can preview it, even in a room they've expanded
+const TAPE_KEY = 'moske-tape-preview';
+export const tapePreview = () => { try { return (isChestAdmin() || isDemo()) && localStorage.getItem(TAPE_KEY) === '1'; } catch { return false; } };
+export const setTapePreview = (on) => { try { localStorage.setItem(TAPE_KEY, on ? '1' : '0'); } catch { /* private mode */ } };
+const taped = (room) => (tapePreview() ? tapedRoom(room, true) : tapedRoom(room) && !expanded(room));
+const geomOf = (room) => stageGeom(room, expanded(room), taped(room));
 // every room, for working out where items stand
 const stageLayout = () => ({ rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
@@ -170,8 +176,14 @@ export function renderDiorama(ctx, avatarBtn = '') {
     ${hud(ctx, avatarBtn)}
     ${roomPill(room, ctx)}
     <p class="dg-hint" data-dg-hint aria-live="polite"></p>
-    <button class="dg-act" data-dg-act hidden></button>
-    <button class="dg-rot" data-dg-rot hidden aria-label="${esc(t('cp.rotate'))}"><img src="icons/UI/rotate.webp" alt="" width="64" height="64" draggable="false"></button>
+    <div class="dg-menu" data-dg-menu hidden>
+      <h3 class="dg-menu-name" data-dg-menu-name></h3>
+      <div class="dg-menu-btns">
+        <button class="dg-sq" data-dg-open hidden><img alt="" width="64" height="64" draggable="false"><span></span><b class="dg-sq-n"></b></button>
+        <button class="dg-sq" data-dg-rot hidden aria-label="${esc(t('cp.rotate'))}"><img src="icons/UI/rotate.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.rotate'))}</span></button>
+        <button class="dg-sq" data-dg-stash aria-label="${esc(t('cp.menu.stashAria'))}"><img src="icons/UI/stash.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.stash'))}</span></button>
+      </div>
+    </div>
     <div class="dg-row">
       ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
@@ -225,6 +237,27 @@ function placeRunner(el, it, p, geom, src, still) {
 // ---- the stage ---------------------------------------------------------------------------
 
 const view = { v: null, sel: null, tick: null };
+// the room's level per room, as the stage last worked it out (the stash's pictures use it)
+let lastLevels = {};
+export const itemLevels = () => lastLevels;
+const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], STAGE_ROOMS);
+
+/**
+ * Set an item from the stash down in the room on the stage, on the first free spot, and pick it up.
+ * False when it doesn't fit there.
+ */
+export function takeFromStash(id) {
+  const room = activeRoom();
+  const geom = geomOf(room);
+  const saved = savedPlacements();
+  const it = orient(placeableById(id), saved[id]?.face);
+  if (!it) return false;
+  const spot = firstFree(geom, room, it, resolvePlacements(stageLayout(), itemsOwned(), saved));
+  if (!spot) return false;
+  savePlacement(id, { ...spot, ...(it.faces ? { face: it.face } : {}) });
+  view.sel = id;
+  return true;
+}
 // the world's DOM, kept between renders (see wireDiorama)
 const stage = { world: null, gen: 0, env: envFor('locker') };
 // a point of a room's art in the world it stands in now
@@ -270,6 +303,38 @@ function itemBox(it, p, geom, src) {
   const f = fitOf(src);
   const w = ((maxX - minX) * fit) / f.w;
   return { x: cx + (0.5 - f.mid) * w, y: cy + ((maxY - minY) / 2) * fit, w, pad: f.pad, cx, cy, sw: (maxX - minX) * fit, sh: (maxY - minY) * fit };
+}
+
+// ---- the tape round a room's 8 × 8, until it's expanded (docs/ROOMS-16-NEXT.md) ----------------
+
+const TAPE_W = 0.42; // the tape's width, in tiles
+const TAPE_H = 48; const TAPE_L = 256; // icons/UI/tape.webp: one repeat a tile
+
+/** Lay the tape along the limit's two open sides and dim the floor outside it. */
+function drawTape(artEl, geom, rw, rh) {
+  let el = artEl.querySelector('.dg-tape');
+  const lim = ROOM_GEOMETRY[geom]?.limit;
+  if (!lim) { el?.remove(); return; }
+  const key = `${geom}:${rw}x${rh}`;
+  if (el?.dataset.key === key) return;
+  el?.remove();
+  el = document.createElement('div');
+  el.className = 'dg-tape'; el.dataset.key = key;
+  const g = ROOM_GEOMETRY[geom];
+  const at = (u, v) => { const p = tileToPct(geom, u, v); return [p.x / 100 * rw, p.y / 100 * rh]; };
+  const pctAt = (u, v) => { const p = tileToPct(geom, u, v); return `${p.x.toFixed(3)},${p.y.toFixed(3)}`; };
+  // the floor beyond the tape, dimmed: everything but the back corner
+  const beyond = [[lim, 0], [g.cols, 0], [g.cols, g.rows], [0, g.rows], [0, lim], [lim, lim]];
+  const strip = (from, to, across) => {
+    const [x0, y0] = at(...from); const [x1, y1] = at(...to); const [cx, cy] = at(from[0] + across[0], from[1] + across[1]);
+    const len = TAPE_L * lim;
+    const m = [(x1 - x0) / len, (y1 - y0) / len, (cx - x0) / TAPE_H, (cy - y0) / TAPE_H, x0, y0];
+    return `<i style="width:${len}px;height:${TAPE_H}px;transform:matrix(${m.map((n) => +n.toFixed(5)).join(',')})"></i>`;
+  };
+  const w = TAPE_W; const h = w / 2;
+  el.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="${beyond.map(([u, v]) => pctAt(u, v)).join(' ')}"/></svg>
+    ${strip([lim - h, 0], [lim - h, lim + h], [w, 0])}${strip([0, lim - h], [lim + h, lim - h], [0, w])}`;
+  artEl.querySelector('.dg-floor').before(el);
 }
 
 // ---- moving between floors of the tower: a cloud bank sweeps through (docs/CITY.md) -----------
@@ -329,9 +394,10 @@ export function wireDiorama(root, ctx) {
   const geom = geomOf(room);
   const s = gearState();
   const inv = s.inventory;
-  const items = placeablesFor(inv, STAGE_ROOMS);
+  const items = itemsOwned();
   const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '',
     levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx) } };
+  lastLevels = artOpts.levels;
   // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
   const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
   const artOf = (it) => it.art({ ...artOpts, face: it.face });
@@ -440,6 +506,15 @@ export function wireDiorama(root, ctx) {
     if (sh) Object.assign(sh.style, { left: `${b.cx.toFixed(1)}px`, top: `${b.cy.toFixed(1)}px`, width: `${b.sw.toFixed(1)}px`, height: `${b.sh.toFixed(1)}px` });
   };
   const board = boardCount(ctx.workouts);
+  // what's on show in the trophy cabinets, out of the best cabinet standing
+  const shelf = () => {
+    const slots = displaySlots(Object.keys(placements).map(placeableById));
+    return { slots, n: Math.min(trophiesShown().length, slots) };
+  };
+  const openItem = (it) => {
+    if (it?.opens === 'missions') openMissionBoard(ctx);
+    else if (it?.opens === 'trophies') openTrophyDisplay();
+  };
   const draw = () => {
     const shown = roomImg.getAttribute('src') === src;
     const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];
@@ -476,8 +551,11 @@ export function wireDiorama(root, ctx) {
       const img = el.querySelector('img'); const a = artOf(it);
       if (img.getAttribute('src') !== a) img.src = a;
       if (it.runner3d) {
-        const go = () => placeRunner(el, it, p, geom, a, reduced());
-        if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once: true });
+        // one runner, one 3D scene: on the treadmill you've picked up, else the first one in the room
+        if (it.id === (chosen?.runner3d ? chosen.id : here.find((x) => x.runner3d)?.id)) {
+          const go = () => placeRunner(el, it, p, geom, a, reduced());
+          if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once: true });
+        } else { el._r3d?.dispose(); el._r3d = null; el._r3dFace = null; }
       }
       // the mission board carries this week's count
       if (it.opens === 'missions') {
@@ -486,14 +564,34 @@ export function wireDiorama(root, ctx) {
         tag.textContent = `${board.done}/${board.total}`;
         tag.classList.toggle('is-all', board.done === board.total);
       }
+      if (it.opens === 'trophies') {
+        let tag = el.querySelector('.dg-tag');
+        if (!tag) { tag = document.createElement('i'); tag.className = 'dg-tag'; el.append(tag); }
+        const { n, slots } = shelf();
+        tag.textContent = `${n}/${slots}`;
+        tag.classList.toggle('is-all', n === slots);
+      }
     }
-    // a picked-up item that opens something shows the way in
-    const rot = root.querySelector('[data-dg-rot]');
-    if (rot) rot.hidden = !chosen?.faces;
-    const act = root.querySelector('[data-dg-act]');
-    const opens = chosen?.opens;
-    act.hidden = !opens;
-    if (opens) act.innerHTML = `<img src="${BOARD_ART}" width="28" height="28" alt="">${esc(t('mission.ui.open'))} <b>${board.done}/${board.total}</b>`;
+    // the picked-up item's menu: its name over square buttons for what it can do
+    const menu = root.querySelector('[data-dg-menu]');
+    if (menu) {
+      menu.hidden = !chosen;
+      if (chosen) {
+        menu.querySelector('[data-dg-menu-name]').textContent = itemName(chosen.id);
+        menu.querySelector('[data-dg-rot]').hidden = !chosen.faces;
+        const open = menu.querySelector('[data-dg-open]');
+        open.hidden = !chosen.opens;
+        if (chosen.opens) {
+          const isBoard = chosen.opens === 'missions';
+          const { n, slots } = shelf();
+          const label = t(isBoard ? 'mission.ui.open' : 'cp.menu.display');
+          open.querySelector('img').src = isBoard ? BOARD_ART : 'icons/UI/side/side-trophy.webp';
+          open.querySelector('span').textContent = label;
+          open.querySelector('b').textContent = isBoard ? `${board.done}/${board.total}` : `${n}/${slots}`;
+          open.setAttribute('aria-label', label);
+        }
+      }
+    }
   };
 
   const box = () => vp.getBoundingClientRect();
@@ -520,11 +618,12 @@ export function wireDiorama(root, ctx) {
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
-  const src = expanded(room) ? EXPANDED_ART[room] : roomArt(room, levelOf(room, ctx));
+  const src = expanded(room) || taped(room) ? EXPANDED_ART[room] : roomArt(room, levelOf(room, ctx));
   const showRoom = () => {
     artEl.className = `dg-room-art is-${room}`;
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;
     artEl.style.transform = `matrix(${M.map((n) => +n.toFixed(5)).join(',')})`;
+    drawTape(artEl, geom, rw, rh);
     roomImg.alt = t('cp.roomAlt', { room: roomName(room), n: levelOf(room, ctx) });
   };
   if (roomImg.getAttribute('src') !== src) {
@@ -654,8 +753,8 @@ export function wireDiorama(root, ctx) {
     const hit = tileAt(d.cx, d.cy, d.it);
     const gm = ROOM_GEOMETRY[geom];
     const c = canPlace(geom, room, d.it, hit.u, hit.v, placements);
-    const u = Math.max(0, Math.min(hit.u, gm.cols - d.it.w));
-    const v = Math.max(0, Math.min(hit.v, gm.rows - d.it.h));
+    const u = Math.max(0, Math.min(hit.u, (gm.limit ?? gm.cols) - d.it.w));
+    const v = Math.max(0, Math.min(hit.v, (gm.limit ?? gm.rows) - d.it.h));
     d.at = { room, u: c.ok ? hit.u : u, v: c.ok ? hit.v : v };
     d.ok = c.ok; d.why = c.reason;
     d.el.classList.toggle('is-bad', !c.ok);
@@ -673,7 +772,7 @@ export function wireDiorama(root, ctx) {
     if (done.mode === 'drag') {
       done.el.classList.remove('is-lift', 'is-bad');
       // a second tap on a picked-up board opens it
-      if (!done.moved) { draw(); if (done.it.opens === 'missions') openMissionBoard(ctx); return; }
+      if (!done.moved) { draw(); openItem(done.it); return; }
       const same = done.at.u === done.from.u && done.at.v === done.from.v;
       if (done.ok && !same) { place(done.id, done.at); return; }
       // back to where it was, with an elastic spring
@@ -700,7 +799,20 @@ export function wireDiorama(root, ctx) {
   };
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
-  root.querySelector('[data-dg-act]').onclick = () => { haptic('tick'); openMissionBoard(ctx); };
+  root.querySelector('[data-dg-open]').onclick = (e) => { e.stopPropagation(); haptic('tick'); openItem(view.sel && itemAt(view.sel)); };
+  // put the picked-up item away in the inventory's Stash tab
+  root.querySelector('[data-dg-stash]').onclick = (e) => {
+    e.stopPropagation();
+    const id = view.sel; const p = placements[id]; if (!id || !p) return;
+    stashPlacement(id, p);
+    const rest = { ...placements }; delete rest[id];
+    placements = rest;
+    view.sel = null;
+    haptic('place');
+    playPlace();
+    draw();
+    say(t('cp.stashed', { name: itemName(id) }));
+  };
   // turn the picked-up item round to face the other wall, on the spot it stands (if it still fits there)
   const rotBtn = root.querySelector('[data-dg-rot]');
   if (rotBtn) rotBtn.onclick = (e) => {

@@ -21,11 +21,13 @@ The rules live in `js/core/expansions.js` (`EXPANSION_RULES`) and in `expansion_
 
 ## The 16 × 16 room's picture
 
-- **Rendering:** the picture (`icons/Pixelart/NEW/LOCKER/model-10.webp`, 2200 × 1610) is the model rendered from the city's own camera: orthographic, at the room pictures' slope (0.489), from its front corner. It's a still, made once; a live model would cost the phone a second WebGL scene for a room that doesn't move.
-- **Its floor:** the inner corners were found on the model by casting rays straight down (`ROOM_GEOMETRY['locker-16']` in `js/core/placement.js`). It's a 16 × 16 grid, so a tile is the same size as in an 8 × 8 room and an expanded room holds four times as much. Things already placed keep their spots.
+- **Rendering:** the picture (`icons/Pixelart/NEW/LOCKER/model-10.webp`, 2200 × 1586) is the model rendered from the city's own camera: orthographic, at the room pictures' slope (0.489), from its front corner, then repainted in Gemini with a rubber-tile floor and cut with `tools/cut-room.py`. It's a still, made once; a live model would cost the phone a second WebGL scene for a room that doesn't move.
+- **Its floor:** the corners were measured on the repaint where the floor meets the walls (`ROOM_GEOMETRY['locker-16']` in `js/core/placement.js`). It's a 16 × 16 grid, so a tile is the same size as in an 8 × 8 room and an expanded room holds four times as much. Things already placed keep their spots.
 - **Its size:** its floor takes `share` 0.818 of the slab's width. That puts the outside of its walls (96.6% of the picture's width, to the floor's 91.1%) just under the railing's inner edge (86.1% of the slab). The railing's front half, with its gold rails, stands in front of it.
 
 ## Next rooms
+
+`docs/ROOMS-16-NEXT.md` has the plan: all five rooms as 16 × 16 pictures, taped off to the back 8 × 8 until they're expanded.
 
 Each room needs its own 16 × 16 model, rendered the same way, then its name added to `ready` in both rule sets. A room's levels can come later, from three models per room:
 - broken, for levels 1–3;

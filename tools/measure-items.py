@@ -21,11 +21,11 @@ out = {}
 for f in FILES:
     im = Image.open(f).convert('RGBA')
     # the rendered items (icons/Items) carry a soft shadow on the ground: measure the object only
-    a = np.asarray(im)[..., 3] > (200 if '/Items/' in f else 40)
+    a = np.asarray(im)[..., 3] > (200 if 'Items' in os.path.normpath(f).split(os.sep) else 40)
     H, W = a.shape
     rows = np.where(a.any(1))[0]
     cols = np.where(a.any(0))[0]
-    out[os.path.relpath(f, ROOT)] = {
+    out[os.path.relpath(f, ROOT).replace(os.sep, '/')] = {
         'w': round((cols[-1] - cols[0] + 1) / W, 3),
         'mid': round((cols[0] + cols[-1] + 1) / 2 / W, 3),
         'pad': round((H - 1 - rows[-1]) / H, 3),

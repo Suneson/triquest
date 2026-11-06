@@ -5,7 +5,9 @@ import { existsSync } from 'node:fs';
 import {
   compoundLayout, roomsOf, roomArt, normalizeDisciplines, ROOM_GEOMETRY, ROOM_SIZE, tileToPct, pctToTile, boxCorners,
   canPlace, firstFree, footprint, placeableById, placeablesFor, resolvePlacements, PLACEABLES, DISCIPLINES, orient, turned, tierFor,
+  stashedItems, displaySlots, toggleDisplay,
 } from '../js/core/placement.js';
+import { stageGeom } from '../js/core/diorama.js';
 
 const shape = (l) => l.rows.map((r) => r.map((c) => `${c.room}${c.landscape ? ':wide' : ''}`).join(' ')).join(' / ');
 
@@ -117,17 +119,80 @@ test('a mission board stands in every room, at the back, and only in rooms you h
 
 test('facings: turning an item turns its footprint, and a saved facing is kept', () => {
   const tm = placeableById('treadmill');
-  assert.deepEqual([orient(tm).face, orient(tm).w, orient(tm).h], ['b', 2, 3], 'the treadmill stands long along v at first');
-  assert.deepEqual([orient(tm, 'a').w, orient(tm, 'a').h], [3, 2]);
+  assert.deepEqual([orient(tm).face, orient(tm).w, orient(tm).h], ['a', 2, 3], 'the treadmill stands long along v at first');
+  assert.deepEqual([orient(tm, 'b').w, orient(tm, 'b').h], [3, 2]);
   assert.equal(turned('a'), 'b'); assert.equal(turned('b'), 'a');
   assert.equal(orient(placeableById('smart-trainer'), 'b').w, 2, 'one facing: as it is');
   assert.equal(tierFor(1, [4, 7]), 1); assert.equal(tierFor(4, [4, 7]), 2); assert.equal(tierFor(9, [4, 7]), 3);
   assert.match(tm.art({ face: 'a', levels: { run: 6 } }), /treadmill-t2-a\.webp$/);
   const full = compoundLayout(DISCIPLINES);
   const items = placeablesFor([]);
-  const at = resolvePlacements(full, items, { treadmill: { room: 'run', u: 2, v: 2, face: 'a' } });
-  assert.deepEqual(at.treadmill, { room: 'run', u: 2, v: 2, face: 'a' });
+  const at = resolvePlacements(full, items, { treadmill: { room: 'run', u: 2, v: 2, face: 'b' } });
+  assert.deepEqual(at.treadmill, { room: 'run', u: 2, v: 2, face: 'b' });
   // two turned items can't overlap: the coffee machine beside a turned treadmill
-  const cells = footprint(orient(tm, 'a'), 2, 2).map((c) => c.join(','));
+  const cells = footprint(orient(tm, 'b'), 2, 2).map((c) => c.join(','));
   assert.deepEqual(cells, ['2,2', '2,3', '3,2', '3,3', '4,2', '4,3']);
+});
+
+test('the treadmill steps up to tier 4 with the run room', () => {
+  const tm = placeableById('treadmill');
+  for (const [level, tier] of [[1, 1], [3, 1], [4, 2], [6, 2], [7, 3], [9, 3], [10, 4]]) {
+    assert.match(tm.art({ face: 'b', levels: { run: level } }), new RegExp(`treadmill-t${tier}-b\\.webp$`), `level ${level}`);
+  }
+});
+
+test('the stash: bought items wait there, a stashed item stands nowhere, and comes back', () => {
+  const owned = [{ item_id: 'lockers-t1' }, { item_id: 'ice-bath' }];
+  const items = placeablesFor(owned);
+  assert.ok(items.some((p) => p.id === 'lockers-t1'), 'yours once it\'s in your items');
+  assert.ok(!placeablesFor([]).some((p) => p.id === 'lockers-t1'), 'nobody else has it');
+  const layout = compoundLayout(['gym', 'pool', 'bike', 'run']);
+  let at = resolvePlacements(layout, items, {});
+  assert.equal(at['lockers-t1'], undefined, 'a new item starts in the stash');
+  assert.ok(at['coffee-machine'], 'the gifts still stand in the base');
+  assert.deepEqual(stashedItems(items, {}).map((p) => p.id), ['lockers-t1', 'ice-bath']);
+  // set down, then put away
+  const saved = { 'lockers-t1': { room: 'locker', u: 0, v: 0, face: 'a' } };
+  at = resolvePlacements(layout, items, saved);
+  assert.deepEqual(at['lockers-t1'], { room: 'locker', u: 0, v: 0, face: 'a' });
+  at = resolvePlacements(layout, items, { 'coffee-machine': { room: 'locker', u: 0, v: 0, stashed: true } });
+  assert.equal(at['coffee-machine'], undefined, 'a gift can be stashed too');
+  assert.ok(stashedItems(items, { 'coffee-machine': { room: 'locker', u: 0, v: 0, stashed: true } }).some((p) => p.id === 'coffee-machine'));
+});
+
+test('every new item has both pictures, measured, and a name in both languages', async () => {
+  const { ITEM_FIT } = await import('../js/core/item-fit.js');
+  const en = (await import('../js/core/locales/en.js')).default;
+  const es = (await import('../js/core/locales/es.js')).default;
+  for (const p of PLACEABLES.filter((x) => x.stashFirst)) {
+    assert.ok(en.cp.item[p.id] && es.cp.item[p.id], `${p.id} is named`);
+    for (const face of ['a', 'b']) {
+      const f = p.art({ face });
+      assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), f);
+      assert.ok(ITEM_FIT[f], `${f} is measured`);
+    }
+  }
+});
+
+test('the trophy cabinet: 5 on show in tier 1, 10 in tier 2, the best one standing', () => {
+  const t1 = placeableById('trophy-cabinet-t1'); const t2 = placeableById('trophy-cabinet-t2');
+  assert.equal(displaySlots([]), 0);
+  assert.equal(displaySlots([t1, placeableById('coffee-machine')]), 5);
+  assert.equal(displaySlots([t1, t2]), 10);
+  const five = ['a', 'b', 'c', 'd', 'e'];
+  assert.deepEqual(toggleDisplay(five.slice(0, 4), 'e', 5), { list: five, full: false });
+  assert.deepEqual(toggleDisplay(five, 'f', 5), { list: five, full: true }, 'no slot left');
+  assert.deepEqual(toggleDisplay(five, 'c', 5).list, ['a', 'b', 'd', 'e'], 'tapping one takes it off');
+  assert.deepEqual(toggleDisplay([...five, 'f'], 'g', 5).list, five, 'a smaller cabinet keeps the first ones');
+});
+
+test('the taped room: its picture is 16 x 16, only the back 8 x 8 can be used', () => {
+  const c = placeableById('coffee-machine');
+  assert.equal(stageGeom('locker', true, true), 'locker-16-tape');
+  assert.equal(ROOM_GEOMETRY['locker-16-tape'].cols, 16);
+  assert.ok(canPlace('locker-16-tape', 'locker', c, 6, 6).ok, 'inside the tape');
+  assert.equal(canPlace('locker-16-tape', 'locker', c, 7, 6).reason, 'bounds', 'across the tape');
+  assert.ok(canPlace('locker-16', 'locker', c, 7, 6).ok, 'expanded, the whole floor');
+  const spot = firstFree('locker-16-tape', 'locker', c, {});
+  assert.ok(spot.u + c.w <= 8 && spot.v + c.h <= 8);
 });

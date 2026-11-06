@@ -366,3 +366,9 @@ The first nine models are in the base, as pictures in `icons/Items/` (`<item>-<a
 - **Saving the facing:** it's stored with the item's spot, on the device and in `user_placements.face` (`0030_placement_face.sql`, null for the item's default facing).
 - **Measuring:** `tools/measure-items.py` measures these pictures by the object only (alpha above 200), leaving out the soft ground shadow.
 - **Smart bike:** the rollers bike replaces the old animated rider.
+
+## Getting an item into the app
+
+- **Cut it:** add its sheet to `BATCH` in `tools/render-items/cutout-green.py`, and run that. Left is facing a, right is facing b. Then run `tools/measure-items.py`.
+- **Add it:** a line in `PLACEABLES` with `stashed(id, home, w, h, fit)` in `js/core/placement.js`, and its name in `cp.item` in both locales. `w × h` is the footprint for facing a: long along v when the a picture's long side runs from lower left to upper right, long along u when it runs from upper left to lower right.
+- **Own it:** a row in `user_base_items`. It starts in the inventory's Stash tab.

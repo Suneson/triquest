@@ -87,7 +87,7 @@ export function tapButton(tap) {
  *   fresh            just bought: the picture pops
  *   mode             'use' in the inventory: the (i) sheet uses, not sells
  */
-export function shopCard({ id, kind, mode = '', title, art, st, button: tap, plate = 'blue', counter = null, badge = '', fresh = false, pixel = false }) {
+export function shopCard({ id, kind, mode = '', title, art, st, button: tap, plate = 'blue', counter = null, badge = '', fresh = false, pixel = false, info = true }) {
   const ctr = counter || (st.storage ? { label: t('shop.storage'), text: storageText(st.storage), full: st.state === 'max' } : null);
   const name = esc(title);
   // what the card is and what touching it does; most tap labels already name the item
@@ -106,8 +106,8 @@ export function shopCard({ id, kind, mode = '', title, art, st, button: tap, pla
     </div>
     <div class="sc-tray is-${tap.tone}" aria-hidden="true">${tap.tray}</div>
     ${hit}
-    <button class="sc-info" data-shop-info="${esc(id)}" data-kind="${kind}"${mode ? ` data-mode="${mode}"` : ''} aria-label="${esc(t('shop.infoAria', { name: title }))}">
-      <img src="icons/UI/cards/info-${plate}.webp" width="96" height="96" alt="" draggable="false"></button>
+    ${info ? `<button class="sc-info" data-shop-info="${esc(id)}" data-kind="${kind}"${mode ? ` data-mode="${mode}"` : ''} aria-label="${esc(t('shop.infoAria', { name: title }))}">
+      <img src="icons/UI/cards/info-${plate}.webp" width="96" height="96" alt="" draggable="false"></button>` : ''}
   </article>`;
 }
 

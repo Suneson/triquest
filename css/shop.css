@@ -241,6 +241,8 @@ body.rm .sc-card.is-go:active { transform: none; }
 /* ---- phase 5: the inventory on the same cards ---- */
 .gw-screen.is-inv .sh-tabs.is-three { grid-template-columns: repeat(3, 1fr); }
 .gw-screen.is-inv .sh-tabs.is-three .sh-tab { min-height: 80px; }
+.gw-screen.is-inv .sh-tabs.is-four { grid-template-columns: repeat(4, 1fr); }
+.gw-screen.is-inv .sh-tabs.is-four .sh-tab { min-height: 72px; }
 .sc-row-h .sc-row-boost { color: var(--gold-primary); font: 15px/1 var(--font-header); font-variation-settings: 'wght' 860; }
 .sc-row-h svg { width: 20px; height: 20px; }
 .sc-empty { margin: 8px 12px 0; padding: 20px 16px; border-radius: 16px; display: grid; justify-items: center; gap: 14px; text-align: center;

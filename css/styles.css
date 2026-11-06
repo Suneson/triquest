@@ -2679,22 +2679,46 @@ body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-orb, body.rm .
   min-height: 44px; padding: 6px 16px 6px 8px; border: 3px solid #0B1222; border-radius: 9999px; background: linear-gradient(#FFE78A, #F2C14E 60%, #C98F1E);
   color: #2a1c00; font: 15px/1 var(--font-display); cursor: pointer; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .5), 0 4px 0 rgba(0, 0, 0, .45); text-shadow: none; }
 .dg-act[hidden] { display: none; }
-/* turn the picked-up item round (diorama-view.js): a round button over the dock, above the board's button */
-.dg-rot { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 74px); transform: translateX(-50%); z-index: 5;
-  width: 64px; height: 64px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .35)); }
-.dg-rot img { display: block; width: 64px; height: 64px; -webkit-user-drag: none; }
-.dg-rot[hidden] { display: none; }
-.dg-rot:active { transform: translateX(-50%) scale(.92); }
-.dg-rot:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-.dg-rot.spin img { animation: dg-rot-spin 420ms cubic-bezier(.3, 1.4, .5, 1); }
+/* the picked-up item's menu (diorama-view.js): its name over square buttons, like a base-builder's */
+.dg-menu { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 12px); transform: translateX(-50%); z-index: 5; display: grid; justify-items: center; gap: 6px; pointer-events: none; }
+.dg-menu[hidden] { display: none; }
+.dg-menu-name { margin: 0; max-width: 88vw; color: #FFF6CF; font: 22px/1.05 var(--font-display); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  -webkit-text-stroke: 4px #0B1222; paint-order: stroke fill; text-shadow: 0 3px 0 #0B1222; }
+.dg-menu-btns { display: flex; gap: 10px; pointer-events: auto; }
+.dg-sq { position: relative; display: grid; grid-template-rows: 1fr auto; justify-items: center; align-items: center; width: 92px; height: 92px; padding: 6px 4px 7px; border: 3px solid #0B1222; border-radius: 14px;
+  background: linear-gradient(#EDE8DC, #CFC8B8); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .75), inset 0 -3px 0 rgba(90, 80, 60, .28), 0 4px 0 rgba(11, 18, 34, .55); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dg-sq[hidden] { display: none; }
+.dg-sq img { display: block; width: 50px; height: 50px; object-fit: contain; -webkit-user-drag: none; }
+.dg-sq span { color: #fff; font: 13px/1 var(--font-display); -webkit-text-stroke: 3px #16264D; paint-order: stroke fill; text-shadow: 0 2px 0 #16264D; }
+.dg-sq-n { position: absolute; top: -8px; right: -6px; padding: 2px 7px; border: 2px solid #0B1222; border-radius: 9999px; background: linear-gradient(#FFE78A, #F2C14E); color: #2a1c00; font: 12px/1.1 var(--font-display); }
+.dg-sq-n:empty { display: none; }
+.dg-sq:active { transform: translateY(3px); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .75), 0 1px 0 rgba(11, 18, 34, .55); }
+.dg-sq:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.dg-sq.spin img { animation: dg-rot-spin 420ms cubic-bezier(.3, 1.4, .5, 1); }
 @keyframes dg-rot-spin { from { transform: rotate(-180deg) scale(.8); } to { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .dg-rot.spin img { animation: none; } }
-/* a picked-up board: its button takes the hint's place */
-.dg-hint:has(~ .dg-act:not([hidden])) { visibility: hidden; }
-.dg-act b { padding: 2px 8px; border-radius: 9999px; background: #2a1c00; color: #FFE78A; }
-.dg-act:active { transform: translate(-50%, 3px); }
-.dg-act:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .dg-sq.spin img { animation: none; } }
+.dg-menu:not([hidden]) ~ .dg-turn { display: none; }
+/* with the menu up, the hint sits over it */
+.dg-hint:has(~ .dg-menu:not([hidden])) { bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 142px); }
+
+/* the tape round a room's 8 x 8 until it's expanded (diorama-view.js drawTape) */
+.dg-tape, .dg-tape svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.dg-tape polygon { fill: rgba(11, 18, 34, .34); }
+.dg-tape i { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: url(../icons/UI/tape.webp) repeat-x left top / 256px 48px; }
+
+/* what stands in the trophy cabinet (trophy-display-view.js) */
+.td-shelf { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0 14px; padding: 8px; border-radius: 14px; background: linear-gradient(#22345F, #16264D); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .4); }
+.td-slot { display: grid; place-items: center; aspect-ratio: 1; padding: 3px; border: 2px dashed rgba(255, 255, 255, .25); border-radius: 10px; background: none; }
+.td-slot.is-full { border: 2px solid #F2C14E; background: rgba(255, 255, 255, .08); cursor: pointer; }
+.td-slot img { width: 100%; height: 100%; object-fit: contain; }
+.td-h { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 8px; color: #16264D; font: 16px/1.1 var(--font-display); text-shadow: none; }
+.td-h small { color: inherit; }
+.td-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.td-pick { display: grid; gap: 4px; justify-items: center; padding: 6px 4px; border: 2px solid var(--line-soft); border-radius: 12px; background: var(--bg-2); color: inherit; font-size: 11px; line-height: 1.15; cursor: pointer; }
+.td-pick img { width: 56px; height: 56px; object-fit: contain; }
+.td-pick.is-on { border-color: #F2C14E; box-shadow: inset 0 0 0 1px #F2C14E; }
+.td-pick:focus-visible, .td-slot:focus-visible { outline: 3px solid var(--focus, #6FAEF6); outline-offset: 1px; }
+.xp-tape { margin-top: 10px; }
 
 /* the mission board sheet: painted in the season's colours */
 .mb-modal { --sea-accent: #C9D8F2; --sea-deep: #3B4F78; --sea-ink: #121A2B; }

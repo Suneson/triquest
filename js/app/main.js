@@ -1158,6 +1158,8 @@ async function boot() {
   });
   // the stage's room buttons switch the room on the Profile tab
   document.addEventListener('dg-room', () => { if (appState.tab === 'progress') render(); });
+  // an item came out of the stash: show it in the base
+  document.addEventListener('dg-show-base', () => { if (appState.tab === 'progress') render(); else goTab('progress'); });
   // where your compound items stand, from the server (another device may have moved them)
   onPlacements(() => { if (appState.tab === 'progress') render(); });
   refreshPlacements();

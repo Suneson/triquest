@@ -44,13 +44,16 @@ export const ROOM_GEOMETRY = {
   // its floor's inner corners measured on the model itself. It fills the roof: `share` is its
   // floor's width as a share of the slab's, which puts the outside of its walls (96.6% of the
   // picture's width to the floor's 91.1%) just under the railing's inner edge (86.1% of the slab)
-  'locker-16': { ...floor([50.61, 32.52], [95.78, 62.71], [4.71, 63.2], 16, 16), share: 0.818 },
+  'locker-16': { ...floor([49.94, 29.77], [98.97, 62.47], [1.33, 62.17], 16, 16), share: 0.818 },
 };
+// the same 16 × 16 room before it's expanded: only the 8 × 8 in its back corner can be used, with
+// the rest of the floor taped off, so you can see how much bigger it gets (`limit`: usable tiles)
+ROOM_GEOMETRY['locker-16-tape'] = { ...ROOM_GEOMETRY['locker-16'], limit: 8 };
 
 /** Art size of each room shape (px of the exported WebP), for laying the compound out. */
 export const ROOM_SIZE = {
   gym: [1100, 1052], pool: [1100, 991], bike: [1100, 1051], run: [1100, 1115],
-  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-16': [2200, 1610],
+  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-16': [2200, 1586], 'locker-16-tape': [2200, 1586],
 };
 
 // levels with no art yet fall back to the nearest one below (the gym has no 7)
@@ -145,6 +148,22 @@ const ITEM3D = 'icons/Items';
 /** Which tier of an item a room's level shows: 1 below the first band, 2 below the second, then 3. */
 export const tierFor = (level, bands) => 1 + bands.filter((b) => (Number(level) || 1) >= b).length;
 
+/** `runner`: where the 3D runner stands (tiles from the footprint's back corner) and which way it faces. */
+const RUNNER = { a: { u: 1, v: 1.35, yaw: 0, y: 0.3, scale: 1.26 }, b: { u: 1.35, v: 1, yaw: Math.PI / 2, y: 0.3, scale: 1.26 } };
+export const TREADMILL_BANDS = [4, 7, 10];
+
+/**
+ * An item you own outright (a row in user_base_items, 0031_base_items.sql). It waits in your
+ * stash until you set it down. `w x h` is its footprint facing a: long along u when its long side
+ * runs from upper left to lower right in the a picture, along v when it runs the other way.
+ */
+const stashed = (id, home, w, h, fit, extra = {}) => ({
+  id, w, h, home, fit, faces: true, face: 'a', stashFirst: true,
+  owned: (inv) => (inv || []).some((r) => r.item_id === id),
+  art: (o) => `${ITEM3D}/${id}-${o?.face || 'a'}.webp`,
+  ...extra,
+});
+
 export const PLACEABLES = [
   // the coffee machine: tier 1 to 3 with the locker room's level (4 and 7 step it up)
   { id: 'coffee-machine', w: 2, h: 2, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
@@ -153,12 +172,11 @@ export const PLACEABLES = [
   { id: 'smart-bike', w: 2, h: 3, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.78, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/road-bike-rollers-t1-${o?.face || 'a'}.webp` },
   // the treadmill: everyone's, in the run room, with the 3D runner on its belt (js/app/runner3d.js).
-  // 3 x 2: long along u when facing a, its console at the u = 0 end; facing b (the first one) it's
-  // long along v, its console at the v = 0 end. Tier 2 from run room level 5. `runner`: where the runner
-  // stands (tiles from the footprint's back corner) and which way it faces, for each facing.
-  { id: 'treadmill', w: 3, h: 2, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, faces: true, face: 'b',
-    runner: { a: { u: 1.65, v: 1, yaw: -Math.PI / 2, y: 0.3, scale: 1.26 }, b: { u: 1, v: 1.65, yaw: Math.PI, y: 0.3, scale: 1.26 } },
-    art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, [5])}-${o?.face || 'b'}.webp` },
+  // Its console is towards the camera, so the runner faces us: 2 x 3 facing a (long along v, the
+  // console at the far v end), 3 x 2 facing b (long along u, the console at the far u end).
+  // Tiers 1 to 4 with the run room's level (4, 7 and 10 step it up).
+  { id: 'treadmill', w: 2, h: 3, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, runner: RUNNER, faces: true, face: 'a',
+    art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, TREADMILL_BANDS)}-${o?.face || 'a'}.webp` },
   // two showpieces, gifts while the base items are being tried out
   { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/road-bike-stand-${o?.face || 'a'}.webp` },
@@ -174,6 +192,28 @@ export const PLACEABLES = [
     id: `mission-board-${room}`, w: 1, h: 1, gift: true, home: room, needsRoom: room === 'locker' ? undefined : room, spot: [1, 0],
     fit: 0.7, opens: 'missions', art: () => `${ART}/ITEMS/mission-board.webp`,
   })),
+  // the locker room's furniture
+  stashed('lockers-t1', 'locker', 3, 2, 0.9),
+  stashed('lockers-t2', 'locker', 3, 2, 0.9),
+  stashed('drinks-fridge', 'locker', 2, 2, 0.62),
+  stashed('massage-table', 'locker', 2, 3, 0.86),
+  stashed('ice-bath', 'locker', 2, 3, 0.9),
+  // the trophy cabinets: tap one to choose which trophies stand in it (`slots`: how many)
+  stashed('trophy-cabinet-t1', 'locker', 2, 2, 0.62, { opens: 'trophies', slots: 5 }),
+  stashed('trophy-cabinet-t2', 'locker', 2, 2, 0.7, { opens: 'trophies', slots: 10 }),
+  // the gym
+  stashed('dumbbell-rack', 'gym', 3, 2, 0.84),
+  stashed('kettlebell-set', 'gym', 2, 2, 0.84),
+  stashed('punching-bag', 'gym', 2, 2, 0.72),
+  stashed('rowing-machine', 'gym', 2, 3, 0.9),
+  // the other rooms
+  stashed('race-podium', 'run', 3, 2, 0.9),
+  stashed('shoe-rack', 'run', 2, 2, 0.62),
+  stashed('bike-workstand', 'bike', 2, 2, 0.7),
+  stashed('start-block', 'pool', 2, 2, 0.76),
+  // each tier of the items that step up with a room's level, to own and place on its own
+  ...[1, 2, 3, 4].map((n) => stashed(`treadmill-t${n}`, 'run', 2, 3, 0.92, { runner3d: true, runner: RUNNER })),
+  ...[1, 2, 3].map((n) => stashed(`coffee-machine-t${n}`, 'locker', 2, 2, 0.82)),
   // what the daily stall sells (stall.js): yours once bought
   ...STALL_ITEMS.map((s) => ({
     id: s.id, w: s.w, h: s.h, home: s.home, fit: s.fit, flat: !!s.flat, art: () => s.art,
@@ -198,6 +238,24 @@ export const turned = (face) => (face === 'b' ? 'a' : 'b');
 export const placeablesFor = (inventory, rooms = null) => PLACEABLES.filter((p) => (p.gift || p.owned?.(inventory))
   && (!p.needsRoom || !rooms || rooms.includes(p.needsRoom)));
 
+/** Is this item in the stash? Saved there, or never set down and made to start there. */
+export const isStashed = (item, saved) => {
+  const s = saved?.[item.id];
+  return s ? !!s.stashed : !!item.stashFirst;
+};
+/** The items waiting in the stash, of the ones you have. */
+export const stashedItems = (items, saved) => items.filter((it) => isStashed(it, saved));
+
+/** How many trophies you can show: the best cabinet standing in your base (0 with none). */
+export const displaySlots = (placedItems) => Math.max(0, ...placedItems.map((it) => it?.slots || 0));
+/** Add a trophy to the ones on show, or take it off. `full`: there's no slot left for it. */
+export function toggleDisplay(list, id, slots) {
+  const shown = (list || []).slice(0, slots);
+  if (shown.includes(id)) return { list: shown.filter((x) => x !== id), full: false };
+  if (shown.length >= slots) return { list: shown, full: true };
+  return { list: [...shown, id], full: false };
+}
+
 /** The tiles an item covers with its back corner at (u, v). */
 export function footprint(item, u, v) {
   const cells = [];
@@ -215,7 +273,7 @@ const inBox = ([u, v], [u0, v0, u1, v1]) => u >= u0 && u < u1 && v >= v0 && v < 
 export function canPlace(geomKey, room, item, u, v, placements = {}) {
   const g = ROOM_GEOMETRY[geomKey];
   const cells = footprint(item, u, v);
-  if (!g || cells.some(([a, b]) => a < 0 || b < 0 || a >= g.cols || b >= g.rows || !Number.isInteger(a) || !Number.isInteger(b))) {
+  if (!g || cells.some(([a, b]) => a < 0 || b < 0 || a >= (g.limit ?? g.cols) || b >= (g.limit ?? g.rows) || !Number.isInteger(a) || !Number.isInteger(b))) {
     return { ok: false, cells, reason: 'bounds' };
   }
   if (cells.some((c) => g.blocked.some((box) => inBox(c, box)))) return { ok: false, cells, reason: 'blocked' };
@@ -234,7 +292,7 @@ export function firstFree(geomKey, room, item, placements = {}) {
   const g = ROOM_GEOMETRY[geomKey];
   const spots = [];
   for (let u = 0; u < g.cols; u++) for (let v = 0; v < g.rows; v++) spots.push([u, v]);
-  const cu = (g.cols - item.w) / 2; const cv = (g.rows - item.h) / 2;
+  const cu = ((g.limit ?? g.cols) - item.w) / 2; const cv = ((g.limit ?? g.rows) - item.h) / 2;
   spots.sort((a, b) => (Math.abs(a[0] - cu) + Math.abs(a[1] - cv)) - (Math.abs(b[0] - cu) + Math.abs(b[1] - cv)) || a[0] - b[0] || a[1] - b[1]);
   const hit = spots.find(([u, v]) => canPlace(geomKey, room, item, u, v, placements).ok);
   return hit ? { room, u: hit[0], v: hit[1] } : null;
@@ -244,7 +302,7 @@ export function firstFree(geomKey, room, item, placements = {}) {
  * Where every item stands in this layout: saved spots that still fit, and a
  * free spot for the rest (in its home room, or the locker when that room isn't
  * in the compound). Doesn't change what's saved: an item only moves for good
- * when you move it.
+ * when you move it. What's in the stash doesn't stand anywhere.
  */
 export function resolvePlacements(layout, items, saved = {}) {
   const rooms = roomsOf(layout);
@@ -252,6 +310,7 @@ export function resolvePlacements(layout, items, saved = {}) {
   const out = {};
   const pending = [];
   for (const it of items) {
+    if (isStashed(it, saved)) continue;
     const s = saved?.[it.id];
     const geom = s && geomOf(s.room);
     const o = orient(it, s?.face);

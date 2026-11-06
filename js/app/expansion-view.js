@@ -11,7 +11,9 @@ import { myExpansions, expansionsOpen, buyExpansion, walletNow, gearError } from
 import { openLayer, closeLayer } from './nav.js';
 import { haptic } from './haptics.js';
 import { toast } from './effects.js';
-import { setActiveRoom } from './diorama-view.js';
+import { setActiveRoom, tapePreview, setTapePreview } from './diorama-view.js';
+import { isChestAdmin } from './chests-state.js';
+import { isDemo } from './demo.js';
 
 const COIN = 'icons/Pixelart/GEAR/coin.png';
 
@@ -44,9 +46,16 @@ export function openExpansions(workouts = []) {
         <div class="mk-info-body">
           <p class="mk-note">${esc(t('cp.expand.about'))}</p>
           <ul class="xp-list">${rows}</ul>
+          ${isChestAdmin() || isDemo() ? `<button class="btn tiny ghost xp-tape" data-xp-tape aria-pressed="${tapePreview()}">${esc(t(tapePreview() ? 'cp.expand.tapeOff' : 'cp.expand.tapeOn'))}</button>` : ''}
         </div>
       </div>`;
     root.querySelectorAll('[data-xp-buy]').forEach((b) => b.addEventListener('click', () => buy(b.dataset.xpBuy, b)));
+    root.querySelector('[data-xp-tape]')?.addEventListener('click', () => {
+      setTapePreview(!tapePreview());
+      closeLayer(root);
+      setActiveRoom('locker');
+      document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true }));
+    });
   };
   const buy = async (room, btn) => {
     btn.disabled = true;

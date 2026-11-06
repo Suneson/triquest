@@ -4,20 +4,10 @@ This picks up the work of a cloud Claude session in a new one. Read `CLAUDE.md`,
 
 ## Where things stand
 
-- **Repo:** `Suneson/triquest` (MOSKE, a vanilla JS app with no build step). The user merges PRs only when they say "merge".
-- **Merged:**
-  - **#55:** the original painted trees and lamps round the markets.
-  - **#56:** the iPhone crash fix: no city-sized layers over a 3D canvas, and `webglOk()` caches its answer.
-  - **#57:** the lobby seams cleaned up in Photoshop.
-  - **#58:** `docs/ITEMS-3D.md`.
-  - **#59:** the first 9 base items in the app, with two facings and a rotate button.
-- **Open: PR #60** (`feature/items-batch2`), green but not merged. The user wants everything below added before it's merged. It has:
-  - bigger footprints: treadmill 3×2 (it starts facing b, 2×3), rollers bike 2×3, coffee machine 2×2;
-  - the runner scaling with the treadmill;
-  - the 15 new models in `art/items/glb/`;
-  - neutral render light;
-  - the green-screen repaint prompt;
-  - this note.
+- **Repo:** `Suneson/triquest` (MOSKE, a vanilla JS app with no build step).
+- **Merged:** everything up to and including #60: the batch-2 items, the stash, the item menu, the trophy cabinets, and the repainted 16 × 16 locker room with its taped preview.
+- **Live on Supabase:** `0031_base_items.sql`. `albertosuneson` has a row in `user_base_items` for each of the 22 new items, for testing. Nobody else has any yet.
+- **Not decided yet:** how players get the new items. They aren't in a shop or a reward.
 
 ## The pipeline (the decisions made)
 
@@ -50,27 +40,21 @@ This picks up the work of a cloud Claude session in a new one. Read `CLAUDE.md`,
 - **Saving the facing:** in `user_placements.face` (`0030_placement_face.sql`, applied live to the Supabase project `vopzemijzoxezathmrai`).
 - **Runner:** `mountRunner(…, { spot, foot })` in `js/app/runner3d.js`, using each item's `runner` per facing (u, v, yaw, y, scale).
 
+## In the app (batch 2)
+
+- **New items:** `stashed()` in `js/core/placement.js`. They start in the stash, owned through `user_base_items`. Items cut with `tools/render-items/cutout-green.py`.
+- **The menu:** `[data-dg-menu]` in `js/app/diorama-view.js`, shown for the picked-up item: Rotate, Stash, and Display or Mission board where it opens something.
+- **The stash:** the Stash tab in `openInventory` (`js/app/gear-view.js`). `user_placements.stashed` keeps an item out of the room. Place sets it down in the room on the stage.
+- **Trophy cabinets:** `js/app/trophy-display-view.js`. Tier 1 shows 5, tier 2 shows 10, and the best cabinet standing counts. The choice is `settings.trophyDisplay`, ready for when other people's bases can be opened. Admins and the demo can pick any trophy.
+- **Treadmill:** 4 tiers (run room levels 1, 4, 7, 10), console towards the camera. One runner at a time: on the treadmill you've picked up, else the first in the room.
+
 ## Next steps
 
-1. **Fix the clipped shadows.** `setup()` in `rig.py` frames the camera on the object's box only, so the shadow (falling left) gets cut off.
-   - Widen the frame to the shadow's reach.
-   - Re-render each item's shadow on its own (shadow catcher only).
-   - From the user's repaint keep only the object (drop the painted shadow), align it to the render (scale and offset to the render's object box; this matched 93–99% before), and put the render's shadow under it.
-2. **When the repainted sheets come back (17):** cut out, split into a and b, and add to `icons/Items/` and `PLACEABLES`.
-   - **Locker room:** locker row, drinks fridge, massage table, recovery chair, ice bath, trophy cabinets t1 and t2.
-   - **Gym:** dumbbell rack, kettlebell set, punching bag, rowing machine.
-   - **Run room:** race podium, shoe display.
-   - **Bike room:** bike workstand.
-   - **Treadmills t1–t3:** these replace the current treadmill pictures. Set their runner `yaw` to face the camera; they were made for a console at the back.
-   - Give each item a footprint (clickable, upgradable ones 2×2, big machines 2×3) and names in both locales (`cp.item.*`).
-   - Bump `sw.js` and update the tests and docs. Then the user says merge.
-3. **Rooms:**
-   - The user is repainting the 16×16 locker room (`icons/Pixelart/NEW/LOCKER/model-10.webp`, 2200×1610). The prompt asks for a rubber-tile floor instead of the wooden one.
-   - If it's good, the proposal is to drop the 8×8 rooms and make every room 16×16:
-     - 3 versions per room (broken for levels 1–3, repaired 4–6, finished 7–10): 15 models and 15 repaints in all;
-     - the floor taped off outside the middle 8×8 until Expand is bought;
-     - one camera for every room.
-4. **Later:** bake the railing in place of the old painted one (optional).
+1. **Rooms:** `docs/ROOMS-16-NEXT.md` has the prompts and the order. The taped room is admin-only until all five rooms have their pictures.
+2. **Fix the clipped shadows on the first batch** (`setup()` in `rig.py` frames the object's box only). The cut-out fades shadows out with distance, which hides it in batch 2.
+3. **Decide how players get the new items.** A shop tab or rewards, then grants through `user_base_items`.
+4. **Base visits:** when they come, read another player's `settings.trophyDisplay`. That needs its own read policy; `profiles.settings` shouldn't be opened up whole.
+5. **Later:** bake the railing in place of the old painted one (optional).
 
 ## Notes
 

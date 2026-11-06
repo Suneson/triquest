@@ -22,3 +22,11 @@ export const isExpanded = (rows, room) => (rows || []).some((r) => r.room === ro
 
 /** The 16 × 16 room's picture for a room that has one. */
 export const EXPANDED_ART = { locker: 'icons/Pixelart/NEW/LOCKER/model-10.webp' };
+
+/**
+ * Rooms that show their 16 × 16 picture from the start, taped off to the 8 × 8 in its back corner
+ * until they're expanded (docs/ROOMS-16-NEXT.md). None for everyone until all five rooms have their
+ * pictures; admins can preview it from the Expand window.
+ */
+export const TAPED_ROOMS = [];
+export const tapedRoom = (room, preview = false) => !!EXPANDED_ART[room] && (preview || TAPED_ROOMS.includes(room));

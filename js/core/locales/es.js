@@ -3072,4 +3072,13 @@ es.city.market = {"upgrade": "Mejorar", "upgraded": "Mercado mejorado al nivel {
 
 es.cp.expand = {"aria": "Amplía tus salas", "title": "Amplía tus salas", "about": "Lleva una sala de 8 × 8 a 16 × 16: crece hasta ocupar toda su planta, hasta la barandilla, con sitio para cuatro veces más.", "size": "8 × 8 → 16 × 16", "sizeDone": "16 × 16", "buy": "Ampliar", "owned": "Ampliada", "soon": "Próximamente", "done": "{room} ampliada a 16 × 16."};
 
+// ---- base items, the stash and the trophy cabinet (docs/ITEMS-3D.md) ----
+Object.assign(es.cp.item, {"lockers-t1": "Taquillas", "lockers-t2": "Taquillas T2", "drinks-fridge": "Nevera de bebidas", "massage-table": "Camilla de masaje", "ice-bath": "Baño de hielo", "trophy-cabinet-t1": "Vitrina de trofeos", "trophy-cabinet-t2": "Vitrina de trofeos T2", "dumbbell-rack": "Soporte de mancuernas", "kettlebell-set": "Juego de pesas rusas", "punching-bag": "Saco de boxeo", "rowing-machine": "Máquina de remo", "race-podium": "Podio de carrera", "shoe-rack": "Zapatero", "bike-workstand": "Soporte de taller", "start-block": "Poyete de salida", "treadmill-t1": "Cinta de correr T1", "treadmill-t2": "Cinta de correr T2", "treadmill-t3": "Cinta de correr T3", "treadmill-t4": "Cinta de correr T4", "coffee-machine-t1": "Cafetera T1", "coffee-machine-t2": "Cafetera T2", "coffee-machine-t3": "Cafetera T3"});
+es.cp.menu = {"rotate": "Girar", "stash": "Guardar", "stashAria": "Guárdalo en tu almacén", "display": "Exponer"};
+es.cp.stashed = "{name} está en tu almacén";
+es.cp.display = {"title": "Vitrina de trofeos", "about": "Elige los {n} trofeos que verá la gente cuando visite tu base.", "shelfAria": "{n} de {slots} trofeos expuestos", "yours": "Tus trofeos", "none": "Primero gana un trofeo: te esperará aquí.", "full": "La vitrina está llena: caben {n}. Quita uno primero.", "remove": "Quita {name} de la vitrina"};
+Object.assign(es.cp.expand, {"tapeOn": "Admin: ver el 8 × 8 con cinta", "tapeOff": "Admin: quitar la vista con cinta"});
+es.gear.tab["stash"] = "Almacén";
+Object.assign(es.gear, {"place": "Colocar", "placeAria": "Coloca {name} en esta sala", "invNoStash": "No hay nada guardado. Toca un objeto de tu base y pulsa Guardar.", "noRoomForIt": "Aquí no cabe. Prueba otra sala o guarda algo."});
+
 export default es;

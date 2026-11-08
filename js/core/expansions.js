@@ -16,6 +16,10 @@ export const EXPANSION_RULES = {
   ready32: ['locker'],                               // and to 32 × 32
 };
 
+// Buying 32 × 32 waits for supabase/migrations/0032_expansions_32.sql to be applied to the live
+// database: turn this on once it has been.
+export const SIZE_32_LIVE = false;
+
 /** Can this room be expanded yet (is its 16 × 16 model in)? */
 export const expansionReady = (room) => EXPANSION_RULES.ready.includes(room);
 
@@ -26,10 +30,10 @@ export const isExpanded = (rows, room) => (rows || []).some((r) => r.room === ro
 export const expandedSize = (rows, room) => Math.max(8, ...(rows || []).filter((r) => r.room === room).map((r) => Number(r.size) || 16));
 
 /** The next step this room can be expanded by, { size, cost }, or null if there's none (yet). */
-export function nextExpansion(rows, room) {
+export function nextExpansion(rows, room, allow32 = true) {
   const now = expandedSize(rows, room);
   if (now === 8 && expansionReady(room)) return { size: 16, cost: EXPANSION_RULES.cost };
-  if (now === 16 && EXPANSION_RULES.ready32.includes(room)) return { size: 32, cost: EXPANSION_RULES.cost32 };
+  if (now === 16 && allow32 && EXPANSION_RULES.ready32.includes(room)) return { size: 32, cost: EXPANSION_RULES.cost32 };
   return null;
 }
 

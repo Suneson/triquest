@@ -199,7 +199,7 @@ export async function refreshGear() {
       c.from('user_markets').select('slot, level, cost, bought_at, collected_at'),
       c.from('market_collects').select('id, slot, coins, collected_at'),
       c.from('market_upgrades').select('id, slot, level, cost, upgraded_at'),
-      c.from('user_expansions').select('room, size, cost, bought_at'),
+      c.from('user_expansions').select('*'),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -402,7 +402,7 @@ export const expansionsOpen = () => isDemo() || (gearEnabled() && rawState().exp
 /** Expand a room to 16 × 16 (docs/ROOMS3D.md). Throws with a `gear:` code. */
 export async function buyExpansion(room, size = 16) {
   if (isDemo()) return demoCall('buy_expansion', { p_room: room, p_size: size });
-  await call('buy_expansion', { p_room: room, p_size: size });
+  await call('buy_expansion', size === 16 ? { p_room: room } : { p_room: room, p_size: size });
   return { coins: 0 };
 }
 

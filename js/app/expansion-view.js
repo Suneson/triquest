@@ -5,7 +5,7 @@
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
-import { EXPANSION_RULES, expansionReady, expandedSize, nextExpansion, EXPANDED_ART } from '../core/expansions.js';
+import { EXPANSION_RULES, expansionReady, expandedSize, nextExpansion, EXPANDED_ART, SIZE_32_LIVE } from '../core/expansions.js';
 import { roomArt } from '../core/placement.js';
 import { myExpansions, expansionsOpen, buyExpansion, walletNow, gearError } from './gear-state.js';
 import { openLayer, closeLayer } from './nav.js';
@@ -23,7 +23,7 @@ export function openExpansions(workouts = []) {
     const coins = walletNow(workouts).coins;
     const rows = EXPANSION_RULES.rooms.map((room) => {
       const size = expandedSize(myExpansions(), room);
-      const step = nextExpansion(myExpansions(), room);
+      const step = nextExpansion(myExpansions(), room, SIZE_32_LIVE || isDemo());
       const done = size === 32;
       const ready = expansionReady(room);
       const pic = ready ? EXPANDED_ART[room] : roomArt(room, 1);

@@ -51,9 +51,11 @@ export function towerPieces(n) {
 
 // the railing round the slab (tools/cut-rail.py): its back half stands behind the room, its front
 // half in front of it; in px of the city picture for the street floor and for floor 1 (the roof
-// slab every floor above stands on, a storey higher each floor)
+// slab every floor above stands on, a storey higher each floor). The street pair was touched up
+// by hand after the cut: the start of each back side of the kerb, past the corner posts, was in the
+// front half and showed as a flap over the room's walls; it is in the back half now (taller for it)
 const RAIL = {
-  street: { back: { x: 1858.0, y: 2432.0, w: 1652.0, h: 305.3 }, front: { x: 1779.3, y: 2733.3, w: 1829.3, h: 561.3 } },
+  street: { back: { x: 1858.0, y: 2432.0, w: 1652.0, h: 433.3 }, front: { x: 1779.3, y: 2733.3, w: 1829.3, h: 561.3 } },
   roof: { back: { x: 1880.3, y: 2039.3, w: 1678.7, h: 373.3 }, front: { x: 1817.7, y: 2407.3, w: 1814.7, h: 564.0 } },
 };
 /** Floor n's railing: { back, front }, each { src, x, y, w, h } in px of the city picture. */

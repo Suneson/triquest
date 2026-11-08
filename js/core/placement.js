@@ -44,7 +44,7 @@ export const ROOM_GEOMETRY = {
   // its floor's inner corners measured on the model itself. It fills the roof: `share` is its
   // floor's width as a share of the slab's, which puts the outside of its walls (96.6% of the
   // picture's width to the floor's 91.1%) just under the railing's inner edge (86.1% of the slab)
-  'locker-16': { ...floor([49.94, 29.77], [98.97, 62.47], [1.33, 62.17], 16, 16), share: 0.818 },
+  'locker-16': { ...floor([50.15, 28.87], [98.97, 62.19], [1.33, 62.19], 16, 16), share: 0.818 },
 };
 // the same 16 × 16 room before it's expanded: only the 8 × 8 in its back corner can be used, with
 // the rest of the floor taped off, so you can see how much bigger it gets (`limit`: usable tiles)
@@ -53,7 +53,7 @@ ROOM_GEOMETRY['locker-16-tape'] = { ...ROOM_GEOMETRY['locker-16'], limit: 8 };
 /** Art size of each room shape (px of the exported WebP), for laying the compound out. */
 export const ROOM_SIZE = {
   gym: [1100, 1052], pool: [1100, 991], bike: [1100, 1051], run: [1100, 1115],
-  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-16': [2200, 1586], 'locker-16-tape': [2200, 1586],
+  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-16': [2200, 1576], 'locker-16-tape': [2200, 1576],
 };
 
 // levels with no art yet fall back to the nearest one below (the gym has no 7)

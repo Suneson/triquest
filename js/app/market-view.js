@@ -51,9 +51,9 @@ const ART = {
 const DRESSING = [
   { src: 'prop-0', left: 1615.5, top: 3018.0, w: 89.5, foot: 3176.0 },
   { src: 'prop-1', left: 1860.5, top: 3142.5, w: 89.5, foot: 3301.5 },
-  { src: 'prop-2', left: 1813.5, top: 3186.0, w: 45.0, foot: 3333.5 },
+  // (prop-2 and prop-4, the two lamp posts in front of the left markets, are gone: cut from
+  // the old render, they came out pale and stood up out of the new markets' bases)
   { src: 'prop-3', left: 2132.5, top: 3221.5, w: 122.0, foot: 3437.5 },
-  { src: 'prop-4', left: 2062.5, top: 3312.5, w: 45.0, foot: 3459.5 },
   { src: 'prop-5', left: 3773.5, top: 3062.0, w: 58.0, foot: 3222.5 },
   { src: 'prop-6', left: 3488.5, top: 3145.0, w: 79.5, foot: 3300.0 },
   { src: 'prop-7', left: 3181.5, top: 3207.0, w: 119.0, foot: 3424.0 },

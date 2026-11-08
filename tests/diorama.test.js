@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { ENV, MAX_ZOOM, STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, minZoom, clampView, homeView } from '../js/core/diorama.js';
+import { ENV, MAX_ZOOM, STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, minZoom, maxZoom, clampView, homeView } from '../js/core/diorama.js';
 import { ROOM_GEOMETRY, ROOM_SIZE } from '../js/core/placement.js';
 
 test('the terrain exists and every room has art geometry', () => {
@@ -55,7 +55,11 @@ test('the city floors: each room with a floor stands in the middle of its slab, 
     assert.ok(Math.abs(back.x - 30) < 1e-9 && Math.abs(back.y - 70) < 1e-9);
     for (const [vw, vh] of [[390, 620], [320, 520], [430, 700]]) {
       const h = homeView(vw, vh, env);
-      assert.ok(h.s >= minZoom(vw, vh, env) - 1e-9 && h.tx <= 0 && h.ty <= 0, 'the opening view stays inside the floor');
+      assert.ok(h.s >= minZoom(vw, vh, env) - 1e-9, 'the opening view stays inside the floor');
+      // the world's corner stays off the screen, and its far edges past it
+      assert.ok(env.x0 * h.s + h.tx <= 1e-9 && env.y0 * h.s + h.ty <= 1e-9);
+      assert.ok((env.x0 + env.w) * h.s + h.tx >= vw - 1e-9 && (env.y0 + env.h) * h.s + h.ty >= vh - 1e-9);
+      assert.ok(maxZoom(vw, vh, env) > h.s, 'you can zoom in from the opening view');
     }
   }
   assert.equal(Object.keys(FLOOR_OF).length, STAGE_ROOMS.length, 'every room has its floor');

@@ -18,7 +18,7 @@ import { stallItemById, stallFor, stallDay } from '../core/stall.js';
 import { weekOf, missionsToClaim, MISSION_RULES } from '../core/missions.js';
 import { addDays, todayISO } from '../core/dates.js';
 import { MARKET_RULES, marketIn, marketStock, marketCollect, isMarketSlot, marketNext, marketUpgrade } from '../core/markets.js';
-import { EXPANSION_RULES, expansionReady, isExpanded } from '../core/expansions.js';
+import { EXPANSION_RULES, expandedSize, nextExpansion } from '../core/expansions.js';
 import { t } from '../core/i18n.js';
 
 const KEY = 'moske-gear';
@@ -199,7 +199,7 @@ export async function refreshGear() {
       c.from('user_markets').select('slot, level, cost, bought_at, collected_at'),
       c.from('market_collects').select('id, slot, coins, collected_at'),
       c.from('market_upgrades').select('id, slot, level, cost, upgraded_at'),
-      c.from('user_expansions').select('room, cost, bought_at'),
+      c.from('user_expansions').select('*'),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -296,11 +296,12 @@ function demoCall(fn, args) {
   if (fn === 'buy_expansion') {
     const room = args.p_room;
     if (!EXPANSION_RULES.rooms.includes(room)) throw new Error('gear:unknown_room');
-    if (!expansionReady(room)) throw new Error('gear:coming_soon');
-    if (isExpanded(s.expansions, room)) throw new Error('gear:owned');
-    if (s.wallet.coins < EXPANSION_RULES.cost) throw new Error('gear:insufficient');
-    (s.expansions ||= []).push({ room, cost: EXPANSION_RULES.cost, bought_at: new Date(serverNow()).toISOString() });
-    s.wallet = { ...s.wallet, coins: s.wallet.coins - EXPANSION_RULES.cost };
+    const step = nextExpansion(s.expansions, room);
+    if (expandedSize(s.expansions, room) >= (args.p_size || 16)) throw new Error('gear:owned');
+    if (!step || step.size !== (args.p_size || 16)) throw new Error('gear:coming_soon');
+    if (s.wallet.coins < step.cost) throw new Error('gear:insufficient');
+    (s.expansions ||= []).push({ room, size: step.size, cost: step.cost, bought_at: new Date(serverNow()).toISOString() });
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - step.cost };
     listeners.forEach((f) => f(s));
     return { coins: 0 };
   }
@@ -399,9 +400,9 @@ export const myExpansions = () => rawState().expansions || [];
 /** Can rooms be expanded here? (Demo, or a server with 0029 live.) */
 export const expansionsOpen = () => isDemo() || (gearEnabled() && rawState().expansionsLive !== false);
 /** Expand a room to 16 × 16 (docs/ROOMS3D.md). Throws with a `gear:` code. */
-export async function buyExpansion(room) {
-  if (isDemo()) return demoCall('buy_expansion', { p_room: room });
-  await call('buy_expansion', { p_room: room });
+export async function buyExpansion(room, size = 16) {
+  if (isDemo()) return demoCall('buy_expansion', { p_room: room, p_size: size });
+  await call('buy_expansion', size === 16 ? { p_room: room } : { p_room: room, p_size: size });
   return { coins: 0 };
 }
 

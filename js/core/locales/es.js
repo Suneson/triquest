@@ -2102,7 +2102,9 @@ es.gear = {
     "wallet_full": "Tu almacén de monedas está lleno.",
     "market_max": "Ese mercado ya está en su nivel máximo.",
     "unknown_room": "Esa sala no está aquí.",
-    "coming_soon": "La ampliación de esa sala llegará pronto."
+    "coming_soon": "La ampliación de esa sala llegará pronto.",
+    "unknown_size": "Ese tamaño no está disponible.",
+    "needs_16": "Amplíala primero a 16 × 16."
   },
   "shop": "Tienda de material",
   "inventory": "Inventario",
@@ -3070,7 +3072,7 @@ es.city.parcel = {"title": "Entrega", "from": "Tu paquete ha llegado", "hint": "
 
 es.city.market = {"upgrade": "Mejorar", "upgraded": "Mercado mejorado al nivel {n}.", "nextLevel": "Nivel {n}: {rate} por hora, guarda {cap}", "name": "Mercado", "title": "Mercado (Nivel {n})", "level": "Nivel {n}", "aria": "Mercado {n}", "collectAria": "Recoger {n} monedas", "collect": "Recoger", "buy": "Comprar", "info": "Info", "bought": "Mercado comprado. Desde ahora genera monedas.", "close": "Cerrar", "forSale": "En venta", "rate": "Producción", "perHour": "{n} por hora", "capacity": "Capacidad", "fullIn": "Lleno en", "full": "Lleno: recógelo", "price": "Precio", "about": "Tu mercado genera monedas MOSKE por sí solo. Recógelas antes de que se llene: un mercado lleno deja de generar.", "aboutBuy": "Compra este mercado por {cost} monedas y generará monedas MOSKE por ti, incluso en días de descanso.", "maxLevel": "Nivel máximo", "hm": "{h} h {m} min", "m": "{m} min"};
 
-es.cp.expand = {"aria": "Amplía tus salas", "title": "Amplía tus salas", "about": "Lleva una sala de 8 × 8 a 16 × 16: crece hasta ocupar toda su planta, hasta la barandilla, con sitio para cuatro veces más.", "size": "8 × 8 → 16 × 16", "sizeDone": "16 × 16", "buy": "Ampliar", "owned": "Ampliada", "soon": "Próximamente", "done": "{room} ampliada a 16 × 16."};
+es.cp.expand = {"aria": "Amplía tus salas", "title": "Amplía tus salas", "about": "Lleva una sala de 8 × 8 a 16 × 16 y luego a 32 × 32: al final ocupa toda su planta, hasta la barandilla. Cada paso da sitio para cuatro veces más.", "size": "{from} × {from} → {to} × {to}", "sizeDone": "32 × 32", "buy": "Ampliar", "owned": "Ampliada", "soon": "Próximamente", "done": "{room} ampliada a {size} × {size}."};
 
 // ---- base items, the stash and the trophy cabinet (docs/ITEMS-3D.md) ----
 Object.assign(es.cp.item, {"lockers-t1": "Taquillas", "lockers-t2": "Taquillas T2", "drinks-fridge": "Nevera de bebidas", "massage-table": "Camilla de masaje", "ice-bath": "Baño de hielo", "trophy-cabinet-t1": "Vitrina de trofeos", "trophy-cabinet-t2": "Vitrina de trofeos T2", "dumbbell-rack": "Soporte de mancuernas", "kettlebell-set": "Juego de pesas rusas", "punching-bag": "Saco de boxeo", "rowing-machine": "Máquina de remo", "race-podium": "Podio de carrera", "shoe-rack": "Zapatero", "bike-workstand": "Soporte de taller", "start-block": "Poyete de salida", "treadmill-t1": "Cinta de correr T1", "treadmill-t2": "Cinta de correr T2", "treadmill-t3": "Cinta de correr T3", "treadmill-t4": "Cinta de correr T4", "coffee-machine-t1": "Cafetera T1", "coffee-machine-t2": "Cafetera T2", "coffee-machine-t3": "Cafetera T3"});

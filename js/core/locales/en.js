@@ -2102,7 +2102,9 @@ en.gear = {
     "wallet_full": "Your coin storage is full.",
     "market_max": "That market is already at its top level.",
     "unknown_room": "That room isn’t here.",
-    "coming_soon": "That room’s expansion is coming soon."
+    "coming_soon": "That room’s expansion is coming soon.",
+    "unknown_size": "That size isn’t on offer.",
+    "needs_16": "Expand it to 16 × 16 first."
   },
   "shop": "Gear shop",
   "inventory": "Inventory",
@@ -3070,7 +3072,7 @@ en.city.parcel = {"title": "Delivery", "from": "Your parcel has arrived", "hint"
 
 en.city.market = {"upgrade": "Upgrade", "upgraded": "Market upgraded to level {n}.", "nextLevel": "Level {n}: {rate} per hour, holds {cap}", "name": "Market", "title": "Market (Level {n})", "level": "Level {n}", "aria": "Market {n}", "collectAria": "Collect {n} coins", "collect": "Collect", "buy": "Buy", "info": "Info", "bought": "Market bought. It makes coins from now on.", "close": "Close", "forSale": "For sale", "rate": "Production rate", "perHour": "{n} per hour", "capacity": "Capacity", "fullIn": "Full in", "full": "Full: collect it", "price": "Price", "about": "Your market makes MOSKE coins on its own. Collect them before it fills up: a full market stops making more.", "aboutBuy": "Buy this market for {cost} coins and it makes MOSKE coins for you on its own, even on rest days.", "maxLevel": "Max level", "hm": "{h} h {m} min", "m": "{m} min"};
 
-en.cp.expand = {"aria": "Expand your rooms", "title": "Expand your rooms", "about": "Take a room from 8 × 8 to 16 × 16: it grows to fill its whole floor, right up to the railing, with room for four times as much.", "size": "8 × 8 → 16 × 16", "sizeDone": "16 × 16", "buy": "Expand", "owned": "Expanded", "soon": "Coming soon", "done": "{room} expanded to 16 × 16."};
+en.cp.expand = {"aria": "Expand your rooms", "title": "Expand your rooms", "about": "Take a room from 8 × 8 to 16 × 16, then to 32 × 32: at the last step it fills its whole floor, right up to the railing. Every step holds four times as much.", "size": "{from} × {from} → {to} × {to}", "sizeDone": "32 × 32", "buy": "Expand", "owned": "Expanded", "soon": "Coming soon", "done": "{room} expanded to {size} × {size}."};
 
 // ---- base items, the stash and the trophy cabinet (docs/ITEMS-3D.md) ----
 Object.assign(en.cp.item, {"lockers-t1": "Lockers", "lockers-t2": "Lockers T2", "drinks-fridge": "Drinks fridge", "massage-table": "Massage table", "ice-bath": "Ice bath", "trophy-cabinet-t1": "Trophy cabinet", "trophy-cabinet-t2": "Trophy cabinet T2", "dumbbell-rack": "Dumbbell rack", "kettlebell-set": "Kettlebell set", "punching-bag": "Punching bag", "rowing-machine": "Rowing machine", "race-podium": "Race podium", "shoe-rack": "Shoe rack", "bike-workstand": "Bike workstand", "start-block": "Starting block", "treadmill-t1": "Treadmill T1", "treadmill-t2": "Treadmill T2", "treadmill-t3": "Treadmill T3", "treadmill-t4": "Treadmill T4", "coffee-machine-t1": "Coffee machine T1", "coffee-machine-t2": "Coffee machine T2", "coffee-machine-t3": "Coffee machine T3"});

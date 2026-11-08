@@ -11,6 +11,10 @@ Every room starts as its painted 8 × 8 room, standing in the middle of its floo
 
 The rules live in `js/core/expansions.js` (`EXPANSION_RULES`) and in `expansion_rules()` in `supabase/migrations/0029_expansions.sql`. `tests/expansions-sql.test.js` fails if the two disagree, and checks that the 16 × 16 room fills the roof.
 
+**Update: there are now three sizes, 8 × 8, 16 × 16 and 32 × 32** (1,000 then 5,000 coins, `0032_expansions_32.sql`). The big picture is always 32 × 32 and fills the roof: at 16 × 16 the hazard tape marks the back quarter you own, and at 32 × 32 the tape goes. Tiles count from the back corner, so nothing moves when you expand.
+
+The 32 × 32 picture is made from the 16 × 16 one by `tools/room-32.py`, not by stretching it: tiles keep their size and walls their height, the floor pattern folds, wall panels and window bays repeat, and the logo and plaque appear once. Each room shape needs its own panel numbers in that tool. Where this page says 16 × 16 picture below, read it as the source for that step.
+
 ## Buying
 
 - **The Expand button** sits in the row under your name, right of the trophy. It shows the 16 × 16 room with a "16²" tag. In the locker room, the trophy shows the feats for all three sports together.

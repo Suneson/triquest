@@ -22,8 +22,8 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, MAX_ZOOM, envFor, FLOOR_OF } from '../core/diorama.js';
-import { isExpanded, EXPANDED_ART, tapedRoom } from '../core/expansions.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF } from '../core/diorama.js';
+import { expandedSize, EXPANDED_ART, tapedRoom } from '../core/expansions.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -71,14 +71,15 @@ function levelOf(room, ctx) {
   return Math.min(10, sportLevelOf(sport, ctx.boost?.sportXp?.[sport] || 0).artLevel);
 }
 
-// a room expanded to 16 × 16 (expansions.js) shows its model in place of its painted 8 × 8 room
-const expanded = (room) => isExpanded(myExpansions(), room) && !!EXPANDED_ART[room];
+// a room expanded (expansions.js) shows its big picture in place of its painted 8 × 8 room
+const expansionSize = (room) => (EXPANDED_ART[room] ? expandedSize(myExpansions(), room) : 8);
+const expanded = (room) => expansionSize(room) > 8;
 // the taped-off 8 × 8 inside the 16 × 16 picture (expansions.js): admins can preview it, even in a room they've expanded
 const TAPE_KEY = 'moske-tape-preview';
 export const tapePreview = () => { try { return (isChestAdmin() || isDemo()) && localStorage.getItem(TAPE_KEY) === '1'; } catch { return false; } };
 export const setTapePreview = (on) => { try { localStorage.setItem(TAPE_KEY, on ? '1' : '0'); } catch { /* private mode */ } };
 const taped = (room) => (tapePreview() ? tapedRoom(room, true) : tapedRoom(room) && !expanded(room));
-const geomOf = (room) => stageGeom(room, expanded(room), taped(room));
+const geomOf = (room) => stageGeom(room, expanded(room) && expansionSize(room), taped(room));
 // every room, for working out where items stand
 const stageLayout = () => ({ rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
@@ -188,7 +189,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
       ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
       ${orb('navy', 'icons/UI/side/side-expand.webp', `data-action="open-expansions" aria-label="${esc(t('cp.expand.aria'))}"`,
-        `<b class="dg-orb-n is-grow" aria-hidden="true">16²</b>`)}
+        expansionSize(room) < 32 ? `<b class="dg-orb-n is-grow" aria-hidden="true">${expansionSize(room) * 2}²</b>` : '')}
     </div>
     <div class="dg-side is-left">
       ${orb('gold', 'icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
@@ -404,7 +405,7 @@ export function wireDiorama(root, ctx) {
   let placements = resolvePlacements(stageLayout(), items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
-  const env = envFor(room);
+  const env = envFor(room, geom);
   stage.env = env;
   const M = roomPlacement(geom, env);
 
@@ -597,6 +598,7 @@ export function wireDiorama(root, ctx) {
   const box = () => vp.getBoundingClientRect();
   // the city's clouds, the delivery sign and the truck (city3d.js), on the city's floors
   const city = env.floor != null && webglOk() ? mountCity3d(vp, {
+    worldX0: env.x0,
     worldW: env.w,
     deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
     now: serverNow,
@@ -641,8 +643,7 @@ export function wireDiorama(root, ctx) {
     const r = box();
     const ox = cx - r.left; const oy = cy - r.top;
     const v0 = from || view.v;
-    const lo = minZoom(r.width, r.height, env);
-    const s1 = Math.min(lo * MAX_ZOOM, Math.max(lo, ns));
+    const s1 = Math.min(maxZoom(r.width, r.height, env), Math.max(minZoom(r.width, r.height, env), ns));
     view.v = { s: s1, tx: ox - (ox - v0.tx) * (s1 / v0.s), ty: oy - (oy - v0.ty) * (s1 / v0.s) };
     apply();
   };
@@ -651,11 +652,11 @@ export function wireDiorama(root, ctx) {
     draw();
     const el = worldEl.querySelector(`[data-item="${id}"]`);
     // picking something up from far away brings it closer
-    const r = box(); const lo = minZoom(r.width, r.height, env);
-    if (el && view.v.s < lo * 1.5) {
+    const r = box(); const near = homeView(r.width, r.height, env).s;
+    if (el && view.v.s < near * 0.8) {
       if (!reduced()) { [worldEl, stage.front].forEach((el) => el?.classList.add('is-easing')); setTimeout(() => [worldEl, stage.front].forEach((el) => el?.classList.remove('is-easing')), 280); }
       const e = el.getBoundingClientRect();
-      zoomAt(lo * 1.8, e.left + e.width / 2, e.top + e.height / 2);
+      zoomAt(near, e.left + e.width / 2, e.top + e.height / 2);
     }
     if (el && !reduced()) { el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }
     haptic('select');

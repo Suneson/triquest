@@ -24,7 +24,10 @@ export const ENV = {
 // made for a 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
 export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
 export const CITY = {
-  w: 5376, h: 4980,
+  // the whole city: the base keeps its old px, so everything measured in them still holds, and
+  // the streets round it are redrawn smaller (tools/compose-big-base.py): the base is 2 × 2 blocks.
+  // The picture runs past the old one on every side, so its top-left corner is at negative px
+  x0: -800, y0: -2300, w: 7000, h: 8600,
   k: 0.5,                         // the app picture is half the master (px of the master × k)
   plateAt: [3584, 4072],          // the street floor's top-left corner in the master
   step: 449.01,                   // one storey, in px of the street floor (icons/City/layers/tower.json)
@@ -73,44 +76,53 @@ export function slabOf(n) {
   return Object.fromEntries(Object.entries(s).map(([k, p]) => [k, toWorld(p, up)]));
 }
 
-// The city picture is drawn in tiles (icons/City/layers/tiles/city-<row>-<col>.webp, 4 × 4 of
-// 1344 × 1245 px of the world, stored at 3/4 size): one 5376-px picture is more than an iPhone
-// will keep decoded next to the 3D layers. Tiles that would be all sky aren't there.
+// The city picture is drawn in tiles (icons/City/layers/tiles/city-<row>-<col>.webp, 6 × 7 of
+// 1344 × 1245 px of the world, stored sharper near the base than far from it: tools/cut-big-city.py):
+// one picture this size is more than an iPhone will keep decoded next to the 3D layers. Over them,
+// the base's own block, sharper still (1.5 px per px of the world), so it stays crisp zoomed right in.
 const TILE = { w: 1344, h: 1245 };
-const SKY_TILES = new Set(['0-0', '0-3']);
-export const CITY_TILES = [0, 1, 2, 3].flatMap((r) => [0, 1, 2, 3].map((c) => ({ r, c })))
-  .filter(({ r, c }) => !SKY_TILES.has(`${r}-${c}`))
-  .map(({ r, c }) => ({ src: `icons/City/layers/tiles/city-${r}-${c}.webp`, x: c * TILE.w, y: r * TILE.h,
-    w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }));
+const BASE_ART = { src: 'icons/City/layers/base.webp', x: 1500, y: 2410, w: 2380, h: 1470 };
+export const CITY_TILES = [...[0, 1, 2, 3, 4, 5, 6].flatMap((r) => [0, 1, 2, 3, 4, 5].map((c) => ({ r, c })))
+  .map(({ r, c }) => ({ src: `icons/City/layers/tiles/city-${r}-${c}.webp`, x: CITY.x0 + c * TILE.w, y: CITY.y0 + r * TILE.h,
+    w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }))
+  // the ones round the base first, so what you open on loads before the far edges of the city
+  .sort((p, q) => Math.hypot(p.x + p.w / 2 - 2690, p.y + p.h / 2 - 3145) - Math.hypot(q.x + q.w / 2 - 2690, q.y + q.h / 2 - 3145)), BASE_ART];
 
-// the buildings in front of the van's road out, only where they can cover the van
-// (tools/cut-front.py): the 3D layer draws them over the van while it drives off, so it passes
+// the buildings in front of the van's road, only where they can cover the van
+// (tools/cut-big-city.py): the 3D layer draws them over the van while it's about, so it passes
 // behind them. Small pieces, loaded only then: a layer the size of the city over the 3D canvas
 // was more than an iPhone could keep.
 export const VAN_FRONT = [
-  { src: 'icons/City/layers/front/van-front-2-1.webp', x: 2490.7, y: 3659.3, w: 197.3, h: 76.0 },
-  { src: 'icons/City/layers/front/van-front-2-2.webp', x: 2688.0, y: 3663.3, w: 594.7, h: 72.0 },
-  { src: 'icons/City/layers/front/van-front-3-0.webp', x: 596.0, y: 4643.0, w: 748.0, h: 337.3 },
-  { src: 'icons/City/layers/front/van-front-3-1.webp', x: 1344.0, y: 3735.0, w: 1344.0, h: 1114.7 },
-  { src: 'icons/City/layers/front/van-front-3-2.webp', x: 2688.0, y: 3735.0, w: 594.7, h: 458.7 },
+  { src: 'icons/City/layers/front/van-front-4-2.webp', x: 2592.0, y: 3561.0, w: 640.0, h: 364.0 },
+  { src: 'icons/City/layers/front/van-front-4-3.webp', x: 3232.0, y: 3293.0, w: 1344.0, h: 512.0 },
+  { src: 'icons/City/layers/front/van-front-4-4.webp', x: 4576.0, y: 3537.0, w: 887.0, h: 388.0 },
+  { src: 'icons/City/layers/front/van-front-5-0.webp', x: -72.0, y: 4763.0, w: 616.0, h: 407.0 },
+  { src: 'icons/City/layers/front/van-front-5-1.webp', x: 544.0, y: 4104.0, w: 1344.0, h: 1015.0 },
+  { src: 'icons/City/layers/front/van-front-5-2.webp', x: 1888.0, y: 3925.0, w: 999.0, h: 537.0 },
+  { src: 'icons/City/layers/front/van-front-5-4.webp', x: 4901.0, y: 3925.0, w: 820.0, h: 293.0 },
+  { src: 'icons/City/layers/front/van-front-6-0.webp', x: -64.0, y: 5170.0, w: 503.0, h: 136.0 },
 ];
 
-const cityEnv = (n) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: VAN_FRONT, w: CITY.w, h: CITY.h, plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n), rail: railOf(n) });
+// how far in you can zoom: until one tile of the room is this many px across on the screen
+const TILE_ZOOM = 68;
+const cityEnv = (n, geom) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: VAN_FRONT, x0: CITY.x0, y0: CITY.y0, w: CITY.w, h: CITY.h,
+  maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (slabOf(n).right[0] - slabOf(n).left[0])) / ROOM_GEOMETRY[geom].cols), plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n), rail: railOf(n) });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
-export const envFor = (room) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room]) : ENV);
+export const envFor = (room, geom = stageGeom(room)) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
 
-export const MAX_ZOOM = 2.5; // × the smallest zoom
+export const MAX_ZOOM = 2.5; // × the smallest zoom, in a world with no zoom of its own (the terrain)
 
 /** The rooms you can visit, in the bottom bar's order (the locker last, on its own row). */
 export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
 /**
- * A room's art geometry on the stage: the painted 8 × 8 room (the locker's is the square one),
- * or its 16 × 16 model once the room is expanded (expansions.js; only the locker has one yet),
- * or that model taped off to its back 8 × 8 (`taped`, expansions.js).
+ * A room's art geometry on the stage: the painted 8 × 8 room (the locker's is the square one), or
+ * once the room is expanded (expansions.js; only the locker can be yet) its 32 × 32 picture, all of
+ * it when `size` is 32 and taped off to its back 16 × 16 when it isn't; `taped` shows it taped off
+ * to the back 8 × 8.
  */
-export const stageGeom = (room, expanded = false, taped = false) => {
-  if (room === 'locker') return taped ? 'locker-16-tape' : expanded ? 'locker-16' : 'locker-square';
+export const stageGeom = (room, size = false, taped = false) => {
+  if (room === 'locker') return taped ? 'locker-16-tape' : size === 32 ? 'locker-32' : size ? 'locker-16' : 'locker-square';
   return room;
 };
 
@@ -154,19 +166,22 @@ export function worldToRoomPct(geom, x, y, env = ENV) {
 
 /** The smallest zoom: the world covers the viewport. */
 export const minZoom = (vw, vh, env = ENV) => Math.max(vw / env.w, vh / env.h);
+/** The largest zoom: the room's own (a tile a good size on the screen), or MAX_ZOOM × the smallest. */
+export const maxZoom = (vw, vh, env = ENV) => { const lo = minZoom(vw, vh, env); return env.maxS ? Math.max(lo, env.maxS) : lo * MAX_ZOOM; };
 
 /**
  * A view { s, tx, ty } (screen = world × s + t) held inside the limits: zoom
- * between minZoom and MAX_ZOOM × it, and no world edge inside the viewport.
+ * between minZoom and maxZoom, and no world edge inside the viewport.
  */
 export function clampView(v, vw, vh, env = ENV) {
   const lo = minZoom(vw, vh, env);
-  const s = Math.min(lo * MAX_ZOOM, Math.max(lo, v.s));
+  const s = Math.min(maxZoom(vw, vh, env), Math.max(lo, v.s));
+  const x0 = (env.x0 || 0) * s; const y0 = (env.y0 || 0) * s;   // the world's top-left corner
   const w = env.w * s; const h = env.h * s;
   return {
     s,
-    tx: Math.min(0, Math.max(vw - w, v.tx)),
-    ty: Math.min(0, Math.max(vh - h, v.ty)),
+    tx: Math.min(-x0, Math.max(vw - w - x0, v.tx)),
+    ty: Math.min(-y0, Math.max(vh - h - y0, v.ty)),
   };
 }
 

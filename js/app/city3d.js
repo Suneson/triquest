@@ -24,7 +24,7 @@ const UP = Math.cos(EL) * SIGMA;          // world px a point rises on screen pe
 const FPS = 30;
 const CLOUD_UP = 2400;                    // how high the 3D clouds fly (units: above the tallest roof)
 
-// in px of the city picture (5376 × 4980; drawn in tiles, icons/City/layers/tiles/)
+// in px of the city picture (CITY in diorama.js; drawn in tiles, icons/City/layers/tiles/)
 export const SIGN_AT = [2940, 3548];             // on the pavement, left of the garage door
 export const SIGN_HEIGHT = 320;                  // px tall on screen
 // the truck's road: in from the bottom right, round the corner, to the garage door; then it
@@ -40,7 +40,7 @@ const ROUTE_IN = [lat(1.6, -0.45), lat(0.45, -0.45), lat(0.45, 0.24)];
 const ROUTE_OUT = [lat(0.45, 0.24), lat(0.45, 2.3)];
 /** Where the truck stops at the garage door (px of the city picture): the parcels wait there. */
 export const TRUCK_STOP = ROUTE_IN[ROUTE_IN.length - 1];
-const TRUCK_LEN = 250;                    // px along the road
+const TRUCK_LEN = 150;                    // px along the road
 const SPEED = 150;                        // px of the city picture per second
 const WAIT = 8;                           // s at the garage door
 
@@ -90,21 +90,24 @@ const FAR = [
 ];
 // the 3D clouds: which model, where (px of the city picture), how wide (px), and how fast (px/s)
 const CLOUDS = [
-  { m: 'a', at: [700, 900], w: 170, v: 16, front: false },
-  { m: 'b', at: [2300, 650], w: 240, v: 13, front: false },
-  { m: 'c', at: [4100, 1050], w: 210, v: 15, front: false },
-  { m: 'b', at: [3300, 1500], w: 190, v: 18, front: false },
-  { m: 'a', at: [1500, 1900], w: 140, v: 20, front: false },
-  { m: 'c', at: [4900, 2100], w: 160, v: 17, front: false },
-  { m: 'a', at: [3900, 350], w: 120, v: 22, front: true },
-  { m: 'c', at: [1200, 2700], w: 140, v: 24, front: true },
+  { m: 'a', at: [100, -300], w: 170, v: 16, front: false },
+  { m: 'b', at: [2200, -900], w: 240, v: 13, front: false },
+  { m: 'c', at: [4600, 200], w: 210, v: 15, front: false },
+  { m: 'b', at: [3500, 1100], w: 190, v: 18, front: false },
+  { m: 'a', at: [1100, 1900], w: 140, v: 20, front: false },
+  { m: 'c', at: [5500, 2100], w: 160, v: 17, front: false },
+  { m: 'b', at: [600, 4300], w: 200, v: 14, front: false },
+  { m: 'a', at: [5000, 4700], w: 150, v: 19, front: false },
+  { m: 'a', at: [3900, -500], w: 120, v: 22, front: true },
+  { m: 'c', at: [800, 2700], w: 140, v: 24, front: true },
+  { m: 'b', at: [3200, 5400], w: 130, v: 21, front: true },
 ];
 
 let shared = null;   // the canvases and the far clouds, kept across the stage's re-renders
 
 /**
  * The city's moving things over the stage's viewport `vp` (an element the world is in).
- *   worldW        the city picture's width (px), for where the clouds wrap round
+ *   worldX0, worldW  the city picture's left edge and width (px), for where the clouds wrap round
  *   deliveries()  when each delivery ends (epoch ms): those still coming and those just come
  *   now()         the server's time (epoch ms)
  *   label         { title, clock(ms) }: the sign's words and its countdown format
@@ -115,13 +118,13 @@ let shared = null;   // the canvases and the far clouds, kept across the stage's
  *                 drives off behind them
  * Returns { setView(v, w, h) }.
  */
-export function mountCity3d(vp, { worldW, deliveries, now, label, parked, reduced, front: frontArt = [] }) {
+export function mountCity3d(vp, { worldX0 = 0, worldW, deliveries, now, label, parked, reduced, front: frontArt = [] }) {
   if (!shared) shared = makeShared();
   const { far, back, front } = shared;
   // into this render's viewport: the far clouds and the back canvas under the world, the front over it
   const world = vp.querySelector('[data-dg-world]');
   vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
-  shared.opts = { worldW, deliveries, now, label, parked, reduced, front: frontArt };
+  shared.opts = { worldX0, worldW, deliveries, now, label, parked, reduced, front: frontArt };
   if (!shared.farLoop) farLoop();
   if (!shared.started) start();
   return {
@@ -301,10 +304,10 @@ async function start() {
     cam.updateProjectionMatrix();
 
     // the clouds drift right to left and come round again past the city's right edge
-    const W = o.worldW || 5376;
+    const X0 = o.worldX0 || 0; const W = o.worldW || 7000;
     for (const c of clouds) {
       if (!still) c.at = [c.at[0] - c.v * dt, c.at[1]];
-      if (c.at[0] < -c.w) c.at = [W + c.w, c.at[1]];
+      if (c.at[0] < X0 - c.w) c.at = [X0 + W + c.w, c.at[1]];
       // high in the sky, above every roof: the point under it on the ground is CLOUD_UP lower
       // on screen, so it shows where `at` says
       const p = ground([c.at[0], c.at[1] + CLOUD_UP * UP]);

@@ -106,6 +106,16 @@ python3 tools/cut-city.py <gen-dir> <out-dir>                    # keys the sky,
    - On iPhone, Safari ignores WebM transparency, so the chest falls back to its still and shake. Exporting the clips as HEVC-with-alpha `.mov` would give iPhone the full clip.
    - See docs/REWARDS.md.
 
+## The big base (read this first: it replaces the sizes below)
+
+The base is 2 × 2 city blocks. It keeps its old pixels exactly (slab, tower, railing, markets, sign, all in the old 5376 × 4980 coordinates), and only the street grid around it is redrawn, at 0.436 of the old size: two new blocks and a road equal one old block.
+
+- **The world** is 7000 × 8600 with its top-left at (-800, -2300): `CITY` in `diorama.js`. `clampView` and `homeView` take that origin into account.
+- **Pictures:** `tools/compose-big-base.py` makes the city and the base's own sharper block (`icons/City/layers/base.webp`, 1.5 px per world px, no AI upscale: detail comes from `layers/plate.webp`). `tools/cut-big-city.py` cuts 6 × 7 tiles, sharper within 2400 px of the base than beyond, for the same memory as the old city, and the van's cover pieces.
+- **The van's road** didn't move: the new roads run through the old road lines. The van is shorter.
+- **Zoom:** out until the world covers the screen (the base is under half the width), in until a tile of the room is 68 px across (`maxZoom`).
+- **The stadium** is a 2 × 2 landmark behind and to the right of the base.
+
 ## The layered city (next)
 
 Separate pictures per floor drift in colour and detail, so the city is being rebuilt from layers. Nothing in the app uses this yet.

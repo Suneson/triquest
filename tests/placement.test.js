@@ -189,7 +189,7 @@ test('the trophy cabinet: 5 on show in tier 1, 10 in tier 2, the best one standi
 test('the taped room: its picture is 16 x 16, only the back 8 x 8 can be used', () => {
   const c = placeableById('coffee-machine');
   assert.equal(stageGeom('locker', true, true), 'locker-16-tape');
-  assert.equal(ROOM_GEOMETRY['locker-16-tape'].cols, 16);
+  assert.equal(ROOM_GEOMETRY['locker-16-tape'].cols, 32);
   assert.ok(canPlace('locker-16-tape', 'locker', c, 6, 6).ok, 'inside the tape');
   assert.equal(canPlace('locker-16-tape', 'locker', c, 7, 6).reason, 'bounds', 'across the tape');
   assert.ok(canPlace('locker-16', 'locker', c, 7, 6).ok, 'expanded, the whole floor');

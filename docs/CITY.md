@@ -237,6 +237,10 @@ Don't put a city-sized layer over a 3D canvas, the city's or the runner's on the
 
 The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-front`, with no size of its own, so it shows over the 3D sign at the cost of the bubble only.
 
+## The island's stadium and construction box
+
+Both are cut by `tools/island-extras.py`. While a club, pool or market is being rebuilt, one picture of a giant MOSKE box (`icons/Island/box.webp`) stands on its plot in place of the ruin, with the timer over it. The pool, the Mall and the market stand in front of the base's collectors, so they're drawn over them.
+
 ## Previewing the 32 x 32 rooms
 
 Only level 10 exists so far, so these rooms stay hidden from players. Open the app with `?rooms32=1` to see them on that device, and `?rooms32=0` to turn them off. Admins can also buy the real upgrade for any room from the Expand window. `tools/cut-rooms-32.py` cuts them and writes `js/core/room32-art.js`.

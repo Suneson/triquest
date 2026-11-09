@@ -1,10 +1,11 @@
 """cut-island.py: the island's pictures for the app (docs/CITY.md), and js/core/island-art.js, where they stand.
 
-    python tools/cut-island.py <island picture, 5504 x 3072> <upscaled art dir> <old city picture, 5376 x 4980>
+    python tools/cut-island.py <island picture, 5504 x 3072> <upscaled art dir>
 
 The ground is one Gemini picture, cut in tiles: full size round the city, half size over open sea.
 Each plot's building is on flat green and is keyed out, then fitted to its plot by the plot's own
-corners (the paintings don't all sit at exactly the same size). The stadium comes from the old city.
+corners (the paintings don't all sit at exactly the same size). The stadium and the construction
+box are tools/island-extras.py's: they're kept as they are.
 """
 import json, os, sys
 import numpy as np
@@ -33,7 +34,6 @@ ART = {  # key: (plot, file, stored px per world px)
     'mall': ('mall', 'Moske Mall-upscale-2x.jpg', .6),
     'base': ('base', 'base-c-upscale-2x.png', 1.25),
     'club-ruin': ('club', 'Club Base level 1-upscale-2x.jpg', .6),
-    'club-build': ('club', 'Club base during construction time-upscale-2x.jpg', .6),
     'club': ('club', 'Club Base stage 3 post construction-upscale-2x.jpg', .6),
     'pool-ruin': ('pool', 'Moske Pool derrelict - before fix-upscale-2x.jpg', .6),
     'pool': ('pool', 'Moske Pool-upscale-2x.jpg', .6),
@@ -110,22 +110,6 @@ def ground(src):
     return tiles
 
 
-def stadium(src):
-    """The stadium's block, cut from the old city in a diamond."""
-    old = Image.open(src).convert('RGBA')
-    cx, cy = 2691.5 + 1391, 3245.5 - SLOPE * 1391
-    hw, hh, up = 1075, 1075 * SLOPE, 90
-    b = (round(cx - hw), round(cy - hh - up), round(cx + hw), round(cy + hh))
-    c = old.crop(b)
-    m = Image.new('L', c.size, 0)
-    ImageDraw.Draw(m).polygon([(hw, 0), (2 * hw, up + hh), (hw, c.height), (0, up + hh)], fill=255)
-    c.putalpha(m)
-    px, py = centre('stadium')
-    out = c.resize((round(c.width * .7), round(c.height * .7)), Image.LANCZOS)
-    save(out, 'stadium')
-    return {'x': round(px - hw, 1), 'y': round(py - hh - up, 1), 'w': c.width, 'h': c.height}
-
-
 def storey(src):
     """One upper floor. Its front corner stands on the roof below; returns its box and its height."""
     im = key(src)
@@ -142,10 +126,12 @@ def storey(src):
 
 
 def main():
-    isle, up, old = sys.argv[1:4]
+    isle, up = sys.argv[1:3]
+    with open(os.path.join(REPO, 'js', 'core', 'island-art.js'), encoding='utf-8') as f:
+        kept = json.loads((t := f.read())[t.index('{'):t.rindex('}') + 1])['pieces']
     os.makedirs(OUT, exist_ok=True)
     pieces = {name: {'src': f'icons/Island/{name}.webp', **fit_plot(name, plot, os.path.join(up, f), s)} for name, (plot, f, s) in ART.items()}
-    pieces['stadium'] = {'src': 'icons/Island/stadium.webp', **stadium(old)}
+    pieces.update({k: kept[k] for k in ('stadium', 'box')})
     pl = {p: [round(v, 1) for v in centre(p)] for p in PLOTS}
     data = {'world': {'w': WORLD[0], 'h': WORLD[1]}, 'tiles': ground(isle), 'plots': pl, 'pieces': pieces,
             'storey': {'src': 'icons/Island/storey.webp', **storey(os.path.join(up, 'storey-d-upscale-2x.png'))}, 'unit': UNIT, 'slope': SLOPE,

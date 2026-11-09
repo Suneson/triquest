@@ -59,10 +59,15 @@ export const ROOM_SIZE = {
   'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-32': [3400, 2053], 'locker-16': [3400, 2053], 'locker-16-tape': [3400, 2053],
 };
 
-// the new 32 × 32 rooms, one level so far: shown only with ?rooms32=1 until the full set exists
+// the new 32 × 32 rooms, one level so far: `-big` is the ?rooms32=1 preview, and the others are the
+// same three stages of expanding as the locker's (it keeps the picture it has)
 for (const [room, r] of Object.entries(ROOM32)) {
-  ROOM_GEOMETRY[`${room}-big`] = { ...floor(r.back, r.right, r.left, 32, 32, r.blocked), share: r.share };
+  const g = { ...floor(r.back, r.right, r.left, 32, 32, r.blocked), share: r.share };
+  ROOM_GEOMETRY[`${room}-big`] = g;
   ROOM_SIZE[`${room}-big`] = r.size;
+  if (room === 'locker') continue;
+  Object.assign(ROOM_GEOMETRY, { [`${room}-32`]: g, [`${room}-16`]: { ...g, limit: 16 }, [`${room}-16-tape`]: { ...g, limit: 8 } });
+  Object.assign(ROOM_SIZE, { [`${room}-32`]: r.size, [`${room}-16`]: r.size, [`${room}-16-tape`]: r.size });
 }
 
 // levels with no art yet fall back to the nearest one below (the gym has no 7)

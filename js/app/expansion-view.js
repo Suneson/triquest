@@ -1,11 +1,11 @@
 // expansion-view.js — the Expand window (docs/ROOMS3D.md): every room, and taking it from its
-// painted 8 × 8 room to 16 × 16 and then 32 × 32, which fills its floor's whole roof. Only the
-// locker room has its big picture so far; the others say "coming soon".
+// painted 8 × 8 room to 16 × 16 and then 32 × 32, which fills its floor's whole roof. Rooms that
+// aren't on sale yet (expansions.js) say "coming soon", except to admins and in the demo.
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
-import { EXPANSION_RULES, expansionReady, expandedSize, nextExpansion, EXPANDED_ART, SIZE_32_LIVE } from '../core/expansions.js';
+import { EXPANSION_RULES, expansionReady, expandedSize, nextExpansion, EXPANDED_ART, SIZE_32_LIVE, onSale } from '../core/expansions.js';
 import { roomArt } from '../core/placement.js';
 import { myExpansions, expansionsOpen, buyExpansion, walletNow, gearError } from './gear-state.js';
 import { openLayer, closeLayer } from './nav.js';
@@ -23,9 +23,10 @@ export function openExpansions(workouts = []) {
     const coins = walletNow(workouts).coins;
     const rows = EXPANSION_RULES.rooms.map((room) => {
       const size = expandedSize(myExpansions(), room);
-      const step = nextExpansion(myExpansions(), room, SIZE_32_LIVE || isDemo());
+      const offered = onSale(room, isChestAdmin() || isDemo());
+      const step = offered ? nextExpansion(myExpansions(), room, SIZE_32_LIVE || isDemo()) : null;
       const done = size === 32;
-      const ready = expansionReady(room);
+      const ready = offered && expansionReady(room);
       const pic = ready ? EXPANDED_ART[room] : roomArt(room, 1);
       const action = done
         ? `<span class="xp-owned">${svg('check')}${esc(t('cp.expand.owned'))}</span>`

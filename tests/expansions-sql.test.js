@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { EXPANSION_RULES, expansionReady, isExpanded, expandedSize, nextExpansion, EXPANDED_ART } from '../js/core/expansions.js';
+import { EXPANSION_RULES, expansionReady, isExpanded, expandedSize, nextExpansion, EXPANDED_ART, onSale } from '../js/core/expansions.js';
 import { stageGeom, roomPlacement, roomPctToWorld, envFor } from '../js/core/diorama.js';
 import { ROOM_GEOMETRY } from '../js/core/placement.js';
 import { walletFold } from '../js/core/wallet.js';
@@ -47,13 +47,12 @@ test('the rules: SQL and JS agree', { skip }, async () => {
   assert.deepEqual((await db.query('select public.expansion_rules() as r')).rows[0].r, EXPANSION_RULES);
 });
 
-test('expanding: a ready room once, for its price; the others coming soon', { skip }, async () => {
+test('expanding: a ready room once, for its price', { skip }, async () => {
   const poor = await freshDb(0);
   assert.equal(await code(buy(poor, 'locker')), 'insufficient');
   const db = await freshDb(2000);
   const before = await coins(db);
   assert.equal(await code(buy(db, 'attic')), 'unknown_room');
-  assert.equal(await code(buy(db, 'gym')), 'coming_soon');
   assert.equal(await code(buy(db, 'locker')), 'ok');
   assert.equal(await coins(db), before - EXPANSION_RULES.cost);
   assert.equal(await code(buy(db, 'locker')), 'owned');
@@ -80,17 +79,30 @@ test('how big a room is, and what comes next', () => {
   assert.deepEqual(nextExpansion([], 'locker'), { size: 16, cost: EXPANSION_RULES.cost });
   assert.deepEqual(nextExpansion(r16, 'locker'), { size: 32, cost: EXPANSION_RULES.cost32 });
   assert.equal(nextExpansion(r32, 'locker'), null);
-  assert.equal(nextExpansion([], 'pool'), null);
+  assert.deepEqual(nextExpansion([], 'pool'), { size: 16, cost: EXPANSION_RULES.cost });
 });
 
 test('the JS side: ready rooms, owned rooms, the wallet', () => {
-  assert.ok(expansionReady('locker') && !expansionReady('pool'));
+  assert.ok(expansionReady('locker') && expansionReady('pool'));
+  assert.ok(onSale('locker') && !onSale('pool') && onSale('pool', true), 'players wait for the full set of levels; admins can try it');
   assert.ok(isExpanded([{ room: 'locker' }], 'locker') && !isExpanded([], 'locker'));
   for (const r of EXPANSION_RULES.ready) assert.ok(EXPANDED_ART[r], r);
   const at = new Date().toISOString();
   const base = walletFold({});
   const after = walletFold({ expansions: [{ room: 'locker', cost: EXPANSION_RULES.cost, bought_at: at }] });
   assert.equal(base.coins - after.coins, EXPANSION_RULES.cost);
+});
+
+test('a sport room expands through the same three stages, its water staying out of the way', () => {
+  assert.equal(stageGeom('pool'), 'pool');
+  assert.equal(stageGeom('pool', 16), 'pool-16');
+  assert.equal(stageGeom('pool', 32), 'pool-32');
+  assert.equal(stageGeom('pool', false, true), 'pool-16-tape');
+  assert.equal(ROOM_GEOMETRY['pool-16'].limit, 16);
+  assert.equal(ROOM_GEOMETRY['pool-16-tape'].limit, 8);
+  assert.equal(ROOM_GEOMETRY['pool-32'].limit, undefined);
+  assert.equal(ROOM_GEOMETRY['pool-32'].cols, 32);
+  assert.ok(ROOM_GEOMETRY['pool-32'].blocked.length, 'the water is still blocked');
 });
 
 test('the expanded locker fills its roof inside the railing, centred on it, the tape marking what you own', () => {

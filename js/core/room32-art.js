@@ -4,21 +4,21 @@ export const ROOM32 = {
     "src": "icons/Pixelart/NEW/LOCKER/big-10.webp",
     "size": [
       3400,
-      2042
+      2040
     ],
     "back": [
       49.81,
-      18.81
+      18.58
     ],
     "right": [
-      97.1,
-      57.39
+      96.75,
+      56.91
     ],
     "left": [
-      2.52,
-      57.39
+      2.87,
+      56.91
     ],
-    "share": 0.8796,
+    "share": 0.873,
     "blocked": []
   },
   "gym": {
@@ -88,21 +88,21 @@ export const ROOM32 = {
     "src": "icons/Pixelart/NEW/POOL/big-10.webp",
     "size": [
       3400,
-      2040
+      2051
     ],
     "back": [
       50.24,
-      20.0
+      20.09
     ],
     "right": [
-      99.07,
-      58.62
+      99.2,
+      58.59
     ],
     "left": [
-      1.14,
-      58.44
+      1.02,
+      58.42
     ],
-    "share": 0.9108,
+    "share": 0.913,
     "blocked": [
       [
         22,

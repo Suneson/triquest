@@ -1,6 +1,6 @@
 # The base's locked camera rig (docs/ITEMS-3D.md): orthographic, from the floor's front corner,
 # 45 degrees round, tilted so a floor edge rises 0.489 px per px across (the 16 x 16 rooms).
-import bpy, math
+import bpy, math, os
 from mathutils import Vector
 
 SLOPE = 0.489
@@ -11,7 +11,8 @@ def reset():
 
 def load(path):
     before = set(bpy.context.scene.objects)
-    bpy.ops.import_scene.gltf(filepath=path)
+    d, n = os.path.split(path)     # Blender 5.2 wants the folder and the file named separately too
+    bpy.ops.import_scene.gltf(filepath=path, directory=d + '/', files=[{'name': n}])
     new = [o for o in bpy.context.scene.objects if o not in before]
     root = bpy.data.objects.new('item', None); bpy.context.scene.collection.objects.link(root)
     for o in new:

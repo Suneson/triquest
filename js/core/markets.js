@@ -9,7 +9,7 @@
 
 export const MARKET_RULES = {
   cost: 400,                // coins, each
-  slots: [1, 2, 3, 4],      // left far, left near, right near, right far (city3d.js MARKETS)
+  slots: [1, 2, 3, 4, 5, 6, 7, 8],   // four down each front side of the base (market-view.js MARKETS)
   // what a market makes at each level: coins an hour, and the most it holds before it stops;
   // `cost` is the upgrade's price to reach that level (level 1 is the market's own price)
   levels: [
@@ -21,7 +21,7 @@ export const MARKET_RULES = {
 /** The rules at a market's level (level 1 when it has none yet). */
 export const marketLevel = (m) => MARKET_RULES.levels[Math.max(0, Math.min(MARKET_RULES.levels.length, Number(m?.level) || 1) - 1)];
 
-/** Is this one of the four slots? */
+/** Is this one of the slots? */
 export const isMarketSlot = (slot) => MARKET_RULES.slots.includes(Number(slot));
 
 /** The market in a slot, if it's bought: rows are { slot, level, bought_at, collected_at }. */

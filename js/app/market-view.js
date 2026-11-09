@@ -14,12 +14,16 @@ import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { MARKET_RULES, marketIn, marketStock, marketLevel, marketFullIn, marketNext } from '../core/markets.js';
-import { myMarkets, marketsOpen, buyMarket, collectMarket, upgradeMarket, serverNow, walletNow, gearError, onGear } from './gear-state.js';
+import { ISLAND_ART } from '../core/island-art.js';
+import { myMarkets, marketsOpen, islandOpen, buyMarket, collectMarket, upgradeMarket, serverNow, walletNow, gearError, onGear } from './gear-state.js';
 import { openLayer } from './nav.js';
 import { haptic } from './haptics.js';
 import { toast, prefersReducedMotion } from './effects.js';
 
 const COIN = 'icons/Pixelart/GEAR/coin.png';
+const { plots: { base: [BASE_X, BASE_Y] }, unit: UNIT, slope: SLOPE } = ISLAND_ART;
+// slots 5 to 8 need the island's database step (0033), the first four don't
+const canBuy = (slot) => marketsOpen() && (slot <= 4 || islandOpen());
 // a market's picture for its level (0: not bought yet) and the way it faces: the left pair of
 // markets face down-left, along the lobby's left wall; the right pair down-right, along its right
 const picture = (m, face = 'l') => `icons/City/market/kiosk-${m ? Number(m.level) || 1 : 0}-${face}.webp`;
@@ -29,11 +33,14 @@ const levelIn = (slot) => { const m = marketIn(myMarkets(), slot); return m ? Nu
 // In px of the city picture (5376 × 4980), where the painted kiosks stood: each market's front
 // corner on the ground (`foot`, the lowest point of its picture), how wide it stands and which
 // way it faces
+const SIDE = 0.83;                                 // how far out the pads are from the plot's middle
+const PAD = (i) => -0.6825 + i * 0.255;            // the middle of pad i along its side, from the back
+const onPad = (a, b) => [BASE_X + (a - b) * UNIT, BASE_Y + (a + b) * SLOPE * UNIT + 41];
+const STALL_W = 220;
+// four down each front side of the base. Slots 1 to 4 are the corners they've always been
 export const MARKETS = [
-  { slot: 1, foot: [1828, 3232], w: 286, face: 'l' },
-  { slot: 2, foot: [2078, 3354], w: 310, face: 'l' },
-  { slot: 3, foot: [3356, 3384], w: 314, face: 'r' },
-  { slot: 4, foot: [3590, 3238], w: 312, face: 'r' },
+  ...[1, 5, 6, 2].map((slot, i) => ({ slot, foot: onPad(PAD(i), SIDE), w: STALL_W, face: 'l' })),
+  ...[4, 8, 7, 3].map((slot, i) => ({ slot, foot: onPad(SIDE, PAD(i)), w: STALL_W, face: 'r' })),
 ];
 // each picture's size and where its foot is in it (fractions of its width and height)
 const ART = {
@@ -48,17 +55,7 @@ const ART = {
 // its kiosks were painted out (icons/City/market/prop-N.webp, docs/MARKETS.md): each stands
 // exactly where it was, its box in px of the city picture, and in front of the markets or behind
 // them by how far down the picture its foot is
-const DRESSING = [
-  { src: 'prop-0', left: 1615.5, top: 3018.0, w: 89.5, foot: 3176.0 },
-  { src: 'prop-1', left: 1860.5, top: 3142.5, w: 89.5, foot: 3301.5 },
-  // (prop-2 and prop-4, the two lamp posts in front of the left markets, are gone: cut from
-  // the old render, they came out pale and stood up out of the new markets' bases)
-  { src: 'prop-3', left: 2132.5, top: 3221.5, w: 122.0, foot: 3437.5 },
-  { src: 'prop-5', left: 3773.5, top: 3062.0, w: 58.0, foot: 3222.5 },
-  { src: 'prop-6', left: 3488.5, top: 3145.0, w: 79.5, foot: 3300.0 },
-  { src: 'prop-7', left: 3181.5, top: 3207.0, w: 119.0, foot: 3424.0 },
-  { src: 'prop-8', left: 3330.5, top: 3300.0, w: 43.0, foot: 3451.0 },
-];
+const DRESSING = [];
 /** Where a picture stands: its box in px of the city picture, from its foot and width. */
 function boxOf(kind, foot, w) {
   const a = ART[kind];
@@ -248,7 +245,7 @@ function refreshBar() {
   const action = m
     ? `${upgrade}<button class="mk-btn" data-mk-collect ${n < 1 ? 'disabled' : ''}>
          <span class="mk-btn-ico"><img src="${COIN}" alt=""></span><b>${esc(t('city.market.collect'))}</b>${n ? `<i class="data-num">${fmtNum(n)}</i>` : ''}</button>`
-    : `<button class="mk-btn is-buy" data-mk-buy ${!marketsOpen() ? 'disabled' : ''}>${price(MARKET_RULES.cost)}
+    : `<button class="mk-btn is-buy" data-mk-buy ${!canBuy(slot) ? 'disabled' : ''}>${price(MARKET_RULES.cost)}
          <span class="mk-btn-ico"><img src="${picture({ level: 1 }, faceOf(slot))}" alt=""></span><b>${esc(t('city.market.buy'))}</b></button>`;
   bar.innerHTML = `<h2 id="mk-bar-h" class="mk-bar-h">${esc(t('city.market.title', { n: lv.level }))}</h2>
     <div class="mk-bar-btns">

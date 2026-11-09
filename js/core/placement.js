@@ -16,6 +16,8 @@
 
 import { STALL_ITEMS } from './stall.js';
 
+import { ROOM32 } from './room32-art.js';
+
 const ART = 'icons/Pixelart/NEW';
 
 /** The disciplines that can have a room, in the order the compound fills them. */
@@ -56,6 +58,12 @@ export const ROOM_SIZE = {
   gym: [1100, 1052], pool: [1100, 991], bike: [1100, 1051], run: [1100, 1115],
   'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-32': [3400, 2053], 'locker-16': [3400, 2053], 'locker-16-tape': [3400, 2053],
 };
+
+// the new 32 × 32 rooms, one level so far: shown only with ?rooms32=1 until the full set exists
+for (const [room, r] of Object.entries(ROOM32)) {
+  ROOM_GEOMETRY[`${room}-big`] = { ...floor(r.back, r.right, r.left, 32, 32, r.blocked), share: r.share };
+  ROOM_SIZE[`${room}-big`] = r.size;
+}
 
 // levels with no art yet fall back to the nearest one below (the gym has no 7)
 const MISSING = { gym: [7] };

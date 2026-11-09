@@ -9,13 +9,13 @@
 //   the truck      the MOSKE van (models/city/truck.glb): it drives in from the bottom right as a
 //                  delivery's countdown runs out, waits at the garage door, and drives off
 //
-// Two transparent WebGL canvases cover the stage's viewport: one under the city picture (the
-// clouds behind the buildings show only through its transparent sky) and one over it. Their
+// A transparent WebGL canvas covers the stage's viewport, over the island. Its
 // orthographic camera matches the city: X runs along the ground's e1 = (1, SLOPE) world px,
 // Z along e2 = (−1, SLOPE), Y up, so a ground point (X, Z) is world px (X − Z, SLOPE (X + Z)).
 // The camera follows the stage's pan and zoom (setView). three.js loads only on the base.
 
 import { loadThree } from './runner3d.js';
+import { ISLAND_ART } from '../core/island-art.js';
 
 const SLOPE = 0.489;
 const EL = Math.asin(SLOPE);              // the camera's tilt: a ground edge falls SLOPE per px
@@ -25,19 +25,20 @@ const FPS = 30;
 const CLOUD_UP = 2400;                    // how high the 3D clouds fly (units: above the tallest roof)
 
 // in px of the city picture (CITY in diorama.js; drawn in tiles, icons/City/layers/tiles/)
-export const SIGN_AT = [2940, 3548];             // on the pavement, left of the garage door
-export const SIGN_HEIGHT = 320;                  // px tall on screen
+const [BASE_X, BASE_Y] = ISLAND_ART.plots.base;
+export const SIGN_AT = [BASE_X + 161, BASE_Y + 367]; // on the pavement, left of the garage door
+export const SIGN_HEIGHT = 170;                  // px tall on screen
 // the truck's road: in from the bottom right, round the corner, to the garage door; then it
 // turns round and drives off down the same road, out at the bottom
 // The street grid (tools/compose-city.py) in px of the city picture: block (a, b) has its centre
 // at C0 + (a − b) P across and (a + b) SLOPE P down; the roads run along a = ±½ and b = ±½.
-const GRID = { c0: [2691.5, 3245.5], P: 1391 };
+const GRID = { c0: [BASE_X, BASE_Y], P: 1391 };
 const lat = (a, b) => [GRID.c0[0] + (a - b) * GRID.P, GRID.c0[1] + (a + b) * SLOPE * GRID.P];
 // in from the right along the road between the stadium and the pool (b = −½), round the corner
 // by the stadium onto the road past the garage (a = ½), stopping at its door; then on down that
 // road and out at the bottom. Each leg keeps to the lane on the tower's side.
-const ROUTE_IN = [lat(1.6, -0.45), lat(0.45, -0.45), lat(0.45, 0.24)];
-const ROUTE_OUT = [lat(0.45, 0.24), lat(0.45, 2.3)];
+const ROUTE_IN = [lat(1.7, -0.45), lat(0.45, -0.45), lat(0.45, 0.12)];
+const ROUTE_OUT = [lat(0.45, 0.12), lat(0.45, 1.7)];
 /** Where the truck stops at the garage door (px of the city picture): the parcels wait there. */
 export const TRUCK_STOP = ROUTE_IN[ROUTE_IN.length - 1];
 const TRUCK_LEN = 150;                    // px along the road
@@ -80,27 +81,12 @@ export function truckAt(t) {
   return { ...along(ROUTE_OUT, (t - WAIT) * SPEED), moving: true };
 }
 
-const FAR = [
-  { src: 'icons/City/sky-clouds/cloud-1.webp', y: 0.05, w: 0.42, v: 5 },
-  { src: 'icons/City/sky-clouds/cloud-2.webp', y: 0.2, w: 0.36, v: 4 },
-  { src: 'icons/City/sky-clouds/cloud-4.webp', y: 0.12, w: 0.22, v: 7 },
-  { src: 'icons/City/sky-clouds/cloud-3.webp', y: 0.28, w: 0.14, v: 9 },
-  { src: 'icons/City/sky-clouds/cloud-5.webp', y: 0.02, w: 0.12, v: 10 },
-  { src: 'icons/City/sky-clouds/cloud-6.webp', y: 0.34, w: 0.08, v: 12 },
-];
+const FAR = [];   // the island fills the screen: there's no sky behind it for far clouds to show in
 // the 3D clouds: which model, where (px of the city picture), how wide (px), and how fast (px/s)
 const CLOUDS = [
-  { m: 'a', at: [100, -300], w: 170, v: 16, front: false },
-  { m: 'b', at: [2200, -900], w: 240, v: 13, front: false },
-  { m: 'c', at: [4600, 200], w: 210, v: 15, front: false },
-  { m: 'b', at: [3500, 1100], w: 190, v: 18, front: false },
-  { m: 'a', at: [1100, 1900], w: 140, v: 20, front: false },
-  { m: 'c', at: [5500, 2100], w: 160, v: 17, front: false },
-  { m: 'b', at: [600, 4300], w: 200, v: 14, front: false },
-  { m: 'a', at: [5000, 4700], w: 150, v: 19, front: false },
-  { m: 'a', at: [3900, -500], w: 120, v: 22, front: true },
-  { m: 'c', at: [800, 2700], w: 140, v: 24, front: true },
-  { m: 'b', at: [3200, 5400], w: 130, v: 21, front: true },
+  { m: 'a', at: [8000, 500], w: 420, v: 22, front: true },
+  { m: 'c', at: [2500, 2500], w: 520, v: 24, front: true },
+  { m: 'b', at: [10500, 5200], w: 460, v: 21, front: true },
 ];
 
 let shared = null;   // the canvases and the far clouds, kept across the stage's re-renders
@@ -113,17 +99,17 @@ let shared = null;   // the canvases and the far clouds, kept across the stage's
  *   label         { title, clock(ms) }: the sign's words and its countdown format
  *   parked()      true while a parcel waits at the door: the truck stays until it's opened
  *   reduced()     true under reduced motion: no drifting, the truck only appears parked
- *   front         the buildings in front of its road out, [{ src, x, y, w, h }] in px of the city
+ *   front         the buildings in front of its road out, [{ src, x, y, w, h }] in px of the city, or a function giving them
  *                 picture: drawn over the truck while it's about (and gone again after), so it
  *                 drives off behind them
  * Returns { setView(v, w, h) }.
  */
 export function mountCity3d(vp, { worldX0 = 0, worldW, deliveries, now, label, parked, reduced, front: frontArt = [] }) {
   if (!shared) shared = makeShared();
-  const { far, back, front } = shared;
-  // into this render's viewport: the far clouds and the back canvas under the world, the front over it
+  const { far, front } = shared;
+  // into this render's viewport: the far clouds under the world, the canvas over it
   const world = vp.querySelector('[data-dg-world]');
-  vp.insertBefore(far, world); vp.insertBefore(back.canvas, world); world.after(front.canvas);
+  vp.insertBefore(far, world); world.after(front.canvas);
   shared.opts = { worldX0, worldW, deliveries, now, label, parked, reduced, front: frontArt };
   if (!shared.farLoop) farLoop();
   if (!shared.started) start();
@@ -140,7 +126,7 @@ function makeShared() {
   far.innerHTML = FAR.map((c, i) => `<img src="${c.src}" alt="" draggable="false"
     style="width:${(c.w * 100).toFixed(1)}%;left:${((i / FAR.length) * 100).toFixed(1)}%;top:${(c.y * 100).toFixed(1)}%">`).join('');
   const canvas = (cls) => { const c = document.createElement('canvas'); c.className = `dg-3d ${cls}`; c.setAttribute('aria-hidden', 'true'); return c; };
-  return { far, back: { canvas: canvas('is-back') }, front: { canvas: canvas('is-front') }, view: null, dirty: true, t0: performance.now(), farX: FAR.map((c, i) => i / FAR.length) };
+  return { far, front: { canvas: canvas('is-front') }, view: null, dirty: true, t0: performance.now(), farX: FAR.map((c, i) => i / FAR.length) };
 }
 
 /** The far clouds drift on their own, WebGL or not (left as a share of the viewport). */
@@ -180,9 +166,8 @@ async function start() {
     scene.add(new THREE.HemisphereLight(0xffffff, 0xa9c2ea, 2.1));
     const sun = new THREE.DirectionalLight(0xfff4e6, 1.6); sun.position.set(-3, 6, 2); scene.add(sun);
   };
-  const backScene = new THREE.Scene(); lights(backScene);
   const frontScene = new THREE.Scene(); lights(frontScene);
-  const backR = mkRenderer(shared.back.canvas); const frontR = mkRenderer(shared.front.canvas);
+  const frontR = mkRenderer(shared.front.canvas);
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 40000);
   const D = 20000;
   cam.position.set(D * Math.cos(EL) * Math.SQRT1_2, D * Math.sin(EL), D * Math.cos(EL) * Math.SQRT1_2);
@@ -209,7 +194,7 @@ async function start() {
     g.scale.setScalar(k);
     // long side square to the screen, so it drifts across it like the far clouds
     g.rotation.y = Math.PI / 4;
-    (c.front ? frontScene : backScene).add(g);
+    frontScene.add(g);
     return { ...c, g };
   });
 
@@ -248,10 +233,17 @@ async function start() {
   // in front of it. Loaded while the truck is about, let go once it's gone.
   let cover = null;
   const coverOn = (on) => {
+    const f = shared.opts?.front;
+    const art = !on ? [] : typeof f === 'function' ? f() : f || [];   // what stands there can change while the truck's about
+    const key = art.map((p) => p.src).join();
+    if (cover && (!on || cover.key !== key)) {
+      for (const m of cover.meshes) { frontScene.remove(m); m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); }
+      cover = null;
+    }
     if (on && !cover) {
-      const live = cover = { meshes: [] };
+      const live = cover = { meshes: [], key };
       const tl = new THREE.TextureLoader();
-      for (const p of shared.opts?.front || []) {
+      for (const p of art) {
         tl.load(new URL(`../../${p.src}`, import.meta.url).href, (tex) => {
           if (cover !== live) { tex.dispose(); return; }
           tex.colorSpace = THREE.SRGBColorSpace;
@@ -267,9 +259,6 @@ async function start() {
           shared.dirty = true;
         });
       }
-    } else if (!on && cover) {
-      for (const m of cover.meshes) { frontScene.remove(m); m.geometry.dispose(); m.material.map?.dispose(); m.material.dispose(); }
-      cover = null;
     }
   };
 
@@ -288,7 +277,7 @@ async function start() {
   let last = 0;
   const frame = (now) => {
     requestAnimationFrame(frame);
-    if (!shared.back.canvas.isConnected) return;
+    if (!shared.front.canvas.isConnected) return;
     if (now - last < 1000 / FPS && !shared.dirty) return;
     const dt = Math.min(0.2, (now - last) / 1000); last = now;
     const o = shared.opts || {};
@@ -297,7 +286,7 @@ async function start() {
     if (!v) return;
     // the canvases fill the viewport at the device's pixel ratio (at most 1.5: they're soft shapes)
     const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-    for (const r of [backR, frontR]) { const c = r.domElement; if (c.width !== Math.round(vw * dpr) || c.height !== Math.round(vh * dpr)) { r.setPixelRatio(dpr); r.setSize(vw, vh, false); } }
+    for (const r of [frontR]) { const c = r.domElement; if (c.width !== Math.round(vw * dpr) || c.height !== Math.round(vh * dpr)) { r.setPixelRatio(dpr); r.setSize(vw, vh, false); } }
     // the camera shows exactly the part of the city the stage shows
     cam.left = (-v.tx / v.s) / SIGMA; cam.right = ((vw - v.tx) / v.s) / SIGMA;
     cam.top = (v.ty / v.s) / SIGMA; cam.bottom = (-(vh - v.ty) / v.s) / SIGMA;
@@ -335,7 +324,7 @@ async function start() {
       }
       const show = at && (!still || !at.moving);
       truckObj.visible = !!show;
-      coverOn(tr.mode !== 'off');
+      coverOn(tr.mode === 'in' || tr.mode === 'out');  // parked, nothing stands in front of it
       if (show) {
         const p = ground(at.p); const d = ground([at.p[0] + at.dir[0], at.p[1] + at.dir[1]]);
         const dX = d.x - p.x; const dZ = d.z - p.z;
@@ -345,7 +334,6 @@ async function start() {
       }
     }
     shared.dirty = false;
-    backR.render(backScene, cam);
     frontR.render(frontScene, cam);
   };
   requestAnimationFrame(frame);

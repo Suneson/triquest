@@ -239,7 +239,7 @@ The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-fron
 
 ## Previewing the 32 x 32 rooms
 
-Only level 10 exists so far, so these rooms stay hidden from players. Open the app with `?rooms32=1` to see them on that device, and `?rooms32=0` to turn them off. `tools/cut-rooms-32.py` cuts them and writes `js/core/room32-art.js`.
+Only level 10 exists so far, so these rooms stay hidden from players. Open the app with `?rooms32=1` to see them on that device, and `?rooms32=0` to turn them off. Admins can also buy the real upgrade for any room from the Expand window. `tools/cut-rooms-32.py` cuts them and writes `js/core/room32-art.js`.
 
 ## Editing the lobby
 

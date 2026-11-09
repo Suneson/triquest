@@ -60,13 +60,14 @@ export const MAX_ZOOM = 2.5; // × the smallest zoom, in a world with no zoom of
 export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
 /**
  * A room's art geometry on the stage: the painted 8 × 8 room (the locker's is the square one), or
- * once the room is expanded (expansions.js; only the locker can be yet) its 32 × 32 picture, all of
+ * once the room is expanded (expansions.js) its 32 × 32 picture, all of
  * it when `size` is 32 and taped off to its back 16 × 16 when it isn't; `taped` shows it taped off
  * to the back 8 × 8.
  */
 export const stageGeom = (room, size = false, taped = false) => {
-  if (room === 'locker') return taped ? 'locker-16-tape' : size === 32 ? 'locker-32' : size ? 'locker-16' : 'locker-square';
-  return room;
+  if (taped) return `${room}-16-tape`;
+  if (size) return size === 32 ? `${room}-32` : `${room}-16`;
+  return room === 'locker' ? 'locker-square' : room;
 };
 
 /** The middle of a world's plot (or slab). */

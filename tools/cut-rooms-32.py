@@ -41,7 +41,7 @@ def key(path):
 def main(src):
     out = {}
     for room, (back, right, left) in FLOORS.items():
-        path = glob.glob(os.path.join(src, room.upper(), '*.jpg'))[0]
+        path = glob.glob(os.path.join(src, room.upper(), f'{room}-32-level-10.*'))[0]
         im = key(path)
         k = im.width / 2000
         a = np.asarray(im.getchannel('A')) > 128

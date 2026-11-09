@@ -8,6 +8,7 @@
 // the world's edges outside the viewport's.
 
 import { ROOM_GEOMETRY, ROOM_SIZE } from './placement.js';
+import { ISLAND_ART } from './island-art.js';
 
 export const ENV = {
   src: 'icons/Pixelart/NEW/env-ground-sky.webp',
@@ -16,97 +17,39 @@ export const ENV = {
   plot: { top: [426, 510], right: [810, 730], bottom: [430, 950], left: [36, 740] },
   roomWidth: 0.86, // the room's art width, as a share of the terrain's
 };
-// The city (docs/CITY.md, "The layered city"): one picture of the whole city, the street floor
-// in the middle (half the 10752 × 9960 master, drawn in tiles below), and the MOSKE tower
-// stacked on it from two pieces cut by tools/cut-tower.py: floor N is the cap (the roof slab and
-// the top storey) with N - 1 office storeys under it, standing on the street floor's lobby; the
-// street floor (N = 0) is the picture as it is. A room stands on its floor's slab: the slab is
-// made for a 16 × 16 floor, so today's 8 × 8 rooms take half its width, in the middle of it.
+// The island (docs/CITY.md): one picture of the ground in tiles, nine plots on it (island-view.js),
+// and the main base on the middle plot. A room stands on its floor of the base: the locker on the
+// ground floor's roof, every other room on as many upper floors as it needs. js/core/island-art.js
+// says where each picture goes (written by tools/cut-island.py).
 export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
-export const CITY = {
-  // the whole city: the base keeps its old px, so everything measured in them still holds, and
-  // the streets round it are redrawn smaller (tools/compose-big-base.py): the base is 2 × 2 blocks.
-  // The picture runs past the old one on every side, so its top-left corner is at negative px
-  x0: -800, y0: -2300, w: 7000, h: 8600,
-  k: 0.5,                         // the app picture is half the master (px of the master × k)
-  plateAt: [3584, 4072],          // the street floor's top-left corner in the master
-  step: 449.01,                   // one storey, in px of the street floor (icons/City/layers/tower.json)
-  cap: { src: 'icons/City/layers/app/tower-cap.webp', w: 1996, h: 1324, at: [-152.6, -199.1] },
-  storey: { src: 'icons/City/layers/app/tower-storey.webp', w: 2014, h: 720, at: [-188.6, 1455.9] },
-  // the slabs, in px of the street floor: its own, and the cap's when the tower is one storey tall
-  slab0: { top: [1690, 800], right: [3582, 1475], bottom: [1814, 2358], left: [0, 1468] },
-  slab1: { top: [1804, 16], right: [3658, 833], bottom: [1829, 1725], left: [63, 821] },
-};
-const toWorld = ([x, y], up = 0) => [(x + CITY.plateAt[0]) * CITY.k, (y - up + CITY.plateAt[1]) * CITY.k];
+const { world: WORLD, plots: PLOTS, unit: UNIT, slope: SLOPE, foot: [A0, A1], groundFloor: GROUND_FLOOR, storey: STOREY } = ISLAND_ART;
+export const CITY = { x0: 0, y0: 0, w: WORLD.w, h: WORLD.h, step: STOREY.wall };
+const onBase = (a, b, up) => [PLOTS.base[0] + (a - b) * UNIT, PLOTS.base[1] + (a + b) * SLOPE * UNIT - up];
 
-/** The tower's pieces for floor n, bottom first, each { src, x, y, w, h } in px of the city picture. */
+/** The base's upper floors under floor n, bottom first, each { src, x, y, w, h } in world px. */
 export function towerPieces(n) {
-  if (n < 1) return [];
   const out = [];
-  for (let i = 0; i < n - 1; i++) {
-    const [x, y] = toWorld(CITY.storey.at, (i + 1) * CITY.step);
-    out.push({ src: CITY.storey.src, x, y, w: CITY.storey.w, h: CITY.storey.h });
+  for (let i = 0; i < n; i++) {
+    const [x, y] = onBase(A1, A1, GROUND_FLOOR + i * CITY.step);
+    out.push({ src: STOREY.src, x: x - STOREY.w / 2, y: y - STOREY.h + STOREY.pad + 2, w: STOREY.w, h: STOREY.h });
   }
-  const [x, y] = toWorld(CITY.cap.at, (n - 1) * CITY.step);
-  out.push({ src: CITY.cap.src, x, y, w: CITY.cap.w, h: CITY.cap.h });
   return out;
 }
 
-// the railing round the slab (tools/cut-rail.py): its back half stands behind the room, its front
-// half in front of it; in px of the city picture for the street floor and for floor 1 (the roof
-// slab every floor above stands on, a storey higher each floor). The street pair was touched up
-// by hand after the cut: the start of each back side of the kerb, past the corner posts, was in the
-// front half and showed as a flap over the room's walls; it is in the back half now (taller for it)
-const RAIL = {
-  street: { back: { x: 1858.0, y: 2432.0, w: 1652.0, h: 433.3 }, front: { x: 1779.3, y: 2733.3, w: 1829.3, h: 561.3 } },
-  roof: { back: { x: 1880.3, y: 2039.3, w: 1678.7, h: 373.3 }, front: { x: 1817.7, y: 2407.3, w: 1814.7, h: 564.0 } },
-};
-/** Floor n's railing: { back, front }, each { src, x, y, w, h } in px of the city picture. */
-export function railOf(n) {
-  const kind = n < 1 ? 'street' : 'roof';
-  const up = n < 1 ? 0 : (n - 1) * CITY.step * CITY.k;
-  const at = (part) => ({ src: `icons/City/rail/${kind}-${part}.webp`, ...RAIL[kind][part], y: +(RAIL[kind][part].y - up).toFixed(1) });
-  return { back: at('back'), front: at('front') };
-}
-
-/** Floor n's slab, in px of the city picture. */
+/** Floor n's roof, the slab its room stands on, in world px. */
 export function slabOf(n) {
-  const s = n < 1 ? CITY.slab0 : CITY.slab1;
-  const up = n < 1 ? 0 : (n - 1) * CITY.step;
-  return Object.fromEntries(Object.entries(s).map(([k, p]) => [k, toWorld(p, up)]));
+  const up = GROUND_FLOOR + Math.max(0, n) * CITY.step;
+  return { top: onBase(A0, A0, up), right: onBase(A1, A0, up), bottom: onBase(A1, A1, up), left: onBase(A0, A1, up) };
 }
 
-// The city picture is drawn in tiles (icons/City/layers/tiles/city-<row>-<col>.webp, 6 × 7 of
-// 1344 × 1245 px of the world, stored sharper near the base than far from it: tools/cut-big-city.py):
-// one picture this size is more than an iPhone will keep decoded next to the 3D layers. Over them,
-// the base's own block, sharper still (1.5 px per px of the world), so it stays crisp zoomed right in.
-const TILE = { w: 1344, h: 1245 };
-const BASE_ART = { src: 'icons/City/layers/base.webp', x: 1500, y: 2410, w: 2380, h: 1470 };
-export const CITY_TILES = [...[0, 1, 2, 3, 4, 5, 6].flatMap((r) => [0, 1, 2, 3, 4, 5].map((c) => ({ r, c })))
-  .map(({ r, c }) => ({ src: `icons/City/layers/tiles/city-${r}-${c}.webp`, x: CITY.x0 + c * TILE.w, y: CITY.y0 + r * TILE.h,
-    w: Math.min(TILE.w, CITY.w - c * TILE.w), h: Math.min(TILE.h, CITY.h - r * TILE.h) }))
-  // the ones round the base first, so what you open on loads before the far edges of the city
-  .sort((p, q) => Math.hypot(p.x + p.w / 2 - 2690, p.y + p.h / 2 - 3145) - Math.hypot(q.x + q.w / 2 - 2690, q.y + q.h / 2 - 3145)), BASE_ART];
-
-// the buildings in front of the van's road, only where they can cover the van
-// (tools/cut-big-city.py): the 3D layer draws them over the van while it's about, so it passes
-// behind them. Small pieces, loaded only then: a layer the size of the city over the 3D canvas
-// was more than an iPhone could keep.
-export const VAN_FRONT = [
-  { src: 'icons/City/layers/front/van-front-4-2.webp', x: 2592.0, y: 3561.0, w: 640.0, h: 364.0 },
-  { src: 'icons/City/layers/front/van-front-4-3.webp', x: 3232.0, y: 3293.0, w: 1344.0, h: 512.0 },
-  { src: 'icons/City/layers/front/van-front-4-4.webp', x: 4576.0, y: 3537.0, w: 887.0, h: 388.0 },
-  { src: 'icons/City/layers/front/van-front-5-0.webp', x: -72.0, y: 4763.0, w: 616.0, h: 407.0 },
-  { src: 'icons/City/layers/front/van-front-5-1.webp', x: 544.0, y: 4104.0, w: 1344.0, h: 1015.0 },
-  { src: 'icons/City/layers/front/van-front-5-2.webp', x: 1888.0, y: 3925.0, w: 999.0, h: 537.0 },
-  { src: 'icons/City/layers/front/van-front-5-4.webp', x: 4901.0, y: 3925.0, w: 820.0, h: 293.0 },
-  { src: 'icons/City/layers/front/van-front-6-0.webp', x: -64.0, y: 5170.0, w: 503.0, h: 136.0 },
-];
+// the ground's tiles, the ones round the base first, so what you open on loads before the far sea
+export const CITY_TILES = [...ISLAND_ART.tiles]
+  .sort((p, q) => Math.hypot(p.x + p.w / 2 - PLOTS.base[0], p.y + p.h / 2 - PLOTS.base[1]) - Math.hypot(q.x + q.w / 2 - PLOTS.base[0], q.y + q.h / 2 - PLOTS.base[1]));
 
 // how far in you can zoom: until one tile of the room is this many px across on the screen
 const TILE_ZOOM = 68;
-const cityEnv = (n, geom) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, front: VAN_FRONT, x0: CITY.x0, y0: CITY.y0, w: CITY.w, h: CITY.h,
-  maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (slabOf(n).right[0] - slabOf(n).left[0])) / ROOM_GEOMETRY[geom].cols), plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n), rail: railOf(n) });
+const cityEnv = (n, geom) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, x0: CITY.x0, y0: CITY.y0, w: CITY.w, h: CITY.h,
+  maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (slabOf(n).right[0] - slabOf(n).left[0])) / ROOM_GEOMETRY[geom].cols), plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
 export const envFor = (room, geom = stageGeom(room)) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);

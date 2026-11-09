@@ -7,6 +7,17 @@
 - The rooms are an elevator's buttons on the right, the pool at the top and the locker room at the bottom: baby-blue rings with light faces. The floor you're on turns blue and a size bigger (docs/JOURNAL.md).
 - In a row under the name: what's next and the room's trophies. Down the left: the shop and the inventory. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
+## The island (read this first: it replaces the city below)
+
+The base now stands in the middle of an island of nine 2 x 2 plots.
+
+- **Pictures:** `tools/cut-island.py` keys the art and cuts `icons/Island/*.webp`, and writes where each goes to `js/core/island-art.js`. Don't edit that file by hand.
+- **The tower:** `js/core/diorama.js` stacks the upper floors on the base by `FLOOR_OF`, one `storey.webp` per floor, and works out each room's slab.
+- **Plots:** `js/app/island-view.js` draws them and handles taps. The Mall opens the shop and a built club base opens the club screen.
+- **Rebuilds:** the rules are in `js/core/island.js` and the server keeps the same ones (`supabase/migrations/0033_island.sql`, held together by `tests/island-sql.test.js`). The club, the pool and the market start in ruins. Under works, the club shows its own picture and the pool and the market show their ruin, until the construction box exists. A timer floats over each one.
+- **Taps:** the viewport takes the finger only once it moves (`TAP_TARGETS` in `js/app/diorama-view.js`), so a tap reaches a building's button and a drag still pans the map.
+- **The van:** while driving, it's covered by the Mall and the market, in whatever state they're in (`islandFront`).
+
 ## The idea
 
 The base becomes one tall MOSKE tower in a modern city. Each room is a floor of the tower, standing on the tower's flat concrete roof slab, with sky above it:
@@ -225,6 +236,10 @@ The 3D layer draws those pieces as flat pictures on the ground, after everything
 Don't put a city-sized layer over a 3D canvas, the city's or the runner's on the run room's treadmill (inside `.dg-items`). The layers over the room (`.dg-shadows`, `.dg-items`, `.dg-mks`) have no size of their own; their pieces stand out of them. Also, `webglOk()` asks for WebGL once and remembers the answer, since each test makes a context. That was the first version, and iPhone Safari ran out of memory and kept reloading the page ("A problem repeatedly occurred").
 
 The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-front`, with no size of its own, so it shows over the 3D sign at the cost of the bubble only.
+
+## Previewing the 32 x 32 rooms
+
+Only level 10 exists so far, so these rooms stay hidden from players. Open the app with `?rooms32=1` to see them on that device, and `?rooms32=0` to turn them off. `tools/cut-rooms-32.py` cuts them and writes `js/core/room32-art.js`.
 
 ## Editing the lobby
 

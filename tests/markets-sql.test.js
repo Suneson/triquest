@@ -66,7 +66,7 @@ test('buying: once a slot, for its price, only with the coins for it', { skip },
   assert.equal(await code(buy(poor, 1)), 'insufficient');
   const db = await freshDb(1000);
   const before = await coins(db);
-  assert.equal(await code(buy(db, 5)), 'unknown_market');
+  assert.equal(await code(buy(db, 9)), 'unknown_market');
   assert.equal(await code(buy(db, 1)), 'ok');
   assert.equal(await coins(db), before - MARKET_RULES.cost);
   assert.equal(await code(buy(db, 1)), 'owned');
@@ -124,7 +124,7 @@ test('the JS side: collecting, how long till full, which slot', () => {
   assert.equal(marketFullIn(m, t + 99 * 3600e3), 0);
   assert.equal(marketIn([m], 3), m);
   assert.equal(marketIn([m], 2), null);
-  assert.ok(isMarketSlot(4) && !isMarketSlot(0) && !isMarketSlot(5));
+  assert.ok(isMarketSlot(4) && !isMarketSlot(0) && !isMarketSlot(9));
 });
 
 test('upgrading: to level 2 for its price, keeping what was made, making more an hour', { skip }, async () => {

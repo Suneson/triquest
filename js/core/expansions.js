@@ -18,7 +18,7 @@ export const EXPANSION_RULES = {
 
 // Buying 32 × 32 waits for supabase/migrations/0032_expansions_32.sql to be applied to the live
 // database: turn this on once it has been.
-export const SIZE_32_LIVE = false;
+export const SIZE_32_LIVE = true;
 
 /** Can this room be expanded yet (is its 16 × 16 model in)? */
 export const expansionReady = (room) => EXPANSION_RULES.ready.includes(room);

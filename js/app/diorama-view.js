@@ -24,6 +24,7 @@ import {
 } from '../core/placement.js';
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF } from '../core/diorama.js';
 import { expandedSize, EXPANDED_ART, tapedRoom } from '../core/expansions.js';
+import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -48,6 +49,8 @@ import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './ci
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 import { mountMarkets, showCoins, closeBar } from './market-view.js';
+import { mountIsland, tickIsland, islandFront, closeBar as closeIslandBar } from './island-view.js';
+const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-mk-hit, .dg-mk-coin, .dg-sign-hit';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -79,7 +82,17 @@ const TAPE_KEY = 'moske-tape-preview';
 export const tapePreview = () => { try { return (isChestAdmin() || isDemo()) && localStorage.getItem(TAPE_KEY) === '1'; } catch { return false; } };
 export const setTapePreview = (on) => { try { localStorage.setItem(TAPE_KEY, on ? '1' : '0'); } catch { /* private mode */ } };
 const taped = (room) => (tapePreview() ? tapedRoom(room, true) : tapedRoom(room) && !expanded(room));
-const geomOf = (room) => stageGeom(room, expanded(room) && expansionSize(room), taped(room));
+// the new 32 × 32 rooms, for checking them in place: ?rooms32=1 turns them on for this device, ?rooms32=0 off
+const ROOMS32_KEY = 'moske-rooms32';
+const rooms32Preview = () => {
+  try {
+    const q = new URLSearchParams(location.search).get('rooms32');
+    if (q != null) localStorage.setItem(ROOMS32_KEY, q === '1' ? '1' : '0');
+    return localStorage.getItem(ROOMS32_KEY) === '1';
+  } catch { return false; }
+};
+const bigRoom = (room) => (rooms32Preview() ? ROOM32[room] : null);
+const geomOf = (room) => (bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
 // every room, for working out where items stand
 const stageLayout = () => ({ rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
@@ -606,21 +619,24 @@ export function wireDiorama(root, ctx) {
     // the truck waits while a parcel is at the door or being opened
     parked: () => parcels().length > 0 || parcelOpen(),
     reduced,
-    front: env.front,
+    front: islandFront,
   }) : null;
   // the markets round the lobby (market-view.js): pictures in the city, on every floor of it
-  if (env.floor != null) mountMarkets(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
-  else { stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }
+  if (env.floor != null) {
+    mountMarkets(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
+    mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
+  } else {
+    closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }
   const apply = () => {
     const r = box();
     view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);
     worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
-    if (stage.front) stage.front.style.transform = worldEl.style.transform;
+    if (stage.front) { stage.front.style.transform = worldEl.style.transform; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
     city?.setView(view.v, r.width, r.height);
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
-  const src = expanded(room) || taped(room) ? EXPANDED_ART[room] : roomArt(room, levelOf(room, ctx));
+  const src = bigRoom(room)?.src || (expanded(room) || taped(room) ? EXPANDED_ART[room] : roomArt(room, levelOf(room, ctx)));
   const showRoom = () => {
     artEl.className = `dg-room-art is-${room}`;
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;
@@ -700,7 +716,11 @@ export function wireDiorama(root, ctx) {
   // ---- gestures ----
   const pts = new Map();
   let g = null;
+  let panned = false;
+  // a drag that started on a building isn't a tap on it
+  vp.addEventListener('click', (e) => { if (panned) { panned = false; e.stopPropagation(); e.preventDefault(); } }, true);
   vp.onpointerdown = (e) => {
+    panned = false;
     if (e.button !== undefined && e.button > 0) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
@@ -713,7 +733,8 @@ export function wireDiorama(root, ctx) {
     const nud = e.target.closest('[data-nudge]');
     if (nud) { g = { mode: 'nudge', dir: nud.dataset.nudge, x0: e.clientX, y0: e.clientY }; return; }
     const itemEl = e.target.closest('[data-item]');
-    vp.setPointerCapture?.(e.pointerId);
+    // a tap on a building has to reach its button, so the viewport takes the finger only once it moves
+    if (!e.target.closest(TAP_TARGETS)) vp.setPointerCapture?.(e.pointerId);
     if (itemEl && itemEl.dataset.item === view.sel) {
       g = { mode: 'drag', id: view.sel, it: itemAt(view.sel), el: itemEl, from: placements[view.sel], at: placements[view.sel], ok: true, x0: e.clientX, y0: e.clientY, moved: false };
       itemEl.classList.add('is-lift');
@@ -731,7 +752,10 @@ export function wireDiorama(root, ctx) {
       return;
     }
     const dx = e.clientX - g.x0; const dy = e.clientY - g.y0;
-    if (Math.hypot(dx, dy) > 6) g.moved = true;
+    if (Math.hypot(dx, dy) > 6 && !g.moved) {
+      g.moved = true;
+      if (g.mode === 'pan') { panned = true; if (!vp.hasPointerCapture?.(e.pointerId)) vp.setPointerCapture?.(e.pointerId); }
+    }
     if (g.mode === 'pan' && g.moved) {
       view.v = { ...g.from, tx: g.from.tx + dx, ty: g.from.ty + dy }; apply();
     } else if (g.mode === 'drag' && g.moved) {
@@ -853,6 +877,7 @@ export function wireDiorama(root, ctx) {
     if (!root.isConnected) { clearInterval(view.tick); return; }
     stage.showParcel?.();
     showCoins();
+    tickIsland();
     const st = staminaAt(anchor, Date.now());
     const sg = root.querySelector('.dg-gauge.is-stamina');
     if (sg) { sg.style.setProperty('--f', (st / STAMINA.max).toFixed(4)); sg.querySelector('[data-dg-stamina]').textContent = fmtNum(st); sg.setAttribute('aria-label', t('cp.staminaAria', { n: st, max: STAMINA.max })); }

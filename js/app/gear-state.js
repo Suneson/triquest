@@ -17,6 +17,7 @@ import { seasonKitsWon } from '../core/seasons.js';
 import { stallItemById, stallFor, stallDay } from '../core/stall.js';
 import { weekOf, missionsToClaim, MISSION_RULES } from '../core/missions.js';
 import { addDays, todayISO } from '../core/dates.js';
+import { ISLAND_RULES, isIslandPiece, isStandSpot, islandRow, pieceState, standOf, startRow } from '../core/island.js';
 import { MARKET_RULES, marketIn, marketStock, marketCollect, isMarketSlot, marketNext, marketUpgrade } from '../core/markets.js';
 import { EXPANSION_RULES, expandedSize, nextExpansion } from '../core/expansions.js';
 import { t } from '../core/i18n.js';
@@ -27,7 +28,7 @@ const KEY = 'moske-gear';
 // blueprints (rare props built) and prestige (stars) come from 0023 (docs/LOOP.md §4)
 // missions (weekly missions paid) come from 0025 (§5)
 // markets (the four round the lobby, bought) and marketCollects come from 0028 (docs/MARKETS.md)
-const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [], missions: [], markets: [], marketCollects: [], marketUpgrades: [], expansions: [] };
+const EMPTY = { uid: null, inventory: [], spends: [], boosts: [], quests: [], wallet: null, jobs: [], bays: 1, offset: 0, at: 0, blueprints: [], prestige: [], missions: [], markets: [], marketCollects: [], marketUpgrades: [], expansions: [], island: [] };
 const listeners = new Set();
 
 function load() {
@@ -70,7 +71,7 @@ function demoState() {
   const missions = [3, 3, 2, 2, 1].map((n, i) => ({ week: addDays(wk, -7 * n), mission_id: ['w-sessions-3', 'w-rest-2', 'w-hours-4', 'w-recovery', 'w-km-40'][i], claimed_at: ago(24 * 7 * n - 30 - i) }));
   // the markets: the near one on the right bought yesterday and making coins since this morning
   const markets = [{ slot: 3, level: 1, cost: MARKET_RULES.cost, bought_at: ago(26), collected_at: ago(7.2) }];
-  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions, markets, marketCollects: [], marketUpgrades: [], expansions: [] };
+  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions, markets, marketCollects: [], marketUpgrades: [], expansions: [], island: [] };
 }
 
 /** Can this device talk to the workshop at all (signed in, or demo)? */
@@ -187,7 +188,7 @@ export async function refreshGear() {
     const t0 = Date.now();
     const ws = await c.rpc('workshop');
     const t1 = Date.now();
-    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex] = await Promise.all([
+    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex, il] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
@@ -200,6 +201,7 @@ export async function refreshGear() {
       c.from('market_collects').select('id, slot, coins, collected_at'),
       c.from('market_upgrades').select('id, slot, level, cost, upgraded_at'),
       c.from('user_expansions').select('*'),
+      c.from('user_island').select('piece, cost, started_at, finishes_at, spot'),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -215,7 +217,9 @@ export async function refreshGear() {
       // before 0028 is live there are no markets to buy
       markets: mk.error ? [] : mk.data || [], marketsLive: !mk.error, marketCollects: mx.error ? [] : mx.data || [], marketUpgrades: mu.error ? [] : mu.data || [],
       // before 0029 is live no room can be expanded
-      expansions: ex.error ? [] : ex.data || [], expansionsLive: !ex.error };
+      expansions: ex.error ? [] : ex.data || [], expansionsLive: !ex.error,
+      // before 0033 is live nothing on the island can be rebuilt
+      island: il.error ? [] : il.data || [], islandLive: !il.error };
     save(state);
     emit();
   } catch (e) {
@@ -302,6 +306,36 @@ function demoCall(fn, args) {
     if (s.wallet.coins < step.cost) throw new Error('gear:insufficient');
     (s.expansions ||= []).push({ room, size: step.size, cost: step.cost, bought_at: new Date(serverNow()).toISOString() });
     s.wallet = { ...s.wallet, coins: s.wallet.coins - step.cost };
+    listeners.forEach((f) => f(s));
+    return { coins: 0 };
+  }
+  if (fn === 'start_island_build') {
+    const piece = args.p_piece;
+    if (!isIslandPiece(piece)) throw new Error('gear:unknown_piece');
+    if (islandRow(s.island, piece)) throw new Error('gear:owned');
+    const cost = ISLAND_RULES.pieces[piece];
+    if (s.wallet.coins < cost) throw new Error('gear:insufficient');
+    (s.island ||= []).push(startRow(piece, serverNow()));
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - cost };
+    listeners.forEach((f) => f(s));
+    return { coins: 0 };
+  }
+  if (fn === 'buy_island_stand') {
+    if (!isStandSpot(args.p_spot)) throw new Error('gear:unknown_spot');
+    if (standOf(s.island)) throw new Error('gear:owned');
+    if (pieceState(s.island, 'market', serverNow()).state !== 'built') throw new Error('gear:not_built');
+    if (s.wallet.coins < ISLAND_RULES.standCost) throw new Error('gear:insufficient');
+    const at = new Date(serverNow()).toISOString();
+    s.island.push({ piece: 'stand', cost: ISLAND_RULES.standCost, started_at: at, finishes_at: at, spot: Number(args.p_spot) });
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - ISLAND_RULES.standCost };
+    listeners.forEach((f) => f(s));
+    return { coins: 0 };
+  }
+  if (fn === 'move_island_stand') {
+    if (!isStandSpot(args.p_spot)) throw new Error('gear:unknown_spot');
+    const st = standOf(s.island);
+    if (!st) throw new Error('gear:not_owned');
+    st.spot = Number(args.p_spot);
     listeners.forEach((f) => f(s));
     return { coins: 0 };
   }
@@ -395,6 +429,25 @@ export async function buyMarket(slot) {
   await call('buy_market', { p_slot: slot });
   return { coins: 0 };
 }
+/** What's been rebuilt on the island, and its stall (island.js). */
+export const myIsland = () => rawState().island || [];
+/** Can the island be rebuilt here? (Demo, or a server with 0033 live.) */
+export const islandOpen = () => isDemo() || (gearEnabled() && rawState().islandLive !== false);
+export async function startIslandBuild(piece) {
+  if (isDemo()) return demoCall('start_island_build', { p_piece: piece });
+  await call('start_island_build', { p_piece: piece });
+  return { coins: 0 };
+}
+export async function buyIslandStand(spot) {
+  if (isDemo()) return demoCall('buy_island_stand', { p_spot: spot });
+  await call('buy_island_stand', { p_spot: spot });
+  return { coins: 0 };
+}
+export async function moveIslandStand(spot) {
+  if (isDemo()) return demoCall('move_island_stand', { p_spot: spot });
+  await call('move_island_stand', { p_spot: spot });
+  return { coins: 0 };
+}
 /** The rooms you've expanded to 16 × 16 ({ room, cost, bought_at }). */
 export const myExpansions = () => rawState().expansions || [];
 /** Can rooms be expanded here? (Demo, or a server with 0029 live.) */
@@ -481,7 +534,7 @@ export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_
 export function walletNow(workouts) {
   const s = gearState();
   const w = s.wallet;
-  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions, markets: s.markets, marketCollects: s.marketCollects, marketUpgrades: s.marketUpgrades, expansions: s.expansions });
+  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions, markets: s.markets, marketCollects: s.marketCollects, marketUpgrades: s.marketUpgrades, expansions: s.expansions, island: s.island });
   const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id, s.jobs)]));
   return {
     coins: Number(w ? w.coins : local.coins) || 0,

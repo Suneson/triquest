@@ -1,7 +1,8 @@
 // island-view.js: the island's nine plots (docs/CITY.md).
 //
 // Every building is a picture standing on its plot. The club base, the pool and the market start
-// in ruins: tap one to pay for its rebuild, and a timer floats over it while the mechanic works.
+// in ruins: tap one to pay for its rebuild, and a giant MOSKE box covers it, with a timer floating
+// over it, until the mechanic is done.
 // Then the club base opens the club screen, the market takes one stall, and the mall opens the shop.
 
 import { esc } from './ui.js';
@@ -28,12 +29,15 @@ const SPOT_R = 0.21;
 const SPOTS = ISLAND_RULES.spots.map((spot, i) => ({ spot, a: [-0.2, 0.25, 0.7][i % 3], b: [-0.6, -0.1, 0.4][Math.floor(i / 3)] }));
 const onPlaza = (a, b) => [PLOT.market[0] + (a - b) * U, PLOT.market[1] + (a + b) * S * U];
 
-/** The picture a plot shows now: what's rebuilt shows its ruin, its works, or itself. */
+/** The construction box on a plot: one picture for all of them. */
+const boxOn = (plot) => ({ ...ART.box, x: PLOT[plot][0] + ART.box.dx, y: PLOT[plot][1] + ART.box.dy });
+
+/** The picture a plot shows now: what's rebuilt shows its ruin, the box, or itself. */
 function pictureOf(plot) {
   if (!REBUILT.includes(plot)) return ART[plot];
   const { state } = pieceState(myIsland(), plot, serverNow());
   if (state === 'built') return ART[plot];
-  return (state === 'building' && ART[`${plot}-build`]) || ART[`${plot}-ruin`];
+  return state === 'building' ? boxOn(plot) : ART[`${plot}-ruin`];
 }
 
 /** What can stand in front of the delivery van on its road: the mall and the market. */

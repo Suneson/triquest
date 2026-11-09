@@ -171,13 +171,6 @@ export const ISLAND_ART = {
    "w": 2151.9,
    "h": 1473.7
   },
-  "club-build": {
-   "src": "icons/Island/club-build.webp",
-   "x": 4014.9,
-   "y": 1973.9,
-   "w": 2151.9,
-   "h": 1474.6
-  },
   "club": {
    "src": "icons/Island/club.webp",
    "x": 4014.9,
@@ -215,10 +208,17 @@ export const ISLAND_ART = {
   },
   "stadium": {
    "src": "icons/Island/stadium.webp",
-   "x": 6797.5,
-   "y": 2284.2,
-   "w": 2150,
-   "h": 1141
+   "x": 6795.0,
+   "y": 2204.0,
+   "w": 2155.1,
+   "h": 1246.1
+  },
+  "box": {
+   "src": "icons/Island/box.webp",
+   "dx": -1077.9,
+   "dy": -919.7,
+   "w": 2155.8,
+   "h": 1470.4
   }
  },
  "storey": {

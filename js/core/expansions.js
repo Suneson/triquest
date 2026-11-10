@@ -51,6 +51,15 @@ export const EXPANDED_ART = Object.fromEntries(Object.entries(ROOM32).map(([room
 export const bigArt = (room, level) => EXPANDED_ART[room]?.replace(/big-10\.webp$/, `big-${Math.max(1, Math.min(10, level || 1))}.webp`);
 
 /**
+ * The same picture at half size (tools/room-mids.py): what the base shows until you zoom in. A
+ * quarter of the memory and about a third of the download of the full one.
+ */
+export const MID_W = 1700;
+export const midArt = (room, level) => bigArt(room, level)?.replace(/big-(\d+)\.webp$/, 'mid-$1.webp');
+/** Is a picture `width` px wide too soft for a room drawn `onScreen` device px wide? */
+export const needsFull = (onScreen, width = MID_W) => onScreen > width * 1.1;
+
+/**
  * Rooms that show their big picture from the start, taped off to the 8 × 8 in its back corner
  * until they're expanded (docs/ROOMS-16-NEXT.md). None for everyone until all five rooms have their
  * pictures; admins can preview it from the Expand window.

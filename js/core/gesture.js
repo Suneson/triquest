@@ -65,3 +65,26 @@ export function pullState(dy) {
   const offset = Math.min(PULL_MAX, d);
   return { offset, frac: Math.min(1, d / PULL_READY), ready: d >= PULL_READY };
 }
+
+// ---- sheets: swipe down to send one away ------------------------------------------------
+// A sheet that came up from the bottom (the shop, the inventory, the wardrobe, any partial
+// sheet) follows a downward drag and leaves past SHEET_CLOSE_AT of its height, or on a flick.
+
+export const SHEET_CLOSE_AT = 0.28;  // fraction of the sheet's height
+export const SHEET_FLICK = 0.55;     // px per ms, downwards
+export const SHEET_MIN = 24;         // a flick still has to travel this far
+
+/** (dx, dy) from the start: 'down' (mostly downwards), 'other', or null (too early to tell). */
+export function classifyDown(dx, dy, slop = SLOP) {
+  if (Math.abs(dx) < slop && Math.abs(dy) < slop) return null;
+  return dy > 0 && Math.abs(dy) > Math.abs(dx) * 1.2 ? 'down' : 'other';
+}
+
+/** Where the sheet sits for a finger `dy` from the start: it follows down, and only gives a little upwards. */
+export const sheetOffset = (dy) => (dy >= 0 ? dy : -Math.min(18, Math.sqrt(-dy) * 2));
+
+/** On release: does the sheet leave? `v` is the downward speed in px/ms. */
+export function sheetShouldClose(dy, height, v) {
+  if (dy <= 0 || height <= 0) return false;
+  return dy / height >= SHEET_CLOSE_AT || (v >= SHEET_FLICK && dy >= SHEET_MIN);
+}

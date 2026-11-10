@@ -278,6 +278,8 @@ async function start() {
   const frame = (now) => {
     requestAnimationFrame(frame);
     if (!shared.front.canvas.isConnected) return;
+    // a full screen is over the base (js/app/nav.js): nothing of the city shows, so nothing is drawn
+    if (document.body.classList.contains('base-covered')) return;
     if (now - last < 1000 / FPS && !shared.dirty) return;
     const dt = Math.min(0.2, (now - last) / 1000); last = now;
     const o = shared.opts || {};

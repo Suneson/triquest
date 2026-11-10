@@ -118,7 +118,7 @@ function gearPanel(look, owned) {
 
 export function openWardrobe() {
   let stage = null, closed = false;
-  const root = openLayer('wardrobe', { className: 'gear-layer wr-layer', instant: true, onClose: () => { closed = true; stage?.dispose(); } });
+  const root = openLayer('wardrobe', { className: 'gear-layer wr-layer', sheet: true, onClose: () => { closed = true; stage?.dispose(); } });
   let look = loadLook();
   let tab = 'look';
   const owned = ownedIds();
@@ -144,6 +144,12 @@ export function openWardrobe() {
     panelEl.setAttribute('aria-labelledby', `wr-tab-${tab}`);
     panelEl.innerHTML = tab === 'look' ? lookPanel(look) : tab === 'outfits' ? outfitsPanel(look, owned) : gearPanel(look, owned);
   };
+  // a new tab's panel slides in; a pick only redraws it, so the class comes off again
+  let inTimer = 0;
+  const slideIn = () => {
+    panelEl.classList.remove('is-in'); void panelEl.offsetWidth; panelEl.classList.add('is-in');
+    clearTimeout(inTimer); inTimer = setTimeout(() => panelEl.classList.remove('is-in'), 300);
+  };
   const dress = () => {
     if (!stage) return;
     stage.show(modelFor(look, owned), look).then(() => { msg.hidden = true; })
@@ -159,7 +165,7 @@ export function openWardrobe() {
   root.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || !root.contains(b)) return;
-    if (b.dataset.wrTab) { tab = b.dataset.wrTab; draw(); panelEl.scrollTop = 0; return; }
+    if (b.dataset.wrTab) { if (b.dataset.wrTab !== tab) { tab = b.dataset.wrTab; draw(); panelEl.scrollTop = 0; slideIn(); haptic('tick'); } return; }
     if (b.dataset.wrCls) return update({ ...look, cls: b.dataset.wrCls });
     if (b.dataset.wrBody) return update({ ...look, body: b.dataset.wrBody });
     if (b.dataset.wrSkin) return update({ ...look, skin: b.dataset.wrSkin });
@@ -174,7 +180,7 @@ export function openWardrobe() {
   root.querySelector('.wr-tabs').addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     tab = TABS[(TABS.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
-    draw(); root.querySelector(`[data-wr-tab="${tab}"]`).focus();
+    draw(); slideIn(); root.querySelector(`[data-wr-tab="${tab}"]`).focus();
   });
 
   draw();

@@ -160,6 +160,7 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
       // everything, so coming back to HOME carries on mid-stride with no reload. The diorama
       // disposes the runner when its treadmill leaves the room.
       if (!canvas.isConnected || document.hidden || now - last < 1000 / 30) return; // 30 fps is plenty
+      if (document.body.classList.contains('base-covered')) { clock.getDelta(); return; }   // a full screen hides the base: rest
       last = now;
       mixer.update(Math.min(0.1, clock.getDelta()));
       renderer.render(scene, camera);

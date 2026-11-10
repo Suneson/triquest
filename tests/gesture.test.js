@@ -49,3 +49,18 @@ test('pull to refresh: damped, capped, armed past the line', async () => {
   assert.equal(pullState(PULL_READY * 2 - 2).ready, false);
   assert.equal(pullState(1000).offset, PULL_MAX);
 });
+
+test('sheets: a downward drag is theirs, sideways and upward are not', async () => {
+  const { classifyDown, sheetOffset, sheetShouldClose, SHEET_CLOSE_AT } = await import('../js/core/gesture.js');
+  assert.equal(classifyDown(2, 4), null);
+  assert.equal(classifyDown(3, 30), 'down');
+  assert.equal(classifyDown(30, 31), 'other');   // a diagonal belongs to the page
+  assert.equal(classifyDown(0, -30), 'other');
+  assert.equal(sheetOffset(120), 120);
+  assert.ok(sheetOffset(-400) >= -18 && sheetOffset(-400) < 0);
+  assert.equal(sheetShouldClose(600 * SHEET_CLOSE_AT, 600, 0), true);
+  assert.equal(sheetShouldClose(100, 600, 0), false);
+  assert.equal(sheetShouldClose(40, 600, 0.8), true);   // a flick
+  assert.equal(sheetShouldClose(10, 600, 0.8), false);  // too short to be one
+  assert.equal(sheetShouldClose(-50, 600, 2), false);
+});

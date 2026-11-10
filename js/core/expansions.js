@@ -18,7 +18,9 @@ export const EXPANSION_RULES = {
   ready32: ['locker', 'gym', 'bike', 'run', 'pool'], // and to 32 × 32
 };
 
-// the rooms every player is offered; the rest wait for their full set of levels
+// The rooms every player can buy an expansion for. All five have their ten levels, but the live
+// database still only sells the locker room's: add the other four here once
+// supabase/migrations/0034_expansions_all_rooms.sql has been applied to it.
 const ON_SALE = ['locker'];
 /** Is this room offered to this player? Admins and the demo can try them all. */
 export const onSale = (room, tester = false) => tester || ON_SALE.includes(room);
@@ -61,8 +63,8 @@ export const needsFull = (onScreen, width = MID_W) => onScreen > width * 1.1;
 
 /**
  * Rooms that show their big picture from the start, taped off to the 8 × 8 in its back corner
- * until they're expanded (docs/ROOMS-16-NEXT.md). None for everyone until all five rooms have their
- * pictures; admins can preview it from the Expand window.
+ * until they're expanded (docs/ROOMS-16-NEXT.md). That is every room now: the old painted 8 × 8
+ * rooms are gone, and a room that hasn't been expanded is the same big room behind tape.
  */
-export const TAPED_ROOMS = [];
+export const TAPED_ROOMS = ['locker', 'gym', 'bike', 'run', 'pool'];
 export const tapedRoom = (room, preview = false) => !!EXPANDED_ART[room] && (preview || TAPED_ROOMS.includes(room));

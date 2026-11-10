@@ -7,8 +7,11 @@ little differently, so every room has its own corners, read by eye from the leve
 FLOORS holds them as x, y in a picture scaled to 2000 px wide.
 
 Level 10 is <ROOM>/<room>-32-level-10.*; levels 1-9 are the x2 upscales in <ROOM>/upscaled/. Their
-frames came out at slightly different shapes, so each one's outline is fitted onto level 10's
-(an affine fit of the two outlines) and cut the same: one set of corners serves every level.
+frames came out at slightly different shapes, and their walls at different heights and thicknesses,
+so each one is laid onto level 10 by the one thing they share: the base slab. Its three lower
+corners are read off each outline (slab) and matched, and one set of floor corners serves every level.
+
+    python tools/cut-rooms-32.py <dir> [room...]     only these rooms; then run tools/room-mids.py
 """
 import glob, json, os, re, sys
 import cv2
@@ -65,52 +68,71 @@ def source(src, room, n):
     return [p for p in glob.glob(os.path.join(src, room.upper(), 'upscaled', '*')) if pat.search(p)][0]
 
 
-def small(alpha, w=1200):
-    h = round(alpha.shape[0] * w / alpha.shape[1])
-    return cv2.GaussianBlur(cv2.resize(alpha, (w, h), interpolation=cv2.INTER_AREA), (0, 0), 2), w / alpha.shape[1]
+def slab(im):
+    """The three lower corners of a room's base slab, read off its outline: left, right, front.
+
+    Every level stands on the same slab, and its two lower edges are the only part of the outline
+    that no wall, light or trim ever changes. Each is a straight line: fitted to the lowest solid
+    pixel of every column, they meet at the front corner and end at the left and right ones.
+    """
+    a = np.asarray(im.getchannel('A')) > 128
+    cols = np.where(a.sum(0) > 0)[0]
+    x0, x1 = int(cols[0]), int(cols[-1])
+    xs = np.arange(x0, x1 + 1)
+    low = np.array([np.where(a[:, x])[0][-1] if a[:, x].any() else -1 for x in xs], float)
+    tip = xs[int(np.argmax(low))]
+    span = x1 - x0
+
+    def line(lo, hi):
+        m = (xs >= lo) & (xs <= hi) & (low >= 0)
+        X, Y = xs[m].astype(float), low[m]
+        k, c = np.polyfit(X, Y, 1)
+        for _ in range(4):                       # drop what isn't on the edge (a notch, a shadow speck)
+            keep = np.abs(Y - (k * X + c)) < 3
+            k, c = np.polyfit(X[keep], Y[keep], 1)
+        return k, c
+    kl, cl = line(x0 + .08 * span, tip - .08 * span)
+    kr, cr = line(tip + .08 * span, x1 - .08 * span)
+    fx = (cr - cl) / (kl - kr)
+    return np.float32([[x0, kl * x0 + cl], [x1, kr * x1 + cr], [fx, kl * fx + cl]])
 
 
 def fit(ref, im):
-    """im's RGBA, warped onto ref's frame so the two rooms' outlines lie on each other."""
-    ra, fr = small(np.asarray(ref.getchannel('A'), np.float32) / 255)
-    ma, fm = small(np.asarray(im.getchannel('A'), np.float32) / 255)
-    box = lambda a: (lambda xs, ys: (xs[0], ys[0], xs[-1] + 1, ys[-1] + 1))(np.where(a.max(0) > .5)[0], np.where(a.max(1) > .5)[0])
-    (a0, b0, a1, b1), (c0, d0, c1, d1) = box(ra), box(ma)
-    sx, sy = (c1 - c0) / (a1 - a0), (d1 - d0) / (b1 - b0)
-    warp = np.float32([[sx, 0, c0 - sx * a0], [0, sy, d0 - sy * b0]])      # ref -> im, from the outlines' boxes
-    crit = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 300, 1e-7)
-    _, warp = cv2.findTransformECC(ra, ma, warp, cv2.MOTION_AFFINE, crit, None, 5)
-    full = np.float32([[*(warp[0, :2] * fr / fm), warp[0, 2] / fm], [*(warp[1, :2] * fr / fm), warp[1, 2] / fm]])
+    """im's RGBA, moved onto ref's frame so the two rooms' slabs lie exactly on each other."""
+    warp = cv2.getAffineTransform(slab(im), slab(ref))                      # im -> ref
     a = np.asarray(im).astype(np.float32)
     al = a[..., 3:] / 255
     pre = np.dstack([a[..., :3] * al, al * 255])                           # premultiplied, so edges stay clean
-    out = cv2.warpAffine(pre, full, ref.size, flags=cv2.INTER_LANCZOS4 | cv2.WARP_INVERSE_MAP, borderValue=0).clip(0, 255)
+    out = cv2.warpAffine(pre, warp, ref.size, flags=cv2.INTER_LANCZOS4, borderValue=0).clip(0, 255)
     al = out[..., 3:] / 255
     rgb = np.where(al > 0, out[..., :3] / np.maximum(al, 1e-3), 0)
     res = Image.fromarray(np.dstack([rgb, out[..., 3]]).clip(0, 255).astype(np.uint8), 'RGBA')
-    after = small(np.asarray(res.getchannel('A'), np.float32) / 255)[0] > .5
-    iou = (after & (ra > .5)).sum() / (after | (ra > .5)).sum()
-    return res, iou
+    sx, sy = np.hypot(warp[0, 0], warp[1, 0]), np.hypot(warp[0, 1], warp[1, 1])
+    return res, (sx, sy)
 
 
-def main(src):
-    out = {}
+def main(src, only):
+    art = 'js/core/room32-art.js'
+    out = json.loads((lambda t: t[t.index('{'):t.rindex('}') + 1])(open(art, encoding='utf-8').read())) if only and os.path.exists(art) else {}
     for room, (back, right, left) in FLOORS.items():
+        if only and room not in only:
+            continue
         im = key(source(src, room, 10))
         k = im.width / 2000
-        a = np.asarray(im.getchannel('A')) > 128
+        levels = {10: im}
+        for n in range(1, 10):
+            levels[n], (sx, sy) = fit(im, key(source(src, room, n)))
+            print(f'  {room} level {n}: scaled {sx:.3f} x {sy:.3f}', flush=True)
+        # one frame for all ten: the box that holds every level (some have taller or thicker walls)
+        a = np.max([np.asarray(l.getchannel('A')) for l in levels.values()], axis=0) > 128
         xs = np.where(a.sum(0) > 40)[0]; ys = np.where(a.sum(1) > 40)[0]
-        x0, x1, y0, y1 = int(xs[0]) - 6, int(xs[-1]) + 7, int(ys[0]) - 6, int(ys[-1]) + 7
-        c = im.crop((x0, y0, x1, y1))
-        W, H = c.size
+        x0, x1, y0, y1 = max(0, int(xs[0]) - 6), min(im.width, int(xs[-1]) + 7), max(0, int(ys[0]) - 6), min(im.height, int(ys[-1]) + 7)
+        W, H = x1 - x0, y1 - y0
         scale = OUT_W / W
         name = f'icons/Pixelart/NEW/{room.upper()}/big-10.webp'
-        c.resize((OUT_W, round(H * scale)), Image.LANCZOS).save(name, quality=84, alpha_quality=90, method=6)
-        for n in range(1, 10):
-            lv, iou = fit(im, key(source(src, room, n)))
+        for n, lv in levels.items():
             lv.crop((x0, y0, x1, y1)).resize((OUT_W, round(H * scale)), Image.LANCZOS).save(
                 f'icons/Pixelart/NEW/{room.upper()}/big-{n}.webp', quality=84, alpha_quality=90, method=6)
-            print(f'  {room} level {n}: outline match {iou:.3f}' + ('   <-- check' if iou < .97 else ''))
         pct = lambda p: [round((p[0] * k - x0) / W * 100, 2), round((p[1] * k - y0) / H * 100, 2)]
         entry = {'src': name, 'size': [OUT_W, round(H * scale)], 'back': pct(back), 'right': pct(right), 'left': pct(left)}
         floor_w = (right[0] - left[0]) * k
@@ -128,4 +150,4 @@ def main(src):
         f.write('export const ROOM32 = ' + json.dumps(out, indent=2) + ';\n')
 
 
-main(sys.argv[1])
+main(sys.argv[1], sys.argv[2:])

@@ -26,17 +26,15 @@ test('layouts for one to four disciplines', () => {
 });
 
 test('room art: the landscape locker clamps to level 4; the missing gym level falls back; every file exists', () => {
-  assert.equal(roomArt('locker', 1, true), 'icons/Pixelart/NEW/LOCKER/landscape-4.webp');
-  assert.equal(roomArt('locker', 3, true), 'icons/Pixelart/NEW/LOCKER/landscape-4.webp');
-  assert.equal(roomArt('locker', 7, true), 'icons/Pixelart/NEW/LOCKER/landscape-7.webp');
-  assert.equal(roomArt('locker', 2), 'icons/Pixelart/NEW/LOCKER/square-2.webp');
-  assert.equal(roomArt('gym', 7), 'icons/Pixelart/NEW/GYM/level-6.webp');
-  assert.equal(roomArt('bike', 14), 'icons/Pixelart/NEW/BIKE/level-10.webp');
-  assert.equal(roomArt('pool', 0), 'icons/Pixelart/NEW/POOL/level-1.webp');
+  assert.equal(roomArt('locker', 2), 'icons/Pixelart/NEW/LOCKER/mid-2.webp');
+  assert.equal(roomArt('gym', 7), 'icons/Pixelart/NEW/GYM/mid-7.webp');
+  assert.equal(roomArt('bike', 14), 'icons/Pixelart/NEW/BIKE/mid-10.webp');
+  assert.equal(roomArt('pool', 0), 'icons/Pixelart/NEW/POOL/mid-1.webp');
   for (let n = 1; n <= 10; n++) {
     for (const r of ['gym', 'pool', 'bike', 'run']) assert.ok(existsSync(roomArt(r, n)), roomArt(r, n));
     assert.ok(existsSync(roomArt('locker', n)), `locker ${n}`);
-    assert.ok(existsSync(roomArt('locker', n, true)), `wide locker ${n}`);
+    // the old painted 8 × 8 rooms are not in the app any more
+    for (const old of [`GYM/level-${n}.webp`, `LOCKER/square-${n}.webp`, `LOCKER/landscape-${n}.webp`]) assert.ok(!existsSync(`icons/Pixelart/NEW/${old}`), old);
   }
   for (const p of PLACEABLES) assert.ok(existsSync(p.art({ inventory: [], rider: 'icons/Pixelart/BIKE/CHARACTERS/bikelvl1_char.webp' })), p.id);
 });

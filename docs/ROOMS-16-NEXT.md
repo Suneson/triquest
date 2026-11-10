@@ -4,9 +4,13 @@ Every room becomes one 16 × 16 picture. Before it's expanded, only the 8 × 8 i
 
 ## Where it stands
 
-- **The locker room:** the finished 16 × 16 is in the app (your green-screen repaint, floor measured).
-- **The tape:** done, for any room. It's `icons/UI/tape.webp` laid along the floor by code (`drawTape` in `js/app/diorama-view.js`), so no room needs its own tape picture and nothing needs painting into the rooms.
-- **Who sees it:** only admins, for now. Open **Expand** and tap **Admin: preview the taped 8 × 8**. Other players keep today's rooms until every room's picture is in, because a taped locker room beside four old painted rooms would look wrong.
+- **All five rooms, all ten levels:** the 32 × 32 pictures are in the app (`icons/Pixelart/NEW/<ROOM>/big-N.webp`, half-size `mid-N.webp`). The old painted 8 × 8 rooms are deleted.
+- **One frame per room:** `tools/cut-rooms-32.py` lays every level onto level 10 by the three lower corners of its base slab, so one floor grid serves all ten. Walls differ in height and thickness between levels, which is why the outline can't be used.
+- **The tape:** every room that hasn't been expanded shows its big picture taped off to the back 8 × 8 (`TAPED_ROOMS` in `js/core/expansions.js`).
+- **Buying:** players can only buy the locker room's expansion until `supabase/migrations/0034_expansions_all_rooms.sql` is applied to the live database. Then add the other rooms to `ON_SALE`.
+- **Known:** on gym and run levels 7 and 8 the art has a wide white kerb, so the outermost row of tiles lies on it.
+
+The rest of this page is how the pictures were made.
 
 ## What to make
 

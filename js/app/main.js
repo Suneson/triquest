@@ -63,6 +63,7 @@ import { openTrophyCase, featWonText } from './feats-view.js';
 import { refreshChallenges, stopChallenges, onChallenges } from './challenges-state.js';
 import { settleText } from './challenges-view.js';
 import { openGear, openInventory, openShop } from './gear-view.js';
+import { openWardrobe } from './wardrobe-view.js';
 import { refreshChests, onChests, isChestAdmin, chestsEnabled } from './chests-state.js';
 import { showChestBanner, openChestQueue, adminChestTools, wireAdminTools } from './chest-view.js';
 import { startGelTicker } from './gel-chip.js';
@@ -500,6 +501,7 @@ function onClick(e) {
     case 'open-missions': openMissionBoard(buildCtx()); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
+    case 'open-wardrobe': openWardrobe(); break;
     case 'open-chests': openChestQueue(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;
     case 'open-expansions': openExpansions(store.getWorkouts()); break;

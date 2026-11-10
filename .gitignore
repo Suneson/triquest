@@ -19,3 +19,5 @@ triquest-backup-*.json
 .playwright-cli/
 docs/gear/gen/
 __pycache__/
+models/bodies/*-base.png
+models/bodies/*-mask.png

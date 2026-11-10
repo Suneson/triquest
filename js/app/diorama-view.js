@@ -206,6 +206,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     </div>
     <div class="dg-side is-left">
       ${orb('gold', 'icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
+      ${orb('gold', 'icons/Pixelart/GEAR/btn-wardrobe.png', `data-action="open-wardrobe" aria-label="${esc(t('wardrobe.title'))}"`)}
       ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
     <div class="dg-side is-right">${liftPanel(room)}</div>

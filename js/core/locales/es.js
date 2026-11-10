@@ -3087,4 +3087,124 @@ Object.assign(es.cp.expand, {"tapeOn": "Admin: ver el 8 × 8 con cinta", "tapeOf
 es.gear.tab["stash"] = "Almacén";
 Object.assign(es.gear, {"place": "Colocar", "placeAria": "Coloca {name} en esta sala", "invNoStash": "No hay nada guardado. Toca un objeto de tu base y pulsa Guardar.", "noRoomForIt": "Aquí no cabe. Prueba otra sala o guarda algo."});
 
+es.wardrobe = {
+  "title": "Vestuario",
+  "loading": "Preparando a tu atleta…",
+  "loadFailed": "No se pudo cargar tu atleta. Revisa tu conexión y vuelve a abrir el vestuario.",
+  "noGl": "Este dispositivo no puede mostrar 3D, pero puedes elegir tu aspecto igualmente.",
+  "dragHint": "Arrastra para girar",
+  "tab": {
+    "look": "Aspecto",
+    "outfits": "Equipaciones",
+    "gear": "Accesorios"
+  },
+  "class": "Clase",
+  "classNote": "Tu clase define tus estadísticas. Algunas equipaciones son solo para una clase.",
+  "body": "Cuerpo",
+  "skin": "Piel",
+  "eyes": "Ojos",
+  "cls": {
+    "endurance": "Resistencia",
+    "hybrid": "Híbrido"
+  },
+  "bodies": {
+    "male": "Hombre",
+    "female": "Mujer"
+  },
+  "skins": {
+    "fair": "Muy clara",
+    "light": "Clara",
+    "warm": "Cálida",
+    "medium": "Media",
+    "tan": "Morena",
+    "brown": "Marrón",
+    "deep": "Oscura",
+    "ebony": "Ébano"
+  },
+  "eyeColours": {
+    "brown": "Marrones",
+    "hazel": "Avellana",
+    "amber": "Ámbar",
+    "green": "Verdes",
+    "blue": "Azules",
+    "grey": "Grises"
+  },
+  "outfitsNote": "Primero tus equipaciones. Las bloqueadas te dicen cómo conseguirlas.",
+  "kind": {
+    "starter": "Inicial",
+    "shop": "Tienda",
+    "blueprint": "Plano",
+    "earned": "Ganada"
+  },
+  "how": {
+    "starter": "La tiene todo el mundo",
+    "shop": "Cómprala en la tienda",
+    "blueprint": "Reúne la parte de arriba y la de abajo",
+    "earned": "Gánala en retos y eventos"
+  },
+  "state": {
+    "wearing": "Puesta",
+    "soon": "Pronto para este cuerpo",
+    "class": "Solo {cls}"
+  },
+  "none": "Ninguno",
+  "buff": "Mejora",
+  "slot": {
+    "helmet": "Cascos",
+    "shoes": "Zapatillas",
+    "hat": "Gorras",
+    "glasses": "Gafas",
+    "watch": "Relojes"
+  },
+  "outfit": {
+    "base": "Capa base",
+    "tracksuit": "Chándal",
+    "starter-tee": "Camiseta inicial",
+    "navy-training": "Entreno marino",
+    "white-gold": "Blanco y oro",
+    "blue-half-zip": "Media cremallera azul",
+    "sky-club": "Club celeste",
+    "road-racer": "Corredor de asfalto",
+    "distance": "Fondo",
+    "iron-gym": "Gimnasio de hierro",
+    "heavy-day": "Día pesado",
+    "aero-suit": "Traje aero",
+    "tri-pro": "Tri pro",
+    "storm-shell": "Tormenta",
+    "gold-line": "Línea dorada",
+    "marathon-elite": "Maratón élite",
+    "forge": "Forja",
+    "first-finisher": "Primer finisher",
+    "streak-keeper": "Guardián de la racha",
+    "clan-champion": "Campeón del clan"
+  },
+  "item": {
+    "helmet-road": "Casco de carretera",
+    "helmet-aero": "Casco aero",
+    "helmet-blue": "Casco azul",
+    "helmet-gold": "Casco dorado",
+    "shoe-starter": "Zapatillas iniciales",
+    "shoe-runner": "Zapatillas de asfalto",
+    "shoe-racer": "Voladoras",
+    "shoe-trail": "Zapatillas de trail",
+    "shoe-lifter": "Zapatillas de halterofilia",
+    "shoe-trainer": "Zapatillas de cross",
+    "shoe-cycling": "Zapatillas de ciclismo",
+    "shoe-gold": "Zapatillas doradas",
+    "hat-cap-navy": "Gorra marina",
+    "hat-cap-white": "Gorra blanca",
+    "hat-visor": "Visera",
+    "hat-beanie": "Gorro",
+    "hat-bucket": "Gorro de pescador",
+    "hat-gold": "Gorra de campeón",
+    "glasses-sport": "Gafas deportivas",
+    "glasses-blue": "Pantalla azul",
+    "glasses-gold": "Pantalla dorada",
+    "glasses-casual": "Gafas de sol",
+    "watch-basic": "Reloj deportivo",
+    "watch-blue": "Reloj azul",
+    "watch-gold": "Reloj dorado"
+  }
+};
+
 export default es;

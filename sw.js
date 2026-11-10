@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v122';
+const CACHE = 'triquest-v123';
 const ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const ASSETS = [
   './css/shop.css',
   './css/chests.css',
   './css/wardrobe.css',
+  './css/polish.css',
   './js/app/main.js',
   './js/app/store.js',
   './js/app/ui.js',
@@ -44,6 +45,12 @@ const ASSETS = [
   './js/app/diorama-view.js',
   './js/app/runner3d.js',
   './js/app/wardrobe-view.js',
+  './js/app/press.js',
+  './js/app/spring-run.js',
+  './js/core/spring.js',
+  './icons/Pixelart/NEW/UI/close-plate.webp',
+  './icons/Pixelart/NEW/UI/close-plate-down.webp',
+  './icons/Pixelart/NEW/UI/sheet-handle.webp',
   './js/app/wardrobe3d.js',
   './js/core/wardrobe.js',
   './js/app/shop-ui.js',
@@ -174,6 +181,22 @@ self.addEventListener('fetch', (e) => {
   // clips and sounds (the reward chests) stream with Range requests: the browser
   // and the server handle those, and a partial response can't be cached anyway
   if (request.headers.has('range') || /\.(webm|mp4|mov|mp3|m4a)$/i.test(url.pathname)) return;
+
+  // Pictures, models, fonts and the vendored 3D library: straight from this version's cache, no
+  // trip to the network. They only change with a deploy, and every deploy is a new cache (CACHE
+  // above), which starts empty and fills with fresh copies (no-cache: past the browser's own
+  // 10-minute copy). So a picture is asked for once per version, not once per visit.
+  if (sameOrigin && /\/(icons|models|fonts|vendor)\//.test(url.pathname)) {
+    e.respondWith(
+      caches.open(CACHE).then((c) => c.match(request).then((hit) => hit
+        || fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' }).then((res) => {
+          if (res.ok && res.status === 200) c.put(request, res.clone());
+          return res;
+        })))
+        .catch(() => fetch(request))
+    );
+    return;
+  }
 
   // Network-first for same-origin app code so updates always apply when online;
   // cache is the offline fallback. (Avoids the stale-asset trap of cache-first.)

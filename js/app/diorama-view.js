@@ -23,7 +23,7 @@ import {
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF } from '../core/diorama.js';
-import { expandedSize, EXPANDED_ART, bigArt, tapedRoom } from '../core/expansions.js';
+import { expandedSize, EXPANDED_ART, bigArt, midArt, needsFull, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
@@ -206,7 +206,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     </div>
     <div class="dg-side is-left">
       ${orb('gold', 'icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
-      ${orb('gold', 'icons/Pixelart/GEAR/btn-wardrobe.png', `data-action="open-wardrobe" aria-label="${esc(t('wardrobe.title'))}"`)}
+      ${orb('gold', 'icons/Pixelart/GEAR/btn-wardrobe.webp', `data-action="open-wardrobe" aria-label="${esc(t('wardrobe.title'))}"`)}
       ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
     <div class="dg-side is-right">${liftPanel(room)}</div>
@@ -371,10 +371,15 @@ const decoded = (src) => { const i = new Image(); i.src = src; return (i.decode 
  * the screen sweeps through it (top to bottom going up), `swap` changes the room under its cover,
  * and the new floor settles in from the other side.
  */
-async function cloudMove(from, to, swap) {
+async function cloudMove(from, to, swap, art = '') {
   stage.moving = true;
   const up = HEIGHT[to] > HEIGHT[from];
-  await Promise.all([decoded(CLOUDS), ...(envFor(to).tower || []).map((p) => decoded(p.src))]);
+  // everything the new floor shows is fetched and decoded before the clouds roll, so the room is
+  // there when they part; on a slow line the move starts anyway after a moment
+  await Promise.race([
+    Promise.all([decoded(CLOUDS), ...(art ? [decoded(art)] : []), ...(envFor(to).tower || []).map((p) => decoded(p.src))]),
+    new Promise((r) => setTimeout(r, 1500)),
+  ]);
   const H = innerHeight; const W = innerWidth;
   const cloudH = W * 1.3 * (1376 / 768);
   const band = cloudH * 1.55;
@@ -634,10 +639,30 @@ export function wireDiorama(root, ctx) {
     worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
     if (stage.front) { stage.front.style.transform = worldEl.style.transform; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
     city?.setView(view.v, r.width, r.height);
+    sharpen();
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
-  const src = bigRoom(room) || expanded(room) || taped(room) ? bigArt(room, levelOf(room, ctx)) : roomArt(room, levelOf(room, ctx));
+  // a big room's picture comes at half size first; its full size only once you've zoomed in far
+  // enough to see the difference (and from then on, for this room)
+  const isBig = (r) => !!(bigRoom(r) || expanded(r) || taped(r));
+  const fullOf = (r) => (isBig(r) ? bigArt(r, levelOf(r, ctx)) : roomArt(r, levelOf(r, ctx)));
+  const roomSrc = (r) => (isBig(r) && !stage.sharp?.[fullOf(r)] ? midArt(r, levelOf(r, ctx)) : fullOf(r));
+  const full = fullOf(room);
+  const src = roomSrc(room);
+  let checkedAt = 0;
+  const sharpen = () => {
+    if (src === full || stage.sharpening === full || !view.v) return;
+    if (checkedAt && Math.abs(view.v.s - checkedAt) / checkedAt < 0.05) return;   // only when the zoom has really changed
+    checkedAt = view.v.s;
+    if (!needsFull(roomImg.getBoundingClientRect().width * (window.devicePixelRatio || 1))) return;
+    stage.sharpening = full;
+    decoded(full).then(() => {
+      stage.sharpening = null;
+      (stage.sharp ||= {})[full] = true;
+      if (stage.gen === gen && roomImg.getAttribute('src') === src) roomImg.src = full;
+    });
+  };
   const showRoom = () => {
     artEl.className = `dg-room-art is-${room}`;
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;
@@ -654,6 +679,13 @@ export function wireDiorama(root, ctx) {
 
   draw();
   apply();
+  // the other floors' rooms come down quietly once this one is up, so the lift never waits on them
+  if (!stage.warmed && env.floor != null) {
+    stage.warmed = true;
+    (window.requestIdleCallback || ((f) => setTimeout(f, 1500)))(() => {
+      Object.keys(FLOOR_OF).filter((r) => r !== room).forEach((r, i) => setTimeout(() => { const im = new Image(); im.src = roomSrc(r); }, i * 500));
+    });
+  }
 
   const say = (msg) => { hint.textContent = msg; hint.classList.toggle('on', !!msg); };
   const zoomAt = (ns, cx, cy, from = null) => {
@@ -867,7 +899,7 @@ export function wireDiorama(root, ctx) {
       // the new floor's button lights up straight away, the room follows under the clouds
       root.querySelectorAll('[data-room-go]').forEach((x) => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
       const go = () => { setActiveRoom(to); document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true })); };
-      if (reduced()) go(); else cloudMove(from, to, go);
+      if (reduced()) go(); else cloudMove(from, to, go, roomSrc(to));
     };
   });
 

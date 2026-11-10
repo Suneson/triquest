@@ -156,7 +156,7 @@ function gymNeeds() {
 /** Open the trophy case on a sport (or 'cross'). */
 export function openTrophyCase(sport = 'run') {
   let off = null;
-  const root = openLayer('trophy-case', { className: 'gear-layer', instant: true, onClose: () => off?.() });
+  const root = openLayer('trophy-case', { className: 'gear-layer', sheet: true, onClose: () => off?.() });
   let current = CASE_SPORTS.includes(sport) ? sport : 'run';
 
   const draw = () => {

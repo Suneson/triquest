@@ -45,6 +45,7 @@ import { wireTabSwipe } from './tab-swipe.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName, openRoute, leaveRoute } from './nav.js';
 import { haptic } from './haptics.js';
+import { wirePress } from './press.js';
 import { enablePull } from './pull.js';
 import { morph } from './vt.js';
 import { stampRecord, firstStamp } from './stamp.js';
@@ -1211,6 +1212,8 @@ async function boot() {
 
   if (SYNC_ENABLED) Promise.resolve(auth.initAuth(onAuthChange)).then(() => { autoStravaSync(); startSocial().then(() => paintBell()); startRoom(); });
   else { startSocial().then(() => paintBell()); startRoom(); } // demo mode
+
+  wirePress();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

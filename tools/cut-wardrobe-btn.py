@@ -2,7 +2,7 @@
 
     python tools/cut-wardrobe-btn.py <picture on green>
 
-Writes icons/Pixelart/GEAR/btn-wardrobe.png: 256 px square, standing 10 px from the top and
+Writes icons/Pixelart/GEAR/btn-wardrobe.webp: 256 px square, standing 10 px from the top and
 bottom like btn-shop.png and btn-inventory.png beside it.
 """
 import os, sys
@@ -30,7 +30,7 @@ def main(src):
     im = im.resize((round(im.width * k), 236), Image.LANCZOS)
     out = Image.new('RGBA', (256, 256))
     out.alpha_composite(im, ((256 - im.width) // 2, 10))
-    out.save(os.path.join(REPO, 'icons', 'Pixelart', 'GEAR', 'btn-wardrobe.png'), optimize=True)
+    out.save(os.path.join(REPO, 'icons', 'Pixelart', 'GEAR', 'btn-wardrobe.webp'), quality=90, alpha_quality=95, method=6)
     print(out.size, im.size)
 
 

@@ -36,13 +36,9 @@ const IRIS_L = 52;
 const MAX_TRIS = 40000;
 
 const BODIES = {
-  endurance: { glb: 'Endurance/Endurance Nude.glb' },
-  hybrid: { fbx: 'Meshy_AI_Bald_Titan_Pose_1030210123_texture_fbx/Meshy_AI_Bald_Titan_Pose_1030210123_texture.fbx',
-    tex: 'Meshy_AI_Bald_Titan_Pose_1030210123_texture_fbx/Meshy_AI_Bald_Titan_Pose_1030210123_texture.png',
-    normal: 'Meshy_AI_Bald_Titan_Pose_1030210123_texture_fbx/Meshy_AI_Bald_Titan_Pose_1030210123_texture_normal.png' },
+  // one male body and one female (BUILD-PLAN.md section 2): the slim male was the endurance body
+  male: { glb: 'Endurance/Endurance Nude.glb' },
   female: { glb: 'Female.glb' },
-  // the file name misleads: this tracksuit was made on the hybrid body (Titan_Pose), arms out
-  'hybrid-tracksuit': { glb: 'Endurance/Endurance Tracksuit.glb' },
 };
 
 // ---- colour ------------------------------------------------------------------------------

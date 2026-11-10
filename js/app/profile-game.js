@@ -573,7 +573,7 @@ function wireAvatarUpload(root) {
 
 /** Layer A — the full-bleed Fitness Hub (replaces the old profile modal). */
 export function openFitnessHub(ctx) {
-  const root = openLayer('fitness');
+  const root = openLayer('fitness', { sheet: true });
   const name = athleteName();
 
   root.innerHTML = `

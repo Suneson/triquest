@@ -739,7 +739,7 @@ function stashCard(it) {
  */
 export function openInventory({ tab = 'fuel' } = {}) {
   let off = null;
-  const root = openLayer('inventory', { className: 'gear-layer', instant: true, onClose: () => off?.() });
+  const root = openLayer('inventory', { className: 'gear-layer', sheet: true, onClose: () => off?.() });
   let view = INV_TABS.includes(tab) ? tab : 'fuel';
   const draw = () => {
     const workouts = store.getWorkouts();

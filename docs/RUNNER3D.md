@@ -46,26 +46,11 @@ swapped later without repainting every pose.
 
 | File | What |
 | --- | --- |
-| `models/runner.glb` | The model: one skinned mesh, a 44-joint Mixamo-style rig, *Running* and *Walking* clips. |
+| `models/chars/` | Your athlete: the body or outfit you wear and its clips, built by `tools/build-characters.mjs` (docs/CHARACTERS.md). The athlete idles on the treadmill and runs while a drill is on (docs/DRILLS.md). |
 | `vendor/three/` | three.js r170 (MIT), `GLTFLoader`, `BufferGeometryUtils` and the meshopt decoder. They're served from the app, not a CDN, so the app works offline. |
 | `icons/Pixelart/NEW/ITEMS/treadmill.webp` | The treadmill, keyed from `src/treadmill.jpg` by `python3 tools/cut-treadmill.py`. |
 
-**The model was optimised from the 17.5 MB export to 1.28 MB:**
-
-```
-npx @gltf-transform/cli optimize in.glb models/runner.glb \
-  --simplify-ratio 0.5 --texture-compress webp --texture-size 1024 --compress meshopt
-```
-
-The steps:
-- halve the triangles, to 85k vertices;
-- shrink the textures to 1024 px WebP;
-- compress the mesh with meshopt.
-
-**Keying the treadmill.** The green-screen image had stray painted art under the
-machine. `cut-treadmill.py` keys the green, and the green showing through gaps
-in the frame. It keeps only the biggest connected shape (the treadmill), which
-drops the stray art.
+The old single runner model (`models/runner.glb`) is gone: the treadmill shows the character from the wardrobe (js/app/char3d.js).
 
 ## Changing the kit later
 

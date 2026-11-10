@@ -24,7 +24,7 @@ mkdirSync(OUT, { recursive: true });
 
 const pngB64 = async (path) => (await sharp(readFileSync(path)).png().toBuffer()).toString('base64');
 const COFFEE = `${ROOT}icons/Pixelart/NEW/ITEMS/coffee-machine.webp`;
-const ROOM = `${ROOT}icons/Pixelart/NEW/LOCKER/square-6.webp`;
+const ROOM = `${ROOT}icons/Pixelart/NEW/LOCKER/big-6.webp`;
 
 // the house item style: the coffee machine (first reference) standing in a room (second)
 const ITEM = (what) => `Stylised 3D isometric mobile strategy game item in exactly the style of the first reference image (the coffee machine): chunky rounded forms, painted textures, glossy highlights, navy blue and gold accents, a warm light from the top left, seen from the same isometric angle as the room in the second reference image so it can stand on that floor. The item: ${what}. One single object standing on the floor, centred, filling about 80% of the frame, the base of the object at the bottom of the frame, no text, no letters, no numbers, no person. Background: one flat solid pure green colour #00FF00 everywhere around the object, no floor, no drop shadow, no gradient.`;

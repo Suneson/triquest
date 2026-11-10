@@ -63,21 +63,13 @@ for (const [room, r] of Object.entries(ROOM32)) {
   Object.assign(ROOM_SIZE, { [`${room}-32`]: r.size, [`${room}-16`]: r.size, [`${room}-16-tape`]: r.size });
 }
 
-// levels with no art yet fall back to the nearest one below (the gym has no 7)
-const MISSING = { gym: [7] };
-
 /**
- * A room's art at a level (1–10). The landscape locker only exists from
- * level 4, so lower levels show level 4 until their art lands.
+ * A room's picture at a level (1–10), small enough for a list or a card: the half-size copy of its
+ * 32 × 32 room (tools/room-mids.py). The old painted 8 × 8 rooms are gone; every room is this one.
  */
-export function roomArt(room, level, landscape = false) {
-  let n = Math.max(1, Math.min(10, Math.floor(Number(level)) || 1));
-  if (room === 'locker') {
-    if (landscape) return `${ART}/LOCKER/landscape-${Math.max(4, n)}.webp`;
-    return `${ART}/LOCKER/square-${n}.webp`;
-  }
-  while ((MISSING[room] || []).includes(n) && n > 1) n -= 1;
-  return `${ART}/${room.toUpperCase()}/level-${n}.webp`;
+export function roomArt(room, level) {
+  const n = Math.max(1, Math.min(10, Math.floor(Number(level)) || 1));
+  return `${ART}/${room.toUpperCase()}/mid-${n}.webp`;
 }
 
 /** Disciplines as a clean list in compound order (unknown ones dropped, none → all four). */
@@ -182,7 +174,7 @@ export const PLACEABLES = [
   // Its console is towards the camera, so the runner faces us: 2 x 3 facing a (long along v, the
   // console at the far v end), 3 x 2 facing b (long along u, the console at the far u end).
   // Tiers 1 to 4 with the run room's level (4, 7 and 10 step it up).
-  { id: 'treadmill', w: 2, h: 3, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, runner: RUNNER, faces: true, face: 'a',
+  { id: 'treadmill', w: 2, h: 3, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, runner: RUNNER, opens: 'drill', faces: true, face: 'a',
     art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, TREADMILL_BANDS)}-${o?.face || 'a'}.webp` },
   // two showpieces, gifts while the base items are being tried out
   { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',
@@ -204,7 +196,7 @@ export const PLACEABLES = [
   stashed('lockers-t2', 'locker', 3, 2, 0.9),
   stashed('drinks-fridge', 'locker', 2, 2, 0.62),
   stashed('massage-table', 'locker', 2, 3, 0.86),
-  stashed('ice-bath', 'locker', 2, 3, 0.9),
+  stashed('ice-bath', 'locker', 2, 3, 0.9, { opens: 'recovery' }),
   // the trophy cabinets: tap one to choose which trophies stand in it (`slots`: how many)
   stashed('trophy-cabinet-t1', 'locker', 2, 2, 0.62, { opens: 'trophies', slots: 5 }),
   stashed('trophy-cabinet-t2', 'locker', 2, 2, 0.7, { opens: 'trophies', slots: 10 }),
@@ -219,7 +211,7 @@ export const PLACEABLES = [
   stashed('bike-workstand', 'bike', 2, 2, 0.7),
   stashed('start-block', 'pool', 2, 2, 0.76),
   // each tier of the items that step up with a room's level, to own and place on its own
-  ...[1, 2, 3, 4].map((n) => stashed(`treadmill-t${n}`, 'run', 2, 3, 0.92, { runner3d: true, runner: RUNNER })),
+  ...[1, 2, 3, 4].map((n) => stashed(`treadmill-t${n}`, 'run', 2, 3, 0.92, { runner3d: true, runner: RUNNER, opens: 'drill' })),
   ...[1, 2, 3].map((n) => stashed(`coffee-machine-t${n}`, 'locker', 2, 2, 0.82)),
   // what the daily stall sells (stall.js): yours once bought
   ...STALL_ITEMS.map((s) => ({

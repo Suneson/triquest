@@ -29,7 +29,7 @@ const JOBS = {
   },
   env: {
     aspect: '2:3',
-    refs: [`${ROOT}icons/Pixelart/NEW/GYM/level-10.webp`],
+    refs: [`${ROOT}icons/Pixelart/NEW/GYM/big-10.webp`],
     prompt: 'Stylised 3D isometric mobile strategy game environment matching the camera angle of Clash of Clans: lush green stylized grass terrain surrounding a recessed foundation plot, stylized blue sky with soft fluffy cartoon clouds at the upper perimeter, and dark earth/dirt cutaway layers along the front edges. The terrain lines, ground plane, and perspective slopes must match a true 30-degree orthographic isometric angle to align with an architectural gym base. The reference image is the building that will stand on the plot: match its camera angle exactly, make the empty foundation plot a diamond centred horizontally and slightly below the middle of the image, about three quarters of the image wide, and leave it empty. The image is a tall portrait: grass all around the plot, sky with clouds across the top, the dirt cutaway at the bottom. Solid, vibrant colors, soft ambient shadows, no buildings, no characters, no text.',
   },
 };

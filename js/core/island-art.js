@@ -132,9 +132,9 @@ export const ISLAND_ART = {
   "park": {
    "src": "icons/Island/park.webp",
    "x": 5405.9,
-   "y": 1544.1,
+   "y": 1679.3,
    "w": 2151.7,
-   "h": 1224.2
+   "h": 1089.6
   },
   "arena": {
    "src": "icons/Island/arena.webp",
@@ -209,9 +209,9 @@ export const ISLAND_ART = {
   "stadium": {
    "src": "icons/Island/stadium.webp",
    "x": 6795.0,
-   "y": 2204.0,
+   "y": 2319.5,
    "w": 2155.1,
-   "h": 1246.1
+   "h": 1122.4
   },
   "box": {
    "src": "icons/Island/box.webp",

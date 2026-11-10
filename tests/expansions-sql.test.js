@@ -114,9 +114,9 @@ test('the expanded locker fills its roof inside the railing, centred on it, the 
   assert.equal(ROOM_GEOMETRY['locker-32'].cols, 32); assert.equal(ROOM_GEOMETRY['locker-32'].limit, undefined);
   const width = (g) => roomPctToWorld(g, ROOM_GEOMETRY[g].right[0], 0, env)[0] - roomPctToWorld(g, ROOM_GEOMETRY[g].left[0], 0, env)[0];
   const slab = env.plot.right[0] - env.plot.left[0];
-  // the 8 × 8 floor takes half the slab, the big floor most of it
+  // the 8 × 8 floor takes half the slab, the big floor most of it (like the other four 32 × 32 rooms)
   assert.ok(Math.abs(width(g8) / slab - 0.5) < 1e-9);
-  assert.ok(width(g16) / slab > 0.8 && width(g16) / slab < 0.86, `${width(g16) / slab}`);
+  assert.ok(width(g16) / slab > 0.8 && width(g16) / slab < 0.93, `${width(g16) / slab}`);
   // both floors centred on the slab
   const mid = (g) => (roomPctToWorld(g, ROOM_GEOMETRY[g].right[0], 0, env)[0] + roomPctToWorld(g, ROOM_GEOMETRY[g].left[0], 0, env)[0]) / 2;
   assert.ok(Math.abs(mid(g16) - mid(g8)) < 1e-6);

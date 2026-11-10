@@ -44,11 +44,11 @@ export function nextExpansion(rows, room, allow32 = true) {
   return null;
 }
 
-/** The big room's picture for a room that has one (all 32 × 32 of it, or taped off). */
-export const EXPANDED_ART = {
-  locker: 'icons/Pixelart/NEW/LOCKER/model-32.webp',
-  gym: ROOM32.gym.src, bike: ROOM32.bike.src, run: ROOM32.run.src, pool: ROOM32.pool.src,
-};
+/** The big room's picture for a room that has one (all 32 × 32 of it, or taped off), at level 10. */
+export const EXPANDED_ART = Object.fromEntries(Object.entries(ROOM32).map(([room, r]) => [room, r.src]));
+
+/** The same big room at a level (1–10): tools/cut-rooms-32.py cuts all ten to one frame. */
+export const bigArt = (room, level) => EXPANDED_ART[room]?.replace(/big-10\.webp$/, `big-${Math.max(1, Math.min(10, level || 1))}.webp`);
 
 /**
  * Rooms that show their big picture from the start, taped off to the 8 × 8 in its back corner

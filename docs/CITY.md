@@ -239,11 +239,13 @@ The parcel bubble sits on a small layer of its own over the 3D canvas, `.dg-fron
 
 ## The island's stadium and construction box
 
-Both are cut by `tools/island-extras.py`. While a club, pool or market is being rebuilt, one picture of a giant MOSKE box (`icons/Island/box.webp`) stands on its plot in place of the ruin, with the timer over it. The pool, the Mall and the market stand in front of the base's collectors, so they're drawn over them.
+Both are cut by `tools/island-extras.py`. Its `level` command stretches every plot's picture so its front kerbs lie on the ground's slope, and `despill` takes out green screen left along outlines and in glass (`despill()` in `tools/cut-island.py`, which new cuts get anyway). While a club, pool or market is being rebuilt, one picture of a giant MOSKE box (`icons/Island/box.webp`) stands on its plot in place of the ruin, with the timer over it. The pool, the Mall and the market stand in front of the base's collectors, so they're drawn over them.
 
 ## Previewing the 32 x 32 rooms
 
-Only level 10 exists so far, so these rooms stay hidden from players. Open the app with `?rooms32=1` to see them on that device, and `?rooms32=0` to turn them off. Admins can also buy the real upgrade for any room from the Expand window. `tools/cut-rooms-32.py` cuts them and writes `js/core/room32-art.js`.
+All five rooms have all ten levels (`icons/Pixelart/NEW/<ROOM>/big-1.webp` to `big-10.webp`), and an expanded or taped room shows the picture for its own level (`bigArt()` in `js/core/expansions.js`). The locker uses the same set; its old `model-32.webp` is no longer used. They still stay hidden from players until the expansions go live. Open the app with `?rooms32=1` to see them on that device, and `?rooms32=0` to turn them off. Admins can also buy the real upgrade for any room from the Expand window.
+
+`tools/cut-rooms-32.py` cuts them and writes `js/core/room32-art.js`. Level 10 sets the frame and the floor corners. Levels 1 to 9 come from the x2 upscales in each room's `upscaled/` folder. Their frames came out at slightly different shapes, so each one is fitted onto level 10's outline before it's cut, and one set of floor corners works for every level. The key also removes the green screen in shadow under a room's base and the green-tinted light along its walls.
 
 ## Editing the lobby
 

@@ -4,105 +4,105 @@ export const ROOM32 = {
     "src": "icons/Pixelart/NEW/LOCKER/big-10.webp",
     "size": [
       3400,
-      2040
+      2037
     ],
     "back": [
-      49.81,
-      18.58
+      49.8,
+      18.5
     ],
     "right": [
-      96.75,
-      56.91
+      96.81,
+      56.94
     ],
     "left": [
-      2.87,
-      56.91
+      2.8,
+      56.94
     ],
-    "share": 0.873,
+    "share": 0.8743,
     "blocked": []
   },
   "gym": {
     "src": "icons/Pixelart/NEW/GYM/big-10.webp",
     "size": [
       3400,
-      2039
+      2038
     ],
     "back": [
-      50.06,
-      19.77
+      50.05,
+      19.72
     ],
     "right": [
-      99.05,
-      58.42
+      99.13,
+      58.46
     ],
     "left": [
-      1.02,
-      58.42
+      0.92,
+      58.46
     ],
-    "share": 0.9116,
+    "share": 0.9133,
     "blocked": []
   },
   "bike": {
     "src": "icons/Pixelart/NEW/BIKE/big-10.webp",
     "size": [
       3400,
-      2042
+      2041
     ],
     "back": [
-      50.07,
-      20.07
+      50.06,
+      20.03
     ],
     "right": [
-      98.82,
-      58.02
+      98.86,
+      58.05
     ],
     "left": [
-      1.02,
-      58.02
+      0.95,
+      58.05
     ],
-    "share": 0.9095,
+    "share": 0.9105,
     "blocked": []
   },
   "run": {
     "src": "icons/Pixelart/NEW/RUN/big-10.webp",
     "size": [
       3400,
-      2057
+      2056
     ],
     "back": [
       49.79,
-      18.88
+      18.82
     ],
     "right": [
-      99.25,
-      58.1
+      99.32,
+      58.12
     ],
     "left": [
-      0.8,
-      57.67
+      0.74,
+      57.68
     ],
-    "share": 0.9157,
+    "share": 0.9168,
     "blocked": []
   },
   "pool": {
     "src": "icons/Pixelart/NEW/POOL/big-10.webp",
     "size": [
       3400,
-      2051
+      2046
     ],
     "back": [
-      50.24,
-      20.09
+      50.29,
+      19.92
     ],
     "right": [
-      99.2,
-      58.59
+      99.38,
+      58.62
     ],
     "left": [
-      1.02,
-      58.42
+      0.94,
+      58.45
     ],
-    "share": 0.913,
+    "share": 0.9155,
     "blocked": [
       [
         22,

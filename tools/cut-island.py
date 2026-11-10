@@ -8,6 +8,7 @@ corners (the paintings don't all sit at exactly the same size). The stadium and 
 box are tools/island-extras.py's: they're kept as they are.
 """
 import json, os, sys
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 Image.MAX_IMAGE_PIXELS = None
@@ -59,7 +60,29 @@ def key(path):
     alpha = 1 - np.clip((s - 125) / 70, 0, 1)
     soft = alpha < 0.995
     g2 = np.where(soft, np.minimum(g, np.maximum(r, b) + 6), g)
-    return Image.fromarray(np.dstack([r, g2, b, alpha * 255]).clip(0, 255).astype(np.uint8), 'RGBA')
+    return despill(Image.fromarray(np.dstack([r, g2, b, alpha * 255]).clip(0, 255).astype(np.uint8), 'RGBA'))
+
+
+def despill(im):
+    """Take out the green screen that's left: a tint along the outline, and green seen through glass.
+    Real grass and leaves are darker and more yellow, so they stay."""
+    a = np.asarray(im).astype(np.float32)
+    r, g, b, al = a[..., 0], a[..., 1], a[..., 2], a[..., 3]
+    hsv = cv2.cvtColor(a[..., :3].clip(0, 255).astype(np.uint8), cv2.COLOR_RGB2HSV).astype(np.float32)
+    hue, sat, val = hsv[..., 0] * 2, hsv[..., 1], hsv[..., 2]
+    over = g - np.maximum(r, b)
+    solid = (al > 128).astype(np.uint8)
+    rim = (solid - cv2.erode(solid, np.ones((9, 9), np.uint8))) > 0
+    edge = rim & (over > 12) & (hue >= 100)
+    glass = (over >= 40) & (hue >= 114) & (sat > 90)
+    # pale green: glass, banners and fences tinted by the screen behind them (grass is far stronger)
+    tint = (over > 12) & (hue >= 95) & (sat < 160)
+    spill = (edge | glass | tint) & (al > 0)
+    g = np.where(spill, np.maximum(r, b) + np.minimum(over, 4), g)
+    # the brightest of it was mostly screen: let what's behind show through
+    see = glass & (val > 110) & (over > 55)
+    al = np.where(see, al * .55, al)
+    return Image.fromarray(np.dstack([r, g, b, al]).clip(0, 255).astype(np.uint8), 'RGBA')
 
 
 def save(im, name, quality=82):
@@ -92,6 +115,28 @@ def fit_plot(name, plot, src, stored):
         c = Image.fromarray(p.clip(0, 255).astype(np.uint8), 'RGBA')
     save(c, name)
     return {'x': round(left + box[0] * k, 1), 'y': round(top + box[1] * k, 1), 'w': round(w, 1), 'h': round(h, 1)}
+
+
+def level(piece, plot):
+    """Some paintings' plots slope a little flatter or steeper than the ground's. Stretch the piece
+    up or down so its two front kerbs lie on the ground's, front corner on front corner."""
+    im = Image.open(os.path.join(REPO, piece['src'])).convert('RGBA')
+    k, ky = im.width / piece['w'], im.height / piece['h']
+    a = np.asarray(im.getchannel('A')) > 128
+    px, py = centre(plot)
+    hw = 2 * UNIT
+    xs, ys = [], []
+    for wx in np.linspace(px - .88 * hw, px + .88 * hw, 61):
+        col = int(round((wx - piece['x']) * k))
+        rows = np.where(a[:, col])[0] if 0 <= col < a.shape[1] else []
+        if abs(wx - px) > .12 * hw and len(rows):
+            xs.append(abs(wx - px)); ys.append(piece['y'] + rows[-1] / ky)
+    slope, front = np.polyfit(xs, ys, 1)            # the kerb's foot: front + slope * distance from the centre
+    want = py + 2 * SLOPE * UNIT + KERB
+    e = SLOPE / -slope
+    if abs(front - want) < 3 and abs(e - 1) < .005:
+        return piece
+    return {**piece, 'y': round(want + e * (piece['y'] - front), 1), 'h': round(piece['h'] * e, 1)}
 
 
 def ground(src):
@@ -131,6 +176,7 @@ def main():
         kept = json.loads((t := f.read())[t.index('{'):t.rindex('}') + 1])['pieces']
     os.makedirs(OUT, exist_ok=True)
     pieces = {name: {'src': f'icons/Island/{name}.webp', **fit_plot(name, plot, os.path.join(up, f), s)} for name, (plot, f, s) in ART.items()}
+    pieces = {name: level(p, ART[name][0]) for name, p in pieces.items()}
     pieces.update({k: kept[k] for k in ('stadium', 'box')})
     pl = {p: [round(v, 1) for v in centre(p)] for p in PLOTS}
     data = {'world': {'w': WORLD[0], 'h': WORLD[1]}, 'tiles': ground(isle), 'plots': pl, 'pieces': pieces,

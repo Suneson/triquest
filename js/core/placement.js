@@ -42,30 +42,23 @@ export const ROOM_GEOMETRY = {
   run: floor([51, 45], [96, 70], [5, 70]),
   'locker-square': floor([50, 37], [97, 63], [3, 63]),
   'locker-landscape': floor([69, 30], [98, 54], [2, 71], 8, 16),
-  // the expanded locker room: 32 × 32, made out of its 16 × 16 model by tools/room-32.py, with the
-  // floor's corners from that tool. It fills the roof: `share` is its floor's width as a share of
-  // the slab's, which puts the outside of its walls just under the railing's inner edge (86.1%)
-  'locker-32': { ...floor([50.08, 17.33], [99.48, 57.32], [0.67, 57.32], 32, 32), share: 0.845 },
 };
-// the same room before it's fully expanded: only the back corner can be used, with the rest of the
-// floor taped off, so you can see how much bigger it gets (`limit`: usable tiles). Tiles count from
-// the back corner, so nothing moves when the tape does
-ROOM_GEOMETRY['locker-16'] = { ...ROOM_GEOMETRY['locker-32'], limit: 16 };
-ROOM_GEOMETRY['locker-16-tape'] = { ...ROOM_GEOMETRY['locker-32'], limit: 8 };
 
 /** Art size of each room shape (px of the exported WebP), for laying the compound out. */
 export const ROOM_SIZE = {
   gym: [1100, 1052], pool: [1100, 991], bike: [1100, 1051], run: [1100, 1115],
-  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677], 'locker-32': [3400, 2053], 'locker-16': [3400, 2053], 'locker-16-tape': [3400, 2053],
+  'locker-square': [1100, 995], 'locker-landscape': [2200, 1677],
 };
 
-// the new 32 × 32 rooms, one level so far: `-big` is the ?rooms32=1 preview, and the others are the
-// same three stages of expanding as the locker's (it keeps the picture it has)
+// the 32 × 32 rooms (tools/cut-rooms-32.py): every level's picture is cut to the same frame, so one
+// floor serves them all. `-big` is the ?rooms32=1 preview; `-32` the expanded room, and `-16` and
+// `-16-tape` the same picture before it's fully expanded, with only the back corner usable and the
+// rest taped off (`limit`: usable tiles). Tiles count from the back corner, so nothing moves when
+// the tape does. `share` is the floor's width as a share of the roof slab's.
 for (const [room, r] of Object.entries(ROOM32)) {
   const g = { ...floor(r.back, r.right, r.left, 32, 32, r.blocked), share: r.share };
   ROOM_GEOMETRY[`${room}-big`] = g;
   ROOM_SIZE[`${room}-big`] = r.size;
-  if (room === 'locker') continue;
   Object.assign(ROOM_GEOMETRY, { [`${room}-32`]: g, [`${room}-16`]: { ...g, limit: 16 }, [`${room}-16-tape`]: { ...g, limit: 8 } });
   Object.assign(ROOM_SIZE, { [`${room}-32`]: r.size, [`${room}-16`]: r.size, [`${room}-16-tape`]: r.size });
 }

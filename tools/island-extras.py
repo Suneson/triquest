@@ -2,6 +2,8 @@
 
     python tools/island-extras.py stadium              the whole stadium, from icons/City/plots/
     python tools/island-extras.py box <picture>        the construction box, on flat green
+    python tools/island-extras.py level                every plot's kerbs onto the ground's slope
+    python tools/island-extras.py despill              green screen left in the pieces cut before
 
 Both update js/core/island-art.js in place. The stadium's plot picture had its grass keyed out with
 the green screen, so its holes are filled from the old city's stadium while that is still on disk.
@@ -67,6 +69,7 @@ def stadium(data):
     cut.save(c.resize((round(w * .7), round(h * .7)), Image.LANCZOS), 'stadium')
     left = px - (x0 + x1) / 2 * k; up = py + 2 * cut.SLOPE * cut.UNIT + cut.KERB - bottom * k
     data['pieces']['stadium'] = {'src': 'icons/Island/stadium.webp', 'x': round(left + box[0] * k, 1), 'y': round(up + box[1] * k, 1), 'w': round(w, 1), 'h': round(h, 1)}
+    data['pieces']['stadium'] = cut.level(data['pieces']['stadium'], 'stadium')
     print(data['pieces']['stadium'])
 
 
@@ -86,6 +89,7 @@ def box(data, path):
     """One picture for every plot: stored by its offset from the plot's centre."""
     p = cut.fit_plot('box', 'market', path, .6)
     clean_edge(os.path.join(cut.OUT, 'box.webp'))
+    p = cut.level({'src': 'icons/Island/box.webp', **p}, 'market')
     cx, cy = cut.centre('market')
     data['pieces']['box'] = {'src': 'icons/Island/box.webp', 'dx': round(p['x'] - cx, 1), 'dy': round(p['y'] - cy, 1), 'w': p['w'], 'h': p['h']}
     print(data['pieces']['box'])
@@ -97,6 +101,24 @@ def main():
         stadium(data)
     elif sys.argv[1] == 'box':
         box(data, sys.argv[2])
+    elif sys.argv[1] == 'level':
+        # every plot's front kerbs onto the ground's
+        for name, piece in data['pieces'].items():
+            if name == 'box':
+                cx, cy = cut.centre('market')
+                p = cut.level({**piece, 'x': cx + piece['dx'], 'y': cy + piece['dy']}, 'market')
+                data['pieces']['box'] = {**piece, 'dy': round(p['y'] - cy, 1), 'h': p['h']}
+            else:
+                plot = 'stadium' if name == 'stadium' else cut.ART[name][0]
+                data['pieces'][name] = cut.level(piece, plot)
+            print(name, {k: v for k, v in data['pieces'][name].items() if k != 'src'})
+    elif sys.argv[1] == 'despill':
+        # the pieces cut before cut-island.py's despill(): clean them in place
+        srcs = [p['src'] for p in data['pieces'].values()] + ['icons/Island/storey.webp']
+        for src in srcs:
+            path = os.path.join(REPO, src)
+            cut.despill(Image.open(path).convert('RGBA')).save(path, quality=82, alpha_quality=88, method=6)
+            print('cleaned', src)
     write_art(head, data)
 
 

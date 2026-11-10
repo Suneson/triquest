@@ -23,7 +23,7 @@ import {
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF } from '../core/diorama.js';
-import { expandedSize, EXPANDED_ART, tapedRoom } from '../core/expansions.js';
+import { expandedSize, EXPANDED_ART, bigArt, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
 import { fitOf } from '../core/item-fit.js';
@@ -636,7 +636,7 @@ export function wireDiorama(root, ctx) {
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
-  const src = bigRoom(room)?.src || (expanded(room) || taped(room) ? EXPANDED_ART[room] : roomArt(room, levelOf(room, ctx)));
+  const src = bigRoom(room) || expanded(room) || taped(room) ? bigArt(room, levelOf(room, ctx)) : roomArt(room, levelOf(room, ctx));
   const showRoom = () => {
     artEl.className = `dg-room-art is-${room}`;
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;

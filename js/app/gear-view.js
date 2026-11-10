@@ -572,7 +572,7 @@ function cardInfo(btn, draw, stallBuy) {
 /** Open the shop: tab 'gear' (by discipline), 'base' (props), 'clothes' or 'fuel'. */
 export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {}) {
   let off = null;
-  const root = openLayer('shop-gear', { className: 'gear-layer', sheet: true, onClose: () => { off?.(); clearInterval(tick); } });
+  const root = openLayer('shop-gear', { className: 'gear-layer', instant: true, onClose: () => { off?.(); clearInterval(tick); } });
   let current = SLOTS[sport] ? sport : 'bike';
   let view = tab;
   let fresh = null;

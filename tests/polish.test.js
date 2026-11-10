@@ -29,10 +29,25 @@ test('the full picture is only asked for once the half-size one would look soft'
   assert.equal(needsFull(3000), true);
 });
 
-test('the shop, the inventory and the wardrobe open as sheets over the base', () => {
-  assert.match(read('js/app/gear-view.js'), /openLayer\('shop-gear', \{[^}]*sheet: true/);
+test('what opens from the base rises as a sheet; the shop is a place of its own', () => {
   assert.match(read('js/app/gear-view.js'), /openLayer\('inventory', \{[^}]*sheet: true/);
   assert.match(read('js/app/wardrobe-view.js'), /openLayer\('wardrobe', \{[^}]*sheet: true/);
+  assert.match(read('js/app/feats-view.js'), /openLayer\('trophy-case', \{[^}]*sheet: true/);
+  assert.match(read('js/app/profile-game.js'), /openLayer\('fitness', \{ sheet: true \}\)/);
+  assert.doesNotMatch(read('js/app/gear-view.js'), /openLayer\('shop-gear', \{[^}]*sheet: true/);
+});
+
+test('a full screen closes from a button at its foot, not an arrow in the corner', async () => {
+  globalThis.localStorage ??= { getItem: () => null, setItem() {} };
+  const { sheetHead } = await import('../js/app/sheet.js');
+  const full = sheetHead({ title: 'Trophies', lead: 'back' });
+  assert.match(full, /class="sh-close" data-layer-close/);
+  assert.doesNotMatch(full, /class="sh-lead"/);
+  // a partial sheet keeps its cross, a thread its arrow
+  assert.match(sheetHead({ title: 'Settings' }), /class="sh-lead" data-layer-close/);
+  const thread = sheetHead({ title: 'Kenji', lead: 'back', arrow: true });
+  assert.match(thread, /class="sh-lead"/);
+  assert.doesNotMatch(thread, /sh-close/);
 });
 
 test('the service worker caches what the page links, and serves pictures from the cache', () => {

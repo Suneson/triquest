@@ -109,7 +109,7 @@ export function settleText({ challenge, result, row }) {
 
 export function openChallenges() {
   let off = null;
-  const root = openLayer('challenges', { className: 'gear-layer', instant: true, onClose: () => off?.() });
+  const root = openLayer('challenges', { className: 'gear-layer', sheet: true, onClose: () => off?.() });
   const draw = () => {
     const st = challengesState();
     const today = todayISO();

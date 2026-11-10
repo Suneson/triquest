@@ -208,7 +208,7 @@ function drawThread(root, uid) {
   const draft = ui.draft.get(uid) || '';
   root.innerHTML = `
     <div class="ch-head">${sheetHead({
-      lead: 'back', label: t('chat.backToChats'), closeAttr: 'data-ch="back"',
+      lead: 'back', arrow: true, label: t('chat.backToChats'), closeAttr: 'data-ch="back"',
       title: `<button class="ch-who" data-ch="profile" aria-label="${esc(t('chat.viewProfileOf', { name: f?.display_name || t('chat.friend') }))}">
         ${avatar(f)}<span class="ch-txt"><b>${esc(f?.display_name || t('chat.friend'))}</b><small class="muted">${esc(handle(f))}</small></span></button>`,
       action: `<label class="icon-btn tiny gl-more" title="${t('chat.more')}">${svg('more')}

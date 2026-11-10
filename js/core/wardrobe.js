@@ -3,18 +3,17 @@
 // A look is: a class (endurance or hybrid, for the stats), a body (male or female, a look only),
 // a skin tone, an eye colour, one outfit, and one accessory per slot. Outfits are complete sets
 // (BUILD-PLAN.md section 2); helmets and shoes give buffs, hats, glasses and watches are looks only.
-// Only the bodies and the tracksuit have models so far: everything else is listed so you can see
-// what's coming, and can't be worn yet.
+// There is one male body and one female body (BUILD-PLAN.md section 2, 10 November 2026): the
+// class changes your stats, never your shape. Only the two bodies have models so far: every outfit
+// is listed so you can see what's coming, and can't be worn until its two models are in.
 
 export const CLASSES = ['endurance', 'hybrid'];
 export const BODY_LOOKS = ['male', 'female'];
 
-/** The model each class and body wears under its clothes (tools/prep-bodies.mjs). */
+/** The two bodies (tools/prep-bodies.mjs): the same for both classes. */
 export const BODY_MODELS = {
-  'endurance-male': 'models/bodies/endurance.glb',
-  'hybrid-male': 'models/bodies/hybrid.glb',
-  'endurance-female': 'models/bodies/female.glb',
-  'hybrid-female': 'models/bodies/female.glb',
+  male: 'models/bodies/male.glb',
+  female: 'models/bodies/female.glb',
 };
 
 /** Skin tones, lightest first. The bodies are painted in the first, the default. */
@@ -39,11 +38,11 @@ export const EYE_COLOURS = [
 
 /**
  * Outfits (BUILD-PLAN.md section 8). `for`: the classes that can wear it. `models`: the made ones,
- * by class and body. `base` is the plain body: everyone has it.
+ * by body (`male`, `female`). `base` is the plain body: everyone has it.
  */
 export const OUTFITS = [
   { id: 'base', kind: 'starter', for: CLASSES, models: {} },
-  { id: 'tracksuit', kind: 'shop', for: CLASSES, models: { 'hybrid-male': 'models/bodies/hybrid-tracksuit.glb' } },
+  { id: 'tracksuit', kind: 'shop', for: CLASSES, models: {} },
   { id: 'starter-tee', kind: 'shop', for: CLASSES, models: {} },
   { id: 'navy-training', kind: 'shop', for: CLASSES, models: {} },
   { id: 'white-gold', kind: 'shop', for: CLASSES, models: {} },
@@ -75,10 +74,7 @@ export const SLOTS = [
 /** Accessory models made so far, by item id. None yet. */
 export const ACCESSORY_MODELS = {};
 
-/**
- * What every player has before buying anything: the plain body, the tracksuit (for now the one
- * outfit with a model, so the wardrobe has something to try on) and the free trainers.
- */
+/** What every player has before buying anything: the plain body, the tracksuit and the free trainers. */
 export const STARTER = ['base', 'tracksuit', 'shoe-starter'];
 
 export const DEFAULT_LOOK = Object.freeze({
@@ -92,12 +88,12 @@ export const slotOf = (item) => SLOTS.find((s) => s.items.includes(item))?.id ||
 /** Do you have it? `owned`: the item ids in your inventory. */
 export const ownsItem = (id, owned = []) => STARTER.includes(id) || owned.includes(id);
 
-/** The model for this outfit on this class and body, or null when it isn't made yet. */
+/** The model for this outfit on this body, or null when it isn't made yet. */
 export function outfitModel(outfitId, look) {
   const o = outfitById(outfitId);
   if (!o) return null;
-  if (o.id === 'base') return BODY_MODELS[`${look.cls}-${look.body}`];
-  return o.models[`${look.cls}-${look.body}`] || null;
+  if (o.id === 'base') return BODY_MODELS[look.body];
+  return o.models[look.body] || null;
 }
 
 /**
@@ -123,7 +119,7 @@ export function accessoryState(item, owned = []) {
 
 /** What the 3D view loads: the outfit's model if it can be worn, else the plain body. */
 export const modelFor = (look, owned = []) =>
-  (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[`${look.cls}-${look.body}`]);
+  (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[look.body]);
 
 /** A saved look, checked: anything unknown or not allowed goes back to the default. */
 export function normaliseLook(raw, owned = []) {

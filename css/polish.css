@@ -44,8 +44,41 @@
   border-radius: 16px 16px 0 0; background: linear-gradient(#4E8FEA, #2560C4);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .45), 0 -3px 10px rgba(4, 10, 28, .4); }
 .layer.is-sheet::after { content: ''; position: absolute; left: 50%; top: calc(var(--sheet-gap) - 20px); width: 12px; height: 12px; margin-left: -6px; pointer-events: none;
-  border-right: 4px solid #fff; border-bottom: 4px solid #fff; border-radius: 2px; rotate: 45deg; animation: handle-nod 2.6s ease-in-out infinite; }
+  border-right: 4px solid #fff; border-bottom: 4px solid #fff; border-radius: 2px; rotate: 45deg; }
 @keyframes handle-nod { 0%, 70%, 100% { translate: 0 0; } 82% { translate: 0 4px; } 92% { translate: 0 -1px; } }
+/* the handle isn't part of the sheet's arrival: it pops up on the edge once the sheet has landed,
+   so the eye catches it and learns the sheet pulls down */
+.layer.is-sheet::before { transform-origin: 50% 100%; animation: handle-pop 360ms var(--spring) 340ms both; }
+.layer.is-sheet::after { animation: handle-in 200ms ease-out 520ms both, handle-nod 2.6s ease-in-out 900ms infinite; }
+@keyframes handle-pop { from { transform: translateY(100%) scaleX(.6); opacity: 0; } }
+@keyframes handle-in { from { opacity: 0; } }
+
+/* ---- 2b. Close, at the foot of every full screen and sheet (js/app/sheet.js) -------------------- */
+/* Where the thumb is. It arrives a moment after its screen and sits over the page's last lines,
+   which get the room to scroll clear of it. */
+.sh-close { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 14px); z-index: 120; translate: -50% 0; margin: 0 !important;
+  min-width: 148px; min-height: 52px; padding: 0 30px; border: 0; border-radius: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(#8CC6FF, #4A98F0 52%, #2F78DC);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 -5px 0 rgba(8, 40, 110, .28), 0 0 0 3px #0B1E48, 0 6px 0 #0B1E48, 0 12px 22px rgba(4, 10, 28, .5);
+  animation: close-in 380ms var(--spring) 260ms both; }
+.sh-close span { display: block; color: #fff; font: 900 21px/1 var(--font-header); font-variation-settings: 'wght' 900; letter-spacing: .01em;
+  -webkit-text-stroke: 4px #0B1E48; paint-order: stroke fill; text-shadow: 0 3px 0 #0B1E48; }
+/* its one glint, top right */
+.sh-close::after { content: ''; position: absolute; right: 9px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .85); }
+.sh-close:active { translate: -50% 3px; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .45), inset 0 -3px 0 rgba(8, 40, 110, .28), 0 0 0 3px #0B1E48, 0 3px 0 #0B1E48; }
+.sh-close:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+@keyframes close-in { from { translate: -50% 90px; opacity: 0; } }
+/* over a pinned currency bar (the shop, the inventory) it stands on the bar's top edge */
+.layer:has(> .sc-wallet) .sh-close { bottom: calc(var(--safe-b) + 76px); }
+/* room for the last lines to scroll clear of it */
+.fh-screen:has(> .sh-close) { padding-bottom: calc(var(--safe-b) + 104px); }
+.layer.is-sheet > .fh-screen:has(> .sh-close) { padding-bottom: calc(var(--safe-b) + 104px + var(--sheet-over)); }
+.layer > .gw-screen.is-shop:has(> .sh-close) { padding-bottom: calc(var(--safe-b) + 166px); }
+.layer.is-sheet > .gw-screen.is-shop:has(> .sh-close) { padding-bottom: calc(var(--safe-b) + 166px + var(--sheet-over)); }
+.layer.is-sheet > .gw-screen.is-shop.wr-screen { padding-bottom: var(--sheet-over); }
+.wr-screen .wr-panel { padding-bottom: calc(var(--safe-b) + 96px); }
+/* with no arrow, the title starts at the edge */
+.sh-head--foot { padding-left: 18px; }
 /* the wardrobe's stage gives up some height to the base above it */
 .layer.is-sheet .wr-stage { height: min(36vh, 330px); }
 /* what's in a sheet arrives a beat after it: a short cascade, on opening only */
@@ -232,11 +265,17 @@ body:is(.jh-mode, .chat-mode, .shop-mode, .lb-mode) .sync-prompt .btn { --b: tra
 
 /* ---- reduced motion: everything above holds still --------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .layer > .modal, .layer.is-leaving > *, .layer.is-sheet::after, .layer.is-entering *, .wr-panel.is-in > *, .tab.active .tab-img, .tab-badge,
+  .layer > .modal, .layer.is-leaving > *, .layer.is-sheet::after, .layer.is-sheet::before, .sh-close, .layer.is-entering *, .wr-panel.is-in > *, .tab.active .tab-img, .tab-badge,
   .dg-orb .dg-orb-ico > img, .dg-orb.is-gold::after, .dg-lift-btn.is-on::after, .roll.rolling, .layer > .ob-screen .ob-grid > * { animation: none !important; }
   .toast { transition: opacity 120ms linear; transform: none; }
 }
 body.rm :is(.layer > .modal, .layer.is-leaving > *, .layer.is-entering *, .wr-panel.is-in > *, .tab.active .tab-img, .tab-badge,
   .dg-orb .dg-orb-ico > img, .roll.rolling, .layer > .ob-screen .ob-grid > *) { animation: none !important; }
-body.rm .layer.is-sheet::after, body.rm .dg-orb.is-gold::after, body.rm .dg-lift-btn.is-on::after { animation: none !important; }
+body.rm .layer.is-sheet::after, body.rm .layer.is-sheet::before, body.rm .sh-close, body.rm .dg-orb.is-gold::after, body.rm .dg-lift-btn.is-on::after { animation: none !important; }
 body.rm .toast { transition: opacity 120ms linear; transform: none; }
+
+/* a toast over an open screen clears the Close button and the currency bar */
+body.has-layer .toast-wrap { bottom: calc(var(--safe-b) + 150px); }
+/* another athlete's level card, on the quilt */
+.layer > .fh-screen:not(.is-shop) .pg-hud { --b: transparent; --e: transparent; border-radius: 16px; background: linear-gradient(#2A3E6E, #16264D); color: #fff;
+  box-shadow: 0 0 0 2px rgba(169, 211, 255, .5), 0 6px 14px rgba(8, 25, 60, .35); }

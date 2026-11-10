@@ -1,0 +1,72 @@
+/* wardrobe.css: the wardrobe (js/app/wardrobe-view.js). It wears the shop's navy (css/shop.css,
+   .gw-screen.is-shop): the character's stage on top, three tabs, and a panel that scrolls on its own
+   so the character stays in view while you pick. */
+
+.gw-screen.is-shop.wr-screen { display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0; }
+.wr-screen > .sh-head { flex: none; margin-bottom: 0; }
+
+/* the stage: a soft spotlight on navy, the character standing on its shadow */
+.wr-stage { position: relative; flex: none; height: min(46vh, 420px); margin: 0 12px; border-radius: 20px; overflow: hidden;
+  background: radial-gradient(ellipse 60% 55% at 50% 42%, #33508F 0%, #1E3263 55%, #0B1630 100%);
+  box-shadow: inset 0 -30px 40px -20px rgba(5, 10, 25, .7), inset 0 0 0 2px rgba(110, 168, 255, .18); }
+.wr-stage::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: 7%; height: 12%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(110, 168, 255, .22), transparent); pointer-events: none; }
+.wr-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; z-index: 1; }
+.wr-canvas:active { cursor: grabbing; }
+.wr-stage-msg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center;
+  color: var(--text-white); opacity: .8; font-size: 15px; }
+.wr-stage-msg[hidden] { display: none; }
+.wr-hint { position: absolute; z-index: 2; left: 50%; bottom: 10px; translate: -50% 0; padding: 4px 10px; border-radius: 9999px;
+  background: rgba(5, 12, 30, .55); color: var(--text-white); font-size: 12px; opacity: .85; pointer-events: none; white-space: nowrap; }
+
+/* three tabs, a pill each */
+.wr-tabs { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 12px 0; padding: 4px;
+  border-radius: 9999px; background: var(--bg-surface-deep); }
+.wr-tab { min-height: 44px; border: 0; border-radius: 9999px; background: transparent; color: rgba(255, 255, 255, .72);
+  font: 700 15px/1 var(--font-header); cursor: pointer; }
+.wr-tab.is-on { background: var(--gold-primary); color: #16264D; box-shadow: 0 2px 0 var(--gold-shadow); }
+.wr-tab:focus-visible { outline: 3px solid var(--brand-blue-sky); outline-offset: 2px; }
+
+/* the panel: everything below the tabs, scrolling */
+.wr-panel { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 12px calc(24px + var(--safe-b, 0px)); }
+.wr-sec + .wr-sec { margin-top: 18px; }
+.wr-sec h3 { display: flex; align-items: center; gap: 8px; margin: 0 4px 10px; color: var(--text-white); font: 700 16px/1.2 var(--font-header); }
+.wr-note { margin: 6px 4px 12px; color: rgba(255, 255, 255, .7); font-size: 13px; line-height: 1.4; }
+.wr-buff { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 9999px; background: rgba(242, 193, 78, .16);
+  color: var(--gold-primary); font: 700 11px/1.4 var(--font-reading); text-transform: uppercase; letter-spacing: .04em; }
+.wr-buff .ic { width: 12px; height: 12px; }
+
+.wr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.wr-chip { min-height: 44px; padding: 0 18px; border-radius: 9999px; border: 2px solid rgba(110, 168, 255, .35);
+  background: var(--bg-surface-deep); color: var(--text-white); font: 700 15px/1 var(--font-header); cursor: pointer; }
+.wr-chip.is-on { border-color: var(--gold-primary); background: #23396E; box-shadow: 0 0 0 2px rgba(242, 193, 78, .25); }
+
+.wr-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 10px; }
+.wr-swatch { aspect-ratio: 1; min-width: 44px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .18); background: var(--sw); cursor: pointer;
+  box-shadow: inset 0 -6px 10px rgba(0, 0, 0, .18), inset 0 4px 8px rgba(255, 255, 255, .25); }
+.wr-swatches.is-eyes .wr-swatch { background: radial-gradient(circle, #0B0B10 0 22%, var(--sw) 24% 62%, #F4F1EC 64%); }
+.wr-swatch.is-on { border-color: var(--gold-primary); box-shadow: 0 0 0 3px rgba(242, 193, 78, .35); }
+.wr-swatch:focus-visible, .wr-chip:focus-visible, .wr-card:focus-visible { outline: 3px solid var(--brand-blue-sky); outline-offset: 2px; }
+
+/* outfit and accessory cards */
+.wr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.wr-card { position: relative; display: grid; justify-items: center; align-content: start; gap: 4px; min-height: 132px; padding: 10px 6px 10px;
+  border-radius: 16px; border: 2px solid rgba(110, 168, 255, .22); background: linear-gradient(#22386A, #172A55); color: var(--text-white);
+  text-align: center; cursor: pointer; }
+.wr-card b { font: 700 13px/1.2 var(--font-header); }
+.wr-kit { width: 60px; height: 60px; color: rgba(255, 255, 255, .5); }
+.wr-card.is-on { border-color: var(--gold-primary); box-shadow: 0 0 0 2px rgba(242, 193, 78, .3); }
+.wr-card:is(.is-locked, .is-class, .is-soon) { cursor: default; }
+.wr-card:is(.is-locked, .is-class) .wr-kit { opacity: .45; filter: grayscale(.6); }
+.wr-card:is(.is-locked, .is-class) b { opacity: .75; }
+.wr-tag { padding: 1px 8px; border-radius: 9999px; font: 700 10px/1.6 var(--font-reading); text-transform: uppercase; letter-spacing: .04em;
+  background: rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .8); }
+.wr-tag.is-shop { background: rgba(242, 193, 78, .18); color: var(--gold-primary); }
+.wr-tag.is-blueprint { background: rgba(110, 168, 255, .18); color: var(--brand-blue-sky); }
+.wr-tag.is-earned { background: rgba(255, 140, 90, .18); color: #FFB08A; }
+.wr-state { display: inline-flex; align-items: center; gap: 3px; color: rgba(255, 255, 255, .65); font-size: 11px; line-height: 1.3; }
+.wr-state .ic { width: 12px; height: 12px; flex: none; }
+.wr-state.is-on { color: var(--gold-primary); font-weight: 700; }
+.wr-state.is-soon { color: var(--brand-blue-sky); }
+
+@media (min-height: 820px) { .wr-stage { height: min(50vh, 460px); } }

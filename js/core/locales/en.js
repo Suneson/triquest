@@ -3087,4 +3087,124 @@ Object.assign(en.cp.expand, {"tapeOn": "Admin: preview the taped 8 × 8", "tapeO
 en.gear.tab["stash"] = "Stash";
 Object.assign(en.gear, {"place": "Place", "placeAria": "Place {name} in this room", "invNoStash": "Nothing stashed. Tap an item in your base and press Stash.", "noRoomForIt": "No room for it here. Try another room, or stash something."});
 
+en.wardrobe = {
+  "title": "Wardrobe",
+  "loading": "Getting your athlete ready…",
+  "loadFailed": "Couldn't load your athlete. Check your connection and open the wardrobe again.",
+  "noGl": "This device can't show 3D, but you can still pick your look.",
+  "dragHint": "Drag to turn",
+  "tab": {
+    "look": "Look",
+    "outfits": "Outfits",
+    "gear": "Accessories"
+  },
+  "class": "Class",
+  "classNote": "Your class sets your stats. Some outfits are made for one class only.",
+  "body": "Body",
+  "skin": "Skin",
+  "eyes": "Eyes",
+  "cls": {
+    "endurance": "Endurance",
+    "hybrid": "Hybrid"
+  },
+  "bodies": {
+    "male": "Male",
+    "female": "Female"
+  },
+  "skins": {
+    "fair": "Fair",
+    "light": "Light",
+    "warm": "Warm",
+    "medium": "Medium",
+    "tan": "Tan",
+    "brown": "Brown",
+    "deep": "Deep",
+    "ebony": "Ebony"
+  },
+  "eyeColours": {
+    "brown": "Brown",
+    "hazel": "Hazel",
+    "amber": "Amber",
+    "green": "Green",
+    "blue": "Blue",
+    "grey": "Grey"
+  },
+  "outfitsNote": "Your outfits come first. Locked ones show how to get them.",
+  "kind": {
+    "starter": "Starter",
+    "shop": "Shop",
+    "blueprint": "Blueprint",
+    "earned": "Earned"
+  },
+  "how": {
+    "starter": "Everyone has it",
+    "shop": "Buy it in the shop",
+    "blueprint": "Collect the top and bottom",
+    "earned": "Win it in challenges and events"
+  },
+  "state": {
+    "wearing": "Wearing",
+    "soon": "Coming soon for this body",
+    "class": "{cls} only"
+  },
+  "none": "None",
+  "buff": "Buff",
+  "slot": {
+    "helmet": "Helmets",
+    "shoes": "Shoes",
+    "hat": "Hats",
+    "glasses": "Glasses",
+    "watch": "Watches"
+  },
+  "outfit": {
+    "base": "Base layer",
+    "tracksuit": "Tracksuit",
+    "starter-tee": "Starter tee",
+    "navy-training": "Navy training",
+    "white-gold": "White & gold",
+    "blue-half-zip": "Blue half-zip",
+    "sky-club": "Sky club",
+    "road-racer": "Road racer",
+    "distance": "Distance",
+    "iron-gym": "Iron gym",
+    "heavy-day": "Heavy day",
+    "aero-suit": "Aero suit",
+    "tri-pro": "Tri pro",
+    "storm-shell": "Storm shell",
+    "gold-line": "Gold line",
+    "marathon-elite": "Marathon elite",
+    "forge": "Forge",
+    "first-finisher": "First finisher",
+    "streak-keeper": "Streak keeper",
+    "clan-champion": "Clan champion"
+  },
+  "item": {
+    "helmet-road": "Road helmet",
+    "helmet-aero": "Aero helmet",
+    "helmet-blue": "Blue helmet",
+    "helmet-gold": "Gold helmet",
+    "shoe-starter": "Starter trainers",
+    "shoe-runner": "Road runners",
+    "shoe-racer": "Racers",
+    "shoe-trail": "Trail shoes",
+    "shoe-lifter": "Lifters",
+    "shoe-trainer": "Cross trainers",
+    "shoe-cycling": "Cycling shoes",
+    "shoe-gold": "Gold trainers",
+    "hat-cap-navy": "Navy cap",
+    "hat-cap-white": "White cap",
+    "hat-visor": "Visor",
+    "hat-beanie": "Beanie",
+    "hat-bucket": "Bucket hat",
+    "hat-gold": "Champion's cap",
+    "glasses-sport": "Sports glasses",
+    "glasses-blue": "Blue shield",
+    "glasses-gold": "Gold shield",
+    "glasses-casual": "Sunglasses",
+    "watch-basic": "Sports watch",
+    "watch-blue": "Blue watch",
+    "watch-gold": "Gold watch"
+  }
+};
+
 export default en;

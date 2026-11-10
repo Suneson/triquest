@@ -83,6 +83,12 @@ export function classifyDown(dx, dy, slop = SLOP) {
 /** Where the sheet sits for a finger `dy` from the start: it follows down, and only gives a little upwards. */
 export const sheetOffset = (dy) => (dy >= 0 ? dy : -Math.min(18, Math.sqrt(-dy) * 2));
 
+export const SHEET_DIM = 0.85;       // how much of the scrim's darkness goes as the sheet goes
+export const SPEED_MAX = 3;          // px per ms: a faster reading is a bad sample, not a faster finger
+
+/** The speed handed to the spring on release (px/ms, downwards positive), kept to what a hand can do. */
+export const releaseSpeed = (v) => (Number.isFinite(v) ? Math.max(-SPEED_MAX, Math.min(SPEED_MAX, v)) : 0);
+
 /** On release: does the sheet leave? `v` is the downward speed in px/ms. */
 export function sheetShouldClose(dy, height, v) {
   if (dy <= 0 || height <= 0) return false;

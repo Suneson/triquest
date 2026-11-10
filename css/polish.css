@@ -1,7 +1,12 @@
 /* polish.css — how the app moves, and one skin for the screens that still wore the pixel frame
    (docs/UI-POLISH.md). Loaded last, so it settles what the older sheets left open.
 
-   1. Motion tokens: smooth, quick, a little spring. No more stepped moves.
+   1. Motion tokens (js/core/spring.js holds the same numbers and the reasons):
+        - a tap, a toggle, a sheet let go: done in 150–300 ms, never more;
+        - what arrives eases out hard or rides an under-damped spring; what leaves eases in, in 100–180 ms;
+        - a squash starts from the foot of the thing, or from the finger;
+        - a drag keeps its speed when let go (nav.js, press.js).
+      Only what idles in a loop, and the rare celebration (a chest, a level), runs longer.
    2. Sheets: the shop, the inventory and the wardrobe rise over the base (js/app/nav.js).
    3. Touch: everything you can press gives under the finger and springs back (js/app/press.js).
    4. Idle: what you can tap is never quite still.
@@ -10,20 +15,37 @@
    Every animation here stops under reduced motion (the OS setting, or body.rm from the app's own). */
 
 :root {
-  --t-press: 90ms ease-out;
-  --t-ui: 180ms cubic-bezier(.2, .8, .2, 1);
-  --t-enter: 280ms cubic-bezier(.16, 1, .3, 1);
-  --t-fill: 600ms cubic-bezier(.2, .8, .2, 1);
-  --spring: cubic-bezier(.3, 1.5, .5, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);     /* arriving */
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);      /* leaving */
+  --t-press: 100ms var(--ease-out);
+  --t-ui: 160ms var(--ease-out);
+  --t-enter: 240ms var(--ease-out);
+  --t-exit: 160ms var(--ease-in);
+  --t-fill: 300ms var(--ease-out);
+  /* springs, as curves: stiffness 1000 damping 36 (pop, 11% over) and 1150 / 31 (press, 19% over).
+     Where linear() isn't understood, a bezier with one overshoot stands in. */
+  --spring-pop: cubic-bezier(.3, 1.45, .5, 1);
+  --spring-press: cubic-bezier(.3, 1.7, .5, 1);
+  --pop-ms: 270ms;
+  --press-ms: 260ms;
+  --spring: var(--spring-pop);
+  --stagger: 30ms;
   --sheet-gap: calc(var(--safe-t) + max(104px, 14vh));   /* how much of the base shows above a sheet */
   --sheet-over: 64px;                                     /* a sheet runs on below the screen, so a spring never shows a gap */
 }
 
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    --spring-pop: linear(0, 0.102, 0.326, 0.579, 0.8, 0.963, 1.062, 1.107, 1.112, 1.094, 1.067, 1.039, 1.016, 1, 0.991, 0.987, 0.988, 1);
+    --spring-press: linear(0, 0.126, 0.406, 0.713, 0.965, 1.126, 1.194, 1.19, 1.143, 1.082, 1.026, 0.986, 0.965, 0.961, 0.967, 0.979, 1);
+  }
+}
+
 /* ---- 1. layers come and go smoothly ------------------------------------------------------------- */
 .layer > .modal { animation: modal-up var(--t-enter); }
-.layer.is-leaving > .modal { animation: modal-down 170ms cubic-bezier(.4, 0, 1, 1) forwards; }
-.layer.is-leaving > .fh-screen, .layer.is-leaving > .ob-screen, .layer.is-leaving > .level-lightbox { animation: layer-out 170ms cubic-bezier(.4, 0, 1, 1) forwards; }
-.layer.is-leaving > .modal-backdrop { animation: scrim-out 170ms ease-in forwards; }
+.layer.is-leaving > .modal { animation: modal-down var(--t-exit) forwards; }
+.layer.is-leaving > .fh-screen, .layer.is-leaving > .ob-screen, .layer.is-leaving > .level-lightbox { animation: layer-out var(--t-exit) forwards; }
+.layer.is-leaving > .modal-backdrop { animation: scrim-out var(--t-exit) forwards; }
 .layer.is-instant > .modal, .layer.is-instant > .fh-screen, .layer.is-instant > .modal-backdrop { animation: none; }
 @keyframes modal-up { from { translate: 0 32%; opacity: 0; } }
 @keyframes modal-down { to { translate: 0 60%; opacity: 0; } }
@@ -39,35 +61,33 @@
 .layer.is-sheet > .gw-screen.is-shop { padding-bottom: calc(84px + var(--safe-b) + var(--sheet-over)); }
 .layer.is-sheet > .gw-screen.is-shop.wr-screen { padding-bottom: var(--sheet-over); }
 .layer.is-sheet > .fh-screen > .sh-head { padding-top: 10px; border-radius: 26px 26px 0 0; touch-action: none; }
-/* the handle: a tab on the sheet's top edge, its chevron pointing the way it goes */
-.layer.is-sheet::before { content: ''; position: absolute; left: 50%; top: calc(var(--sheet-gap) - 26px); width: 96px; height: 28px; translate: -50% 0; cursor: pointer;
-  border-radius: 16px 16px 0 0; background: linear-gradient(#4E8FEA, #2560C4);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .45), 0 -3px 10px rgba(4, 10, 28, .4); }
-.layer.is-sheet::after { content: ''; position: absolute; left: 50%; top: calc(var(--sheet-gap) - 20px); width: 12px; height: 12px; margin-left: -6px; pointer-events: none;
-  border-right: 4px solid #fff; border-bottom: 4px solid #fff; border-radius: 2px; rotate: 45deg; }
-@keyframes handle-nod { 0%, 70%, 100% { translate: 0 0; } 82% { translate: 0 4px; } 92% { translate: 0 -1px; } }
-/* the handle isn't part of the sheet's arrival: it pops up on the edge once the sheet has landed,
-   so the eye catches it and learns the sheet pulls down */
-.layer.is-sheet::before { transform-origin: 50% 100%; animation: handle-pop 360ms var(--spring) 340ms both; }
-.layer.is-sheet::after { animation: handle-in 200ms ease-out 520ms both, handle-nod 2.6s ease-in-out 900ms infinite; }
-@keyframes handle-pop { from { transform: translateY(100%) scaleX(.6); opacity: 0; } }
-@keyframes handle-in { from { opacity: 0; } }
+/* the handle: a tab that stands on the sheet's top edge, its arrow pointing the way the sheet goes
+   (icons/Pixelart/NEW/UI/sheet-handle.webp, tools/cut-ui-plates.py). It isn't part of the sheet's
+   arrival: it pops up from behind the edge once the sheet has landed, so the eye catches it and
+   learns the sheet pulls down. Then it nods now and then. */
+.layer.is-sheet::before { content: ''; position: absolute; left: 50%; top: calc(var(--sheet-gap) - 36px); width: 84px; height: 45px; translate: -50% 0; cursor: pointer;
+  background: url('../icons/Pixelart/NEW/UI/sheet-handle.webp') center / 100% 100% no-repeat; filter: drop-shadow(0 -3px 6px rgba(4, 10, 28, .45));
+  transform-origin: 50% 100%;
+  animation: handle-pop var(--pop-ms) var(--spring-pop) 300ms both, handle-nod 2.6s ease-in-out 900ms infinite; }
+@keyframes handle-pop { from { transform: translateY(80%) scale(1.15, .6); opacity: 0; } }
+@keyframes handle-nod { 0%, 70%, 100% { translate: -50% 0; } 82% { translate: -50% 4px; } 92% { translate: -50% -1px; } }
 
 /* ---- 2b. Close, at the foot of every full screen and sheet (js/app/sheet.js) -------------------- */
 /* Where the thumb is. It arrives a moment after its screen and sits over the page's last lines,
    which get the room to scroll clear of it. */
-.sh-close { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 14px); z-index: 120; translate: -50% 0; margin: 0 !important;
-  min-width: 148px; min-height: 52px; padding: 0 30px; border: 0; border-radius: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent;
-  background: linear-gradient(#8CC6FF, #4A98F0 52%, #2F78DC);
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 -5px 0 rgba(8, 40, 110, .28), 0 0 0 3px #0B1E48, 0 6px 0 #0B1E48, 0 12px 22px rgba(4, 10, 28, .5);
-  animation: close-in 380ms var(--spring) 260ms both; }
-.sh-close span { display: block; color: #fff; font: 900 21px/1 var(--font-header); font-variation-settings: 'wght' 900; letter-spacing: .01em;
+.sh-close { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 12px); z-index: 120; translate: -50% 0; margin: 0 !important;
+  width: 168px; height: 80px; padding: 0 0 12px; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  background: url('../icons/Pixelart/NEW/UI/close-plate.webp') center / 100% 100% no-repeat; filter: drop-shadow(0 8px 10px rgba(4, 10, 28, .45));
+  transform-origin: 50% 100%;
+  animation: close-in var(--pop-ms) var(--spring-pop) 180ms both; }
+.sh-close span { display: block; color: #fff; font: 900 23px/1 var(--font-header); font-variation-settings: 'wght' 900; letter-spacing: .01em;
   -webkit-text-stroke: 4px #0B1E48; paint-order: stroke fill; text-shadow: 0 3px 0 #0B1E48; }
-/* its one glint, top right */
-.sh-close::after { content: ''; position: absolute; right: 9px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .85); }
-.sh-close:active { translate: -50% 3px; box-shadow: inset 0 3px 0 rgba(255, 255, 255, .45), inset 0 -3px 0 rgba(8, 40, 110, .28), 0 0 0 3px #0B1E48, 0 3px 0 #0B1E48; }
-.sh-close:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-@keyframes close-in { from { translate: -50% 90px; opacity: 0; } }
+/* held: the plate is down in its base, and the label goes down with it */
+.sh-close:active { background-image: url('../icons/Pixelart/NEW/UI/close-plate-down.webp'); }
+.sh-close:active span { translate: 0 4px; }
+.sh-close:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: 22px; }
+/* it lands from below, squashed, and stretches up into shape */
+@keyframes close-in { from { translate: -50% 70px; scale: 1.12 .7; opacity: 0; } }
 /* over a pinned currency bar (the shop, the inventory) it stands on the bar's top edge */
 .layer:has(> .sc-wallet) .sh-close { bottom: calc(var(--safe-b) + 76px); }
 /* room for the last lines to scroll clear of it */
@@ -82,25 +102,28 @@
 /* the wardrobe's stage gives up some height to the base above it */
 .layer.is-sheet .wr-stage { height: min(36vh, 330px); }
 /* what's in a sheet arrives a beat after it: a short cascade, on opening only */
-.layer.is-entering :is(.sc-card, .wr-card, .wr-swatch, .wr-chip) { animation: rise-in 420ms var(--spring) both; }
-.layer.is-entering :is(.sc-card, .wr-card):nth-child(1) { animation-delay: 70ms; }
-.layer.is-entering :is(.sc-card, .wr-card):nth-child(2) { animation-delay: 110ms; }
-.layer.is-entering :is(.sc-card, .wr-card):nth-child(3) { animation-delay: 150ms; }
-.layer.is-entering :is(.sc-card, .wr-card):nth-child(4) { animation-delay: 190ms; }
-.layer.is-entering :is(.sc-card, .wr-card):nth-child(5) { animation-delay: 230ms; }
-.layer.is-entering :is(.sc-card, .wr-card):nth-child(n+6) { animation-delay: 270ms; }
-.layer.is-entering :is(.wr-swatch, .wr-chip) { animation-delay: 120ms; }
-@keyframes rise-in { from { translate: 0 26px; scale: .92; opacity: 0; } }
+.layer.is-entering :is(.sc-card, .wr-card, .wr-swatch, .wr-chip) { transform-origin: 50% 100%; animation: rise-in var(--pop-ms) var(--spring-pop) both; }
+.layer.is-entering :is(.sc-card, .wr-card):nth-child(1) { animation-delay: calc(var(--stagger) * 1); }
+.layer.is-entering :is(.sc-card, .wr-card):nth-child(2) { animation-delay: calc(var(--stagger) * 2); }
+.layer.is-entering :is(.sc-card, .wr-card):nth-child(3) { animation-delay: calc(var(--stagger) * 3); }
+.layer.is-entering :is(.sc-card, .wr-card):nth-child(4) { animation-delay: calc(var(--stagger) * 4); }
+.layer.is-entering :is(.sc-card, .wr-card):nth-child(n+5) { animation-delay: calc(var(--stagger) * 5); }
+.layer.is-entering :is(.wr-swatch, .wr-chip) { animation-delay: calc(var(--stagger) * 3); }
+/* each one comes up from its foot, a little squashed, and stretches into shape */
+@keyframes rise-in { from { translate: 0 22px; scale: 1.04 .86; opacity: 0; } }
 /* the wardrobe: changing tab brings the panel in; what you pick answers */
-.wr-panel.is-in > * { animation: panel-in 240ms cubic-bezier(.2, .8, .2, 1) both; }
+.wr-panel.is-in > * { animation: panel-in var(--t-enter) both; }
 @keyframes panel-in { from { translate: 0 12px; opacity: 0; } }
-.wr-tab { transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease; }
+.wr-tab { transition: background-color var(--t-ui), color var(--t-ui), box-shadow var(--t-ui); }
 
 /* ---- 3. touch (js/app/press.js drives the squash; this is what CSS alone can add) --------------- */
 .sh-tab, .wr-tab, .wr-chip, .wr-swatch, .wr-card, .game-tab { -webkit-tap-highlight-color: transparent; }
 /* the dock: the icon you land on hops (styles.css); the open one breathes */
 .tab.active .tab-img { animation: tab-breathe 2.8s ease-in-out infinite; }
-.tab.active .tab-img.hop { animation: tab-hop 320ms cubic-bezier(.3, 1.5, .6, 1), tab-breathe 2.8s ease-in-out 320ms infinite; }
+.tab .tab-img { transform-origin: 50% 100%; }
+.tab.active .tab-img.hop { animation: tab-hop var(--pop-ms) var(--spring-pop), tab-breathe 2.8s ease-in-out var(--pop-ms) infinite; }
+/* it leaves the bar squashed, as if it had pushed off */
+@keyframes tab-hop { from { transform: translateY(0) scale(1.14, .78); } to { transform: translateY(-12px); } }
 @keyframes tab-breathe { 0%, 100% { scale: 1; } 50% { scale: 1.05; } }
 .tab-badge { animation: badge-nudge 4.2s ease-in-out infinite; transform-origin: 50% 100%; }
 @keyframes badge-nudge { 0%, 84%, 100% { rotate: 0deg; scale: 1; } 88% { rotate: -10deg; scale: 1.12; } 92% { rotate: 8deg; scale: 1.12; } 96% { rotate: -4deg; } }
@@ -125,8 +148,14 @@
   animation: lift-ping 2.4s cubic-bezier(.2, .7, .3, 1) infinite; }
 @keyframes lift-ping { 0% { scale: .9; opacity: .9; } 70%, 100% { scale: 1.4; opacity: 0; } }
 /* a number that just changed gives a little jump */
-.roll.rolling { display: inline-block; animation: roll-pop 360ms var(--spring); }
-@keyframes roll-pop { 40% { scale: 1.18; } }
+.roll.rolling { display: inline-block; transform-origin: 50% 100%; animation: roll-pop var(--pop-ms) var(--spring-pop); }
+@keyframes roll-pop { from { scale: 1.1 .8; } }
+/* the same rules for the small moves the older sheets still timed themselves */
+.sc-card.is-fresh .sc-art { transform-origin: 50% 100%; animation-duration: var(--pop-ms); animation-timing-function: var(--spring-pop); }
+.dg-sq.spin img { animation-duration: var(--pop-ms); animation-timing-function: var(--spring-pop); }
+.dg-mk.is-tap { transform-origin: 50% 100%; animation-duration: var(--pop-ms); animation-timing-function: var(--spring-pop); }
+.q-row.just-done .q-box { animation-duration: var(--pop-ms); animation-timing-function: var(--spring-pop); }
+.dg-item.spring { transition: left var(--pop-ms) var(--spring-pop), top var(--pop-ms) var(--spring-pop); }
 /* a full screen is over the base: its loops rest */
 body.base-covered .dg-screen *, body.base-covered .dg-screen *::after, body.base-covered .dg-screen *::before,
 body.base-covered .tabs * { animation-play-state: paused !important; }
@@ -231,8 +260,8 @@ body.base-covered .tabs * { animation-play-state: paused !important; }
 
 /* the AI coach's wizard */
 .layer > .ob-screen .ob-progress { height: 8px; background: rgba(8, 25, 60, .45); }
-.layer > .ob-screen .ob-progress i { background: linear-gradient(90deg, #F2C14E, #FFE690); border-radius: 0 9999px 9999px 0; transition: width 420ms cubic-bezier(.2, .8, .2, 1); }
-.layer > .ob-screen .ob-choice { padding: 16px 18px; transition: transform 120ms ease, box-shadow 160ms ease; }
+.layer > .ob-screen .ob-progress i { background: linear-gradient(90deg, #F2C14E, #FFE690); border-radius: 0 9999px 9999px 0; transition: width var(--t-fill); }
+.layer > .ob-screen .ob-choice { padding: 16px 18px; transition: transform var(--t-press), box-shadow var(--t-ui); }
 .layer > .ob-screen .ob-choice b { font-family: var(--font-header); }
 .layer > .ob-screen .ob-choice.on { --b: #0C4CAE; background: linear-gradient(#EAF3FF, #D5E7FF); }
 .layer > .ob-screen .ob-choice.on b { color: #0C4CAE; }
@@ -241,15 +270,15 @@ body.base-covered .tabs * { animation-play-state: paused !important; }
 .layer > .ob-screen .ob-hours b { color: #fff; text-shadow: 0 2px 6px rgba(8, 25, 60, .45); }
 .layer > .ob-screen .ob-hours b small { color: #DCE7F7; }
 .layer > .ob-screen .ob-gen-orb::before { border-radius: 9999px; background: linear-gradient(90deg, #F2C14E, #FFE690); animation: load-bar 1.2s ease-in-out infinite alternate; }
-.layer > .ob-screen .ob-grid > * { animation: rise-in 380ms var(--spring) both; }
-.layer > .ob-screen .ob-grid > :nth-child(2) { animation-delay: 50ms; }
-.layer > .ob-screen .ob-grid > :nth-child(3) { animation-delay: 100ms; }
-.layer > .ob-screen .ob-grid > :nth-child(4) { animation-delay: 150ms; }
-.layer > .ob-screen .ob-grid > :nth-child(n+5) { animation-delay: 200ms; }
+.layer > .ob-screen .ob-grid > * { transform-origin: 50% 100%; animation: rise-in var(--pop-ms) var(--spring-pop) both; }
+.layer > .ob-screen .ob-grid > :nth-child(2) { animation-delay: calc(var(--stagger) * 1); }
+.layer > .ob-screen .ob-grid > :nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
+.layer > .ob-screen .ob-grid > :nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
+.layer > .ob-screen .ob-grid > :nth-child(n+5) { animation-delay: calc(var(--stagger) * 4); }
 
 /* toasts: a navy pill with a gold rim */
 .toast { --b: transparent; --e: transparent; border-radius: 16px; background: linear-gradient(#2A3E6E, #16264D); color: #fff;
-  box-shadow: 0 0 0 2px #F2C14E, 0 10px 22px rgba(4, 10, 28, .5); transform: translateY(18px) scale(.96); transition: opacity 200ms ease, transform 320ms var(--spring); }
+  box-shadow: 0 0 0 2px #F2C14E, 0 10px 22px rgba(4, 10, 28, .5); transform: translateY(18px) scale(.96); transform-origin: 50% 100%; transition: opacity var(--t-ui), transform var(--pop-ms) var(--spring-pop); }
 .toast.show { transform: none; }
 .toast b { color: #FFD34D; text-transform: none; font-family: var(--font-header); }
 .toast .btn { --b: transparent; --e: transparent; border-radius: 10px; }
@@ -265,13 +294,13 @@ body:is(.jh-mode, .chat-mode, .shop-mode, .lb-mode) .sync-prompt .btn { --b: tra
 
 /* ---- reduced motion: everything above holds still --------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .layer > .modal, .layer.is-leaving > *, .layer.is-sheet::after, .layer.is-sheet::before, .sh-close, .layer.is-entering *, .wr-panel.is-in > *, .tab.active .tab-img, .tab-badge,
+  .layer > .modal, .layer.is-leaving > *, .layer.is-sheet::before, .sh-close, .layer.is-entering *, .wr-panel.is-in > *, .tab.active .tab-img, .tab-badge,
   .dg-orb .dg-orb-ico > img, .dg-orb.is-gold::after, .dg-lift-btn.is-on::after, .roll.rolling, .layer > .ob-screen .ob-grid > * { animation: none !important; }
   .toast { transition: opacity 120ms linear; transform: none; }
 }
 body.rm :is(.layer > .modal, .layer.is-leaving > *, .layer.is-entering *, .wr-panel.is-in > *, .tab.active .tab-img, .tab-badge,
   .dg-orb .dg-orb-ico > img, .roll.rolling, .layer > .ob-screen .ob-grid > *) { animation: none !important; }
-body.rm .layer.is-sheet::after, body.rm .layer.is-sheet::before, body.rm .sh-close, body.rm .dg-orb.is-gold::after, body.rm .dg-lift-btn.is-on::after { animation: none !important; }
+body.rm .layer.is-sheet::before, body.rm .sh-close, body.rm .dg-orb.is-gold::after, body.rm .dg-lift-btn.is-on::after { animation: none !important; }
 body.rm .toast { transition: opacity 120ms linear; transform: none; }
 
 /* a toast over an open screen clears the Close button and the currency bar */

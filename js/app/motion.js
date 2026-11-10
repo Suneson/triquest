@@ -5,6 +5,7 @@
 
 import { prefersReducedMotion } from './effects.js';
 import { fmtNum } from '../core/i18n.js';
+import { DUR, EASE_OUT } from '../core/spring.js';
 
 const reduced = () => prefersReducedMotion() || document.body.classList.contains('rm');
 
@@ -23,8 +24,8 @@ export function tabDirection(from, to) {
   return pos(to) < pos(from) ? 'back' : 'fwd';
 }
 
-const SLIDE_MS = 260;
-const EASE = 'cubic-bezier(.2, .8, .2, 1)';
+const SLIDE_MS = DUR.enter;   // a tab arriving: the app's one ease-out (js/core/spring.js)
+const EASE = EASE_OUT;
 
 export function withTabTransition(from, to, update, { fromDx = 0 } = {}) {
   const view = document.getElementById('view');

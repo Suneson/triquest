@@ -2776,7 +2776,7 @@ es.cp = {
   "lvl": "Nivel {n}",
   "coinsAria": "{n} monedas",
   "carbsAria": "{n} g de carbohidratos",
-  "staminaAria": "Energía {n} de {max}. Se recarga sola, un punto por minuto",
+  "staminaAria": "Energía {n} de {max}. Se recarga sola, de vacío a lleno en 30 horas",
   "roomsAria": "Salas",
   "nav": { "bike": "Ciclismo", "pool": "Natación", "run": "Carrera", "gym": "Gimnasio", "locker": "Vestuario y recuperación" },
   "room": { "gym": "Gimnasio", "pool": "Piscina", "bike": "Sala de bici", "run": "Sala de carrera", "locker": "Vestuario" },
@@ -3204,6 +3204,57 @@ es.wardrobe = {
     "watch-basic": "Reloj deportivo",
     "watch-blue": "Reloj azul",
     "watch-gold": "Reloj dorado"
+  }
+};
+
+// ---- drills and recovery in the base (docs/DRILLS.md) ----
+es.drill = {
+  "menu": "Entrenar",
+  "menuRec": "Recuperar",
+  "title": {
+    "run": "Cinta de correr"
+  },
+  "about": "Elige un nivel y pulsa Empezar. Tu atleta lo corre en tiempo real y gasta energía mientras tanto. Termínalo para abrir el siguiente nivel.",
+  "level": "Nivel {n}",
+  "line": "{km} km · {min} min",
+  "paceLine": "{km} km en menos de {min} min",
+  "pace": "Bate el tiempo",
+  "eff": "{n}% menos energía",
+  "start": "Empezar nivel {n}",
+  "stop": "Parar",
+  "left": "Quedan {t}.",
+  "willFail": "No hay energía suficiente: pararás en {km} dentro de {t}.",
+  "enough": "Energía suficiente: terminarás con {n}.",
+  "short": "No hay energía suficiente: pararías en {km} y el nivel falla.",
+  "empty": "Sin energía. Descansa o recupérate en el vestuario.",
+  "busy": "Tu atleta ya está entrenando.",
+  "busyRec": "Tu atleta se está recuperando.",
+  "full": "Energía al máximo: no hay nada que recuperar.",
+  "recIntro": "Las herramientas de recuperación devuelven energía más rápido que descansar (de vacío a lleno son 30 horas). Las más largas dan más.",
+  "recAbout": "{min} minutos, +{n} de energía.",
+  "recStart": "Entrar",
+  "getOut": "Salir",
+  "recIn": "Recuperando: {tool}",
+  "recLeft": "Quedan {t}, luego +{n} de energía.",
+  "soon": "Próximamente",
+  "tool": {
+    "massage-gun": "Pistola de masaje",
+    "ice-bath": "Baño de hielo",
+    "sauna": "Sauna",
+    "compression-boots": "Botas de compresión"
+  },
+  "err": {
+    "busy": "Ya hay algo en marcha.",
+    "locked": "Ese nivel aún no está abierto.",
+    "empty": "Sin energía.",
+    "full": "La energía ya está al máximo.",
+    "unknown": "Eso aún no se puede usar."
+  },
+  "res": {
+    "done": "Nivel {n} completado.",
+    "doneOpened": "¡Nivel {n} completado! El nivel {next} está abierto.",
+    "failed": "Entrenamiento fallido: nivel {n}. La energía se acabó a los {km} km.",
+    "recovered": "{tool} terminado: +{n} de energía."
   }
 };
 

@@ -36,10 +36,10 @@ test('you only wear what you have, for your class, with a model for your body', 
 
 test('the 3D view loads the outfit when it can be worn, the plain body otherwise', () => {
   // one male body, whatever the class
-  assert.equal(modelFor(look({ cls: 'hybrid', outfit: 'tracksuit' })), 'models/bodies/male.glb');
+  assert.equal(modelFor(look({ cls: 'hybrid', outfit: 'tracksuit' })), 'models/chars/male.glb');
   assert.equal(modelFor(look({ cls: 'endurance' })), modelFor(look({ cls: 'hybrid' })));
-  assert.equal(modelFor(look({ cls: 'endurance', outfit: 'tracksuit' })), 'models/bodies/male.glb');
-  assert.equal(modelFor(look({ body: 'female', cls: 'hybrid' })), 'models/bodies/female.glb');
+  assert.equal(modelFor(look({ cls: 'endurance', outfit: 'tracksuit' })), 'models/chars/male.glb');
+  assert.equal(modelFor(look({ body: 'female', cls: 'hybrid' })), 'models/chars/female.glb');
 });
 
 test('accessories: the free trainers are yours, but none has a model yet', () => {

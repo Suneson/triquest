@@ -174,7 +174,7 @@ export const PLACEABLES = [
   // Its console is towards the camera, so the runner faces us: 2 x 3 facing a (long along v, the
   // console at the far v end), 3 x 2 facing b (long along u, the console at the far u end).
   // Tiers 1 to 4 with the run room's level (4, 7 and 10 step it up).
-  { id: 'treadmill', w: 2, h: 3, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, runner: RUNNER, faces: true, face: 'a',
+  { id: 'treadmill', w: 2, h: 3, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, runner: RUNNER, opens: 'drill', faces: true, face: 'a',
     art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, TREADMILL_BANDS)}-${o?.face || 'a'}.webp` },
   // two showpieces, gifts while the base items are being tried out
   { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',
@@ -196,7 +196,7 @@ export const PLACEABLES = [
   stashed('lockers-t2', 'locker', 3, 2, 0.9),
   stashed('drinks-fridge', 'locker', 2, 2, 0.62),
   stashed('massage-table', 'locker', 2, 3, 0.86),
-  stashed('ice-bath', 'locker', 2, 3, 0.9),
+  stashed('ice-bath', 'locker', 2, 3, 0.9, { opens: 'recovery' }),
   // the trophy cabinets: tap one to choose which trophies stand in it (`slots`: how many)
   stashed('trophy-cabinet-t1', 'locker', 2, 2, 0.62, { opens: 'trophies', slots: 5 }),
   stashed('trophy-cabinet-t2', 'locker', 2, 2, 0.7, { opens: 'trophies', slots: 10 }),
@@ -211,7 +211,7 @@ export const PLACEABLES = [
   stashed('bike-workstand', 'bike', 2, 2, 0.7),
   stashed('start-block', 'pool', 2, 2, 0.76),
   // each tier of the items that step up with a room's level, to own and place on its own
-  ...[1, 2, 3, 4].map((n) => stashed(`treadmill-t${n}`, 'run', 2, 3, 0.92, { runner3d: true, runner: RUNNER })),
+  ...[1, 2, 3, 4].map((n) => stashed(`treadmill-t${n}`, 'run', 2, 3, 0.92, { runner3d: true, runner: RUNNER, opens: 'drill' })),
   ...[1, 2, 3].map((n) => stashed(`coffee-machine-t${n}`, 'locker', 2, 2, 0.82)),
   // what the daily stall sells (stall.js): yours once bought
   ...STALL_ITEMS.map((s) => ({

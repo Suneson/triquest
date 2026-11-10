@@ -1,10 +1,10 @@
-// runner3d.js — a 3D athlete running on the run room's treadmill (docs/RUNNER3D.md).
+// runner3d.js — your 3D athlete on a painted item in the base: the run room's treadmill, the ice
+// bath (docs/RUNNER3D.md, docs/CHARACTERS.md).
 //
-// The room is painted art and the treadmill is a painted item; the runner is a
-// rigged glTF model (models/runner.glb) drawn into a transparent WebGL canvas
-// that sits inside the treadmill's item element, so it pans, zooms, stacks and
-// moves with it like any other item. three.js (vendor/three/) is only loaded
-// when a runner is on screen.
+// The room is painted art and so is the item; the athlete is your wardrobe character (char3d.js),
+// drawn into a transparent WebGL canvas that sits inside the item's element, so it pans, zooms,
+// stacks and moves with it like any other item. three.js (vendor/three/) is only loaded when an
+// athlete is on screen.
 //
 // The camera is orthographic and matches the painted floor exactly: one scene
 // unit is one floor tile, X runs along the floor's u axis (towards the right
@@ -14,7 +14,6 @@
 // The runner faces +Z: down and to the left, towards the treadmill's console
 // and the camera.
 
-const MODEL = 'models/runner.glb';
 const VENDOR = '../../vendor/three/';
 
 /** The run room's floor rises 34.8 px for every 61.9 across: sin(tilt) = 0.562. */
@@ -26,6 +25,9 @@ export const ISO_TILT = Math.asin(34.8 / 61.9);
  * The treadmill is 1 × 2 tiles; its console is at the v = 2 end.
  */
 export const RUNNER_SPOT = { u: 0.47, v: 1.02, y: 0.2, scale: 0.84 };
+
+/** How tall the old runner model stood: `scale` in a spot is in those units, the characters are 1.8. */
+const CHAR_HEIGHT = 1.8 / 1.85;
 
 /** The canvas around the footprint, as multiples of the footprint's on-screen width. */
 const FRAME = { w: 1.4, h: 1.9, below: 0.32 };
@@ -39,13 +41,6 @@ const loadLib = () => (lib ||= Promise.all([
 
 /** three.js, its glTF loader and the meshopt decoder, loaded once (city3d.js shares them). */
 export const loadThree = () => loadLib();
-
-let model = null;
-const loadModel = (L) => (model ||= new Promise((res, rej) => {
-  const loader = new L.GLTFLoader();
-  loader.setMeshoptDecoder(L.MeshoptDecoder);
-  loader.load(new URL(`../../${MODEL}`, import.meta.url).href, res, undefined, rej);
-}));
 
 /** Can this device draw WebGL at all? (Without it the treadmill simply stands empty.) */
 // Asked once and remembered: each test makes a WebGL context, and iPhone Safari keeps only a
@@ -63,7 +58,10 @@ export function webglOk() {
 }
 
 /**
- * Put a running athlete in `host` (an element inside the treadmill item).
+ * Put your athlete in `host` (an element inside the item).
+ *   char      what to draw: { model, clips, skin, eye } (files from js/core/wardrobe.js, the tints
+ *             as linear RGB multipliers)
+ *   clip      the clip to start on ('idle' when not given); `play(name, opts)` changes it later
  *   tile      the on-screen x and y (world px) of one tile along u: { ux, uy }
  *   anchor    where the footprint's centre is in host px: { x, y }
  *   yaw       the runner's turn in radians (0 faces the console)
@@ -71,9 +69,9 @@ export function webglOk() {
  *   spot      where on the footprint it stands and which way it faces: { u, v, yaw } in tiles from
  *             the footprint's back corner and radians (RUNNER_SPOT, facing +v, when not given)
  *   foot      the footprint in tiles, { w, h } (1 x 2 when not given)
- * Returns { setYaw, layout, dispose } at once; the model appears when loaded.
+ * Returns { setYaw, layout, play, dispose } at once; the model appears when loaded.
  */
-export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot = null, foot = { w: 1, h: 2 } } = {}) {
+export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot = null, foot = { w: 1, h: 2 }, char, clip = 'idle' } = {}) {
   const at = { ...RUNNER_SPOT, yaw: 0, ...(spot || {}) };
   let disposed = false;
   let api = null;
@@ -81,13 +79,15 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
   canvas.className = 'r3d-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   host.appendChild(canvas);
-  const pending = { yaw, tile, anchor };
+  const pending = { yaw, tile, anchor, clip, clipOpts: { fade: 0 } };
 
   const ready = (async () => {
     const L = await loadLib();
-    const gltf = await loadModel(L);
-    if (disposed) return;
     const { THREE } = L;
+    const uniforms = { uSkin: { value: new THREE.Vector3(...(char.skin || [1, 1, 1])) }, uEye: { value: new THREE.Vector3(...(char.eye || [0.3, 0.2, 0.1])) } };
+    const { spawnChar } = await import('./char3d.js');
+    const figure = await spawnChar(L, { model: char.model, clips: char.clips, uniforms });
+    if (disposed) { figure.dispose(); return null; }
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -102,25 +102,13 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
     rim.position.set(3, 3, -3);
     scene.add(rim);
 
-    // the runner: its own clone of the model (the skeleton too), on the belt
-    const runner = gltf.scene.clone(true);
-    rebindSkins(gltf.scene, runner);
-    runner.traverse((o) => {
-      if (o.isMesh) {
-        o.frustumCulled = false; // a skinned mesh's bounds don't follow its pose
-        if (o.material) { o.material.side = THREE.FrontSide; }
-      }
-    });
+    // the athlete: its own copy of the model (the skeleton too), on the item
     const rig = new THREE.Group();
-    rig.add(runner);
+    rig.add(figure.root);
     rig.position.set(at.u, at.y, at.v);
-    rig.scale.setScalar(at.scale);
+    rig.scale.setScalar(at.scale / CHAR_HEIGHT);
     scene.add(rig);
-
-    const mixer = new THREE.AnimationMixer(runner);
-    const clips = gltf.animations || [];
-    const clip = clips.find((c) => /run/i.test(c.name)) || clips[0];
-    if (clip) mixer.clipAction(clip).play();
+    figure.play(pending.clip, pending.clipOpts);
 
     // the camera: from the floor's front corner, 45° round, tilted to the art's slant
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -50, 50);
@@ -162,16 +150,17 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
       if (!canvas.isConnected || document.hidden || now - last < 1000 / 30) return; // 30 fps is plenty
       if (document.body.classList.contains('base-covered')) { clock.getDelta(); return; }   // a full screen hides the base: rest
       last = now;
-      mixer.update(Math.min(0.1, clock.getDelta()));
+      figure.update(Math.min(0.1, clock.getDelta()));
       renderer.render(scene, camera);
     };
-    if (still) { mixer.setTime(0.2); renderer.render(scene, camera); } else raf = requestAnimationFrame(frame);
+    if (still) { figure.update(0.2); renderer.render(scene, camera); } else raf = requestAnimationFrame(frame);
 
     api = {
       setYaw: (r) => { setYaw(r); if (still) renderer.render(scene, camera); },
       layout: (o) => { layout(o); renderer.render(scene, camera); },
-      stop: () => cancelAnimationFrame(raf),
-      renderer, mixer,
+      play: (name, o) => { figure.play(name, o); if (still) { figure.update(0.2); renderer.render(scene, camera); } },
+      stop: () => { cancelAnimationFrame(raf); figure.dispose(); },
+      renderer,
     };
     return api;
   })().catch((e) => { console.warn('3D runner unavailable', e); return null; });
@@ -188,19 +177,8 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
     ready,
     setYaw: (r) => { pending.yaw = r; api?.setYaw(r); },
     layout: (o) => { Object.assign(pending, o); api?.layout(o); },
+    /** Cross-fade to another clip: play('run', { fade: 0.3, speed: 1.1 }). */
+    play: (name, o = {}) => { if (pending.clip === name && pending.speed === o.speed) return; pending.clip = name; pending.speed = o.speed; pending.clipOpts = o; api?.play(name, o); },
     dispose,
   };
-}
-
-// A cloned skinned mesh must point at the clone's bones, not the original's.
-function rebindSkins(src, dst) {
-  const bones = new Map();
-  dst.traverse((o) => { if (o.isBone) bones.set(o.name, o); });
-  const srcMeshes = []; src.traverse((o) => { if (o.isSkinnedMesh) srcMeshes.push(o); });
-  const dstMeshes = []; dst.traverse((o) => { if (o.isSkinnedMesh) dstMeshes.push(o); });
-  dstMeshes.forEach((m, i) => {
-    const sk = srcMeshes[i].skeleton;
-    const newBones = sk.bones.map((b) => bones.get(b.name) || b);
-    m.bind(new sk.constructor(newBones, sk.boneInverses), m.bindMatrix);
-  });
 }

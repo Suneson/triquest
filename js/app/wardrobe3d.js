@@ -1,48 +1,19 @@
 // wardrobe3d.js: the character standing in the wardrobe, in 3D (js/app/wardrobe-view.js).
 //
-// One canvas, one character. The models come from tools/prep-bodies.mjs: 1.8 units tall, feet on
-// y = 0, facing +Z. Their emissive map is a mask, not a glow (its strength is 0): red marks the skin
-// and green the irises, which the shader below recolours with the look's skin tone and eye colour.
-//
-// The bodies have no skeleton yet (BUILD-PLAN.md section 7), so the idle is the whole figure
-// breathing and swaying a little. Once the rigged bodies and the idle clip are in, this plays the
-// clip instead. Drag sideways to turn the character round.
+// One canvas, one character (char3d.js): 1.8 units tall, feet on y = 0, facing +Z, tinted with the
+// look's skin tone and eye colour. It plays its idle clip, and now and then shows off (a taunt or
+// the victory clip) before going back to it. Drag sideways to turn the character round.
 
 import { loadThree, webglOk } from './runner3d.js';
 import { skinTint, eyeColour } from '../core/wardrobe.js';
+import { spawnChar } from './char3d.js';
 
-const models = new Map();   // url -> Promise<gltf>, shared between opens
-const loadGltf = (L, url) => {
-  if (!models.has(url)) {
-    models.set(url, new Promise((res, rej) => {
-      const loader = new L.GLTFLoader();
-      loader.setMeshoptDecoder(L.MeshoptDecoder);
-      loader.load(new URL(`../../${url}`, import.meta.url).href, res, undefined, rej);
-    }).catch((e) => { models.delete(url); throw e; }));
-  }
-  return models.get(url);
-};
-
-/** The skin and iris tint, patched into three.js's standard material after its map is read. */
-function tintable(mat, uniforms) {
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uSkin = uniforms.uSkin;
-    shader.uniforms.uEye = uniforms.uEye;
-    shader.fragmentShader = shader.fragmentShader
-      .replace('void main() {', 'uniform vec3 uSkin;\nuniform vec3 uEye;\nvoid main() {')
-      .replace('#include <map_fragment>', `#include <map_fragment>
-      #ifdef USE_EMISSIVEMAP
-        vec2 mk = texture2D(emissiveMap, vEmissiveMapUv).rg;
-        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * uSkin, smoothstep(0.35, 0.9, mk.r));
-        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * uEye * 5.0, smoothstep(0.25, 0.8, mk.g));
-      #endif`);
-  };
-  mat.customProgramCacheKey = () => 'moske-tint';
-  mat.needsUpdate = true;
-}
+/** What the character does between idles, and how long it waits (seconds) before the next. */
+const FLOURISH = ['taunt1', 'victory', 'taunt2'];
+const WAIT = [9, 16];
 
 /**
- * Mount the stage in `host`. Returns { show(url, look), setLook(look), dispose() }, or null when
+ * Mount the stage in `host`. Returns { show(model, clips, look), setLook(look), dispose() }, or null when
  * the device can't draw WebGL.
  */
 export async function mountWardrobe(host) {
@@ -77,6 +48,8 @@ export async function mountWardrobe(host) {
   const uniforms = { uSkin: { value: new THREE.Vector3(1, 1, 1) }, uEye: { value: new THREE.Vector3(0.3, 0.2, 0.1) } };
   const turn = new THREE.Group(); scene.add(turn);
   let figure = null, url = null, width = 1.2, yaw = 0, drag = null, raf = 0, last = 0, t0 = performance.now(), gone = false;
+  let flourishAt = 0, backAt = 0, nth = 0;
+  const wait = () => WAIT[0] + Math.random() * (WAIT[1] - WAIT[0]);
 
   const fit = () => {
     const w = host.clientWidth || 1, h = host.clientHeight || 1;
@@ -97,13 +70,20 @@ export async function mountWardrobe(host) {
     if (gone) return;
     if (document.hidden) { last = 0; return; }
     if (now - last >= 30) {
+      const dt = last ? (now - last) / 1000 : 0;
       last = now;
       const s = (now - t0) / 1000;
       if (figure) {
-        // breathing, a small weight shift, and a slow look round while nobody's turning it
-        figure.scale.set(1 + Math.sin(s * 1.7) * 0.004, 1 + Math.sin(s * 1.7) * 0.008, 1 + Math.sin(s * 1.7) * 0.004);
-        figure.rotation.z = Math.sin(s * 0.55) * 0.018;
-        figure.position.x = Math.sin(s * 0.55) * 0.012;
+        figure.update(Math.min(0.1, dt));
+        // now and then a flourish, then back to the idle
+        if (flourishAt && s > flourishAt) {
+          const name = FLOURISH[nth++ % FLOURISH.length];
+          const len = figure.length(name);
+          if (len && figure.play(name, { fade: 0.25 })) backAt = s + len - 0.3;
+          flourishAt = 0;
+        }
+        if (backAt && s > backAt) { figure.play('idle', { fade: 0.3 }); backAt = 0; flourishAt = s + wait(); }
+        // a slow look round while nobody's turning it
         if (!drag) yaw += (Math.sin(s * 0.3) * 0.32 - yaw) * 0.02;
       }
       turn.rotation.y = yaw;
@@ -125,25 +105,21 @@ export async function mountWardrobe(host) {
     uniforms.uEye.value.set(...eyeColour(look.eyes));
   };
 
-  /** Stand this model on the stage (the old one stays until the new one has loaded). */
-  const show = async (next, look) => {
+  /** Stand this character on the stage (the old one stays until the new one has loaded). */
+  const show = async (model, clips, look) => {
     setLook(look);
-    if (next === url) return;
-    url = next;
-    const gltf = await loadGltf(L, next);
-    if (gone || url !== next) return;
-    if (figure) turn.remove(figure);
-    figure = gltf.scene.clone(true);
-    figure.traverse((o) => {
-      if (!o.isMesh) return;
-      o.material = o.material.clone();
-      o.material.roughness = 0.8; o.material.metalness = 0;
-      o.material.emissive?.setRGB(0, 0, 0);   // the emissive map is the recolour mask, never a glow
-      tintable(o.material, uniforms);
-    });
-    const box = new THREE.Box3().setFromObject(figure);
-    width = box.max.x - box.min.x;
-    turn.add(figure);
+    if (model === url) return;
+    url = model;
+    const next = await spawnChar(L, { model, clips, uniforms });
+    if (gone || url !== model) { next.dispose(); return; }
+    if (figure) { turn.remove(figure.root); figure.dispose(); }
+    figure = next;
+    figure.play('idle', { fade: 0 });
+    figure.update(0);
+    const box = new THREE.Box3().setFromObject(figure.root);
+    width = Math.max(0.9, box.max.x - box.min.x);
+    turn.add(figure.root);
+    flourishAt = (performance.now() - t0) / 1000 + 4; backAt = 0;
     fit(); run();
   };
 
@@ -154,7 +130,7 @@ export async function mountWardrobe(host) {
       gone = true;
       cancelAnimationFrame(raf); ro.disconnect();
       document.removeEventListener('visibilitychange', onVis);
-      scene.traverse((o) => { if (o.isMesh && o !== shadow) o.material.dispose?.(); });
+      figure?.dispose();
       shadow.geometry.dispose(); shadow.material.dispose(); shadowTex.dispose();
       renderer.dispose(); renderer.forceContextLoss();
       canvas.remove();

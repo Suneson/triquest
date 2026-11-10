@@ -25,7 +25,12 @@ import {
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF } from '../core/diorama.js';
 import { expandedSize, EXPANDED_ART, bigArt, midArt, needsFull, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
-import { STAMINA, staminaAt, freshStamina } from '../core/stamina.js';
+import { STAMINA } from '../core/stamina.js';
+import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/drills.js';
+import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
+import { loadLook, ownedIds } from './wardrobe-view.js';
+import { modelFor, clipsFor, skinTint, eyeColour } from '../core/wardrobe.js';
+import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
 import { featsFor } from '../core/feats.js';
@@ -96,15 +101,7 @@ const geomOf = (room) => (bigRoom(room) ? `${room}-big` : stageGeom(room, expand
 // every room, for working out where items stand
 const stageLayout = () => ({ rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
-// ---- stamina: anchored once, then it fills on its own -----------------------------------
-
-function staminaAnchor() {
-  const a = store.getSettings().stamina;
-  if (a && Number.isFinite(Number(a.at))) return a;
-  const fresh = freshStamina(Date.now());
-  store.setSetting('stamina', fresh);
-  return fresh;
-}
+// stamina lives in drill-view.js: it refills on its own, drills spend it, recovery gives it back
 
 // ---- the HUD -----------------------------------------------------------------------------
 
@@ -120,7 +117,8 @@ function hud(ctx, avatarBtn) {
   const u = currentUser?.();
   const name = (u?.user_metadata?.display_name || u?.email?.split('@')[0] || t('pg.athlete')).trim();
   const w = gearEnabled() ? walletNow(ctx.workouts) : { coins: 0, carbs: 0, cap: 10000 };
-  const st = staminaAt(staminaAnchor(), Date.now());
+  settleDrills();
+  const st = staminaNow();
   return `<header class="dg-hud">
     <div class="dg-badge">${avatarBtn}<span class="dg-who"><b>${esc(name)}</b><i>${t('cp.lvl', { n: ctx.acct?.level || 1 })}</i></span></div>
     <div class="dg-gauges">
@@ -227,6 +225,24 @@ const turnBar = () => `<div class="dg-turn" role="group" aria-label="${esc(t('cp
     <button data-r3d-turn="45" aria-label="${esc(t('cp.r3d.right'))}"><span>${t('cp.r3d.right')}</span>${svg('back')}</button>
   </div>`;
 
+/** Your athlete as the wardrobe dressed them: the model, its clips and the tints. */
+function athlete() {
+  const look = loadLook();
+  return { model: modelFor(look, ownedIds()), clips: clipsFor(look), skin: skinTint(look.skin), eye: eyeColour(look.eyes) };
+}
+
+/** A treadmill's tier, 1 to 4: the gift one grows with the run room, the others say it in their id. */
+const machineTier = (it) => Number(/-t(\d)$/.exec(it.id)?.[1]) || tierFor(lastLevels.run, TREADMILL_BANDS);
+
+/** What's running on an item, for its tag: { left, share } or null. */
+function busyOn(it, now = Date.now()) {
+  const d = drillsSaved();
+  if (it.opens === 'drill' && d.active?.kind === drillOfItem(it.id)) { const s = drillNow(d.active, now); return { left: s.left, share: s.share }; }
+  if (it.opens === 'recovery' && d.recovering?.tool === recoveryOfItem(it.id)) return recoveryNow(d.recovering, now);
+  return null;
+}
+const mmss = (ms) => { const m = Math.ceil(ms / 1000); return m >= 3600 ? `${Math.floor(m / 3600)}h${String(Math.floor((m % 3600) / 60)).padStart(2, '0')}` : `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+
 /**
  * Put the runner on a treadmill item's element (once), sized by the room's floor:
  * the canvas lives inside the element, so it moves and stacks with it.
@@ -245,7 +261,7 @@ function placeRunner(el, it, p, geom, src, still) {
   // the footprint's centre, in the element's own px (its box is the picture's)
   const anchor = { x: c[0] - (box.x - box.w / 2), y: c[1] - (box.y - H * (1 - box.pad)) };
   el._r3d = mountRunner(el, { tile: { ux: Math.abs(b1[0] - a[0]), uy: b1[1] - a[1] }, anchor, yaw: (runnerYaw() * Math.PI) / 180, still,
-    spot: it.runner?.[it.face] || null, foot: { w: it.w, h: it.h } });
+    spot: it.runner?.[it.face] || null, foot: { w: it.w, h: it.h }, char: athlete(), clip: runnerClip() });
   el._r3dFace = it.face;
 }
 
@@ -534,6 +550,8 @@ export function wireDiorama(root, ctx) {
   const openItem = (it) => {
     if (it?.opens === 'missions') openMissionBoard(ctx);
     else if (it?.opens === 'trophies') openTrophyDisplay();
+    else if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
+    else if (it?.opens === 'recovery') openRecovery(recoveryOfItem(it.id));
   };
   const draw = () => {
     const shown = roomImg.getAttribute('src') === src;
@@ -584,6 +602,13 @@ export function wireDiorama(root, ctx) {
         tag.textContent = `${board.done}/${board.total}`;
         tag.classList.toggle('is-all', board.done === board.total);
       }
+      if (it.opens === 'drill' || it.opens === 'recovery') {
+        // time left on what's running on it
+        const busy = busyOn(it);
+        let tag = el.querySelector('.dg-tag');
+        if (busy && !tag) { tag = document.createElement('i'); tag.className = 'dg-tag is-clock'; tag.dataset.dgBusy = it.id; el.append(tag); }
+        if (!busy) tag?.remove(); else tag.textContent = mmss(busy.left);
+      }
       if (it.opens === 'trophies') {
         let tag = el.querySelector('.dg-tag');
         if (!tag) { tag = document.createElement('i'); tag.className = 'dg-tag'; el.append(tag); }
@@ -601,7 +626,14 @@ export function wireDiorama(root, ctx) {
         menu.querySelector('[data-dg-rot]').hidden = !chosen.faces;
         const open = menu.querySelector('[data-dg-open]');
         open.hidden = !chosen.opens;
-        if (chosen.opens) {
+        if (chosen.opens === 'drill' || chosen.opens === 'recovery') {
+          const label = t(chosen.opens === 'drill' ? 'drill.menu' : 'drill.menuRec');
+          open.querySelector('img').src = chosen.opens === 'drill' ? 'icons/UI/sports/sport-run.webp' : 'icons/UI/sports/sport-locker.webp';
+          open.querySelector('span').textContent = label;
+          const busy = busyOn(chosen);
+          open.querySelector('b').textContent = busy ? mmss(busy.left) : '';
+          open.setAttribute('aria-label', label);
+        } else if (chosen.opens) {
           const isBoard = chosen.opens === 'missions';
           const { n, slots } = shelf();
           const label = t(isBoard ? 'mission.ui.open' : 'cp.menu.display');
@@ -905,13 +937,33 @@ export function wireDiorama(root, ctx) {
 
   // stamina fills and the workshop counts down by the second
   clearInterval(view.tick);
-  const anchor = staminaAnchor();
+  tellResult();
+  const onDrills = () => {
+    // the athlete runs the level's clip while a drill is on, idles when it's not
+    worldEl.querySelectorAll('.dg-item').forEach((el) => el._r3d?.play(runnerClip(), { fade: 0.4 }));
+    tellResult();
+  };
+  document.removeEventListener('drills-changed', view.onDrills || (() => {}));
+  view.onDrills = onDrills;
+  document.addEventListener('drills-changed', onDrills);
   view.tick = setInterval(() => {
-    if (!root.isConnected) { clearInterval(view.tick); return; }
+    if (!root.isConnected) { clearInterval(view.tick); document.removeEventListener('drills-changed', onDrills); return; }
+    settleDrills();
+    // the clocks on a running treadmill or ice bath
+    root.querySelectorAll('[data-dg-busy]').forEach((tag) => {
+      const it = itemAt(tag.dataset.dgBusy); const busy = it && busyOn(it);
+      if (busy) tag.textContent = mmss(busy.left); else tag.remove();
+    });
+    // and on the picked-up machine's Train / Recover button
+    const sel = view.sel && itemAt(view.sel);
+    if (sel && (sel.opens === 'drill' || sel.opens === 'recovery')) {
+      const b = root.querySelector('[data-dg-open] b'); const busy = busyOn(sel);
+      if (b) b.textContent = busy ? mmss(busy.left) : '';
+    }
     stage.showParcel?.();
     showCoins();
     tickIsland();
-    const st = staminaAt(anchor, Date.now());
+    const st = staminaNow();
     const sg = root.querySelector('.dg-gauge.is-stamina');
     if (sg) { sg.style.setProperty('--f', (st / STAMINA.max).toFixed(4)); sg.querySelector('[data-dg-stamina]').textContent = fmtNum(st); sg.setAttribute('aria-label', t('cp.staminaAria', { n: st, max: STAMINA.max })); }
     const now = serverNow();

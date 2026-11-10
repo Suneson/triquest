@@ -15,13 +15,21 @@ import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { gearState } from './gear-state.js';
 import {
-  CLASSES, BODY_LOOKS, SKIN_TONES, EYE_COLOURS, OUTFITS, SLOTS, normaliseLook, outfitState, accessoryState, modelFor,
+  CLASSES, BODY_LOOKS, SKIN_TONES, EYE_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor,
 } from '../core/wardrobe.js';
+import { isChestAdmin } from './chests-state.js';
+import { isDemo } from './demo.js';
 
 const LOOK_KEY = 'moske-look';
 const TABS = ['look', 'outfits', 'gear'];
 
-const ownedIds = () => { try { return (gearState().inventory || []).map((r) => r.item_id); } catch { return []; } };
+// admins and the demo can try every outfit on, to check the models
+const everything = () => { try { return isChestAdmin() || isDemo(); } catch { return false; } };
+export const ownedIds = () => {
+  let ids = [];
+  try { ids = (gearState().inventory || []).map((r) => r.item_id); } catch { /* signed out */ }
+  return everything() ? [...new Set([...ids, ...ALL_OUTFITS])] : ids;
+};
 export function loadLook() {
   try { return normaliseLook(JSON.parse(localStorage.getItem(LOOK_KEY) || 'null'), ownedIds()); } catch { return normaliseLook(null); }
 }
@@ -152,7 +160,7 @@ export function openWardrobe() {
   };
   const dress = () => {
     if (!stage) return;
-    stage.show(modelFor(look, owned), look).then(() => { msg.hidden = true; })
+    stage.show(modelFor(look, owned), clipsFor(look), look).then(() => { msg.hidden = true; })
       .catch(() => { msg.hidden = false; msg.textContent = t('wardrobe.loadFailed'); });
   };
   const update = (next) => {

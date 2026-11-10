@@ -2776,7 +2776,7 @@ en.cp = {
   "lvl": "Level {n}",
   "coinsAria": "{n} coins",
   "carbsAria": "{n} g of carbs",
-  "staminaAria": "Stamina {n} of {max}. It refills by itself, one point a minute",
+  "staminaAria": "Stamina {n} of {max}. It refills by itself, empty to full in 30 hours",
   "roomsAria": "Rooms",
   "nav": { "bike": "Cycling", "pool": "Swim", "run": "Run", "gym": "Gym", "locker": "Locker Room & Recovery" },
   "room": { "gym": "Gym", "pool": "Pool", "bike": "Bike room", "run": "Run room", "locker": "Locker room" },
@@ -3204,6 +3204,57 @@ en.wardrobe = {
     "watch-basic": "Sports watch",
     "watch-blue": "Blue watch",
     "watch-gold": "Gold watch"
+  }
+};
+
+// ---- drills and recovery in the base (docs/DRILLS.md) ----
+en.drill = {
+  "menu": "Train",
+  "menuRec": "Recover",
+  "title": {
+    "run": "Treadmill"
+  },
+  "about": "Pick a level and press Start. Your athlete runs it in real time and it uses stamina as it goes. Finish it to open the next level.",
+  "level": "Level {n}",
+  "line": "{km} km · {min} min",
+  "paceLine": "{km} km in under {min} min",
+  "pace": "Beat the time",
+  "eff": "{n}% less stamina",
+  "start": "Start level {n}",
+  "stop": "Stop",
+  "left": "{t} to go.",
+  "willFail": "Not enough stamina: you'll stop at {km} in {t}.",
+  "enough": "Enough stamina: you'll finish with {n} left.",
+  "short": "Not enough stamina: you'd stop at {km} and the level fails.",
+  "empty": "No stamina left. Rest, or recover in the locker room.",
+  "busy": "Your athlete is training already.",
+  "busyRec": "Your athlete is recovering.",
+  "full": "Stamina is full: nothing to recover.",
+  "recIntro": "Recovery tools give stamina back faster than resting (empty to full takes 30 hours). The longer ones give more.",
+  "recAbout": "{min} minutes, +{n} stamina.",
+  "recStart": "Get in",
+  "getOut": "Get out",
+  "recIn": "Recovering: {tool}",
+  "recLeft": "{t} left, then +{n} stamina.",
+  "soon": "Coming soon",
+  "tool": {
+    "massage-gun": "Massage gun",
+    "ice-bath": "Ice bath",
+    "sauna": "Sauna",
+    "compression-boots": "Compression boots"
+  },
+  "err": {
+    "busy": "Something's already running.",
+    "locked": "That level isn't open yet.",
+    "empty": "No stamina left.",
+    "full": "Stamina is already full.",
+    "unknown": "That can't be used yet."
+  },
+  "res": {
+    "done": "Level {n} complete.",
+    "doneOpened": "Level {n} complete! Level {next} is open.",
+    "failed": "Workout failed: level {n}. Stamina ran out at {km} km.",
+    "recovered": "{tool} done: +{n} stamina."
   }
 };
 

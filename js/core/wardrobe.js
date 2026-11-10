@@ -4,17 +4,26 @@
 // a skin tone, an eye colour, one outfit, and one accessory per slot. Outfits are complete sets
 // (BUILD-PLAN.md section 2); helmets and shoes give buffs, hats, glasses and watches are looks only.
 // There is one male body and one female body (BUILD-PLAN.md section 2, 10 November 2026): the
-// class changes your stats, never your shape. Only the two bodies have models so far: every outfit
-// is listed so you can see what's coming, and can't be worn until its two models are in.
+// class changes your stats, never your shape. Every outfit is listed so you can see what's coming,
+// and can't be worn until its two models are in (tools/build-characters.mjs makes them).
 
 export const CLASSES = ['endurance', 'hybrid'];
 export const BODY_LOOKS = ['male', 'female'];
 
-/** The two bodies (tools/prep-bodies.mjs): the same for both classes. */
+const CHARS = 'models/chars';
+/** The two bodies (tools/build-characters.mjs): the same for both classes. */
 export const BODY_MODELS = {
-  male: 'models/bodies/male.glb',
-  female: 'models/bodies/female.glb',
+  male: `${CHARS}/male.glb`,
+  female: `${CHARS}/female.glb`,
 };
+/** Each body's clips: one file drives the body and every outfit made for it. */
+export const BODY_CLIPS = {
+  male: `${CHARS}/male-clips.glb`,
+  female: `${CHARS}/female-clips.glb`,
+};
+/** The clips every body has (docs/CHARACTERS.md). */
+export const CLIPS = ['idle', 'walk', 'run-slow', 'run', 'run-fast', 'swim', 'squat', 'pushup', 'sit', 'taunt1', 'taunt2', 'victory'];
+const made = (id) => ({ male: `${CHARS}/${id}-male.glb`, female: `${CHARS}/${id}-female.glb` });
 
 /** Skin tones, lightest first. The bodies are painted in the first, the default. */
 export const SKIN_TONES = [
@@ -48,13 +57,13 @@ export const OUTFITS = [
   { id: 'white-gold', kind: 'shop', for: CLASSES, models: {} },
   { id: 'blue-half-zip', kind: 'shop', for: CLASSES, models: {} },
   { id: 'sky-club', kind: 'shop', for: CLASSES, models: {} },
-  { id: 'road-racer', kind: 'shop', for: ['endurance'], models: {} },
+  { id: 'road-racer', kind: 'shop', for: ['endurance'], models: made('road-racer') },
   { id: 'distance', kind: 'shop', for: ['endurance'], models: {} },
   { id: 'iron-gym', kind: 'shop', for: ['hybrid'], models: {} },
   { id: 'heavy-day', kind: 'shop', for: ['hybrid'], models: {} },
   { id: 'aero-suit', kind: 'blueprint', for: CLASSES, models: {} },
   { id: 'tri-pro', kind: 'blueprint', for: CLASSES, models: {} },
-  { id: 'storm-shell', kind: 'blueprint', for: CLASSES, models: {} },
+  { id: 'storm-shell', kind: 'blueprint', for: CLASSES, models: made('storm-shell') },
   { id: 'gold-line', kind: 'blueprint', for: CLASSES, models: {} },
   { id: 'marathon-elite', kind: 'blueprint', for: ['endurance'], models: {} },
   { id: 'forge', kind: 'blueprint', for: ['hybrid'], models: {} },
@@ -120,6 +129,12 @@ export function accessoryState(item, owned = []) {
 /** What the 3D view loads: the outfit's model if it can be worn, else the plain body. */
 export const modelFor = (look, owned = []) =>
   (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[look.body]);
+
+/** The clips file for this look's body. */
+export const clipsFor = (look) => BODY_CLIPS[look.body] || BODY_CLIPS.male;
+
+/** Every outfit's id: what an admin or the demo may try on. */
+export const ALL_OUTFITS = OUTFITS.map((o) => o.id);
 
 /** A saved look, checked: anything unknown or not allowed goes back to the default. */
 export function normaliseLook(raw, owned = []) {

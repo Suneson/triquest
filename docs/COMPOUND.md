@@ -32,11 +32,11 @@ The Home tab (the middle of the dock, docs/JOURNAL.md; once Profile, then GYM) i
 ## Stamina (`js/core/stamina.js`)
 
 **How it fills:**
-- It runs from 0 to 100, gaining 1 point every minute.
+- It runs from 0 to 100, and takes 30 hours from empty to full (a point every 18 minutes). A new athlete starts full.
 - It's worked out from a timestamp anchor kept in your settings (`stamina: { value, at }`), so it catches up whenever the app opens again.
 - It never goes over the cap, and a clock running backwards never drains it.
 
-**Spending:** nothing spends it yet. When something does, it will move the anchor.
+**Spending and recovering:** training on the treadmill spends it, and the ice bath gives it back faster than waiting. Both move the anchor. See docs/DRILLS.md.
 
 **The icon:** `icons/Pixelart/NEW/stamina-bolt.png`, generated and keyed by the same tools.
 

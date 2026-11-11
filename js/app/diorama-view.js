@@ -731,7 +731,13 @@ export function wireDiorama(root, ctx) {
     }
   };
 
-  const box = () => vp.getBoundingClientRect();
+  // the viewport's box, measured once and again only when the window changes or a touch starts:
+  // reading it while the world is moving would make the browser work the page's layout out again
+  let vpBox = null;
+  const box = () => (vpBox ||= vp.getBoundingClientRect());
+  if (view.onResize) window.removeEventListener('resize', view.onResize);
+  view.onResize = () => { vpBox = null; apply(); };
+  window.addEventListener('resize', view.onResize);
   // the city's clouds, the delivery sign and the truck (city3d.js), on the city's floors
   const city = env.floor != null && webglOk() ? mountCity3d(vp, {
     worldX0: env.x0,
@@ -750,13 +756,27 @@ export function wireDiorama(root, ctx) {
     mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
   } else {
     closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }
+  // The view changes at once; the screen follows once a frame, however many touch or wheel
+  // events come in between (a phone sends 120 a second).
+  let frameAsked = 0; let invAt = 0;
+  const paint = () => {
+    frameAsked = 0;
+    if (!worldEl.isConnected) return;
+    const r = box();
+    const tf = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
+    worldEl.style.transform = tf;
+    if (stage.front) {
+      stage.front.style.transform = tf;
+      // the labels' counter-scale: an inherited value, so it's only touched when the zoom changes
+      if (invAt !== view.v.s) { invAt = view.v.s; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
+    }
+    city?.setView(view.v, r.width, r.height);
+    sharpen();
+  };
   const apply = () => {
     const r = box();
     view.v = clampView(view.v || homeView(r.width, r.height, env), r.width, r.height, env);
-    worldEl.style.transform = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
-    if (stage.front) { stage.front.style.transform = worldEl.style.transform; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
-    city?.setView(view.v, r.width, r.height);
-    sharpen();
+    if (!frameAsked) frameAsked = requestAnimationFrame(paint);
   };
   const artEl = worldEl.querySelector('.dg-room-art');
   const roomImg = artEl.querySelector('img');
@@ -772,7 +792,8 @@ export function wireDiorama(root, ctx) {
     if (src === full || stage.sharpening === full || !view.v) return;
     if (checkedAt && Math.abs(view.v.s - checkedAt) / checkedAt < 0.05) return;   // only when the zoom has really changed
     checkedAt = view.v.s;
-    if (!needsFull(roomImg.getBoundingClientRect().width * (window.devicePixelRatio || 1))) return;
+    // the picture's width on screen, from numbers already known (no layout read)
+    if (!needsFull((rw * Math.abs(M[0]) + rh * Math.abs(M[2])) * view.v.s * (window.devicePixelRatio || 1))) return;
     stage.sharpening = full;
     decoded(full).then(() => {
       stage.sharpening = null;
@@ -796,6 +817,7 @@ export function wireDiorama(root, ctx) {
 
   draw();
   apply();
+  paint();   // the first frame straight away, so the world never shows unplaced
   // the other floors' rooms come down quietly once this one is up, so the lift never waits on them
   if (!stage.warmed && env.floor != null) {
     stage.warmed = true;
@@ -892,6 +914,7 @@ export function wireDiorama(root, ctx) {
     }
     g = { mode: 'pan', item: itemEl?.dataset.item || null, x0: e.clientX, y0: e.clientY, from: { ...view.v }, moved: false };
   };
+  vp.addEventListener('pointerdown', () => { vpBox = null; }, { capture: true });
   vp.onpointermove = (e) => {
     if (!pts.has(e.pointerId)) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });

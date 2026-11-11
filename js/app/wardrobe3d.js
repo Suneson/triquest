@@ -5,7 +5,7 @@
 // the victory clip) before going back to it. Drag sideways to turn the character round.
 
 import { loadThree, webglOk } from './runner3d.js';
-import { skinTint, eyeColour } from '../core/wardrobe.js';
+import { skinTint, eyeColour, hairColour } from '../core/wardrobe.js';
 import { spawnChar } from './char3d.js';
 
 /** What the character does between idles, and how long it waits (seconds) before the next. */
@@ -13,7 +13,7 @@ const FLOURISH = ['taunt1', 'victory', 'taunt2'];
 const WAIT = [9, 16];
 
 /**
- * Mount the stage in `host`. Returns { show(model, clips, look), setLook(look), dispose() }, or null when
+ * Mount the stage in `host`. Returns { show(model, clips, look, gear), setLook(look), dispose() }, or null when
  * the device can't draw WebGL.
  */
 export async function mountWardrobe(host) {
@@ -105,13 +105,17 @@ export async function mountWardrobe(host) {
     uniforms.uEye.value.set(...eyeColour(look.eyes));
   };
 
-  /** Stand this character on the stage (the old one stays until the new one has loaded). */
-  const show = async (model, clips, look) => {
+  /**
+   * Stand this character on the stage, wearing `gear` ([{ id, slot, url }], js/core/wardrobe.js
+   * gearFor). The old one stays until the new one has loaded.
+   */
+  const show = async (model, clips, look, gear = []) => {
     setLook(look);
-    if (model === url) return;
-    url = model;
-    const next = await spawnChar(L, { model, clips, uniforms });
-    if (gone || url !== model) { next.dispose(); return; }
+    const key = `${model}|${look.hairColour}|${gear.map((g) => g.id).join(',')}`;
+    if (key === url) return;
+    url = key;
+    const next = await spawnChar(L, { model, clips, uniforms, gear, hair: hairColour(look.hairColour) });
+    if (gone || url !== key) { next.dispose(); return; }
     if (figure) { turn.remove(figure.root); figure.dispose(); }
     figure = next;
     figure.play('idle', { fade: 0 });

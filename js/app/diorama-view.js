@@ -29,7 +29,7 @@ import { STAMINA } from '../core/stamina.js';
 import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/drills.js';
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
-import { modelFor, clipsFor, skinTint, eyeColour } from '../core/wardrobe.js';
+import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
 import { floorGrid, entryTile, besideItem } from '../core/walk.js';
 import { mountWalker } from './walker.js';
@@ -227,10 +227,14 @@ const turnBar = () => `<div class="dg-turn" role="group" aria-label="${esc(t('cp
     <button data-r3d-turn="45" aria-label="${esc(t('cp.r3d.right'))}"><span>${t('cp.r3d.right')}</span>${svg('back')}</button>
   </div>`;
 
-/** Your athlete as the wardrobe dressed them: the model, its clips and the tints. */
+/** Your athlete as the wardrobe dressed them: the model, its clips, the tints and the accessories. */
 function athlete() {
   const look = loadLook();
-  return { model: modelFor(look, ownedIds()), clips: clipsFor(look), skin: skinTint(look.skin), eye: eyeColour(look.eyes) };
+  const owned = ownedIds();
+  const model = modelFor(look, owned); const gear = gearFor(look, owned);
+  return { model, clips: clipsFor(look), skin: skinTint(look.skin), eye: eyeColour(look.eyes), gear, hair: hairColour(look.hairColour),
+    // what makes it a different figure: a change here loads it again
+    key: `${model}|${look.hairColour}|${gear.map((g) => g.id).join(',')}` };
 }
 
 /** A treadmill's tier, 1 to 4: the gift one grows with the run room, the others say it in their id. */
@@ -291,20 +295,29 @@ let lastLevels = {};
 export const itemLevels = () => lastLevels;
 const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], STAGE_ROOMS);
 
+/** Rooms whose items only ever stand there: taken from the stash anywhere, they go to that room. */
+const OWN_ROOM = new Set(['run']);
+
 /**
- * Set an item from the stash down in the room on the stage, on the first free spot, and pick it up.
- * False when it doesn't fit there.
+ * Set an item from the stash down on the first free spot (the middle of the floor first), pick it
+ * up, and take the camera to it. It goes in the room on the stage, unless it belongs to a room of
+ * its own (OWN_ROOM): then it goes there, and the stage flies over to it under the clouds.
+ * False when it doesn't fit.
  */
 export function takeFromStash(id) {
-  const room = activeRoom();
+  const here = activeRoom();
+  const base = placeableById(id);
+  const room = base && OWN_ROOM.has(base.home) && geomOf(base.home) ? base.home : here;
   const geom = geomOf(room);
   const saved = savedPlacements();
-  const it = orient(placeableById(id), saved[id]?.face);
-  if (!it) return false;
+  const it = orient(base, saved[id]?.face);
+  if (!it || !geom) return false;
   const spot = firstFree(geom, room, it, resolvePlacements(stageLayout(), itemsOwned(), saved));
   if (!spot) return false;
   savePlacement(id, { ...spot, ...(it.faces ? { face: it.face } : {}) });
   view.sel = id;
+  view.focus = id;
+  view.travel = room !== here ? { from: here, to: room, id } : null;
   return true;
 }
 // the world's DOM, kept between renders (see wireDiorama)
@@ -615,7 +628,7 @@ export function wireDiorama(root, ctx) {
     }
     const char = athlete();
     const g = gridFor(room);
-    if (walk.w && (walk.room !== room || walk.w.model !== char.model)) { walk.w.dispose(); walk.w = null; }
+    if (walk.w && (walk.room !== room || walk.w.model !== char.key)) { walk.w.dispose(); walk.w = null; }
     if (!walk.w) {
       const start = Number.isInteger(a.u) && g.free(a.u, a.v) ? [a.u, a.v] : entryTile(g);
       if (!start) return a;
@@ -1029,6 +1042,32 @@ export function wireDiorama(root, ctx) {
     worldEl.querySelectorAll('.dg-item').forEach((el) => el._r3d?.setYaw((deg * Math.PI) / 180));
     haptic('tick');
   }));
+
+  // an item just taken from the stash: fly to its room if it's another, then bring it to the middle
+  // of the screen, a little closer than the room's home view
+  const focusOn = (id) => {
+    const p = placements[id]; const it = itemAt(id);
+    if (!p || !it || p.room !== room) return;
+    const c = toWorld_(geom, ...Object.values(tileToPct(geom, p.u + it.w / 2, p.v + it.h / 2)));
+    const r = box();
+    const s = Math.min(maxZoom(r.width, r.height, env), homeView(r.width, r.height, env).s * 1.8);
+    if (!reduced()) { [worldEl, stage.front].forEach((el) => el?.classList.add('is-easing')); setTimeout(() => [worldEl, stage.front].forEach((el) => el?.classList.remove('is-easing')), 300); }
+    // the item a little above the middle: the bar under it stays clear
+    view.v = { s, tx: r.width / 2 - c[0] * s, ty: r.height * 0.45 - c[1] * s };
+    apply();
+  };
+  if (view.travel?.from === room && view.travel.to !== room && !stage.moving) {
+    // (the item isn't in this room, so it isn't picked up here: its id travels with the move)
+    const { to, id } = view.travel;
+    view.travel = null;
+    root.querySelectorAll('[data-room-go]').forEach((x) => { const on = x.dataset.roomGo === to; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
+    const go = () => { setActiveRoom(to); view.sel = id; view.focus = id; document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true })); };
+    if (reduced()) go(); else cloudMove(room, to, go, roomSrc(to));
+  } else if (view.focus) {
+    const id = view.focus; view.focus = null; view.travel = null;
+    // after the first frame, so the room is laid out and the move eases from where it is
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (worldEl.isConnected) focusOn(id); }));
+  }
 
   // the rooms
   root.querySelectorAll('[data-room-go]').forEach((b) => {

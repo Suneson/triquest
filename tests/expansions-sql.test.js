@@ -84,7 +84,7 @@ test('how big a room is, and what comes next', () => {
 
 test('the JS side: ready rooms, owned rooms, the wallet', () => {
   assert.ok(expansionReady('locker') && expansionReady('pool'));
-  assert.ok(onSale('locker') && !onSale('pool') && onSale('pool', true), 'players wait for the full set of levels; admins can try it');
+  for (const room of EXPANSION_RULES.rooms) assert.ok(onSale(room), `${room} can be expanded by every player`);
   assert.ok(isExpanded([{ room: 'locker' }], 'locker') && !isExpanded([], 'locker'));
   for (const r of EXPANSION_RULES.ready) assert.ok(EXPANDED_ART[r], r);
   const at = new Date().toISOString();

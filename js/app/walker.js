@@ -98,7 +98,7 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     wander: (on) => { roam = on && !still; rest(); },
     tile: here,
     walking: () => path.length > 0,
-    model: char.model,
+    model: char.key || char.model,
     dispose() { gone = true; cancelAnimationFrame(raf); r3d.dispose(); host.remove(); },
   };
 }

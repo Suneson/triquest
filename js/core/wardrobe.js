@@ -1,7 +1,7 @@
 // wardrobe.js: what a character can wear, and how a look is checked (js/app/wardrobe-view.js).
 //
 // A look is: a class (endurance or hybrid, for the stats), a body (male or female, a look only),
-// a skin tone, an eye colour, one outfit, and one accessory per slot. Outfits are complete sets
+// a skin tone, an eye colour, a hair style and colour, one outfit, and one accessory per slot. Outfits are complete sets
 // (BUILD-PLAN.md section 2); helmets and shoes give buffs, hats, glasses and watches are looks only.
 // There is one male body and one female body (BUILD-PLAN.md section 2, 10 November 2026): the
 // class changes your stats, never your shape. Every outfit is listed so you can see what's coming,
@@ -35,6 +35,15 @@ export const SKIN_TONES = [
   { id: 'brown', hex: '#7A4C31' },
   { id: 'deep', hex: '#5A3624' },
   { id: 'ebony', hex: '#3F261A' },
+];
+/** Hair colours: the hair models are painted grey and multiplied by one of these. */
+export const HAIR_COLOURS = [
+  { id: 'black', hex: '#2A2522' },
+  { id: 'dark', hex: '#4A3426' },
+  { id: 'brown', hex: '#7A5232' },
+  { id: 'auburn', hex: '#8E4A2C' },
+  { id: 'blonde', hex: '#D2AE6E' },
+  { id: 'platinum', hex: '#E8E0D0' },
 ];
 export const EYE_COLOURS = [
   { id: 'brown', hex: '#6B4226' },
@@ -72,30 +81,40 @@ export const OUTFITS = [
   { id: 'clan-champion', kind: 'earned', for: CLASSES, models: {} },
 ];
 
-/** Accessory slots, in the order the wardrobe lists them. `buff`: it helps your training. */
+/**
+ * Accessory slots, in the order the wardrobe lists them. `buff`: it helps your training. `free`:
+ * everyone has every item (hair is part of the look, on the Look tab).
+ */
 export const SLOTS = [
+  { id: 'hair', buff: false, free: true, items: ['hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-top', 'hair-bun-low', 'hair-buns'] },
   { id: 'helmet', buff: true, items: ['helmet-road', 'helmet-aero', 'helmet-blue', 'helmet-gold'] },
   { id: 'shoes', buff: true, items: ['shoe-starter', 'shoe-runner', 'shoe-racer', 'shoe-trail', 'shoe-lifter', 'shoe-trainer', 'shoe-cycling', 'shoe-gold'] },
   { id: 'hat', buff: false, items: ['hat-cap-navy', 'hat-cap-white', 'hat-visor', 'hat-beanie', 'hat-bucket', 'hat-gold'] },
   { id: 'glasses', buff: false, items: ['glasses-sport', 'glasses-blue', 'glasses-gold', 'glasses-casual'] },
   { id: 'watch', buff: false, items: ['watch-basic', 'watch-blue', 'watch-gold'] },
 ];
-/** Accessory models made so far, by item id. None yet. */
-export const ACCESSORY_MODELS = {};
+/** Accessory models made so far (tools/build-accessories.mjs), by item id. */
+export const ACCESSORY_MODELS = Object.fromEntries([
+  'hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-top', 'hair-bun-low', 'hair-buns',
+  'helmet-road', 'helmet-aero', 'helmet-blue', 'helmet-gold',
+  'shoe-starter', 'shoe-runner', 'shoe-racer', 'shoe-trail', 'shoe-lifter', 'shoe-trainer', 'shoe-cycling', 'shoe-gold',
+  'hat-cap-navy', 'hat-cap-white', 'hat-visor', 'hat-beanie', 'hat-bucket', 'hat-gold',
+  'glasses-sport', 'glasses-blue', 'glasses-gold', 'glasses-casual',
+].map((id) => [id, `models/gear/${id}.glb`]));
 
 /** What every player has before buying anything: the plain body, the tracksuit and the free trainers. */
 export const STARTER = ['base', 'tracksuit', 'shoe-starter'];
 
 export const DEFAULT_LOOK = Object.freeze({
-  cls: 'endurance', body: 'male', skin: 'fair', eyes: 'brown', outfit: 'base',
-  gear: Object.freeze({ helmet: null, shoes: null, hat: null, glasses: null, watch: null }),
+  cls: 'endurance', body: 'male', skin: 'fair', eyes: 'brown', hairColour: 'dark', outfit: 'base',
+  gear: Object.freeze({ hair: null, helmet: null, shoes: null, hat: null, glasses: null, watch: null }),
 });
 
 const outfitById = (id) => OUTFITS.find((o) => o.id === id) || null;
 export const slotOf = (item) => SLOTS.find((s) => s.items.includes(item))?.id || null;
 
 /** Do you have it? `owned`: the item ids in your inventory. */
-export const ownsItem = (id, owned = []) => STARTER.includes(id) || owned.includes(id);
+export const ownsItem = (id, owned = []) => STARTER.includes(id) || owned.includes(id) || !!SLOTS.find((s) => s.free && s.items.includes(id));
 
 /** The model for this outfit on this body, or null when it isn't made yet. */
 export function outfitModel(outfitId, look) {
@@ -130,11 +149,20 @@ export function accessoryState(item, owned = []) {
 export const modelFor = (look, owned = []) =>
   (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[look.body]);
 
+/** What the 3D view hangs on the character: [{ id, slot, url }], only what can be worn. */
+export const gearFor = (look, owned = []) => SLOTS
+  .map((s) => ({ id: look.gear?.[s.id], slot: s.id }))
+  .filter((g) => g.id && accessoryState(g.id, owned) === 'owned')
+  .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id] }));
+
+/** The hair colour as linear RGB, for the 3D view. */
+export const hairColour = (id) => hexToLinear((HAIR_COLOURS.find((h) => h.id === id) || HAIR_COLOURS[1]).hex);
+
 /** The clips file for this look's body. */
 export const clipsFor = (look) => BODY_CLIPS[look.body] || BODY_CLIPS.male;
 
-/** Every outfit's id: what an admin or the demo may try on. */
-export const ALL_OUTFITS = OUTFITS.map((o) => o.id);
+/** Every outfit's and accessory's id: what an admin or the demo may try on. */
+export const ALL_OUTFITS = [...OUTFITS.map((o) => o.id), ...SLOTS.flatMap((s) => s.items)];
 
 /** A saved look, checked: anything unknown or not allowed goes back to the default. */
 export function normaliseLook(raw, owned = []) {
@@ -145,6 +173,7 @@ export function normaliseLook(raw, owned = []) {
     body: pick(r.body, BODY_LOOKS, DEFAULT_LOOK.body),
     skin: pick(r.skin, SKIN_TONES.map((s) => s.id), DEFAULT_LOOK.skin),
     eyes: pick(r.eyes, EYE_COLOURS.map((e) => e.id), DEFAULT_LOOK.eyes),
+    hairColour: pick(r.hairColour, HAIR_COLOURS.map((h) => h.id), DEFAULT_LOOK.hairColour),
     outfit: 'base',
     gear: { ...DEFAULT_LOOK.gear },
   };

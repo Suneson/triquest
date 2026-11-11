@@ -39,3 +39,27 @@ Fit quality is printed (mm apart, about 22 to 28 mm for the first outfits). Chec
 3. In `js/core/wardrobe.js`, give the outfit `models: made('<outfit>')`.
 
 Better source files help: a female clip set downloaded "With Skin" from Mixamo, and the mechanic's own walk from Mixamo (his current walk is a different rig and is skipped).
+
+## Accessories (hair, hats, helmets, glasses, shoes)
+
+Code: `js/app/gear3d.js` (the fitting), `js/core/wardrobe.js` (`SLOTS`, `ACCESSORY_MODELS`, `gearFor`), models in `models/gear/<id>.glb`.
+
+Each accessory is a plain mesh, not skinned. The app fits it to whoever wears it:
+1. with the character in its bind pose, it measures the skin that moves with the head (or each foot);
+2. it scales and places the accessory against that box, by its slot's rule (`FIT`) and any change for that item (`ITEM_FIT`);
+3. it hangs it on the head bone, or a shoe on each foot bone (the right one mirrored), so it follows every clip.
+
+So one file fits the male, the female and every outfit. A hat or helmet hides the hair (the visor doesn't). Hair is free, on the Look tab, and tinted with the hair colour: hair models are painted grey.
+
+### Adding one
+
+1. Put the GLB in `MOSKE APP/Items/z_GLB MODELS` (a shoe is one shoe).
+2. Add a row to `ITEMS` in `tools/build-accessories.mjs`: the app's id, the file, and `yaw`, the turn round Y that makes it face +Z (shoes are turned automatically: the heel is the taller end).
+3. `node tools/build-accessories.mjs "<z_GLB MODELS>" <id>`: about 6,000 triangles, one 512 px WebP, 50 to 110 KB.
+4. Add the id to `ACCESSORY_MODELS` (and its slot in `SLOTS` if it's new), and its name in both locales.
+5. Check it on both bodies. If it sits too high, low or small, give it a line in `ITEM_FIT`.
+
+What the first set showed (November 2026):
+- Hair `hair-curls`, `hair-bun-low` and `hair-buns` have a band of hair under the chin in the model itself; new hair should stop at the jaw line.
+- The navy model in the helmets folder is a baseball cap: it's the Navy cap.
+- One file in the glasses folder was the first female hair again; it isn't used.

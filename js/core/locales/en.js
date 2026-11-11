@@ -3121,6 +3121,14 @@ en.wardrobe = {
     "deep": "Deep",
     "ebony": "Ebony"
   },
+  "hairColours": {
+    "black": "Black",
+    "dark": "Dark brown",
+    "brown": "Brown",
+    "auburn": "Auburn",
+    "blonde": "Blonde",
+    "platinum": "Platinum"
+  },
   "eyeColours": {
     "brown": "Brown",
     "hazel": "Hazel",
@@ -3150,6 +3158,7 @@ en.wardrobe = {
   "none": "None",
   "buff": "Buff",
   "slot": {
+    "hair": "Hair",
     "helmet": "Helmets",
     "shoes": "Shoes",
     "hat": "Hats",
@@ -3183,6 +3192,13 @@ en.wardrobe = {
     "helmet-aero": "Aero helmet",
     "helmet-blue": "Blue helmet",
     "helmet-gold": "Gold helmet",
+    "hair-crop": "Crop",
+    "hair-curls": "Curls",
+    "hair-long": "Long",
+    "hair-braids": "Braids",
+    "hair-bun-top": "Top bun",
+    "hair-bun-low": "Low bun",
+    "hair-buns": "Space buns",
     "shoe-starter": "Starter trainers",
     "shoe-runner": "Road runners",
     "shoe-racer": "Racers",

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
-  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, BODY_MODELS, DEFAULT_LOOK, normaliseLook, outfitState, accessoryState, modelFor, skinTint, ownsItem,
+  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, normaliseLook, outfitState, accessoryState, modelFor, gearFor, skinTint, ownsItem, slotOf,
 } from '../js/core/wardrobe.js';
 
 const look = (o = {}) => ({ ...DEFAULT_LOOK, gear: { ...DEFAULT_LOOK.gear }, ...o });
@@ -10,6 +10,7 @@ const look = (o = {}) => ({ ...DEFAULT_LOOK, gear: { ...DEFAULT_LOOK.gear }, ...
 test('every body and outfit model is in the repo', () => {
   for (const url of Object.values(BODY_MODELS)) assert.ok(existsSync(url), url);
   for (const o of OUTFITS) for (const url of Object.values(o.models)) assert.ok(existsSync(url), url);
+  for (const [id, url] of Object.entries(ACCESSORY_MODELS)) { assert.ok(existsSync(url), url); assert.ok(slotOf(id), `${id} is in a slot`); }
 });
 
 test('ids are unique, and every outfit is for at least one class', () => {
@@ -42,11 +43,19 @@ test('the 3D view loads the outfit when it can be worn, the plain body otherwise
   assert.equal(modelFor(look({ body: 'female', cls: 'hybrid' })), 'models/chars/female.glb');
 });
 
-test('accessories: the free trainers are yours, but none has a model yet', () => {
+test('accessories: you wear what you have and what has a model; hair is free', () => {
   assert.ok(ownsItem('shoe-starter'));
-  assert.equal(accessoryState('shoe-starter'), 'soon');
+  assert.equal(accessoryState('shoe-starter'), 'owned');
   assert.equal(accessoryState('helmet-aero'), 'locked');
-  assert.equal(normaliseLook({ gear: { shoes: 'shoe-starter' } }).gear.shoes, null);
+  assert.equal(accessoryState('helmet-aero', ['helmet-aero']), 'owned');
+  assert.equal(accessoryState('watch-gold', ['watch-gold']), 'soon', 'no watch models yet');
+  assert.equal(accessoryState('hair-braids'), 'owned', 'every hair style is free');
+  assert.equal(normaliseLook({ gear: { shoes: 'shoe-starter', helmet: 'helmet-aero', hair: 'hair-long' } }).gear.helmet, null, 'not bought');
+  const l = normaliseLook({ hairColour: 'blonde', gear: { shoes: 'shoe-starter', hair: 'hair-long' } });
+  assert.equal(l.gear.shoes, 'shoe-starter'); assert.equal(l.gear.hair, 'hair-long'); assert.equal(l.hairColour, 'blonde');
+  assert.deepEqual(gearFor(l).map((g) => [g.slot, g.url]), [['hair', 'models/gear/hair-long.glb'], ['shoes', 'models/gear/shoe-starter.glb']]);
+  assert.equal(normaliseLook({ hairColour: 'green' }).hairColour, DEFAULT_LOOK.hairColour);
+  assert.ok(HAIR_COLOURS.some((h) => h.id === DEFAULT_LOOK.hairColour));
   for (const s of SLOTS) assert.equal(typeof s.buff, 'boolean');
   assert.deepEqual(SLOTS.filter((s) => s.buff).map((s) => s.id), ['helmet', 'shoes'], 'only helmets and shoes give buffs');
 });

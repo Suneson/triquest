@@ -3086,5 +3086,5 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 @media (prefers-reduced-motion: reduce) { .dr-st-bar i, .dr-prog i, .dr-lvl, .dr-stop { transition: none; } }
 
 /* your athlete walking the floor (js/app/walker.js): a point on the floor, its canvas above it */
-.dg-walker { position: absolute; width: 0; height: 0; pointer-events: none; }
+.dg-walker { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; will-change: transform; }
 .dg-walker .r3d-canvas { position: absolute; pointer-events: none; }

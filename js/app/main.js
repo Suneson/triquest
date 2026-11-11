@@ -1113,7 +1113,14 @@ async function boot() {
 
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
 
-  store.subscribe(render);
+  // A change to your data redraws the screen once, however many changes come together (saving
+  // a drill writes two settings, a sync can write dozens): they're gathered and drawn as one.
+  let renderAsked = false;
+  store.subscribe(() => {
+    if (renderAsked) return;
+    renderAsked = true;
+    queueMicrotask(() => { renderAsked = false; render(); });
+  });
   render();
   appState.booted = true;
 

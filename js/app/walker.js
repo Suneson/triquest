@@ -40,8 +40,10 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
 
   const place = () => {
     const [x, y] = toPx(pos[0] + 0.5, pos[1] + 0.5);
-    host.style.left = `${x.toFixed(1)}px`; host.style.top = `${y.toFixed(1)}px`;
-    host.style.zIndex = String(Math.round(y) + 1);
+    // moved by transform: no layout work for the page while it walks
+    host.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+    const z = String(Math.round(y) + 1);
+    if (host.style.zIndex !== z) host.style.zIndex = z;
   };
   const here = () => [Math.round(pos[0]), Math.round(pos[1])];
   const rest = () => { restUntil = performance.now() + (REST[0] + Math.random() * (REST[1] - REST[0])) * 1000; };

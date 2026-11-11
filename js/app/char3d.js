@@ -7,6 +7,8 @@
 // The emissive map is a mask, not a glow: red marks the skin and green the irises, which `tintable`
 // recolours with the look's skin tone and eye colour.
 
+import { dress } from './gear3d.js';
+
 const files = new Map();   // url -> Promise<gltf>, shared between every view
 
 /** A glTF file, loaded once. `L` is runner3d.js's loadThree(). */
@@ -55,10 +57,12 @@ function rebindSkins(src, dst) {
  * Load a character and put a copy of it in the scene's hands.
  *   model   the mesh's file, clips  that body's clips file (js/core/wardrobe.js: modelFor, clipsFor)
  *   uniforms  { uSkin, uEye } to tint it with, or null to leave it as painted
+ *   gear      the accessories on it: [{ id, slot, url }] (js/core/wardrobe.js gearFor), hung on its
+ *             head and feet by gear3d.js; `hair` the hair colour as linear RGB
  * @returns {Promise<{ root, mixer, has(name), length(name), play(name, opts), update(dt), dispose() }>}
  *   play(name, { fade = 0.2, speed = 1 }): cross-fade to that clip (an unknown name keeps the current one)
  */
-export async function spawnChar(L, { model, clips, uniforms = null }) {
+export async function spawnChar(L, { model, clips, uniforms = null, gear = [], hair = null }) {
   const { THREE } = L;
   const [gltf, anim] = await Promise.all([loadGltf(L, model), clips ? loadGltf(L, clips) : null]);
   const root = gltf.scene.clone(true);
@@ -73,6 +77,8 @@ export async function spawnChar(L, { model, clips, uniforms = null }) {
     o.material.emissive?.setRGB(0, 0, 0);   // the emissive map is the recolour mask, never a glow
     if (uniforms && o.material.emissiveMap) tintable(o.material, uniforms);
   });
+  // measured in the bind pose, so before any clip plays
+  mats.push(...await dress(THREE, root, gear, { load: (url) => loadGltf(L, url), hair }));
   const mixer = new THREE.AnimationMixer(root);
   const byName = new Map((anim?.animations || []).map((c) => [c.name, c]));
   let now = null;

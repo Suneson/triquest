@@ -3121,6 +3121,14 @@ es.wardrobe = {
     "deep": "Oscura",
     "ebony": "Ébano"
   },
+  "hairColours": {
+    "black": "Negro",
+    "dark": "Castaño oscuro",
+    "brown": "Castaño",
+    "auburn": "Cobrizo",
+    "blonde": "Rubio",
+    "platinum": "Platino"
+  },
   "eyeColours": {
     "brown": "Marrones",
     "hazel": "Avellana",
@@ -3150,6 +3158,7 @@ es.wardrobe = {
   "none": "Ninguno",
   "buff": "Mejora",
   "slot": {
+    "hair": "Pelo",
     "helmet": "Cascos",
     "shoes": "Zapatillas",
     "hat": "Gorras",
@@ -3197,6 +3206,13 @@ es.wardrobe = {
     "hat-beanie": "Gorro",
     "hat-bucket": "Gorro de pescador",
     "hat-gold": "Gorra de campeón",
+    "hair-crop": "Corto",
+    "hair-curls": "Rizos",
+    "hair-long": "Largo",
+    "hair-braids": "Trenzas",
+    "hair-bun-top": "Moño alto",
+    "hair-bun-low": "Moño bajo",
+    "hair-buns": "Dos moños",
     "glasses-sport": "Gafas deportivas",
     "glasses-blue": "Pantalla azul",
     "glasses-gold": "Pantalla dorada",

@@ -3,7 +3,7 @@
 // The character stands at the top in 3D (wardrobe3d.js); below it three tabs, scrolling on their own:
 //   Look         class, body, skin tone and eye colour
 //   Outfits      every outfit: yours first, then the ones still to get, and how
-//   Accessories  helmets, shoes, hats, glasses and watches, one per slot
+//   Accessories  helmets, shoes, hats, glasses and watches, one per slot (hair is on Look)
 // The look is kept on this device for now (moske-look). Outfits and accessories without a model
 // can't be put on yet: their cards say so. The rules are js/core/wardrobe.js's.
 
@@ -15,7 +15,7 @@ import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { gearState } from './gear-state.js';
 import {
-  CLASSES, BODY_LOOKS, SKIN_TONES, EYE_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor,
+  CLASSES, BODY_LOOKS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor, gearFor,
 } from '../core/wardrobe.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
@@ -23,7 +23,7 @@ import { isDemo } from './demo.js';
 const LOOK_KEY = 'moske-look';
 const TABS = ['look', 'outfits', 'gear'];
 
-// admins and the demo can try every outfit on, to check the models
+// admins and the demo can try every outfit and accessory on, to check the models
 const everything = () => { try { return isChestAdmin() || isDemo(); } catch { return false; } };
 export const ownedIds = () => {
   let ids = [];
@@ -59,6 +59,7 @@ const SLOT_PATH = {
   hat: 'M12 38c0-12 8-20 20-20s20 8 20 20z M10 38h44c4 0 6 2 6 4H8c0-2 1-4 2-4z',
   glasses: 'M6 28h52 M10 28c0 8 4 12 10 12s10-4 10-12 M34 28c0 8 4 12 10 12s10-4 10-12',
   watch: 'M24 6h16v12H24z M24 46h16v12H24z M20 18h24v28H20z M32 26v7l5 3',
+  hair: 'M14 40c-2-16 6-28 18-28s20 12 18 28c-3-8-8-12-10-18-6 6-14 8-22 8-2 3-3 6-4 10z',
 };
 const slotSvg = (slot, colour) => `<svg class="wr-kit" viewBox="0 0 64 64" aria-hidden="true"><path d="${SLOT_PATH[slot]}" fill="${slot === 'glasses' ? 'none' : colour}"
   stroke="${slot === 'glasses' ? colour : '#0B1630'}" stroke-width="${slot === 'glasses' ? 4 : 2}" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
@@ -78,7 +79,10 @@ function lookPanel(look) {
     <section class="wr-sec"><h3>${esc(t('wardrobe.skin'))}</h3>
       <div class="wr-swatches">${SKIN_TONES.map((s) => swatch('data-wr-skin', s, look.skin === s.id, t(`wardrobe.skins.${s.id}`))).join('')}</div></section>
     <section class="wr-sec"><h3>${esc(t('wardrobe.eyes'))}</h3>
-      <div class="wr-swatches is-eyes">${EYE_COLOURS.map((e) => swatch('data-wr-eyes', e, look.eyes === e.id, t(`wardrobe.eyeColours.${e.id}`))).join('')}</div></section>`;
+      <div class="wr-swatches is-eyes">${EYE_COLOURS.map((e) => swatch('data-wr-eyes', e, look.eyes === e.id, t(`wardrobe.eyeColours.${e.id}`))).join('')}</div></section>
+    <section class="wr-sec"><h3>${esc(t('wardrobe.slot.hair'))}</h3>
+      <div class="wr-swatches">${HAIR_COLOURS.map((h) => swatch('data-wr-hair', h, look.hairColour === h.id, t(`wardrobe.hairColours.${h.id}`))).join('')}</div>
+      <div class="wr-grid">${slotCards(SLOTS.find((s) => s.id === 'hair'), look, [], HAIR_COLOURS.find((h) => h.id === look.hairColour)?.hex)}</div></section>`;
 }
 
 const STATE_ORDER = { owned: 0, soon: 1, locked: 2, class: 3 };
@@ -104,22 +108,25 @@ function outfitsPanel(look, owned) {
   return `<p class="wr-note">${esc(t('wardrobe.outfitsNote'))}</p><div class="wr-grid">${rows.map(card).join('')}</div>`;
 }
 
-function gearPanel(look, owned) {
-  return SLOTS.map((slot) => {
-    const cur = look.gear[slot.id];
-    const none = `<button type="button" class="wr-card is-owned${cur ? '' : ' is-on'}" data-wr-gear="${slot.id}:" aria-pressed="${!cur}">
+/** A slot's cards: none, then each item. `colour` paints every icon (the hair colour), else each item's own. */
+function slotCards(slot, look, owned, colour = null) {
+  const cur = look.gear[slot.id];
+  const none = `<button type="button" class="wr-card is-owned${cur ? '' : ' is-on'}" data-wr-gear="${slot.id}:" aria-pressed="${!cur}">
       ${noneSvg}<b>${esc(t('wardrobe.none'))}</b></button>`;
-    const cards = slot.items.map((id) => {
-      const state = accessoryState(id, owned);
-      const on = cur === id;
-      return `<button type="button" class="wr-card is-${state}${on ? ' is-on' : ''}" data-wr-gear="${slot.id}:${id}" aria-pressed="${on}" ${state === 'owned' ? '' : 'aria-disabled="true"'}>
-        ${slotSvg(slot.id, ITEM_COLOUR(id))}<b>${esc(t(`wardrobe.item.${id}`))}</b>
+  return none + slot.items.map((id) => {
+    const state = accessoryState(id, owned);
+    const on = cur === id;
+    return `<button type="button" class="wr-card is-${state}${on ? ' is-on' : ''}" data-wr-gear="${slot.id}:${id}" aria-pressed="${on}" ${state === 'owned' ? '' : 'aria-disabled="true"'}>
+        ${slotSvg(slot.id, colour || ITEM_COLOUR(id))}<b>${esc(t(`wardrobe.item.${id}`))}</b>
         ${state === 'soon' ? `<small class="wr-state is-soon">${esc(t('wardrobe.state.soon'))}</small>` : state === 'locked' ? `<small class="wr-state">${svg('lock')}${esc(t('wardrobe.how.shop'))}</small>` : ''}
       </button>`;
-    }).join('');
-    return `<section class="wr-sec"><h3>${esc(t(`wardrobe.slot.${slot.id}`))}${slot.buff ? ` <span class="wr-buff">${svg('bolt')}${esc(t('wardrobe.buff'))}</span>` : ''}</h3>
-      <div class="wr-grid">${none}${cards}</div></section>`;
   }).join('');
+}
+
+function gearPanel(look, owned) {
+  return SLOTS.filter((slot) => !slot.free).map((slot) =>
+    `<section class="wr-sec"><h3>${esc(t(`wardrobe.slot.${slot.id}`))}${slot.buff ? ` <span class="wr-buff">${svg('bolt')}${esc(t('wardrobe.buff'))}</span>` : ''}</h3>
+      <div class="wr-grid">${slotCards(slot, look, owned)}</div></section>`).join('');
 }
 
 // ---- the screen ------------------------------------------------------------------------------
@@ -160,7 +167,7 @@ export function openWardrobe() {
   };
   const dress = () => {
     if (!stage) return;
-    stage.show(modelFor(look, owned), clipsFor(look), look).then(() => { msg.hidden = true; })
+    stage.show(modelFor(look, owned), clipsFor(look), look, gearFor(look, owned)).then(() => { msg.hidden = true; })
       .catch(() => { msg.hidden = false; msg.textContent = t('wardrobe.loadFailed'); });
   };
   const update = (next) => {
@@ -178,6 +185,7 @@ export function openWardrobe() {
     if (b.dataset.wrBody) return update({ ...look, body: b.dataset.wrBody });
     if (b.dataset.wrSkin) return update({ ...look, skin: b.dataset.wrSkin });
     if (b.dataset.wrEyes) return update({ ...look, eyes: b.dataset.wrEyes });
+    if (b.dataset.wrHair) return update({ ...look, hairColour: b.dataset.wrHair });
     if (b.dataset.wrOutfit && b.getAttribute('aria-disabled') !== 'true') return update({ ...look, outfit: b.dataset.wrOutfit });
     if (b.dataset.wrGear && b.getAttribute('aria-disabled') !== 'true') {
       const [slot, id] = b.dataset.wrGear.split(':');

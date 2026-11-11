@@ -59,7 +59,7 @@ export function webglOk() {
 
 /**
  * Put your athlete in `host` (an element inside the item).
- *   char      what to draw: { model, clips, skin, eye } (files from js/core/wardrobe.js, the tints
+ *   char      what to draw: { model, clips, skin, eye, gear, hair } (files from js/core/wardrobe.js, the tints
  *             as linear RGB multipliers)
  *   clip      the clip to start on ('idle' when not given); `play(name, opts)` changes it later
  *   tile      the on-screen x and y (world px) of one tile along u: { ux, uy }
@@ -86,7 +86,7 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
     const { THREE } = L;
     const uniforms = { uSkin: { value: new THREE.Vector3(...(char.skin || [1, 1, 1])) }, uEye: { value: new THREE.Vector3(...(char.eye || [0.3, 0.2, 0.1])) } };
     const { spawnChar } = await import('./char3d.js');
-    const figure = await spawnChar(L, { model: char.model, clips: char.clips, uniforms });
+    const figure = await spawnChar(L, { model: char.model, clips: char.clips, uniforms, gear: char.gear || [], hair: char.hair || null });
     if (disposed) { figure.dispose(); return null; }
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
     renderer.setClearColor(0x000000, 0);

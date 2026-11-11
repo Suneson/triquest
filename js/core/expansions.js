@@ -18,10 +18,9 @@ export const EXPANSION_RULES = {
   ready32: ['locker', 'gym', 'bike', 'run', 'pool'], // and to 32 × 32
 };
 
-// The rooms every player can buy an expansion for. All five have their ten levels, but the live
-// database still only sells the locker room's: add the other four here once
-// supabase/migrations/0034_expansions_all_rooms.sql has been applied to it.
-const ON_SALE = ['locker'];
+// The rooms every player can buy an expansion for: all five, up to 32 x 32. The server sells them
+// once supabase/migrations/0034_expansions_all_rooms.sql is applied to the live database.
+const ON_SALE = ['locker', 'gym', 'bike', 'run', 'pool'];
 /** Is this room offered to this player? Admins and the demo can try them all. */
 export const onSale = (room, tester = false) => tester || ON_SALE.includes(room);
 

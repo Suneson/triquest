@@ -3084,3 +3084,7 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .dr-tool small { grid-column: 1 / -1; font-size: 11px; font-weight: 800; color: #4a5672; }
 .dg-tag.is-clock { background: #16264D; color: #FFD34D; }
 @media (prefers-reduced-motion: reduce) { .dr-st-bar i, .dr-prog i, .dr-lvl, .dr-stop { transition: none; } }
+
+/* your athlete walking the floor (js/app/walker.js): a point on the floor, its canvas above it */
+.dg-walker { position: absolute; width: 0; height: 0; pointer-events: none; }
+.dg-walker .r3d-canvas { position: absolute; pointer-events: none; }

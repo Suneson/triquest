@@ -31,6 +31,8 @@ import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerCl
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
+import { floorGrid, entryTile, besideItem } from '../core/walk.js';
+import { mountWalker } from './walker.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
 import { featsFor } from '../core/feats.js';
@@ -268,6 +270,22 @@ function placeRunner(el, it, p, geom, src, still) {
 // ---- the stage ---------------------------------------------------------------------------
 
 const view = { v: null, sel: null, tick: null };
+
+// ---- your athlete on the floor (walker.js, docs/WALKING.md) -------------------------------
+// The athlete lives in one room and stays there when you look at another. It wanders the floor
+// between rests; start training on a machine and it walks to it (coming into that room at the
+// middle of the floor first), then gets on. Where it is stays on this device.
+
+const ATH_KEY = 'moske-athlete';
+const athSaved = () => {
+  try { const a = JSON.parse(localStorage.getItem(ATH_KEY)); if (a && STAGE_ROOMS.includes(a.room)) return a; } catch { /* none yet */ }
+  return { room: 'locker', u: null, v: null, at: null, use: null };
+};
+// a treadmill is got on from the back of its belt: away from where the runner faces
+const getOnSide = (it) => { const y = it?.runner?.[it.face]?.yaw; return y == null ? null : [-Math.round(Math.sin(y)), -Math.round(Math.cos(y))]; };
+const athSave = (a) => { try { localStorage.setItem(ATH_KEY, JSON.stringify(a)); } catch { /* private mode */ } };
+// the walker on screen, and what the stage it's on looks like now (kept fresh on every render)
+const walk = { w: null, room: null, going: null, grid: null, redraw: null };
 // the room's level per room, as the stage last worked it out (the stash's pictures use it)
 let lastLevels = {};
 export const itemLevels = () => lastLevels;
@@ -550,11 +568,78 @@ export function wireDiorama(root, ctx) {
   const openItem = (it) => {
     if (it?.opens === 'missions') openMissionBoard(ctx);
     else if (it?.opens === 'trophies') openTrophyDisplay();
-    else if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
+    if (it?.opens === 'drill' || it?.opens === 'recovery') athSave({ ...athSaved(), use: it.id });
+    if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
     else if (it?.opens === 'recovery') openRecovery(recoveryOfItem(it.id));
+  };
+  // the item the athlete is using: the treadmill during a drill, the ice bath while recovering
+  const inUse = () => {
+    const d = drillsSaved();
+    const kind = d.active ? 'drill' : d.recovering ? 'recovery' : null;
+    if (!kind) return null;
+    const ok = (id) => !!placements[id] && itemAt(id)?.opens === kind && (kind !== 'drill' || drillOfItem(id) === d.active.kind);
+    const use = athSaved().use;
+    const id = ok(use) ? use : Object.keys(placements).find(ok);
+    return id ? { id, kind, p: placements[id] } : null;
+  };
+  const gridFor = (r) => floorGrid(geomOf(r), r, placements);
+  const tileVec = () => {
+    const a = toWorld_(geom, ...Object.values(tileToPct(geom, 0, 0)));
+    const b = toWorld_(geom, ...Object.values(tileToPct(geom, 1, 0)));
+    return { ux: Math.abs(b[0] - a[0]), uy: b[1] - a[1] };
+  };
+  /** Put the athlete where it should be now; returns its state. */
+  const syncAthlete = (shown, use) => {
+    let a = athSaved();
+    walk.grid = () => gridFor(room); walk.redraw = draw;
+    // training in another room: the athlete goes there, coming in at the middle of its floor
+    if (use && a.room !== use.p.room) {
+      const spot = entryTile(gridFor(use.p.room));
+      a = { ...a, room: use.p.room, u: spot?.[0] ?? null, v: spot?.[1] ?? null, at: null };
+      athSave(a);
+    }
+    if (!use && a.at) { a = { ...a, at: null }; athSave(a); }   // done: it stands beside the machine
+    const here = a.room === room;
+    if (here && !shown) return a;   // the room's picture is still on its way
+    const onMachine = use?.kind === 'drill' && a.at === use.id;
+    if (!here || !webglOk() || onMachine) {
+      walk.w?.dispose(); walk.w = null; walk.going = null;
+      // nobody's watching it walk: it's at the machine at once
+      if (use && a.at !== use.id) {
+        const spot = besideItem(gridFor(a.room), itemAt(use.id), use.p, null, getOnSide(itemAt(use.id)));
+        a = { ...a, at: use.id, u: spot?.[0] ?? a.u, v: spot?.[1] ?? a.v };
+        athSave(a);
+        if (here) return syncAthlete(shown, use);
+      }
+      return a;
+    }
+    const char = athlete();
+    const g = gridFor(room);
+    if (walk.w && (walk.room !== room || walk.w.model !== char.model)) { walk.w.dispose(); walk.w = null; }
+    if (!walk.w) {
+      const start = Number.isInteger(a.u) && g.free(a.u, a.v) ? [a.u, a.v] : entryTile(g);
+      if (!start) return a;
+      walk.room = room; walk.going = null;
+      walk.w = mountWalker(worldEl.querySelector('.dg-items'), {
+        at: start, tile: tileVec(), char, still: reduced(),
+        toPx: (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))),
+        grid: () => walk.grid(),
+        onMove: ([u, v]) => athSave({ ...athSaved(), u, v }),
+      });
+    }
+    walk.w.wander(!use);
+    if (use && a.at !== use.id && walk.going !== use.id) {
+      walk.going = use.id;
+      const spot = besideItem(g, itemAt(use.id), use.p, walk.w.tile(), getOnSide(itemAt(use.id)));
+      const arrive = () => { walk.going = null; athSave({ ...athSaved(), at: use.id }); walk.redraw?.(); };
+      if (spot) walk.w.goTo(spot, arrive); else arrive();
+    }
+    return a;
   };
   const draw = () => {
     const shown = roomImg.getAttribute('src') === src;
+    const use = inUse();
+    const ath = syncAthlete(shown, use);
     const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];
     const chosen = shown && view.sel ? itemAt(view.sel) : null;
     worldEl.querySelector('.dg-cells').innerHTML = chosen ? footprint(chosen, placements[view.sel].u, placements[view.sel].v).map(([a, b]) => poly(boxCorners(geom, a, b), 'dg-cell is-ok')).join('') : '';
@@ -589,8 +674,8 @@ export function wireDiorama(root, ctx) {
       const img = el.querySelector('img'); const a = artOf(it);
       if (img.getAttribute('src') !== a) img.src = a;
       if (it.runner3d) {
-        // one runner, one 3D scene: on the treadmill you've picked up, else the first one in the room
-        if (it.id === (chosen?.runner3d ? chosen.id : here.find((x) => x.runner3d)?.id)) {
+        // your athlete is on the treadmill while it trains on it (and walks the floor the rest of the time)
+        if (use?.kind === 'drill' && use.id === it.id && ath.at === it.id) {
           const go = () => placeRunner(el, it, p, geom, a, reduced());
           if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once: true });
         } else { el._r3d?.dispose(); el._r3d = null; el._r3dFace = null; }
@@ -942,6 +1027,7 @@ export function wireDiorama(root, ctx) {
     // the athlete runs the level's clip while a drill is on, idles when it's not
     worldEl.querySelectorAll('.dg-item').forEach((el) => el._r3d?.play(runnerClip(), { fade: 0.4 }));
     tellResult();
+    draw();   // the athlete walks to the machine, or steps off it
   };
   document.removeEventListener('drills-changed', view.onDrills || (() => {}));
   view.onDrills = onDrills;

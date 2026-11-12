@@ -5,7 +5,7 @@
 //     @gltf-transform/functions@4.1.1 meshoptimizer@0.22.0
 //   node tools/build-characters.mjs "<path to MOSKE APP/Characters>" [name ...]
 //
-// With names (male, female, mechanic, clips, or an outfit file's name) it builds only those.
+// With names (male, female, mechanic, clips, bosses, boss-<name>, or an outfit file's name) it builds only those.
 //
 // What it reads:
 //   Clips/Male/*.fbx      Mixamo clips. One of them must be "With Skin": that's the rigged male.
@@ -21,6 +21,7 @@
 //   <outfit>-<body>.glb   the same character dressed: its own mesh on the same skeleton
 //   <body>-clips.glb      the skeleton and every clip, no mesh. A clip drives any model of that body.
 //   mechanic.glb, mechanic-clips.glb
+//   boss-<name>.glb        a boss (GLB Assets/Bosses/<name>.glb), on the male skeleton: male-clips.glb drives it
 //
 // How a mesh without a skin gets one. Only the male comes out of Mixamo with its skin. Everything
 // else (the female body, every outfit, the mechanic) is a plain mesh that has to be bound to a
@@ -64,7 +65,7 @@ const PRE = 'mixamorig';
 const CLIP_NAMES = {
   idle: 'idle', walk: 'walk', walking: 'walk', runslow: 'run-slow', runmedium: 'run', runfast: 'run-fast',
   swim: 'swim', swimming: 'swim', airsquat: 'squat', pushup: 'pushup', sittingidle: 'sit',
-  taunt1: 'taunt1', taunt2: 'taunt2', victory: 'victory',
+  taunt1: 'taunt1', taunt2: 'taunt2', victory: 'victory', wavestatic: 'wave', wave: 'wave', waving: 'wave',
   fixingitemonknees: 'work', confidentstrut: 'walk', confidentwalk: 'walk',
 };
 /** Clips that travel in Mixamo unless "In Place" was ticked: any drift is taken out here. */
@@ -578,6 +579,20 @@ for (const [who, rig] of [['male', maleRig], ['female', femaleRig]]) {
     const t = await skinTexture(g.base, TEX);
     await writeChar(name, r.mesh, r.skin, r, { base: t.png, mask: t.mask, normal: g.normal });
   }
+}
+
+// ---- the bosses: a whole character each, on the male (or female) skeleton, playing its clips -------
+// GLB Assets/Bosses/<name>.glb → boss-<name>.glb. Its own colours: no skin tint.
+
+for (const file of find(path.join(SRC, 'GLB Assets', 'Bosses'), /\.glb$/i)) {
+  const base = path.basename(file, '.glb').toLowerCase();
+  const name = `boss-${base.replace(/-(male|female)$/, '')}`;
+  const rig = /-female$/.test(base) ? femaleRig : maleRig;
+  if (!rig || (!want(name) && !want('bosses'))) continue;
+  console.log(name);
+  const g = await meshOfGlb(io, file);
+  const r = bind(rig, rig.bones, rig.quats, g.mesh, name);
+  await writeChar(name, r.mesh, r.skin, r, { base: g.base, normal: g.normal });
 }
 
 // ---- the mechanic ---------------------------------------------------------------------------

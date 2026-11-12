@@ -1,0 +1,46 @@
+/* stadium.css: the stadium's PVE race (js/app/stadium-view.js) */
+.st-screen { display: flex; flex-direction: column; height: 100%; background: #0B1630; }
+.st-bar { flex: none; margin: 8px 16px 0; height: 34px; }
+.st-bar .dg-track { right: 22px; }
+.dg-gauge.is-km .dg-fill { --glow: rgba(255, 120, 90, .8); background: linear-gradient(#FFB49A, #E8603F 55%, #B23A22); }
+.st-bar .dg-num { font-size: 14px; }
+.st-bar-ico { position: absolute; right: 0; top: 50%; translate: 0 -50%; width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 50%; background: linear-gradient(#FFE78A, #F2C14E 55%, #C98F1E); color: #16264D; box-shadow: 0 2px 4px rgba(0, 0, 0, .35); }
+.st-bar-ico svg { width: 18px; height: 18px; }
+.st-stage { position: relative; flex: 1; min-height: 0; margin: 10px 0 0; overflow: hidden; background: #0E1A38; }
+.st-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.st-clock { position: absolute; left: 0; top: 0; z-index: 2; display: grid; justify-items: center; gap: 2px; padding: 10px 18px 12px;
+  border-radius: 18px; background: rgba(11, 22, 48, .86); border: 2.5px solid #F2C14E; box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
+  color: #fff; pointer-events: none; will-change: transform; }
+.st-clock small { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #F2C14E; }
+.st-clock b { font-size: 30px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+.st-tag { position: absolute; left: 0; top: 0; z-index: 3; display: grid; justify-items: center; padding: 4px 10px 5px; border-radius: 12px;
+  background: #fff; color: #16264D; box-shadow: 0 3px 8px rgba(0, 0, 0, .35); pointer-events: none; will-change: transform; white-space: nowrap; }
+.st-tag b { font-size: 12px; font-weight: 900; }
+.st-tag span { font-size: 13px; font-weight: 800; color: #B23A22; font-variant-numeric: tabular-nums; }
+.st-tag::after { content: ''; position: absolute; bottom: -6px; left: 50%; translate: -50% 0; border: 6px solid transparent; border-bottom: 0; border-top-color: #fff; }
+.st-tag[hidden] { display: none; }
+.st-foot { flex: none; display: grid; gap: 8px; padding: 10px 16px calc(var(--safe-b, 0px) + 16px); }
+.st-note { margin: 0; color: var(--text-white); opacity: .8; font-size: 13px; text-align: center; }
+.st-talk { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 0; border-radius: 14px;
+  background: #F2C14E; color: #16264D; font: inherit; font-weight: 900; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .18); }
+.st-talk svg { width: 20px; height: 20px; }
+.st-talk:active { transform: scale(.97); }
+
+/* the boss's talk: him from the hips up, a speech bubble below */
+.st-talkbox { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; justify-content: flex-end;
+  background: linear-gradient(rgba(5, 10, 25, .25), rgba(5, 10, 25, .85) 60%); cursor: pointer; }
+.st-boss { position: relative; flex: 1; min-height: 0; }
+.st-boss .wr-canvas { touch-action: none; pointer-events: none; }
+.st-bubble { position: relative; margin: 0 14px calc(var(--safe-b, 0px) + 18px); padding: 16px 18px 14px; border-radius: 20px; background: #fff;
+  color: #16264D; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); }
+.st-bubble::before { content: ''; position: absolute; top: -12px; left: 50%; translate: -50% 0; border: 12px solid transparent; border-top: 0; border-bottom-color: #fff; }
+.st-who { position: absolute; top: -14px; left: 16px; padding: 3px 12px; border-radius: 9999px; background: #D7263D; color: #fff; font-size: 13px; font-weight: 900; }
+.st-bubble p { margin: 6px 0 10px; font-size: 17px; font-weight: 700; line-height: 1.35; min-height: 3.9em; }
+.st-bubble p.is-in { animation: st-say 220ms cubic-bezier(.23, 1, .32, 1) both; }
+@keyframes st-say { from { opacity: 0; transform: translateY(6px); } }
+.st-dots { display: flex; gap: 5px; }
+.st-dots i { width: 7px; height: 7px; border-radius: 50%; background: #C9D3E6; }
+.st-dots i.is-on { background: #16264D; }
+.st-next { position: absolute; right: 14px; bottom: 10px; border: 0; background: none; color: #1F6FC2; font: inherit; font-weight: 900; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .st-bubble p.is-in { animation: none; } }

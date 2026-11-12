@@ -3071,7 +3071,7 @@ es.city = {"sign": {"title": "ENTREGA", "aria": "Entregas en camino"}, "delivery
 es.city.parcel = {"title": "Entrega", "from": "Tu paquete ha llegado", "hint": "Toca para abrir", "inside": "Dentro", "collect": "Recoger", "next": "Siguiente paquete (quedan {n})", "aria": {"one": "Un paquete en la puerta. Tócalo para abrirlo.", "other": "{n} paquetes en la puerta. Tócalos para abrirlos."}};
 
 es.city.market = {"upgrade": "Mejorar", "upgraded": "Mercado mejorado al nivel {n}.", "nextLevel": "Nivel {n}: {rate} por hora, guarda {cap}", "name": "Mercado", "title": "Mercado (Nivel {n})", "level": "Nivel {n}", "aria": "Mercado {n}", "collectAria": "Recoger {n} monedas", "collect": "Recoger", "buy": "Comprar", "info": "Info", "bought": "Mercado comprado. Desde ahora genera monedas.", "close": "Cerrar", "forSale": "En venta", "rate": "Producción", "perHour": "{n} por hora", "capacity": "Capacidad", "fullIn": "Lleno en", "full": "Lleno: recógelo", "price": "Precio", "about": "Tu mercado genera monedas MOSKE por sí solo. Recógelas antes de que se llene: un mercado lleno deja de generar.", "aboutBuy": "Compra este mercado por {cost} monedas y generará monedas MOSKE por ti, incluso en días de descanso.", "maxLevel": "Nivel máximo", "hm": "{h} h {m} min", "m": "{m} min"};
-es.island = {"name": {"club": "Sede del club", "pool": "Piscina", "market": "Mercado", "mall": "Centro MOSKE"}, "ruined": "{name}: en ruinas", "rebuild": "Reconstruir", "takes": "El mecánico tarda {h} horas", "soon": "Próximamente", "started": "El mecánico ya está en ello. Listo en {h} horas.", "building": "{name}: al mecánico le quedan {left}.", "buildingAria": "{name}: quedan {left}", "stall": "Puesto", "move": "Mover", "placeHint": "Toca un sitio para tu puesto", "cancel": "Cancelar", "bought": "Puesto colocado.", "moved": "Puesto movido.", "spotAria": "Sitio {n}"};
+es.island = {"name": {"club": "Sede del club", "pool": "Piscina", "market": "Mercado", "mall": "Centro MOSKE", "stadium": "Estadio"}, "ruined": "{name}: en ruinas", "rebuild": "Reconstruir", "takes": "El mecánico tarda {h} horas", "soon": "Próximamente", "started": "El mecánico ya está en ello. Listo en {h} horas.", "building": "{name}: al mecánico le quedan {left}.", "buildingAria": "{name}: quedan {left}", "stall": "Puesto", "move": "Mover", "placeHint": "Toca un sitio para tu puesto", "cancel": "Cancelar", "bought": "Puesto colocado.", "moved": "Puesto movido.", "spotAria": "Sitio {n}"};
 es.gear.err["unknown_piece"] = "Ese edificio no está en la isla.";
 es.gear.err["unknown_spot"] = "Ese sitio no está en el mercado.";
 es.gear.err["not_built"] = "Primero reconstruye el mercado.";
@@ -3214,7 +3214,8 @@ es.wardrobe = {
     "forge": "Forja",
     "first-finisher": "Primer finisher",
     "streak-keeper": "Guardián de la racha",
-    "clan-champion": "Campeón del clan"
+    "blomvelt-set": "Equipación Blomvelt",
+      "clan-champion": "Campeón del clan"
   },
   "item": {
     "helmet-road": "Casco de carretera",
@@ -3301,6 +3302,25 @@ es.drill = {
     "failed": "Entrenamiento fallido: nivel {n}. La energía se acabó a los {km} km.",
     "recovered": "{tool} terminado: +{n} de energía."
   }
+};
+
+es.stadium = {
+  "title": "La carrera de {boss}",
+  "left": "Tiempo restante",
+  "km": "{km} / {total} km",
+  "tagKm": "{km} km",
+  "kmAria": "{boss} ha corrido {km} de {total} km",
+  "robotSoon": "El robot de tu club se une pronto a la carrera: cada km que registre tu club lo moverá.",
+  "talk": "Habla con {boss}",
+  "next": "Toca para seguir",
+  "go": "¡A correr!",
+  "intro": {
+    "0": "¡Bienvenido a mi estadio! Soy {boss}, y nadie me gana en mi propia pista.",
+    "1": "La carrera es así: corro {total} km en {hours} horas, una vuelta a esta pista. El reloj del centro muestra cuánto queda.",
+    "2": "Tu club corre contra mí con su robot. Cada km que tu club registra entrenando de verdad lo hace avanzar.",
+    "3": "Llega a la meta antes que yo y todo tu club gana mi equipación. Cuantos más km, más alto en el ranking mundial.",
+    "4": "Cuando el reloj llegue a cero empieza una carrera nueva. ¿Listo? ¡A entrenar!"
+  },
 };
 
 export default es;

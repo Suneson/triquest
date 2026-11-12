@@ -3071,7 +3071,7 @@ en.city = {"sign": {"title": "DELIVERY", "aria": "Deliveries on their way"}, "de
 en.city.parcel = {"title": "Delivery", "from": "Your parcel has arrived", "hint": "Tap to open", "inside": "Inside", "collect": "Collect", "next": "Next parcel ({n} more)", "aria": {"one": "A parcel at the door. Tap to open it.", "other": "{n} parcels at the door. Tap to open them."}};
 
 en.city.market = {"upgrade": "Upgrade", "upgraded": "Market upgraded to level {n}.", "nextLevel": "Level {n}: {rate} per hour, holds {cap}", "name": "Market", "title": "Market (Level {n})", "level": "Level {n}", "aria": "Market {n}", "collectAria": "Collect {n} coins", "collect": "Collect", "buy": "Buy", "info": "Info", "bought": "Market bought. It makes coins from now on.", "close": "Close", "forSale": "For sale", "rate": "Production rate", "perHour": "{n} per hour", "capacity": "Capacity", "fullIn": "Full in", "full": "Full: collect it", "price": "Price", "about": "Your market makes MOSKE coins on its own. Collect them before it fills up: a full market stops making more.", "aboutBuy": "Buy this market for {cost} coins and it makes MOSKE coins for you on its own, even on rest days.", "maxLevel": "Max level", "hm": "{h} h {m} min", "m": "{m} min"};
-en.island = {"name": {"club": "Club base", "pool": "Pool", "market": "Market", "mall": "MOSKE Mall"}, "ruined": "{name}: in ruins", "rebuild": "Rebuild", "takes": "The mechanic takes {h} hours", "soon": "Coming soon", "started": "The mechanic is on it. Ready in {h} hours.", "building": "{name}: the mechanic needs {left} more.", "buildingAria": "{name}: {left} left", "stall": "Stall", "move": "Move", "placeHint": "Tap a spot for your stall", "cancel": "Cancel", "bought": "Stall placed.", "moved": "Stall moved.", "spotAria": "Spot {n}"};
+en.island = {"name": {"club": "Club base", "pool": "Pool", "market": "Market", "mall": "MOSKE Mall", "stadium": "Stadium"}, "ruined": "{name}: in ruins", "rebuild": "Rebuild", "takes": "The mechanic takes {h} hours", "soon": "Coming soon", "started": "The mechanic is on it. Ready in {h} hours.", "building": "{name}: the mechanic needs {left} more.", "buildingAria": "{name}: {left} left", "stall": "Stall", "move": "Move", "placeHint": "Tap a spot for your stall", "cancel": "Cancel", "bought": "Stall placed.", "moved": "Stall moved.", "spotAria": "Spot {n}"};
 en.gear.err["unknown_piece"] = "That building isn't on the island.";
 en.gear.err["unknown_spot"] = "That spot isn't on the market.";
 en.gear.err["not_built"] = "Rebuild the market first.";
@@ -3214,7 +3214,8 @@ en.wardrobe = {
     "forge": "Forge",
     "first-finisher": "First finisher",
     "streak-keeper": "Streak keeper",
-    "clan-champion": "Clan champion"
+    "blomvelt-set": "Blomvelt set",
+      "clan-champion": "Clan champion"
   },
   "item": {
     "helmet-road": "Road helmet",
@@ -3301,6 +3302,25 @@ en.drill = {
     "failed": "Workout failed: level {n}. Stamina ran out at {km} km.",
     "recovered": "{tool} done: +{n} stamina."
   }
+};
+
+en.stadium = {
+  "title": "{boss}'s race",
+  "left": "Time left",
+  "km": "{km} / {total} km",
+  "tagKm": "{km} km",
+  "kmAria": "{boss} has run {km} of {total} km",
+  "robotSoon": "Your clan's robot joins the race soon: every km your clan logs will move it.",
+  "talk": "Talk to {boss}",
+  "next": "Tap to go on",
+  "go": "Let's race!",
+  "intro": {
+    "0": "Welcome to my stadium! I'm {boss}, and nobody beats me on my own track.",
+    "1": "Here's the race: I run {total} km in {hours} hours, once round this track. The clock in the middle shows how long is left.",
+    "2": "Your clan races me with its robot. Every km your clan logs in real training moves it forward.",
+    "3": "Get to the line before me and your whole clan wins my kit. The more km, the higher you go in the world ranking.",
+    "4": "When the clock hits zero, a new race starts. Ready? Go and train!"
+  },
 };
 
 export default en;

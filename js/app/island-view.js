@@ -4,6 +4,7 @@
 // in ruins: tap one to pay for its rebuild, and a giant MOSKE box covers it, with a timer floating
 // over it, until the mechanic is done.
 // Then the club base opens the club screen, the market takes one stall, and the mall opens the shop.
+// The stadium opens its PVE race (stadium-view.js).
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
@@ -60,13 +61,14 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
     layer.innerHTML = ORDER.map((p) => `<img data-plot="${p}" alt="" draggable="false" decoding="async">`).join('')
       + '<img class="dg-stand" data-stand alt="" draggable="false" decoding="async" hidden>';
     worldEl.querySelector('.dg-tower').before(layer);
-    for (const p of [...REBUILT, 'mall'].sort((x, y) => ORDER.indexOf(x) - ORDER.indexOf(y))) {
+    for (const p of [...REBUILT, 'mall', 'stadium'].sort((x, y) => ORDER.indexOf(x) - ORDER.indexOf(y))) {
       const [x, y] = PLOT[p];
       const hit = document.createElement('button');
       hit.className = 'dg-isl-hit'; hit.dataset.isl = p;
       hit.setAttribute('aria-label', name(p));
       Object.assign(hit.style, { left: `${x - HALF_W}px`, top: `${y - HALF_H - RISE}px`, width: `${HALF_W * 2}px`, height: `${HALF_H * 2 + RISE}px` });
       if (p === 'mall') hit.dataset.action = 'open-gear';
+      else if (p === 'stadium') hit.addEventListener('click', (e) => { e.stopPropagation(); haptic('tick'); import('./stadium-view.js').then((m) => m.openStadium()); });
       else hit.addEventListener('click', (e) => { e.stopPropagation(); tap(p); });
       worldEl.querySelector('.dg-items').before(hit);
     }

@@ -55,9 +55,9 @@ import { isDemo } from './demo.js';
 import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
-import { mountMarkets, showCoins, closeBar } from './market-view.js';
+import { showCoins, closeBar } from './market-view.js';
 import { mountIsland, tickIsland, islandFront, closeBar as closeIslandBar } from './island-view.js';
-const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-mk-hit, .dg-mk-coin, .dg-sign-hit';
+const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-shop-hit, .dg-mk-hit, .dg-mk-coin, .dg-sign-hit';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
@@ -763,9 +763,9 @@ export function wireDiorama(root, ctx) {
     reduced,
     front: islandFront,
   }) : null;
-  // the markets round the lobby (market-view.js): pictures in the city, on every floor of it
+  // the island's plots; the markets live on its market plot now (island-view.js, shop-view.js),
+  // so the old markets round the lobby (market-view.js) are no longer put in the city
   if (env.floor != null) {
-    mountMarkets(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
     mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
   } else {
     closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }

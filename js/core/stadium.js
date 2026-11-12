@@ -1,23 +1,32 @@
 // stadium.js: the stadium's PVE race against a boss (BUILD-PLAN.md sections 2 and 12, docs/STADIUM.md).
 //
-// For testing it runs non-stop: one race every 72 hours, back to back, the same for everyone,
-// counted from EPOCH, so no server is needed to know which race is on and how far it has got.
-// The boss runs his distance at an even pace over the 72 hours, and once round the 400 m track:
-// he crosses the finish line just as the clock runs out.
+// For testing it runs non-stop, the same for everyone, counted from EPOCH, so no server is needed
+// to know which race is on and how far it has got: 10 hours of warm-up (the boss stretches and
+// shows off on the start line, a countdown to the start), then the 72-hour race, then the next
+// warm-up. The boss runs his distance at an even pace over the 72 hours, and once round the 400 m
+// track: he crosses the finish line just as the clock runs out.
 //
 // The clan's robot (it races him with the km the clan logs) comes next: the robot's ten levels and
 // the clan XP that raises them are below, ready for it.
 
 export const RACE_MS = 72 * 3600e3;
-/** The first race started here (a Monday, 00:00 UTC). */
+/** The warm-up before each race. */
+export const WARM_MS = 10 * 3600e3;
+export const CYCLE_MS = WARM_MS + RACE_MS;
+/** The first warm-up started here (a Monday, 00:00 UTC). */
 export const EPOCH = Date.UTC(2026, 10, 9);
 
 /** The bosses, in turn: one a race for now (once a month later). */
 export const BOSSES = [
   {
     id: 'blomvelt', name: 'Kristoff Blomvelt', sport: 'triathlon', // i18n-ignore (a name)
-    model: 'models/chars/boss-blomvelt.glb', clips: 'models/chars/male-clips.glb',
+    // his own skeleton and clips (made on him in Mixamo); the male's fill in wave, victory and walk
+    model: 'models/chars/boss-blomvelt.glb', clips: 'models/chars/boss-blomvelt-clips.glb',
     reward: 'blomvelt-set',
+    /** What he does on the start line during the warm-up, in turn. */
+    warmup: ['stretch', 'laugh', 'dance', 'stretch', 'dance2'],
+    /** His pose for each line of his talk (stadium.intro.<i>). */
+    poses: ['wave', 'laugh', 'stretch', 'dance', 'victory'],
   },
 ];
 
@@ -26,13 +35,21 @@ export const BOSS_KM = { 3: 50, 6: 100, 9: 150, 12: 200 };
 export const SQUADS = [3, 6, 9, 12];
 export const bossKm = (squad = 12) => BOSS_KM[squad] || BOSS_KM[12];
 
-/** The race on at `now`: its number, start, end, how far through (0..1) and its boss. */
+/**
+ * The race on at `now`: its number, when its warm-up begins (`warm`), start, end, whether it is
+ * still warming up, how far through the race (0..1, 0 in the warm-up), the time to the start
+ * (`startsIn`) and to the end (`left`), and its boss.
+ */
 export function raceAt(now = Date.now()) {
-  const n = Math.floor((now - EPOCH) / RACE_MS);
-  const start = EPOCH + n * RACE_MS;
+  const n = Math.floor((now - EPOCH) / CYCLE_MS);
+  const warm = EPOCH + n * CYCLE_MS;
+  const start = warm + WARM_MS;
   const end = start + RACE_MS;
   const p = Math.min(1, Math.max(0, (now - start) / RACE_MS));
-  return { n, start, end, p, left: end - now, boss: BOSSES[((n % BOSSES.length) + BOSSES.length) % BOSSES.length] };
+  return {
+    n, warm, start, end, p, warming: now < start, startsIn: Math.max(0, start - now), left: end - now,
+    boss: BOSSES[((n % BOSSES.length) + BOSSES.length) % BOSSES.length],
+  };
 }
 
 /** The boss's km at `now` in a race for `squad` players. */
@@ -85,5 +102,5 @@ export const robotLevel = (xp) => ROBOT_XP.reduce((lvl, need, i) => (xp >= need 
 export const raceXp = (km, beat) => Math.round(Math.max(0, km) * 10 + (beat ? 1000 : 0));
 
 // ---- the boss's talk when you first come in ----------------------------------------------------
-/** Each line's pose (a clip of the male body). Lines are in the locales: stadium.intro.<i>. */
+/** Each line's pose, for a boss without his own (`poses`). Lines are in the locales: stadium.intro.<i>. */
 export const INTRO_POSES = ['wave', 'taunt1', 'idle', 'taunt2', 'victory'];

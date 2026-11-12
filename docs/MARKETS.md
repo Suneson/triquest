@@ -1,5 +1,21 @@
 # Markets
 
+## The market plot (0035, from 2026-11-12)
+
+The old markets round the lobby are no longer drawn. Markets now stand on the island's rebuilt market plot: a bare plaza with six spots, two rows of three (`js/app/island-view.js`). Tap one to open the markets' screen (`js/app/shop-view.js`, styles in `css/market.css`). The rules are in `js/core/shop.js` and the server is `supabase/migrations/0035_shop.sql` (`tests/shop-sql.test.js` keeps them in step).
+
+- **Building and levels:** a market costs 300, 600, 1000, 1500, 2200 and then 3000 coins, the 1st to the 6th. It goes from level 1 to 8 (pictures `icons/Market/market-<level>.webp`), and each level opens a slot and holds more of each item (10 up to 50).
+- **Stock:** 60 items, 15 per sport (gym, bike, run, swim, pictures `icons/Market/items/<id>.webp`). Each unlocks at a market level. You buy them wholesale into a storeroom that holds 1000 of each. Selling one puts it in a slot: a slot that already has it fills up first, otherwise you pick the slot it replaces.
+- **Sales:** a slot sells one unit at a time (6 to 30 minutes, by tier). **Collect** banks the coins and **Restock all** refills every slot, from the storeroom first and the rest bought.
+- **Training twists:**
+  - **Demand:** a sport trained in the last 4 hours sells for 30% more.
+  - **Foot traffic:** 60, 150 or 300 minutes this week (from Monday) sell 10%, 15% or 20% faster.
+  - **Specialty:** every open slot (two or more) holding one sport's gear earns 10% more and shows a gold border.
+  - **Wholesale crate:** one per reward chest opened, it fills a market's slots for free.
+  - **VIP:** on a brick day (two sports trained), once a day, a VIP buys out your best market at 1.5×.
+
+## The old markets (0028)
+
 Four small shops stand round the MOSKE tower's lobby, two on each side. Everyone has all four, dark, until they buy them. A bought market makes MOSKE coins on its own, and a coin bubble over it says there's something to collect. It works like the collectors round a base in a builder game.
 
 | Level | Price | Makes | Holds | Picture |

@@ -71,7 +71,18 @@ function demoState() {
   const missions = [3, 3, 2, 2, 1].map((n, i) => ({ week: addDays(wk, -7 * n), mission_id: ['w-sessions-3', 'w-rest-2', 'w-hours-4', 'w-recovery', 'w-km-40'][i], claimed_at: ago(24 * 7 * n - 30 - i) }));
   // the markets: the near one on the right bought yesterday and making coins since this morning
   const markets = [{ slot: 3, level: 1, cost: MARKET_RULES.cost, bought_at: ago(26), collected_at: ago(7.2) }];
-  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions, markets, marketCollects: [], marketUpgrades: [], expansions: [], island: [] };
+  // the island's market plot rebuilt, with three markets on it (shop-view.js)
+  const island = [{ piece: 'market', cost: 0, started_at: ago(60), finishes_at: ago(48) }];
+  const shops = [{ spot: 1, level: 3 }, { spot: 2, level: 6 }, { spot: 5, level: 1 }];
+  const shopSlots = [
+    { spot: 1, slot: 1, item: 'run-socks', units: 14, since: ago(0.3) }, { spot: 1, slot: 2, item: 'run-cap', units: 20, since: ago(0.1) }, { spot: 1, slot: 3, item: 'run-gels', units: 6, since: ago(0.5) },
+    { spot: 2, slot: 1, item: 'bike-helmet', units: 35, since: ago(0.2) }, { spot: 2, slot: 2, item: 'swim-fins', units: 12, since: ago(1) }, { spot: 2, slot: 4, item: 'gym-kettlebell', units: 3, since: ago(2) },
+    { spot: 5, slot: 1, item: 'swim-cap', units: 8, since: ago(0.4) },
+  ];
+  const shopStock = [['run-socks', 120], ['run-cap', 40], ['bike-bottle', 300], ['gym-rope', 64], ['swim-goggles', 1000], ['bike-helmet', 22]].map(([item, units]) => ({ item, units }));
+  const shopChests = [{ opened_at: new Date().toISOString() }, { opened_at: new Date().toISOString() }];
+  return { uid: 'demo', inventory, spends, boosts, quests, wallet: { coins: 6340, carbs: 2480, cap: GEAR_RULES.storageCap }, jobs, bays: 1, offset: 0, at: Date.now(), blueprints: [], prestige: [], missions, markets, marketCollects: [], marketUpgrades: [], expansions: [], island,
+    shops, shopSlots, shopStock, shopMoves: [], shopChests };
 }
 
 /** Can this device talk to the workshop at all (signed in, or demo)? */
@@ -188,7 +199,7 @@ export async function refreshGear() {
     const t0 = Date.now();
     const ws = await c.rpc('workshop');
     const t1 = Date.now();
-    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex, il] = await Promise.all([
+    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex, il, sh, ss, st, sm, rc] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
@@ -202,6 +213,11 @@ export async function refreshGear() {
       c.from('market_upgrades').select('id, slot, level, cost, upgraded_at'),
       c.from('user_expansions').select('*'),
       c.from('user_island').select('piece, cost, started_at, finishes_at, spot'),
+      c.from('user_shops').select('spot, level, built_at'),
+      c.from('user_shop_slots').select('spot, slot, item, units, since'),
+      c.from('user_shop_stock').select('item, units'),
+      c.from('shop_moves').select('id, kind, spot, coins, day, at'),
+      c.from('reward_chests').select('opened_at').not('opened_at', 'is', null),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -219,7 +235,10 @@ export async function refreshGear() {
       // before 0029 is live no room can be expanded
       expansions: ex.error ? [] : ex.data || [], expansionsLive: !ex.error,
       // before 0033 is live nothing on the island can be rebuilt
-      island: il.error ? [] : il.data || [], islandLive: !il.error };
+      island: il.error ? [] : il.data || [], islandLive: !il.error,
+      // before 0035 is live there are no markets on the market plot
+      shops: sh.error ? [] : sh.data || [], shopsLive: !sh.error, shopSlots: ss.error ? [] : ss.data || [],
+      shopStock: st.error ? [] : st.data || [], shopMoves: sm.error ? [] : sm.data || [], shopChests: rc.error ? [] : rc.data || [] };
     save(state);
     emit();
   } catch (e) {
@@ -448,6 +467,31 @@ export async function moveIslandStand(spot) {
   await call('move_island_stand', { p_spot: spot });
   return { coins: 0 };
 }
+/** The markets on the market plot (shop.js): { shops, slots, stock: { item: units }, moves, chests }. */
+export function myShop() {
+  const s = rawState();
+  return {
+    shops: s.shops || [], slots: s.shopSlots || [], moves: s.shopMoves || [], chests: s.shopChests || [],
+    stock: Object.fromEntries((s.shopStock || []).map((r) => [r.item, Number(r.units) || 0])),
+  };
+}
+/** Can markets be built on the market plot here? (A server with 0035 live.) */
+export const shopsOpen = () => gearEnabled() && rawState().shopsLive !== false;
+/**
+ * Ask the server to do something to the markets (0035_shop.sql: build_shop, upgrade_shop,
+ * buy_shop_stock, shop_stock_slot, shop_clear_slot, collect_shop, restock_shop, use_shop_crate,
+ * shop_vip). Resolves to what it answers, once the state is read again; throws with a `gear:` code.
+ */
+export async function shopCall(fn, args = {}) {
+  if (isDemo()) throw new Error('gear:demo');
+  if (!shopsOpen()) throw new Error('gear:not_signed_in');
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new Error('gear:offline');
+  const c = await client();
+  const { data, error } = await c.rpc(fn, args);
+  if (error) throw error;
+  await refreshGear();
+  return data || {};
+}
 /** The rooms you've expanded to 16 × 16 ({ room, cost, bought_at }). */
 export const myExpansions = () => rawState().expansions || [];
 /** Can rooms be expanded here? (Demo, or a server with 0029 live.) */
@@ -534,7 +578,7 @@ export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_
 export function walletNow(workouts) {
   const s = gearState();
   const w = s.wallet;
-  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions, markets: s.markets, marketCollects: s.marketCollects, marketUpgrades: s.marketUpgrades, expansions: s.expansions, island: s.island });
+  const local = w ? null : walletFold({ workouts, quests: s.quests, spends: s.spends, awards: collectionAwards(s.inventory), missions: s.missions, markets: s.markets, marketCollects: s.marketCollects, marketUpgrades: s.marketUpgrades, expansions: s.expansions, island: s.island, shopMoves: s.shopMoves });
   const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id, s.jobs)]));
   return {
     coins: Number(w ? w.coins : local.coins) || 0,

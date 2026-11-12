@@ -3,15 +3,17 @@
 // Every building is a picture standing on its plot. The club base, the pool and the market start
 // in ruins: tap one to pay for its rebuild, and a giant MOSKE box covers it, with a timer floating
 // over it, until the mechanic is done.
-// Then the club base opens the club screen, the market takes one stall, and the mall opens the shop.
+// Then the club base opens the club screen and the mall opens the shop. The rebuilt market plot is a
+// bare plaza with six spots, two rows of three, each holding one of your markets (shop-view.js).
 // The stadium opens its PVE race (stadium-view.js).
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { ISLAND_ART } from '../core/island-art.js';
-import { ISLAND_RULES, pieceState, standOf } from '../core/island.js';
-import { myIsland, islandOpen, startIslandBuild, buyIslandStand, moveIslandStand, serverNow, walletNow, gearError, onGear } from './gear-state.js';
+import { ISLAND_RULES, pieceState } from '../core/island.js';
+import { myIsland, islandOpen, startIslandBuild, serverNow, walletNow, gearError, onGear, myShop } from './gear-state.js';
+import { marketPicture, SHOP_RULES } from '../core/shop.js';
 import { setChatMode } from './chat.js';
 import { closeBar as closeMarketBar } from './market-view.js';
 import { haptic } from './haptics.js';
@@ -24,11 +26,20 @@ const REBUILT = ['club', 'pool', 'market'];
 const ORDER = ['park', 'club', 'stadium', 'hall', 'base', 'arena', 'pool', 'mall', 'market'];
 const HALF_H = 2 * S * U; const HALF_W = 2 * U; const RISE = 360;
 
-// the stall's picture and its nine spots on the market's plaza: a is across, b down it
-const STAND = { src: 'icons/Island/stand.webp', w: 380, ratio: 1 };
-const SPOT_R = 0.21;
-const SPOTS = ISLAND_RULES.spots.map((spot, i) => ({ spot, a: [-0.2, 0.25, 0.7][i % 3], b: [-0.6, -0.1, 0.4][Math.floor(i / 3)] }));
+// the six market spots on the plaza, two rows of three: a is across it, b down it. Each market's
+// picture stands with its pad's front corner (0.617 across the picture) on the spot's front corner.
+const SHOP_FOOT = 0.617; const SHOP_SCALE = 0.86;
+const SHOP_SPOTS = Array.from({ length: SHOP_RULES.spots }, (_, i) => ({ spot: i + 1, a: [-0.5, 0.42][Math.floor(i / 3)], b: [-0.64, -0.04, 0.56][i % 3] }));
 const onPlaza = (a, b) => [PLOT.market[0] + (a - b) * U, PLOT.market[1] + (a + b) * S * U];
+const DA = 0.88; const DB = 0.53;
+function shopBox(spot, ratio) {
+  const s = SHOP_SPOTS[spot - 1];
+  const w = (DA + DB) * U * SHOP_SCALE;
+  const [fx, fy] = onPlaza(s.a + DA / 2, s.b + DB / 2);
+  const h = w * ratio;
+  return { left: fx - SHOP_FOOT * w, top: fy - h + w * 0.02, w, h };
+}
+const RATIO = 578 / 720;
 
 /** The construction box on a plot: one picture for all of them. */
 const boxOn = (plot) => ({ ...ART.box, x: PLOT[plot][0] + ART.box.dx, y: PLOT[plot][1] + ART.box.dy });
@@ -37,7 +48,7 @@ const boxOn = (plot) => ({ ...ART.box, x: PLOT[plot][0] + ART.box.dx, y: PLOT[pl
 function pictureOf(plot) {
   if (!REBUILT.includes(plot)) return ART[plot];
   const { state } = pieceState(myIsland(), plot, serverNow());
-  if (state === 'built') return ART[plot];
+  if (state === 'built') return plot === 'market' ? { ...ART.market, src: 'icons/Island/market-empty.webp' } : ART[plot];
   return state === 'building' ? boxOn(plot) : ART[`${plot}-ruin`];
 }
 
@@ -59,7 +70,7 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
     const layer = document.createElement('div');
     layer.className = 'dg-plots';
     layer.innerHTML = ORDER.map((p) => `<img data-plot="${p}" alt="" draggable="false" decoding="async">`).join('')
-      + '<img class="dg-stand" data-stand alt="" draggable="false" decoding="async" hidden>';
+      + [...SHOP_SPOTS].sort((x, y) => x.a + x.b - (y.a + y.b)).map((x) => `<img class="dg-shop" data-shop="${x.spot}" alt="" draggable="false" decoding="async" hidden>`).join('');
     worldEl.querySelector('.dg-tower').before(layer);
     for (const p of [...REBUILT, 'mall', 'stadium'].sort((x, y) => ORDER.indexOf(x) - ORDER.indexOf(y))) {
       const [x, y] = PLOT[p];
@@ -70,6 +81,12 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
       if (p === 'mall') hit.dataset.action = 'open-gear';
       else if (p === 'stadium') hit.addEventListener('click', (e) => { e.stopPropagation(); haptic('tick'); import('./stadium-view.js').then((m) => m.openStadium()); });
       else hit.addEventListener('click', (e) => { e.stopPropagation(); tap(p); });
+      worldEl.querySelector('.dg-items').before(hit);
+    }
+    for (const x of SHOP_SPOTS) {
+      const hit = document.createElement('button');
+      hit.className = 'dg-shop-hit'; hit.dataset.shop = String(x.spot); hit.hidden = true;
+      hit.addEventListener('click', (e) => { e.stopPropagation(); openShops(x.spot); });
       worldEl.querySelector('.dg-items').before(hit);
     }
   }
@@ -94,21 +111,38 @@ function paint() {
     if (el.getAttribute('src') !== a.src) el.src = a.src;
     Object.assign(el.style, { left: `${a.x}px`, top: `${a.y}px`, width: `${a.w}px`, height: `${a.h}px` });
   }
-  const st = standOf(myIsland());
-  const img = w.querySelector('[data-stand]');
-  img.hidden = !st;
-  if (st) placeStand(img, st.spot);
+  paintShops();
   tickIsland();
 }
 
-function placeStand(img, spot) {
-  const s = SPOTS.find((x) => x.spot === Number(spot)) || SPOTS[0];
-  const [x, y] = onPlaza(s.a + SPOT_R, s.b + SPOT_R);
-  if (img.getAttribute('src') !== STAND.src) img.src = STAND.src;
-  img.style.left = `${x - STAND.w / 2}px`; img.style.width = `${STAND.w}px`;
-  img.style.bottom = 'auto';
-  const place = () => { img.style.top = `${y - (STAND.w * img.naturalHeight) / img.naturalWidth}px`; };
-  if (img.complete && img.naturalWidth) place(); else img.addEventListener('load', place, { once: true });
+/** Each built market's picture on its spot (its level's picture), and a tap target over it. */
+function paintShops() {
+  const w = ctx.world;
+  const built = pieceState(myIsland(), 'market', serverNow()).state === 'built';
+  const shops = myShop().shops;
+  for (const x of SHOP_SPOTS) {
+    const img = w.querySelector(`.dg-shop[data-shop="${x.spot}"]`);
+    const hit = w.querySelector(`.dg-shop-hit[data-shop="${x.spot}"]`);
+    const m = shops.find((r) => Number(r.spot) === x.spot);
+    img.hidden = !built || !m; if (hit) hit.hidden = !built || !m;
+    if (img.hidden) continue;
+    const src = marketPicture(m.level);
+    if (img.getAttribute('src') !== src) img.src = src;
+    const box = shopBox(x.spot, img.naturalWidth ? img.naturalHeight / img.naturalWidth : RATIO);
+    Object.assign(img.style, { left: `${box.left.toFixed(1)}px`, top: `${box.top.toFixed(1)}px`, width: `${box.w.toFixed(1)}px`, height: 'auto' });
+    if (!img.complete) img.addEventListener('load', () => paintShops(), { once: true });
+    if (hit) Object.assign(hit.style, { left: `${(box.left + box.w * 0.12).toFixed(1)}px`, top: `${(box.top + box.h * 0.1).toFixed(1)}px`, width: `${(box.w * 0.76).toFixed(1)}px`, height: `${(box.h * 0.85).toFixed(1)}px` });
+    hit?.setAttribute('aria-label', t('mkt.market', { n: x.spot }));
+  }
+}
+
+/** The markets' screen, on one market's tab. */
+function openShops(spot = 0) {
+  closeBar();
+  haptic('tick');
+  const el = ctx.world?.querySelector(`.dg-shop[data-shop="${spot}"]`);
+  if (el && !el.hidden && !prefersReducedMotion()) { el.classList.remove('is-tap'); void el.offsetWidth; el.classList.add('is-tap'); }
+  import('./shop-view.js').then((m) => m.openMarket({ spot, workouts: ctx.workouts }));
 }
 
 /** The timers over what's being rebuilt, each second. A rebuild that's just finished shows itself. */
@@ -141,7 +175,6 @@ function pulse(plot) {
 }
 
 function tap(plot) {
-  if (placing) return;
   pulse(plot);
   haptic('tick');
   closeMarketBar();
@@ -154,6 +187,7 @@ function tap(plot) {
     return;
   }
   if (state === 'built' && plot === 'pool') { closeBar(); return; }
+  if (state === 'built' && plot === 'market') { const first = myShop().shops.map((r) => Number(r.spot)).sort((a, b) => a - b)[0]; openShops(first || 0); return; }
   if (barPlot === plot && bar?.isConnected) { closeBar(); return; }
   openBar(plot);
 }
@@ -187,76 +221,24 @@ function refreshBar() {
   if (!bar?.isConnected) return;
   const plot = barPlot;
   const { state } = pieceState(myIsland(), plot, serverNow());
-  if (state === 'building') { closeBar(); return; }
+  if (state !== 'ruin') { closeBar(); return; }
   const coins = walletNow(ctx.workouts()).coins;
   const open = islandOpen();
-  const st = standOf(myIsland());
-  let title; let btn;
-  if (state === 'ruin') {
-    const cost = ISLAND_RULES.pieces[plot];
-    title = t('island.ruined', { name: name(plot) });
-    btn = `<button class="mk-btn is-buy" data-isl-go="rebuild" ${open ? '' : 'disabled'}>${priceTag(cost, coins)}
+  const cost = ISLAND_RULES.pieces[plot];
+  const title = t('island.ruined', { name: name(plot) });
+  const btn = `<button class="mk-btn is-buy" data-isl-go="rebuild" ${open ? '' : 'disabled'}>${priceTag(cost, coins)}
       <span class="mk-btn-ico">${svg('wrench')}</span><b>${esc(t('island.rebuild'))}</b></button>`;
-  } else if (st) {
-    title = name('market');
-    btn = `<button class="mk-btn" data-isl-go="move" ${open ? '' : 'disabled'}><span class="mk-btn-ico"><img src="${STAND.src}" alt=""></span><b>${esc(t('island.move'))}</b></button>`;
-  } else {
-    title = name('market');
-    btn = `<button class="mk-btn is-buy" data-isl-go="stand" ${open ? '' : 'disabled'}>${priceTag(ISLAND_RULES.standCost, coins)}
-      <span class="mk-btn-ico"><img src="${STAND.src}" alt=""></span><b>${esc(t('island.stall'))}</b></button>`;
-  }
-  const note = state === 'ruin' ? t('island.takes', { h: ISLAND_RULES.buildHours }) : open ? '' : t('island.soon');
-  bar.innerHTML = `<h2 class="mk-bar-h">${esc(title)}</h2>${note ? `<p class="mk-bar-note">${esc(state === 'ruin' && !open ? t('island.soon') : note)}</p>` : ''}
+  const note = open ? t('island.takes', { h: ISLAND_RULES.buildHours }) : t('island.soon');
+  bar.innerHTML = `<h2 class="mk-bar-h">${esc(title)}</h2><p class="mk-bar-note">${esc(note)}</p>
     <div class="mk-bar-btns">${btn}</div>`;
-  bar.querySelector('[data-isl-go]').addEventListener('click', (e) => go(plot, e.currentTarget.dataset.islGo));
+  bar.querySelector('[data-isl-go]').addEventListener('click', (e) => go(plot));
 }
 
-async function go(plot, what) {
-  if (what === 'rebuild') {
-    try {
-      await startIslandBuild(plot);
-      haptic('record');
-      closeBar();
-      toast(esc(t('island.started', { h: ISLAND_RULES.buildHours })), { icon: svg('wrench') });
-    } catch (e) { toast(esc(gearError(e))); }
-    return;
-  }
-  closeBar();
-  choosePlace(what === 'move');
-}
-
-// ---- placing the stall ---------------------------------------------------------------------------
-
-let placing = false;
-
-/** Show the free spots on the plaza and wait for a tap on one. */
-function choosePlace(moving) {
-  placing = true;
-  const taken = moving ? Number(standOf(myIsland())?.spot) : 0;
-  const size = 2 * SPOT_R * U;
-  const layer = document.createElement('div');
-  layer.className = 'dg-isl-spots';
-  layer.innerHTML = SPOTS.filter((s) => s.spot !== taken).map((s) => {
-    const [x, y] = onPlaza(s.a, s.b);
-    return `<button class="dg-isl-spot" data-spot="${s.spot}" aria-label="${esc(t('island.spotAria', { n: s.spot }))}"
-      style="left:${x - size}px;top:${y - size * S}px;width:${size * 2}px;height:${size * 2 * S}px"></button>`;
-  }).join('');
-  ctx.world.querySelector('.dg-items').before(layer);
-  const hint = document.createElement('div');
-  hint.className = 'mk-bar is-in';
-  hint.innerHTML = `<h2 class="mk-bar-h">${esc(t('island.placeHint'))}</h2><div class="mk-bar-btns"><button class="mk-btn" data-isl-cancel><b>${esc(t('island.cancel'))}</b></button></div>`;
-  (ctx.screen || document.body).append(hint);
-  const end = () => { placing = false; layer.remove(); hint.remove(); };
-  hint.querySelector('[data-isl-cancel]').addEventListener('click', end);
-  layer.addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-spot]');
-    if (!b) return;
-    e.stopPropagation();
-    try {
-      if (moving) await moveIslandStand(Number(b.dataset.spot)); else await buyIslandStand(Number(b.dataset.spot));
-      haptic('record');
-      toast(esc(t(moving ? 'island.moved' : 'island.bought')), { icon: svg('check') });
-      end();
-    } catch (err) { toast(esc(gearError(err))); end(); }
-  });
+async function go(plot) {
+  try {
+    await startIslandBuild(plot);
+    haptic('record');
+    closeBar();
+    toast(esc(t('island.started', { h: ISLAND_RULES.buildHours })), { icon: svg('wrench') });
+  } catch (e) { toast(esc(gearError(e))); }
 }

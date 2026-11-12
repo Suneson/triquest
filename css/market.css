@@ -1,0 +1,189 @@
+/* market.css: the markets' screen (js/app/shop-view.js), laid out like a card game's deck screen:
+   the deck (tabs, eight slots, buttons) on a blue panel at the top, the storeroom below on the quilt,
+   tinted by the sport picked. Motion uses the tokens in js/core/spring.js. */
+
+.sv-layer .sv-screen { --sv-gym: #8B4FD8; --sv-bike: #F6C431; --sv-run: #E0383E; --sv-swim: #2F8FE8;
+  --sv-ease: cubic-bezier(0.16, 1, 0.3, 1); padding-bottom: 120px; }
+.sv-screen .sh-head .sh-act { display: flex; align-items: center; }
+
+/* numbers on cards: white with a dark edge, like the reference */
+.sv-screen .data-num { font-family: var(--font-display); font-weight: 400; letter-spacing: .02em; color: #fff;
+  text-shadow: 0 1.5px 0 #0B1A3A, 1px 0 0 #0B1A3A, -1px 0 0 #0B1A3A, 0 -1px 0 #0B1A3A; }
+.sv-price { display: inline-flex; align-items: center; gap: 3px; font-size: 14px; }
+.sv-price img { width: 16px; height: 16px; }
+.sv-price.is-short { color: #FF8A8A; }
+.sv-wallet .sv-price { font-size: 18px; padding: 4px 10px 4px 12px; border-radius: 9999px; background: rgba(8, 20, 50, .45); border: 1.5px solid rgba(255, 255, 255, .3); }
+.sv-wallet .sv-price img { width: 20px; height: 20px; }
+
+/* ---- the deck ------------------------------------------------------------------------------------ */
+.sv-screen > .sv-deck { margin: 0 0 14px; padding: 0 10px 14px; scroll-margin-top: 64px;
+  background: linear-gradient(#2E6AD6, #1F4FB0 30%, #1A438F); border-bottom: 3px solid #0E2A63;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .25), 0 6px 14px rgba(5, 15, 40, .35); }
+.sv-soon { margin: 0; padding: 28px 12px; text-align: center; font-weight: 700; }
+
+.sv-tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 10px 0 14px; }
+.sv-tab { position: relative; height: 46px; border-radius: 12px; border: 0; cursor: pointer; color: #fff;
+  background: linear-gradient(#4F7FD8, #3460B8); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .35), inset 0 -4px 0 rgba(0, 0, 0, .25), 0 2px 0 #0E2A63;
+  display: grid; place-items: center; transition: transform 160ms var(--sv-ease); transform-origin: bottom center; }
+.sv-tab b { font-size: 24px; }
+.sv-tab svg { width: 20px; height: 20px; opacity: .8; }
+.sv-tab.is-free { background: linear-gradient(#3A5E9E, #2A4A84); }
+.sv-tab:active { transform: scale(.94, .9); }
+.sv-tab.is-on { background: linear-gradient(#FFD45A, #F2A922); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .6), inset 0 -4px 0 rgba(150, 80, 0, .35), 0 2px 0 #8A5200;
+  transform: translateY(-3px) scale(1.06); }
+/* the shield point under the picked tab */
+.sv-tab.is-on::after { content: ''; position: absolute; left: 50%; bottom: -11px; width: 18px; height: 18px; transform: translateX(-50%) rotate(45deg);
+  background: #F2A922; border-radius: 3px; box-shadow: 2px 2px 0 #8A5200; z-index: -1; }
+
+.sv-head { display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: center; margin-bottom: 8px; }
+.sv-head-pic { width: 76px; height: auto; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .35)); }
+.sv-head-txt { display: grid; gap: 2px; min-width: 0; }
+.sv-head-txt b { font-family: var(--font-display); font-weight: 400; font-size: 22px; color: #fff; text-shadow: 0 2px 0 #0B1A3A; }
+.sv-head-txt span { font-size: 12px; font-weight: 700; color: #CFE0FF; }
+.sv-top { font-family: var(--font-display); color: #FFD34D; font-size: 15px; }
+
+.sv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.sv-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 7px; border-radius: 9999px; font-size: 12px; color: #fff;
+  background: rgba(8, 20, 50, .4); border: 1.5px solid rgba(255, 255, 255, .25); }
+.sv-chip svg { width: 15px; height: 15px; }
+.sv-chip small { font-size: 11px; }
+.sv-chip.is-busy, .sv-chip.is-bustling { border-color: #7FD3FF; }
+.sv-chip.is-festival { border-color: #FFD34D; background: rgba(120, 70, 0, .45); }
+.sv-chip.is-hot { border-color: #FFB04D; background: rgba(150, 50, 10, .5); }
+.sv-chip.is-spec { border-color: #FFD34D; background: rgba(120, 90, 0, .5); }
+
+/* ---- cards: a slot or a storeroom item -------------------------------------------------------- */
+.sv-slots, .sv-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sv-card { position: relative; display: grid; grid-template-rows: 1fr auto; padding: 4px 4px 6px; border: 0; cursor: pointer; border-radius: 12px;
+  background: linear-gradient(#3B4C7A, #26355C); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .22), 0 3px 0 #0B1A3A;
+  transform-origin: bottom center; transition: transform 160ms var(--sv-ease), box-shadow 160ms ease; -webkit-tap-highlight-color: transparent; }
+.sv-card:active { transform: scale(.95); }
+.sv-art { position: relative; display: grid; place-items: center; aspect-ratio: 1; border-radius: 9px; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, .45), rgba(255, 255, 255, 0) 70%), var(--card, #5C7BC0); }
+.sv-art img { width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .3)); }
+.sv-art svg { width: 30%; height: 30%; color: rgba(255, 255, 255, .7); }
+.sv-card.is-gym { --card: linear-gradient(#B98BF2, #7442C4); }
+.sv-card.is-bike { --card: linear-gradient(#FFE38A, #E9AE1C); }
+.sv-card.is-run { --card: linear-gradient(#FF9C9C, #C8323A); }
+.sv-card.is-swim { --card: linear-gradient(#9CD3FF, #2A7FD6); }
+.sv-slot.is-empty .sv-art { background: rgba(8, 20, 50, .35); outline: 2px dashed rgba(255, 255, 255, .35); outline-offset: -6px; }
+.sv-slot.is-locked { cursor: default; background: linear-gradient(#2A3555, #1C2644); opacity: .8; }
+.sv-slot.is-locked .sv-art { background: rgba(0, 0, 0, .25); }
+.sv-lock { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 4px; font-size: 11px; font-weight: 800; color: #CFE0FF; }
+.sv-lock svg { width: 12px; height: 12px; }
+.sv-item.is-locked .sv-art { filter: grayscale(.85) brightness(.75); }
+.sv-slots.is-spec .sv-slot[data-item] { box-shadow: inset 0 0 0 2.5px #FFD34D, 0 0 12px rgba(255, 211, 77, .6), 0 3px 0 #0B1A3A; }
+.sv-slot.is-hot::before { content: ''; position: absolute; inset: -2px; border-radius: 13px; pointer-events: none;
+  box-shadow: 0 0 0 2px #FFB04D, 0 0 14px rgba(255, 140, 40, .7); }
+
+/* the bar under a card, as in the reference: a blue arrow, then the count on a pill */
+.sv-bar { position: relative; display: block; height: 20px; margin-top: 5px; border-radius: 9999px; overflow: hidden;
+  background: linear-gradient(rgba(5, 12, 35, .55), rgba(5, 12, 35, .75)); border: 1.5px solid rgba(0, 0, 0, .35); }
+.sv-bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); border-radius: 9999px;
+  background: linear-gradient(#9FE0FF, #3EA6F2 55%, #1F78CC); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18);
+  transition: width 420ms var(--sv-ease); }
+.sv-bar.is-stock i { background: linear-gradient(#B4F59A, #55C93A 55%, #2F9A1E); }
+.sv-bar b { position: relative; display: block; text-align: center; font-size: 13px; line-height: 18px; }
+.sv-sell { position: absolute; top: -6px; left: -4px; z-index: 2; padding: 1px 6px 1px 5px; border-radius: 9999px;
+  background: linear-gradient(#FFE07A, #F0A92A); box-shadow: 0 2px 0 #8A5200; }
+.sv-sell .sv-price { font-size: 12px; }
+.sv-sell .sv-price img { width: 13px; height: 13px; }
+
+/* picking a slot for an item: open slots wiggle */
+.sv-slot.is-target { animation: sv-wiggle 900ms ease-in-out infinite; box-shadow: inset 0 0 0 2.5px #FFD34D, 0 0 14px rgba(255, 211, 77, .7), 0 3px 0 #0B1A3A; }
+.sv-slot.is-target:nth-child(even) { animation-delay: -450ms; }
+@keyframes sv-wiggle { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
+
+/* ---- the buttons ------------------------------------------------------------------------------- */
+.sv-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 12px; border: 0; border-radius: 12px; cursor: pointer;
+  font-family: var(--font-display); font-size: 16px; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .45), inset 0 -4px 0 rgba(0, 0, 0, .22), 0 3px 0 rgba(5, 15, 40, .6);
+  transform-origin: bottom center; transition: transform 160ms var(--sv-ease), filter 160ms ease; }
+.sv-btn svg { width: 18px; height: 18px; }
+.sv-btn:active:not(:disabled) { transform: scale(.95, .9); }
+.sv-btn:disabled { filter: grayscale(.7) brightness(.8); cursor: default; }
+.sv-btn.is-green { background: linear-gradient(#7FE05A, #3FAE2B); }
+.sv-btn.is-orange { background: linear-gradient(#FFC24A, #F08A1C); }
+.sv-btn.is-blue { background: linear-gradient(#5AA8FF, #2A6FD6); }
+.sv-btn.is-gold { background: linear-gradient(#FFE07A, #F0A92A); color: #4A2A00; text-shadow: none; }
+.sv-btn.is-purple { background: linear-gradient(#B98BF2, #7442C4); }
+.sv-btn.is-wide { width: 100%; }
+.sv-up { flex-direction: column; gap: 0; padding: 4px 12px; font-size: 14px; line-height: 1; }
+.sv-up svg { transform: rotate(-90deg); width: 14px; height: 14px; }
+.sv-acts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) 58px; gap: 8px; margin-top: 12px; }
+.sv-acts .sv-btn { min-width: 0; padding: 6px 8px; font-size: 15px; white-space: nowrap; }
+.sv-acts .sv-btn > span { overflow: hidden; text-overflow: ellipsis; }
+.sv-acts .sv-collect > svg, .sv-acts [data-sv-restock] > svg { display: none; }
+.sv-acts .sv-btn { gap: 5px; }
+.sv-acts .sv-btn .sv-price { font-size: 13px; }
+.sv-collect b { font-size: 18px; color: #4A2A00; text-shadow: none; }
+.sv-crate b { font-size: 16px; }
+.sv-vip { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 10px; padding: 10px 12px; border: 0; border-radius: 14px; cursor: pointer; text-align: left;
+  color: #fff; background: linear-gradient(100deg, #7A3CE0, #E0383E); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .35), 0 3px 0 rgba(5, 15, 40, .6);
+  animation: sv-glow 1.6s ease-in-out infinite; }
+.sv-vip svg { flex: none; width: 30px; height: 30px; color: #FFD34D; }
+.sv-vip span { flex: 1; font-size: 13px; font-weight: 700; }
+.sv-vip b { font-family: var(--font-display); font-weight: 400; font-size: 15px; padding: 6px 10px; border-radius: 10px; background: rgba(0, 0, 0, .25); }
+@keyframes sv-glow { 50% { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .35), 0 3px 0 rgba(5, 15, 40, .6), 0 0 18px rgba(255, 180, 60, .8); } }
+
+.sv-build { display: grid; justify-items: center; gap: 10px; padding: 4px 8px 6px; text-align: center; }
+.sv-build-pic { width: min(70%, 260px); filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .35)) grayscale(.2); }
+.sv-build p { margin: 0; font-weight: 700; color: #DCE7F7; }
+
+/* ---- the storeroom ------------------------------------------------------------------------------ */
+.sv-screen > .sv-sports { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 0; position: sticky; top: 58px; z-index: 5; }
+.sv-sport { display: grid; justify-items: center; gap: 2px; padding: 8px 4px 7px; border: 0; border-radius: 14px 14px 6px 6px; cursor: pointer;
+  font-family: var(--font-display); font-size: 15px; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .35); background: var(--c);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .4), inset 0 -4px 0 rgba(0, 0, 0, .2); opacity: .72;
+  transform-origin: bottom center; transition: transform 160ms var(--sv-ease), opacity 160ms ease; }
+.sv-sport svg { width: 22px; height: 22px; }
+.sv-sport.is-gym { --c: linear-gradient(#A876EE, #7442C4); }
+.sv-sport.is-bike { --c: linear-gradient(#FFE07A, #E9AE1C); color: #2A2000; text-shadow: none; }
+.sv-sport.is-run { --c: linear-gradient(#FF7A7A, #C8323A); }
+.sv-sport.is-swim { --c: linear-gradient(#7CC4FF, #2A7FD6); }
+.sv-sport.is-on { opacity: 1; transform: translateY(-3px) scale(1.04); }
+.sv-sport:active { transform: scale(.95, .9); }
+
+/* the shelf under the buttons takes the sport's colour, as in the reference */
+.sv-screen > .sv-store { margin: 0 6px; padding: 14px 8px 18px; border-radius: 0 0 16px 16px; min-height: 60vh;
+  background: linear-gradient(var(--tint), rgba(0, 0, 0, 0) 90%); border-top: 4px solid var(--edge); }
+.sv-store.is-gym { --tint: rgba(139, 79, 216, .55); --edge: #8B4FD8; }
+.sv-store.is-bike { --tint: rgba(246, 196, 49, .45); --edge: #F6C431; }
+.sv-store.is-run { --tint: rgba(224, 56, 62, .5); --edge: #E0383E; }
+.sv-store.is-swim { --tint: rgba(47, 143, 232, .55); --edge: #2F8FE8; }
+.sv-grid { row-gap: 14px; align-items: start; }
+
+/* an item picked: framed, with Buy and Sell under it */
+.sv-pick { display: grid; gap: 6px; padding: 5px; margin: -5px; border-radius: 14px; z-index: 3;
+  background: linear-gradient(#5AA8FF, #2A6FD6); box-shadow: 0 0 0 2px #fff, 0 8px 16px rgba(5, 15, 40, .45);
+  animation: sv-in 240ms var(--sv-ease) both; transform-origin: top center; }
+.sv-pick .sv-btn { min-height: 38px; padding: 4px 6px; font-size: 14px; }
+.sv-pick .sv-item.is-picked { box-shadow: none; }
+@keyframes sv-in { from { opacity: 0; transform: scale(.9); } }
+
+/* ---- picking a slot: the dock at the foot, like "select card to be replaced" ------------------ */
+.sv-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(rgba(20, 40, 90, .92), rgba(10, 22, 55, .97));
+  border-top: 2px solid rgba(255, 255, 255, .3); animation: sv-dock 300ms var(--sv-ease) both; }
+.sv-dock p { margin: 0; font-family: var(--font-display); font-size: 18px; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+.sv-dock .sv-card { cursor: default; }
+@keyframes sv-dock { from { transform: translateY(100%); } }
+
+.sv-fly { position: fixed; z-index: 30000; pointer-events: none; object-fit: contain; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .35)); }
+.sv-fly.is-coin { width: 28px; height: 28px; }
+.sv-toast-ico { width: 26px; height: 26px; object-fit: contain; }
+
+/* ---- the buy sheet ----------------------------------------------------------------------------- */
+.sv-buy-body { display: grid; justify-items: center; gap: 12px; padding: 4px 18px 22px; }
+.sv-buy-body > .sv-card { width: 110px; cursor: default; }
+.sv-buy-note { margin: 0; text-align: center; font-size: 14px; }
+.sv-range { width: 100%; accent-color: #3FAE2B; height: 32px; }
+.sv-buy-n { display: flex; align-items: center; gap: 14px; font-size: 22px; }
+.sv-buy-n .sv-price { font-size: 22px; }
+.sv-buy-n .sv-price img { width: 24px; height: 24px; }
+.sv-buy-n .data-num, .sv-buy .data-num { font-family: var(--font-display); color: var(--fg, #16264D); text-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-slot.is-target, .sv-vip { animation: none; }
+  .sv-pick, .sv-dock { animation: none; }
+}

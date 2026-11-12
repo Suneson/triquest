@@ -11,7 +11,7 @@ The stadium on the island opens a race against a boss (BUILD-PLAN.md sections 2 
 
 ## The picture
 
-`js/app/stadium3d.js` lays the stadium flat on the ground in metres (`TRACK`) and looks down at it at 56°. The ground is `icons/Stadium/track.webp` when it exists (a straight-down picture: `tools/gen-stadium.mjs`, cut so the track's lanes match `TRACK`), else it's drawn in code. The scene is in the boss's units: the stadium is shrunk round him (`K`) rather than him grown, since a skinned character keeps its own scale.
+`js/app/stadium3d.js` lays the stadium flat on the ground in metres (`TRACK`) and looks down at it at 56°. The ground is `icons/Stadium/track.webp` (a straight-down picture from `tools/gen-stadium.mjs`, its grey corners painted navy; it is not to scale, so its measured lanes are in `PIC` in stadium3d.js and the boss follows them). Without it the stadium is drawn in code. The scene is in the boss's units: the stadium is shrunk round him (`K`) rather than him grown, since a skinned character keeps its own scale.
 
 ## The boss
 

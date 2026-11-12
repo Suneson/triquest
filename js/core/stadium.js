@@ -56,11 +56,12 @@ const LAP = 2 * TRACK.straight + 2 * Math.PI * TRACK.radius;   // ≈ 398.1, the
  * Where a runner is at `f` of the lap (0 = the finish line, at the near end of the right-hand
  * straight), in `lane` (1..8), running anticlockwise as seen from above: up the right-hand straight,
  * round the far bend, down the left-hand one. Returns { x, z, dir } with dir the heading in
- * radians (0 = up the screen, −z; π/2 = to the left, −x).
+ * radians (0 = up the screen, −z; π/2 = to the left, −x). `geom`: another track's shape (the
+ * painted one's, which isn't to scale).
  */
-export function trackPoint(f, lane = 1) {
-  const { straight: L, radius } = TRACK;
-  const R = radius + (lane - 0.5) * TRACK.lane;
+export function trackPoint(f, lane = 1, geom = TRACK) {
+  const { straight: L, radius } = geom;
+  const R = radius + (lane - 0.5) * geom.lane;
   const per = 2 * L + 2 * Math.PI * R;
   let s = (((f % 1) + 1) % 1) * per;
   if (s < L) return { x: R, z: L / 2 - s, dir: 0 };

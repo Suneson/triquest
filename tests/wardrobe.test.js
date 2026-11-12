@@ -29,7 +29,8 @@ test('you only wear what you have, for your class, with a model for your body', 
   assert.equal(outfitState('tracksuit', look({ cls: 'endurance' })), 'soon', 'owned, but its models are not made yet');
   assert.equal(normaliseLook({ cls: 'hybrid' }).cls, 'endurance', 'there is no hybrid class any more');
   assert.equal(outfitState('aero-suit', look()), 'locked');
-  assert.equal(outfitState('aero-suit', look(), ['aero-suit']), 'soon');
+  assert.equal(outfitState('aero-suit', look(), ['aero-suit']), 'owned', 'owned and its models are in');
+  assert.equal(outfitState('tri-pro', look(), ['tri-pro']), 'soon');
   assert.equal(normaliseLook({ cls: 'endurance', outfit: 'tracksuit' }).outfit, 'base');
 });
 

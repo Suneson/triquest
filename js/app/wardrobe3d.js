@@ -62,11 +62,12 @@ export async function mountWardrobe(host, { editor = false } = {}) {
     if (focus !== 'body' && figure) {
       // close up on the head or the feet (the fit editor)
       const at = new THREE.Vector3();
-      if (focus === 'head') {
+      if (focus === 'upper') at.set(0, 1.3, 0);
+      else if (focus === 'head') {
         let head = null; figure.root.traverse((o) => { if (!head && o.isBone && /Head$/.test(o.name)) head = o; });
         if (head) { head.getWorldPosition(at); at.y += 0.1; } else at.set(0, 1.62, 0);
       } else at.set(0, 0.07, 0.03);
-      const half = focus === 'head' ? 0.27 : 0.26;
+      const half = focus === 'head' ? 0.27 : focus === 'upper' ? 0.62 : 0.26;
       const dist = Math.max(half / Math.tan(vfov / 2), half / (Math.tan(vfov / 2) * camera.aspect));
       camera.position.set(at.x, at.y + (focus === 'feet' ? 0.12 : 0), at.z + dist);
       camera.lookAt(at);
@@ -155,6 +156,8 @@ export async function mountWardrobe(host, { editor = false } = {}) {
   fit(); run();
   return {
     show, setLook, setView, setMoving,
+    /** Play a clip (the stadium's boss as he talks). */
+    play: (name) => { figure?.play(name, { fade: 0.3 }); run(); },
     retune: (id, f) => { retune(figure?.root, id, f); run(); },
     /** Put every piece back at its fit in use (after the fit editor). */
     refit: () => { for (const p of figure?.root.userData.gear || []) p.apply(p.body ? fitFor(p.body, p.id) : null); run(); },

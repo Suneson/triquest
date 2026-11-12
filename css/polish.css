@@ -99,8 +99,10 @@
 .wr-screen .wr-panel { padding-bottom: calc(var(--safe-b) + 96px); }
 /* with no arrow, the title starts at the edge */
 .sh-head--foot { padding-left: 18px; }
-/* the wardrobe's stage gives up some height to the base above it */
-.layer.is-sheet .wr-stage { height: min(36vh, 330px); }
+/* the wardrobe rises almost to the top, so its cards have room; no Close button, it pulls down */
+.layer.is-sheet.wr-layer { --sheet-gap: calc(var(--safe-t) + 48px); }
+.layer.is-sheet .wr-stage { height: min(38vh, 360px); }
+.layer.is-sheet .wr-screen .wr-panel { padding-bottom: calc(var(--safe-b) + 24px); }
 /* what's in a sheet arrives a beat after it: a short cascade, on opening only */
 .layer.is-entering :is(.sc-card, .wr-card, .wr-swatch, .wr-chip) { transform-origin: 50% 100%; animation: rise-in var(--pop-ms) var(--spring-pop) both; }
 .layer.is-entering :is(.sc-card, .wr-card):nth-child(1) { animation-delay: calc(var(--stagger) * 1); }

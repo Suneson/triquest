@@ -155,11 +155,11 @@ export function accessoryState(item, owned = []) {
 export const modelFor = (look, owned = []) =>
   (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[look.body]);
 
-/** What the 3D view hangs on the character: [{ id, slot, url }], only what can be worn. */
+/** What the 3D view hangs on the character: [{ id, slot, url, body }], only what can be worn. */
 export const gearFor = (look, owned = []) => SLOTS
   .map((s) => ({ id: look.gear?.[s.id], slot: s.id }))
   .filter((g) => g.id && accessoryState(g.id, owned) === 'owned')
-  .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id] }));
+  .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id], body: look.body }));
 
 /** The hair colour as linear RGB, for the 3D view. */
 export const hairColour = (id) => hexToLinear((HAIR_COLOURS.find((h) => h.id === id) || HAIR_COLOURS[1]).hex);

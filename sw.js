@@ -46,6 +46,8 @@ const ASSETS = [
   './js/app/runner3d.js',
   './js/app/char3d.js',
   './js/app/gear3d.js',
+  './js/core/gear-fit.js',
+  './js/app/fit-editor.js',
   './js/app/drill-view.js',
   './js/app/walker.js',
   './js/app/wardrobe-view.js',

@@ -122,7 +122,8 @@ function slotCards(slot, look, owned, colour = null) {
 }
 
 function gearPanel(look, owned) {
-  return SLOTS.filter((slot) => !slot.free).map((slot) =>
+  const tool = everything() ? `<button type="button" class="fe-open" data-wr-fit>${esc(t('wardrobe.fit.open'))}</button>` : '';
+  return tool + SLOTS.filter((slot) => !slot.free).map((slot) =>
     `<section class="wr-sec"><h3>${esc(t(`wardrobe.slot.${slot.id}`))}${slot.buff ? ` <span class="wr-buff">${svg('bolt')}${esc(t('wardrobe.buff'))}</span>` : ''}</h3>
       <div class="wr-grid">${slotCards(slot, look, owned)}</div></section>`).join('');
 }
@@ -179,6 +180,10 @@ export function openWardrobe() {
     const b = e.target.closest('button');
     if (!b || !root.contains(b)) return;
     if (b.dataset.wrTab) { if (b.dataset.wrTab !== tab) { tab = b.dataset.wrTab; draw(); panelEl.scrollTop = 0; slideIn(); haptic('tick'); } return; }
+    if (b.hasAttribute('data-wr-fit')) {
+      import('./fit-editor.js').then(({ openFitEditor }) => openFitEditor(look, { onClose: () => stage?.refit() }));
+      return;
+    }
     if (b.dataset.wrBody) return update({ ...look, body: b.dataset.wrBody });
     if (b.dataset.wrSkin) return update({ ...look, skin: b.dataset.wrSkin });
     if (b.dataset.wrEyes) return update({ ...look, eyes: b.dataset.wrEyes });

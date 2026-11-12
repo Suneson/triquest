@@ -3092,6 +3092,35 @@ es.wardrobe = {
   "loading": "Preparando a tu atleta…",
   "loadFailed": "No se pudo cargar tu atleta. Revisa tu conexión y vuelve a abrir el vestuario.",
   "noGl": "Este dispositivo no puede mostrar 3D, pero puedes elegir tu aspecto igualmente.",
+  "fit": {
+    "open": "Ajustar accesorios",
+    "title": "Ajustar accesorios",
+    "item": "Pieza",
+    "hair": "Pelo con ella",
+    "move": "Mover",
+    "view": {
+      "front": "Frente",
+      "three": "¾",
+      "side": "Lado",
+      "back": "Detrás"
+    },
+    "key": {
+      "y": "Arriba",
+      "z": "Adelante",
+      "x": "Derecha",
+      "s": "Tamaño",
+      "rx": "Inclinar",
+      "ry": "Girar",
+      "rz": "Ladear"
+    },
+    "less": "Menos",
+    "more": "Más",
+    "reset": "Restablecer esta pieza",
+    "copy": "Copiar todos los ajustes",
+    "copied": "Ajustes copiados: pégaselos a Claude",
+    "copyFail": "No se pudo copiar: selecciona el texto de abajo",
+    "note": "Los ajustes se guardan en este móvil y se ven aquí en el juego al momento. Cópialos y pégaselos a Claude para que sean iguales para todos."
+  },
   "dragHint": "Arrastra para girar",
   "tab": {
     "look": "Aspecto",

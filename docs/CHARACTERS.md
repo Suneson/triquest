@@ -60,6 +60,6 @@ So one file fits the male, the female and every outfit. A hat or helmet hides th
 5. Check it on both bodies. If it sits too high, low or small, give it a line in `ITEM_FIT`.
 
 What the first set showed (November 2026):
-- Hair `hair-curls`, `hair-bun-low` and `hair-buns` have a band of hair under the chin in the model itself; new hair should stop at the jaw line.
+- Hair `hair-curls` and `hair-bun-low` have a band of hair under the chin in the model itself; new hair should stop at the jaw line.
 - The navy model in the helmets folder is a baseball cap: it's the Navy cap.
 - One file in the glasses folder was the first female hair again; it isn't used.

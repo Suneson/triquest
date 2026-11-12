@@ -12,7 +12,7 @@ import { openLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { toast } from './effects.js';
-import { SLOTS, BODY_LOOKS, ACCESSORY_MODELS, modelFor, clipsFor, gearFor } from '../core/wardrobe.js';
+import { fitsBody, SLOTS, BODY_LOOKS, ACCESSORY_MODELS, modelFor, clipsFor, gearFor } from '../core/wardrobe.js';
 import { cleanFit } from '../core/gear-fit.js';
 import { localFits, saveLocalFits, fitFor } from './gear3d.js';
 
@@ -63,7 +63,7 @@ export function openFitEditor(look, { onClose = null } = {}) {
     return `<option value="${i.id}"${i.id === st.item ? ' selected' : ''}>${done ? '✓ ' : ''}${esc(t(`wardrobe.item.${i.id}`))}</option>`;
   };
   const groups = () => SLOTS.filter((s) => ITEMS.some((i) => i.slot === s.id)).map((s) =>
-    `<optgroup label="${esc(t(`wardrobe.slot.${s.id}`))}">${ITEMS.filter((i) => i.slot === s.id).map(option).join('')}</optgroup>`).join('');
+    `<optgroup label="${esc(t(`wardrobe.slot.${s.id}`))}">${ITEMS.filter((i) => i.slot === s.id && fitsBody(i.id, st.body)).map(option).join('')}</optgroup>`).join('');
   const chip = (attr, v, on, label) => `<button type="button" class="wr-chip${on ? ' is-on' : ''}" ${attr}="${v}" aria-pressed="${on}">${esc(label)}</button>`;
 
   root.innerHTML = `<div class="fh-screen gw-screen is-shop wr-screen fe-screen" role="dialog" aria-modal="true" aria-labelledby="fe-title">
@@ -86,7 +86,7 @@ export function openFitEditor(look, { onClose = null } = {}) {
     const f = fit();
     const slot = slotOf(st.item);
     const hairRow = slot === 'hair' || COVERS.has(slot) ? '' : `<label class="fe-pick"><span>${esc(t('wardrobe.fit.hair'))}</span>
-        <select data-fe-hair><option value="">${esc(t('wardrobe.none'))}</option>${HAIRS.map((h) => `<option value="${h}"${h === st.hair ? ' selected' : ''}>${esc(t(`wardrobe.item.${h}`))}</option>`).join('')}</select></label>`;
+        <select data-fe-hair><option value="">${esc(t('wardrobe.none'))}</option>${HAIRS.filter((h) => fitsBody(h, st.body)).map((h) => `<option value="${h}"${h === st.hair ? ' selected' : ''}>${esc(t(`wardrobe.item.${h}`))}</option>`).join('')}</select></label>`;
     panel.innerHTML = `<section class="wr-sec">
         <div class="wr-chips">${BODY_LOOKS.map((b) => chip('data-fe-body', b, st.body === b, t(`wardrobe.bodies.${b}`))).join('')}</div>
         <label class="fe-pick"><span>${esc(t('wardrobe.fit.item'))}</span><select data-fe-item>${groups()}</select></label>
@@ -154,7 +154,13 @@ export function openFitEditor(look, { onClose = null } = {}) {
       const [k, dir] = b.dataset.feStep.split(':');
       const s = SLIDERS.find((x) => x.k === k);
       setKey(k, fit()[k] + Number(dir) * s.step * 2); haptic('tick');
-    } else if (b.dataset.feBody) { st.body = b.dataset.feBody; drawPanel(); dress(); haptic('tick'); }
+    } else if (b.dataset.feBody) {
+      st.body = b.dataset.feBody;
+      // hair made for the other body: swap to the first that fits this one
+      if (!fitsBody(st.item, st.body)) st.item = ITEMS.find((i) => i.slot === slotOf(st.item) && fitsBody(i.id, st.body))?.id || st.item;
+      if (st.hair && !fitsBody(st.hair, st.body)) st.hair = '';
+      drawPanel(); dress(); haptic('tick');
+    }
     else if (b.dataset.feView) { st.view = b.dataset.feView; drawViews(); stage?.setView({ yaw: VIEWS[st.view] }); haptic('tick'); }
     else if (b.hasAttribute('data-fe-move')) { st.moving = !st.moving; drawViews(); stage?.setMoving(st.moving); haptic('tick'); }
     else if (b.hasAttribute('data-fe-reset')) { setFit(null); drawPanel(); haptic('tick'); }

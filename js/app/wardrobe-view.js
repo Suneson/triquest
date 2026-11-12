@@ -16,7 +16,7 @@ import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { gearState } from './gear-state.js';
 import {
-  BODY_LOOKS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor, gearFor,
+  fitsBody, BODY_LOOKS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor, gearFor,
 } from '../core/wardrobe.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
@@ -111,7 +111,7 @@ function slotCards(slot, look, owned, colour = null) {
   const cur = look.gear[slot.id];
   const none = `<button type="button" class="wr-card is-owned${cur ? '' : ' is-on'}" data-wr-gear="${slot.id}:" aria-pressed="${!cur}">
       ${noneSvg}<b>${esc(t('wardrobe.none'))}</b></button>`;
-  return none + slot.items.map((id) => {
+  return none + slot.items.filter((id) => fitsBody(id, look.body)).map((id) => {
     const state = accessoryState(id, owned);
     const on = cur === id;
     return `<button type="button" class="wr-card is-${state}${on ? ' is-on' : ''}" data-wr-gear="${slot.id}:${id}" aria-pressed="${on}" ${state === 'owned' ? '' : 'aria-disabled="true"'}>

@@ -31,9 +31,7 @@ const MAX_TRIS = 6000;
  */
 export const ITEMS = [
   { id: 'hair-braids', file: 'hair/female/hairfemale1.glb', yaw: -90 },
-  { id: 'hair-buns', file: 'hair/female/hairfemale2.glb', yaw: 0 },
   { id: 'hair-bun-low', file: 'hair/female/hairfemale3.glb', yaw: -90 },
-  { id: 'hair-bun-top', file: 'hair/female/hairfemale4.glb', yaw: 90 },
   { id: 'hair-long', file: 'hair/female/hairfemale5.glb', yaw: -90 },
   { id: 'hair-curls', file: 'hair/male/hairmale1.glb', yaw: -90 },
   { id: 'hair-crop', file: 'hair/male/hairmale2.glb', yaw: -90 },
@@ -44,7 +42,7 @@ export const ITEMS = [
   { id: 'hat-gold', file: 'hats/tripo_convert_daa99e5d-a50d-4d4d-817a-c841728b6a05.glb', yaw: 0 },
   { id: 'helmet-gold', file: 'helmets/tripo_convert_25886998-78be-438b-8ae2-c46106a558cb.glb', yaw: -90 },
   { id: 'hat-cap-navy', file: 'helmets/tripo_convert_3187e585-09e7-484a-8b09-70f4d00a485b.glb', yaw: -90 },
-  { id: 'helmet-aero', file: 'helmets/tripo_convert_3c8b5f6a-4405-4437-a14a-3a0a9ed7ada3.glb', yaw: 90 },
+  { id: 'helmet-aero', file: 'helmets/tripo_convert_3c8b5f6a-4405-4437-a14a-3a0a9ed7ada3.glb', yaw: -90 },
   { id: 'helmet-road', file: 'helmets/tripo_convert_d3f6363e-5f0c-42c1-803d-723468c80f69.glb', yaw: -90 },
   { id: 'helmet-blue', file: 'helmets/tripo_convert_ebd2bd19-a65e-4955-a8aa-071261acb927.glb', yaw: -90 },
   { id: 'glasses-sport', file: 'glasses/sunglasses 3d model.glb', yaw: 0 },

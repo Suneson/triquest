@@ -18,6 +18,14 @@ const STANDS = 17;                        // metres of stands round the outside 
 const OUT = TRACK.radius + TRACK.lanes * TRACK.lane + STANDS;   // half the stadium's width
 const W = OUT * 2; const H = TRACK.straight + OUT * 2;
 const PX = 8;                             // the drawn picture's pixels per metre
+/**
+ * The painted stadium (icons/Stadium/track.webp, tools/gen-stadium.mjs), measured: its size in px,
+ * the track's centre, its inner kerb's radius and straight, and a lane's width, in px. It isn't to
+ * scale (its lanes are wide), so it is laid out as wide as the drawn one and the boss follows its
+ * own lanes.
+ */
+const PIC = { w: 768, h: 1376, cx: 384, cy: 686, radius: 143.5, straight: 410, lane: 11.5 };
+const PIC_M = W / PIC.w;                  // metres per px of it
 // The scene is in the boss's units: the stadium is shrunk round him rather than him grown (a
 // skinned character keeps its own scale), so a metre of track is K units.
 const K = 1 / BOSS_SCALE;
@@ -95,12 +103,17 @@ export async function mountStadium(host, boss) {
   const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-30, 60, 40); scene.add(key);
 
   // the ground: the painted track if there is one, else the drawn one
+  let painted = true;
   const tex = await new Promise((res) => {
-    new THREE.TextureLoader().load(new URL('../../icons/Stadium/track.webp', import.meta.url).href, res, undefined, () => res(new THREE.CanvasTexture(drawGround())));
+    new THREE.TextureLoader().load(new URL('../../icons/Stadium/track.webp', import.meta.url).href, res, undefined, () => { painted = false; res(new THREE.CanvasTexture(drawGround())); });
   });
+  const GW = painted ? PIC.w * PIC_M : W, GH = painted ? PIC.h * PIC_M : H;
+  // the lanes the boss runs in, and where the track's centre is on the ground
+  const geom = painted ? { straight: PIC.straight * PIC_M, radius: PIC.radius * PIC_M, lane: PIC.lane * PIC_M, lanes: 8 } : TRACK;
+  const off = painted ? { x: (PIC.cx - PIC.w / 2) * PIC_M, z: (PIC.cy - PIC.h / 2) * PIC_M } : { x: 0, z: 0 };
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(W * K, H * K), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW * K, GH * K), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
@@ -119,7 +132,7 @@ export async function mountStadium(host, boss) {
     const w = host.clientWidth || 1, h = host.clientHeight || 1;
     renderer.setSize(w, h, false);
     const aspect = w / h;
-    const fh = Math.max(H * Math.sin(TILT), W / aspect) * 1.02 * K;
+    const fh = Math.max(GH * Math.sin(TILT), GW / aspect) * 1.02 * K;
     camera.left = (-fh * aspect) / 2; camera.right = (fh * aspect) / 2; camera.top = fh / 2; camera.bottom = -fh / 2;
     camera.position.set(0, Math.sin(TILT) * 60, Math.cos(TILT) * 60);
     camera.lookAt(0, 0, 0);
@@ -139,8 +152,9 @@ export async function mountStadium(host, boss) {
   } catch { figure = null; }
   if (gone) return null;
 
+  const at = () => { const p = trackPoint(lap, LANE, geom); return { ...p, x: p.x + off.x, z: p.z + off.z }; };
   const place = () => {
-    const p = trackPoint(lap, LANE);
+    const p = at();
     rig.position.set(p.x * K, 0, p.z * K); rig.rotation.y = p.dir + Math.PI;
     blob.position.set(p.x * K, 0.01, p.z * K);
   };
@@ -172,8 +186,8 @@ export async function mountStadium(host, boss) {
     /** Put the boss `f` of the way round his lap. */
     setLap(f) { lap = f; place(); dirty = true; run(); },
     /** The boss's head, for the tag over it. */
-    bossHead: () => { const p = trackPoint(lap, LANE); return project(p.x * K, 1.95, p.z * K); },
-    centre: () => project(0, 0, 0),
+    bossHead: () => { const p = at(); return project(p.x * K, 1.95, p.z * K); },
+    centre: () => project(off.x * K, 0, off.z * K),
     onFrame: (fn) => { frames.add(fn); return () => frames.delete(fn); },
     dispose() {
       gone = true; cancelAnimationFrame(raf); ro.disconnect();

@@ -3305,6 +3305,10 @@ es.drill = {
 es.stadium = {
   "title": "La carrera de {boss}",
   "left": "Tiempo restante",
+  "startsIn": "La carrera empieza en",
+  "warming": "Calentando",
+  "warmToast": "{boss} está en la pista, calentando. La carrera empieza en {time}.",
+  "watch": "Ver",
   "km": "{km} / {total} km",
   "tagKm": "{km} km",
   "kmAria": "{boss} ha corrido {km} de {total} km",
@@ -3317,7 +3321,7 @@ es.stadium = {
     "1": "La carrera es así: corro {total} km en {hours} horas, una vuelta a esta pista. El reloj del centro muestra cuánto queda.",
     "2": "Tu club corre contra mí con su robot. Cada km que tu club registra entrenando de verdad lo hace avanzar.",
     "3": "Llega a la meta antes que yo y todo tu club gana mi equipación. Cuantos más km, más alto en el ranking mundial.",
-    "4": "Cuando el reloj llegue a cero empieza una carrera nueva. ¿Listo? ¡A entrenar!"
+    "4": "Cuando el reloj llegue a cero, caliento {warm} horas y empieza una carrera nueva. ¿Listo? ¡A entrenar!"
   },
 };
 

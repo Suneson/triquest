@@ -145,6 +145,15 @@ export async function mountStadium(host, boss) {
   let figure = null, lap = 0, gone = false, raf = 0, last = 0;
   const rig = new THREE.Group(); scene.add(rig);
   const frames = new Set();
+  // the warm-up: he stands on the start line facing us and goes through boss.warmup, a clip at a time
+  let warm = false, warmAt = 0, warmTimer = 0;
+  const warmNext = () => {
+    const list = (boss.warmup || ['idle']).filter((c) => figure?.has(c));
+    if (!list.length) return;
+    const clip = list[warmAt++ % list.length];
+    figure.play(clip);
+    warmTimer = setTimeout(warmNext, Math.max(3, figure.length(clip) || 6) * 1000);
+  };
   try {
     figure = await spawnChar(L, { model: boss.model, clips: boss.clips });
     figure.play('run', { fade: 0 });
@@ -155,7 +164,7 @@ export async function mountStadium(host, boss) {
   const at = () => { const p = trackPoint(lap, LANE, geom); return { ...p, x: p.x + off.x, z: p.z + off.z }; };
   const place = () => {
     const p = at();
-    rig.position.set(p.x * K, 0, p.z * K); rig.rotation.y = p.dir + Math.PI;
+    rig.position.set(p.x * K, 0, p.z * K); rig.rotation.y = warm ? 0 : p.dir + Math.PI;
     blob.position.set(p.x * K, 0.01, p.z * K);
   };
   const v = new THREE.Vector3();
@@ -185,12 +194,19 @@ export async function mountStadium(host, boss) {
   return {
     /** Put the boss `f` of the way round his lap. */
     setLap(f) { lap = f; place(); dirty = true; run(); },
+    /** Warming up on the start line (true) or running (false). */
+    setWarm(w) {
+      if (w === warm || !figure) return;
+      warm = w; clearTimeout(warmTimer);
+      if (warm) { warmAt = 0; warmNext(); } else figure.play('run');
+      place(); dirty = true; run();
+    },
     /** The boss's head, for the tag over it. */
     bossHead: () => { const p = at(); return project(p.x * K, 1.95, p.z * K); },
     centre: () => project(off.x * K, 0, off.z * K),
     onFrame: (fn) => { frames.add(fn); return () => frames.delete(fn); },
     dispose() {
-      gone = true; cancelAnimationFrame(raf); ro.disconnect();
+      gone = true; cancelAnimationFrame(raf); ro.disconnect(); clearTimeout(warmTimer);
       document.removeEventListener('visibilitychange', onVis);
       figure?.dispose();
       ground.geometry.dispose(); ground.material.dispose(); tex.dispose();

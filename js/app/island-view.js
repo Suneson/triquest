@@ -81,6 +81,7 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
     front.append(el);
   }
   paint();
+  import('./stadium-view.js').then((m) => m.warmupNotice()).catch(() => {});
   if (!mountIsland.watching) { mountIsland.watching = true; onGear(() => { paint(); refreshBar(); }); }
 }
 

@@ -3305,6 +3305,10 @@ en.drill = {
 en.stadium = {
   "title": "{boss}'s race",
   "left": "Time left",
+  "startsIn": "Race starts in",
+  "warming": "Warming up",
+  "warmToast": "{boss} is on the track, warming up. The race starts in {time}.",
+  "watch": "Watch",
   "km": "{km} / {total} km",
   "tagKm": "{km} km",
   "kmAria": "{boss} has run {km} of {total} km",
@@ -3317,7 +3321,7 @@ en.stadium = {
     "1": "Here's the race: I run {total} km in {hours} hours, once round this track. The clock in the middle shows how long is left.",
     "2": "Your clan races me with its robot. Every km your clan logs in real training moves it forward.",
     "3": "Get to the line before me and your whole clan wins my kit. The more km, the higher you go in the world ranking.",
-    "4": "When the clock hits zero, a new race starts. Ready? Go and train!"
+    "4": "When the clock hits zero, I warm up for {warm} hours and the next race starts. Ready? Go and train!"
   },
 };
 

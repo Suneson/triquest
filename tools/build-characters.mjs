@@ -20,8 +20,10 @@
 //   <body>.glb            the body, skinned, feet on y = 0, 1.8 tall, facing +Z
 //   <outfit>-<body>.glb   the same character dressed: its own mesh on the same skeleton
 //   <body>-clips.glb      the skeleton and every clip, no mesh. A clip drives any model of that body.
-//   mechanic.glb, mechanic-clips.glb
-//   boss-<name>.glb        a boss (GLB Assets/Bosses/<name>.glb), on the male skeleton: male-clips.glb drives it
+//   mechanic.glb, mechanic-clips.glb, and mechanic-red/-green/-orange.glb (his twins, recoloured)
+//   boss-<name>.glb        a boss (GLB Assets/Bosses/<name>.glb). With clips made on him in Mixamo
+//                          (Clips/Bosses/<name>/*.fbx) he gets his own skeleton and boss-<name>-clips.glb;
+//                          without, he is on the male skeleton and male-clips.glb drives him.
 //
 // How a mesh without a skin gets one. Only the male comes out of Mixamo with its skin. Everything
 // else (the female body, every outfit, the mechanic) is a plain mesh that has to be bound to a
@@ -42,6 +44,7 @@ import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extension
 import { weld, dedup, prune, reorder, quantize, simplify, resample } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import { skinTexture } from './lib/skin-texture.mjs';
+import { recolour, MECH_TONES } from './lib/recolour.mjs';
 
 globalThis.self = globalThis;
 globalThis.window = { URL: { createObjectURL: () => 'blob:none' } };
@@ -67,6 +70,8 @@ const CLIP_NAMES = {
   swim: 'swim', swimming: 'swim', airsquat: 'squat', pushup: 'pushup', sittingidle: 'sit',
   taunt1: 'taunt1', taunt2: 'taunt2', victory: 'victory', wavestatic: 'wave', wave: 'wave', waving: 'wave',
   fixingitemonknees: 'work', confidentstrut: 'walk', confidentwalk: 'walk',
+  // the bosses' own (Clips/Bosses/<name>/)
+  armstretching: 'stretch', laughing: 'laugh', rumbadancing: 'dance', sillydancing: 'dance2', running: 'run',
 };
 /** Clips that travel in Mixamo unless "In Place" was ticked: any drift is taken out here. */
 const IN_PLACE = ['walk', 'run', 'run-slow', 'run-fast'];
@@ -591,6 +596,34 @@ for (const file of find(path.join(SRC, 'GLB Assets', 'Bosses'), /\.glb$/i)) {
   if (!rig || (!want(name) && !want('bosses'))) continue;
   console.log(name);
   const g = await meshOfGlb(io, file);
+  // clips made in Mixamo on the boss himself (Clips/Bosses/<name>/): his own skeleton, so his
+  // joints sit where his body bends and nothing stretches. Without them, the male's.
+  const own = clipsIn(path.join(SRC, 'Clips', 'Bosses', base.replace(/-(male|female)$/, '')), new Set(maleRig.bones.map((b) => b.name)));
+  if (own.rest) {
+    // Mixamo keeps the size the body was uploaded at: bring his skeleton (and his clips' hips) to
+    // the male's scale, and its hips down to the middle of him as the male's are, since every mesh
+    // is centred and made 1.9 tall (`centre`).
+    const at = new Map(male.rest.map((b) => [b.name, b]));
+    const span = (bones, ref) => bones.reduce((t, b) => t + (ref.has(b.name) && b.parent >= 0 ? b.pos.length() : 0), 0);
+    const grow = span(male.rest, at) / span(own.rest, at);
+    const standing = own.rest[0].pos.y * grow;
+    for (const b of own.rest) b.pos.multiplyScalar(grow);
+    if (standing > LIFT / 2) own.rest[0].pos.y -= LIFT;
+    for (const c of Object.values(own.clips)) if (c.hips) c.hips.values = c.hips.values.map((v) => v * grow);
+    console.log(`  his skeleton came ${grow.toFixed(2)} times too small: scaled up`);
+    const r = bind(maleRig, own.rest, bindLike(own.rest), g.mesh, name);
+    const has = new Set(own.rest.map((b) => b.name));
+    const hipsY = (c) => c.hips.values[1];
+    const k = own.clips.run?.hips && male.clips.run?.hips ? hipsY(own.clips.run) / hipsY(male.clips.run) : 1;
+    // the male's for what he has no clip of, only those a boss plays (stadium.js)
+    for (const [cn, c] of Object.entries(male.clips)) {
+      if (own.clips[cn] || !['idle', 'walk', 'wave', 'victory', 'taunt1', 'taunt2'].includes(cn)) continue;
+      own.clips[cn] = { ...c, hips: c.hips && { times: c.hips.times, values: c.hips.values.map((v) => v * k) }, quats: Object.fromEntries(Object.entries(c.quats).filter(([b]) => has.has(b))) };
+    }
+    await writeChar(name, r.mesh, r.skin, r, { base: g.base, normal: g.normal });
+    await writeClips(`${name}-clips`, r, own.clips);
+    continue;
+  }
   const r = bind(rig, rig.bones, rig.quats, g.mesh, name);
   await writeChar(name, r.mesh, r.skin, r, { base: g.base, normal: g.normal });
 }
@@ -606,5 +639,7 @@ if (want('mechanic')) {
   // what he has no clip for comes from the male's, on the joints he has
   for (const name of ['idle', 'walk']) if (!mech.clips[name]) { mech.clips[name] = { ...male.clips[name], quats: Object.fromEntries(Object.entries(male.clips[name].quats).filter(([b]) => has.has(b))) }; console.log(`  ${name}: the male's clip`); }
   await writeChar('mechanic', rig.mesh, rig.skin, rig, { base: g.base, normal: g.normal });
+  // his three twins, the blues of his outfit turned red, green and orange (mechanic.glb is the blue one)
+  for (const [tone, t] of Object.entries(MECH_TONES)) await writeChar(`mechanic-${tone}`, rig.mesh, rig.skin, rig, { base: await recolour(g.base, t), normal: g.normal });
   await writeClips('mechanic-clips', rig, mech.clips);
 }

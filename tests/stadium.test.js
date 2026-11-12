@@ -1,20 +1,25 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { raceAt, bossKmAt, clock, trackPoint, EPOCH, RACE_MS, robotLevel, raceXp, BOSS_KM } from '../js/core/stadium.js';
+import { raceAt, bossKmAt, clock, trackPoint, EPOCH, RACE_MS, WARM_MS, CYCLE_MS, robotLevel, raceXp, BOSS_KM } from '../js/core/stadium.js';
 
-test('a race every 72 hours, back to back from the epoch', () => {
-  const r = raceAt(EPOCH + 10);
-  assert.equal(r.n, 0); assert.equal(r.start, EPOCH); assert.equal(r.end, EPOCH + RACE_MS);
-  const next = raceAt(EPOCH + RACE_MS);
-  assert.equal(next.n, 1); assert.equal(next.p, 0, 'a new race starts at nothing');
-  assert.equal(raceAt(EPOCH + RACE_MS * 1.5).p, 0.5);
+test('a 10-hour warm-up, then a 72-hour race, back to back from the epoch', () => {
+  const w = raceAt(EPOCH + 10);
+  assert.equal(w.n, 0); assert.equal(w.warm, EPOCH); assert.ok(w.warming);
+  assert.equal(w.start, EPOCH + WARM_MS); assert.equal(w.end, EPOCH + WARM_MS + RACE_MS);
+  assert.equal(w.p, 0, 'nobody runs in the warm-up'); assert.equal(w.startsIn, WARM_MS - 10);
+  const r = raceAt(EPOCH + WARM_MS);
+  assert.ok(!r.warming); assert.equal(r.startsIn, 0); assert.equal(r.p, 0);
+  assert.equal(raceAt(EPOCH + WARM_MS + RACE_MS * 0.5).p, 0.5);
+  const next = raceAt(EPOCH + CYCLE_MS);
+  assert.equal(next.n, 1); assert.ok(next.warming, 'the next warm-up follows the finish');
   assert.equal(raceAt(EPOCH - 1).n, -1, 'before the epoch still works');
   assert.equal(raceAt(EPOCH + 1).boss.id, 'blomvelt');
 });
 
 test('the boss runs his km evenly and the clock counts down', () => {
-  assert.equal(bossKmAt(EPOCH + RACE_MS / 2, 12), BOSS_KM[12] / 2);
-  assert.equal(bossKmAt(EPOCH + RACE_MS / 4, 3), BOSS_KM[3] / 4);
+  assert.equal(bossKmAt(EPOCH + WARM_MS + RACE_MS / 2, 12), BOSS_KM[12] / 2);
+  assert.equal(bossKmAt(EPOCH + WARM_MS + RACE_MS / 4, 3), BOSS_KM[3] / 4);
+  assert.equal(bossKmAt(EPOCH + WARM_MS / 2, 12), 0);
   assert.equal(clock(RACE_MS), '72:00:00');
   assert.equal(clock(3661e3 + 999), '01:01:01');
   assert.equal(clock(-5), '00:00:00');

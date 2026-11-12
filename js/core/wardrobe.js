@@ -137,10 +137,16 @@ export function outfitState(outfitId, look, owned = []) {
   return 'owned';
 }
 
+/**
+ * While the accessories are being tried out, everyone can wear every one that has a model.
+ * Turn this off when they go on sale in the shop.
+ */
+export const TRY_ALL_ACCESSORIES = true;
+
 /** The same for an accessory. */
 export function accessoryState(item, owned = []) {
   if (!slotOf(item)) return 'locked';
-  if (!ownsItem(item, owned)) return 'locked';
+  if (!ownsItem(item, owned) && !(TRY_ALL_ACCESSORIES && ACCESSORY_MODELS[item])) return 'locked';
   if (!ACCESSORY_MODELS[item]) return 'soon';
   return 'owned';
 }

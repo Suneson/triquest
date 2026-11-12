@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
-  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, normaliseLook, outfitState, accessoryState, modelFor, gearFor, skinTint, ownsItem, slotOf,
+  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, TRY_ALL_ACCESSORIES, normaliseLook, outfitState, accessoryState, modelFor, gearFor, skinTint, ownsItem, slotOf,
 } from '../js/core/wardrobe.js';
 
 const look = (o = {}) => ({ ...DEFAULT_LOOK, gear: { ...DEFAULT_LOOK.gear }, ...o });
@@ -46,11 +46,12 @@ test('the 3D view loads the outfit when it can be worn, the plain body otherwise
 test('accessories: you wear what you have and what has a model; hair is free', () => {
   assert.ok(ownsItem('shoe-starter'));
   assert.equal(accessoryState('shoe-starter'), 'owned');
-  assert.equal(accessoryState('helmet-aero'), 'locked');
+  assert.equal(accessoryState('helmet-aero'), TRY_ALL_ACCESSORIES ? 'owned' : 'locked', 'free to try for now');
   assert.equal(accessoryState('helmet-aero', ['helmet-aero']), 'owned');
   assert.equal(accessoryState('watch-gold', ['watch-gold']), 'soon', 'no watch models yet');
   assert.equal(accessoryState('hair-braids'), 'owned', 'every hair style is free');
-  assert.equal(normaliseLook({ gear: { shoes: 'shoe-starter', helmet: 'helmet-aero', hair: 'hair-long' } }).gear.helmet, null, 'not bought');
+  if (!TRY_ALL_ACCESSORIES) assert.equal(normaliseLook({ gear: { helmet: 'helmet-aero' } }).gear.helmet, null, 'not bought');
+  assert.equal(normaliseLook({ gear: { watch: 'watch-gold' } }).gear.watch, null, 'no model, nothing to wear');
   const l = normaliseLook({ hairColour: 'blonde', gear: { shoes: 'shoe-starter', hair: 'hair-long' } });
   assert.equal(l.gear.shoes, 'shoe-starter'); assert.equal(l.gear.hair, 'hair-long'); assert.equal(l.hairColour, 'blonde');
   assert.deepEqual(gearFor(l).map((g) => [g.slot, g.url]), [['hair', 'models/gear/hair-long.glb'], ['shoes', 'models/gear/shoe-starter.glb']]);

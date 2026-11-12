@@ -4,7 +4,8 @@
 //   Look         class, body, skin tone and eye colour
 //   Outfits      every outfit: yours first, then the ones still to get, and how
 //   Accessories  helmets, shoes, hats, glasses and watches, one per slot (hair is on Look)
-// The look is kept on this device for now (moske-look). Outfits and accessories without a model
+// It rises almost to the top of the screen and has no Close button: pull it down (or tap its
+// handle) to close it. The look is kept on this device for now (moske-look). Outfits and accessories without a model
 // can't be put on yet: their cards say so. The rules are js/core/wardrobe.js's.
 
 import { esc } from './ui.js';
@@ -139,7 +140,7 @@ export function openWardrobe() {
   const owned = ownedIds();
 
   root.innerHTML = `<div class="fh-screen gw-screen is-shop wr-screen" role="dialog" aria-modal="true" aria-labelledby="wr-title">
-    ${sheetHead({ title: esc(t('wardrobe.title')), lead: 'back', id: 'wr-title' })}
+    ${sheetHead({ title: esc(t('wardrobe.title')), lead: 'back', noLead: true, id: 'wr-title' })}
     <div class="wr-stage" data-wr-stage>
       <p class="wr-stage-msg" data-wr-msg>${esc(t('wardrobe.loading'))}</p>
       <span class="wr-hint" aria-hidden="true">${esc(t('wardrobe.dragHint'))}</span>

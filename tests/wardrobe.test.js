@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
+  fitsBody,
   OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, TRY_ALL_ACCESSORIES, normaliseLook, outfitState, accessoryState, modelFor, gearFor, skinTint, ownsItem, slotOf,
 } from '../js/core/wardrobe.js';
 
@@ -49,7 +50,7 @@ test('accessories: you wear what you have and what has a model; hair is free', (
   assert.equal(accessoryState('hair-braids'), 'owned', 'every hair style is free');
   if (!TRY_ALL_ACCESSORIES) assert.equal(normaliseLook({ gear: { helmet: 'helmet-aero' } }).gear.helmet, null, 'not bought');
   assert.equal(normaliseLook({ gear: { watch: 'watch-gold' } }).gear.watch, null, 'no model, nothing to wear');
-  const l = normaliseLook({ hairColour: 'blonde', gear: { shoes: 'shoe-starter', hair: 'hair-long' } });
+  const l = normaliseLook({ body: 'female', hairColour: 'blonde', gear: { shoes: 'shoe-starter', hair: 'hair-long' } });
   assert.equal(l.gear.shoes, 'shoe-starter'); assert.equal(l.gear.hair, 'hair-long'); assert.equal(l.hairColour, 'blonde');
   assert.deepEqual(gearFor(l).map((g) => [g.slot, g.url]), [['hair', 'models/gear/hair-long.glb'], ['shoes', 'models/gear/shoe-starter.glb']]);
   assert.equal(normaliseLook({ hairColour: 'green' }).hairColour, DEFAULT_LOOK.hairColour);
@@ -62,4 +63,12 @@ test('skin tints: the default leaves the painted skin as it is, darker tones onl
   assert.deepEqual(skinTint('fair').map((v) => +v.toFixed(6)), [1, 1, 1]);
   for (const s of SKIN_TONES.slice(1)) for (const v of skinTint(s.id)) assert.ok(v > 0 && v <= 1, s.id);
   assert.equal(EYE_COLOURS.length, new Set(EYE_COLOURS.map((e) => e.id)).size);
+});
+
+test('hair is per body: crop and curls for men, the rest for women', () => {
+  assert.equal(normaliseLook({ body: 'male', gear: { hair: 'hair-long' } }).gear.hair ?? null, null);
+  assert.equal(normaliseLook({ body: 'male', gear: { hair: 'hair-curls' } }).gear.hair, 'hair-curls');
+  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-crop' } }).gear.hair ?? null, null);
+  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-braids' } }).gear.hair, 'hair-braids');
+  assert.equal(fitsBody('hat-visor', 'female'), true, 'only hair is per body');
 });

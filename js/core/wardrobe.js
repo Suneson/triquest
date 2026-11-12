@@ -87,7 +87,7 @@ export const OUTFITS = [
  * everyone has every item (hair is part of the look, on the Look tab).
  */
 export const SLOTS = [
-  { id: 'hair', buff: false, free: true, items: ['hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-top', 'hair-bun-low', 'hair-buns'] },
+  { id: 'hair', buff: false, free: true, items: ['hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-low'] },
   { id: 'helmet', buff: true, items: ['helmet-road', 'helmet-aero', 'helmet-blue', 'helmet-gold'] },
   { id: 'shoes', buff: true, items: ['shoe-starter', 'shoe-runner', 'shoe-racer', 'shoe-trail', 'shoe-lifter', 'shoe-trainer', 'shoe-cycling', 'shoe-gold'] },
   { id: 'hat', buff: false, items: ['hat-cap-navy', 'hat-cap-white', 'hat-visor', 'hat-beanie', 'hat-bucket', 'hat-gold'] },
@@ -96,12 +96,20 @@ export const SLOTS = [
 ];
 /** Accessory models made so far (tools/build-accessories.mjs), by item id. */
 export const ACCESSORY_MODELS = Object.fromEntries([
-  'hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-top', 'hair-bun-low', 'hair-buns',
+  'hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-low',
   'helmet-road', 'helmet-aero', 'helmet-blue', 'helmet-gold',
   'shoe-starter', 'shoe-runner', 'shoe-racer', 'shoe-trail', 'shoe-lifter', 'shoe-trainer', 'shoe-cycling', 'shoe-gold',
   'hat-cap-navy', 'hat-cap-white', 'hat-visor', 'hat-beanie', 'hat-bucket', 'hat-gold',
   'glasses-sport', 'glasses-blue', 'glasses-gold', 'glasses-casual',
 ].map((id) => [id, `models/gear/${id}.glb`]));
+
+/** Hair made for one body only: it is only offered to, and worn by, that body. */
+export const HAIR_FOR = {
+  'hair-crop': 'male', 'hair-curls': 'male',
+  'hair-long': 'female', 'hair-braids': 'female', 'hair-bun-low': 'female',
+};
+/** Can this body wear the item? */
+export const fitsBody = (item, body) => !HAIR_FOR[item] || HAIR_FOR[item] === body;
 
 /** What every player has before buying anything: the plain body, the tracksuit and the free trainers. */
 export const STARTER = ['base', 'tracksuit', 'shoe-starter'];
@@ -159,7 +167,7 @@ export const modelFor = (look, owned = []) =>
 /** What the 3D view hangs on the character: [{ id, slot, url, body }], only what can be worn. */
 export const gearFor = (look, owned = []) => SLOTS
   .map((s) => ({ id: look.gear?.[s.id], slot: s.id }))
-  .filter((g) => g.id && accessoryState(g.id, owned) === 'owned')
+  .filter((g) => g.id && accessoryState(g.id, owned) === 'owned' && fitsBody(g.id, look.body))
   .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id], body: look.body }));
 
 /** The hair colour as linear RGB, for the 3D view. */
@@ -187,7 +195,7 @@ export function normaliseLook(raw, owned = []) {
   if (outfitState(r.outfit, look, owned) === 'owned') look.outfit = r.outfit;
   for (const slot of SLOTS) {
     const item = r.gear?.[slot.id];
-    if (slot.items.includes(item) && accessoryState(item, owned) === 'owned') look.gear[slot.id] = item;
+    if (slot.items.includes(item) && accessoryState(item, owned) === 'owned' && fitsBody(item, look.body)) look.gear[slot.id] = item;
   }
   return look;
 }

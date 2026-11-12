@@ -44,7 +44,6 @@ export const ITEM_FIT = {
   'hat-visor': { across: 1.1, top: -0.08 },
   'hat-beanie': { across: 1.12, top: 0.4 },
   'hat-bucket': { top: 0.34 },
-  'hair-buns': { top: 0.3 },
   'hair-bun-low': { top: 0.22, across: 1.28, front: -0.12 },
   'helmet-aero': { back: undefined, front: 0.1 },
   'hat-gold': { top: 0.3 },

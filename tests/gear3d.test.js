@@ -27,3 +27,11 @@ test('a shoe is longer than the foot and stands on the floor', () => {
   assert.ok(p.s * 1 > 0.24, 'covers the toes and the heel');
   assert.ok(p.y < 0 && p.y > -0.02);
 });
+
+import { cleanFit } from '../js/core/gear-fit.js';
+
+test('a hand-set fit keeps only real changes, rounded', () => {
+  assert.equal(cleanFit(null), null);
+  assert.equal(cleanFit({ x: 0, s: 1, rx: 0 }), null, 'nothing changed');
+  assert.deepEqual(cleanFit({ y: 0.12345, s: 0.9, rz: '5', junk: 3, z: NaN }), { y: 0.123, s: 0.9, rz: 5 });
+});

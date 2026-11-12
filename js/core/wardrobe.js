@@ -1,13 +1,13 @@
 // wardrobe.js: what a character can wear, and how a look is checked (js/app/wardrobe-view.js).
 //
-// A look is: a class (endurance or hybrid, for the stats), a body (male or female, a look only),
+// A look is: a class (endurance only since November 2026: there is no hybrid athlete), a body (male or female, a look only),
 // a skin tone, an eye colour, a hair style and colour, one outfit, and one accessory per slot. Outfits are complete sets
 // (BUILD-PLAN.md section 2); helmets and shoes give buffs, hats, glasses and watches are looks only.
 // There is one male body and one female body (BUILD-PLAN.md section 2, 10 November 2026): the
 // class changes your stats, never your shape. Every outfit is listed so you can see what's coming,
 // and can't be worn until its two models are in (tools/build-characters.mjs makes them).
 
-export const CLASSES = ['endurance', 'hybrid'];
+export const CLASSES = ['endurance'];
 export const BODY_LOOKS = ['male', 'female'];
 
 const CHARS = 'models/chars';
@@ -66,16 +66,16 @@ export const OUTFITS = [
   { id: 'white-gold', kind: 'shop', for: CLASSES, models: {} },
   { id: 'blue-half-zip', kind: 'shop', for: CLASSES, models: {} },
   { id: 'sky-club', kind: 'shop', for: CLASSES, models: {} },
-  { id: 'road-racer', kind: 'shop', for: ['endurance'], models: made('road-racer') },
-  { id: 'distance', kind: 'shop', for: ['endurance'], models: {} },
-  { id: 'iron-gym', kind: 'shop', for: ['hybrid'], models: {} },
-  { id: 'heavy-day', kind: 'shop', for: ['hybrid'], models: {} },
+  { id: 'road-racer', kind: 'shop', for: CLASSES, models: made('road-racer') },
+  { id: 'distance', kind: 'shop', for: CLASSES, models: {} },
+  { id: 'iron-gym', kind: 'shop', for: CLASSES, models: {} },
+  { id: 'heavy-day', kind: 'shop', for: CLASSES, models: {} },
   { id: 'aero-suit', kind: 'blueprint', for: CLASSES, models: {} },
   { id: 'tri-pro', kind: 'blueprint', for: CLASSES, models: {} },
   { id: 'storm-shell', kind: 'blueprint', for: CLASSES, models: made('storm-shell') },
   { id: 'gold-line', kind: 'blueprint', for: CLASSES, models: {} },
-  { id: 'marathon-elite', kind: 'blueprint', for: ['endurance'], models: {} },
-  { id: 'forge', kind: 'blueprint', for: ['hybrid'], models: {} },
+  { id: 'marathon-elite', kind: 'blueprint', for: CLASSES, models: {} },
+  { id: 'forge', kind: 'blueprint', for: CLASSES, models: {} },
   { id: 'first-finisher', kind: 'earned', for: CLASSES, models: {} },
   { id: 'streak-keeper', kind: 'earned', for: CLASSES, models: {} },
   { id: 'clan-champion', kind: 'earned', for: CLASSES, models: {} },
@@ -155,11 +155,11 @@ export function accessoryState(item, owned = []) {
 export const modelFor = (look, owned = []) =>
   (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[look.body]);
 
-/** What the 3D view hangs on the character: [{ id, slot, url }], only what can be worn. */
+/** What the 3D view hangs on the character: [{ id, slot, url, body }], only what can be worn. */
 export const gearFor = (look, owned = []) => SLOTS
   .map((s) => ({ id: look.gear?.[s.id], slot: s.id }))
   .filter((g) => g.id && accessoryState(g.id, owned) === 'owned')
-  .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id] }));
+  .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id], body: look.body }));
 
 /** The hair colour as linear RGB, for the 3D view. */
 export const hairColour = (id) => hexToLinear((HAIR_COLOURS.find((h) => h.id === id) || HAIR_COLOURS[1]).hex);

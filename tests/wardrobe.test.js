@@ -26,21 +26,17 @@ test('a broken or empty saved look comes back as the default', () => {
 });
 
 test('you only wear what you have, for your class, with a model for your body', () => {
-  assert.equal(outfitState('tracksuit', look({ cls: 'hybrid' })), 'soon', 'owned, but its models are not made yet');
-  assert.equal(outfitState('tracksuit', look({ cls: 'endurance' })), 'soon');
-  assert.equal(outfitState('road-racer', look({ cls: 'hybrid' })), 'class');
+  assert.equal(outfitState('tracksuit', look({ cls: 'endurance' })), 'soon', 'owned, but its models are not made yet');
+  assert.equal(normaliseLook({ cls: 'hybrid' }).cls, 'endurance', 'there is no hybrid class any more');
   assert.equal(outfitState('aero-suit', look()), 'locked');
   assert.equal(outfitState('aero-suit', look(), ['aero-suit']), 'soon');
   assert.equal(normaliseLook({ cls: 'endurance', outfit: 'tracksuit' }).outfit, 'base');
-  assert.equal(normaliseLook({ cls: 'hybrid', outfit: 'tracksuit' }).outfit, 'base', 'an outfit with no model falls back to the body');
 });
 
 test('the 3D view loads the outfit when it can be worn, the plain body otherwise', () => {
   // one male body, whatever the class
-  assert.equal(modelFor(look({ cls: 'hybrid', outfit: 'tracksuit' })), 'models/chars/male.glb');
-  assert.equal(modelFor(look({ cls: 'endurance' })), modelFor(look({ cls: 'hybrid' })));
   assert.equal(modelFor(look({ cls: 'endurance', outfit: 'tracksuit' })), 'models/chars/male.glb');
-  assert.equal(modelFor(look({ body: 'female', cls: 'hybrid' })), 'models/chars/female.glb');
+  assert.equal(modelFor(look({ body: 'female' })), 'models/chars/female.glb');
 });
 
 test('accessories: you wear what you have and what has a model; hair is free', () => {

@@ -3092,6 +3092,35 @@ en.wardrobe = {
   "loading": "Getting your athlete ready…",
   "loadFailed": "Couldn't load your athlete. Check your connection and open the wardrobe again.",
   "noGl": "This device can't show 3D, but you can still pick your look.",
+  "fit": {
+    "open": "Fit accessories",
+    "title": "Fit accessories",
+    "item": "Piece",
+    "hair": "Hair with it",
+    "move": "Move",
+    "view": {
+      "front": "Front",
+      "three": "¾",
+      "side": "Side",
+      "back": "Back"
+    },
+    "key": {
+      "y": "Up",
+      "z": "Forward",
+      "x": "Right",
+      "s": "Size",
+      "rx": "Tilt",
+      "ry": "Turn",
+      "rz": "Lean"
+    },
+    "less": "Less",
+    "more": "More",
+    "reset": "Reset this piece",
+    "copy": "Copy all fits",
+    "copied": "Fits copied: paste them to Claude",
+    "copyFail": "Couldn't copy: select the text below",
+    "note": "Fits are kept on this phone and show in the game here at once. Copy them and paste them to Claude to make them the same for everyone."
+  },
   "dragHint": "Drag to turn",
   "tab": {
     "look": "Look",

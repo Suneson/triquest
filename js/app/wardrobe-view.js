@@ -16,7 +16,7 @@ import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { gearState } from './gear-state.js';
 import {
-  CLASSES, BODY_LOOKS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor, gearFor,
+  BODY_LOOKS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, OUTFITS, SLOTS, ALL_OUTFITS, normaliseLook, outfitState, accessoryState, modelFor, clipsFor, gearFor,
 } from '../core/wardrobe.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
@@ -72,10 +72,8 @@ const chip = (attr, value, on, label) => `<button type="button" class="wr-chip${
 const swatch = (attr, s, on, label) => `<button type="button" class="wr-swatch${on ? ' is-on' : ''}" ${attr}="${s.id}" aria-pressed="${on}" aria-label="${esc(label)}" title="${esc(label)}" style="--sw:${s.hex}"></button>`;
 
 function lookPanel(look) {
-  return `<section class="wr-sec"><h3>${esc(t('wardrobe.class'))}</h3>
-      <div class="wr-chips">${CLASSES.map((c) => chip('data-wr-cls', c, look.cls === c, t(`wardrobe.cls.${c}`))).join('')}</div>
-      <p class="wr-note">${esc(t('wardrobe.classNote'))}</p></section>
-    <section class="wr-sec"><h3>${esc(t('wardrobe.body'))}</h3>
+  // no class picker: endurance is the only class
+  return `<section class="wr-sec"><h3>${esc(t('wardrobe.body'))}</h3>
       <div class="wr-chips">${BODY_LOOKS.map((b) => chip('data-wr-body', b, look.body === b, t(`wardrobe.bodies.${b}`))).join('')}</div></section>
     <section class="wr-sec"><h3>${esc(t('wardrobe.skin'))}</h3>
       <div class="wr-swatches">${SKIN_TONES.map((s) => swatch('data-wr-skin', s, look.skin === s.id, t(`wardrobe.skins.${s.id}`))).join('')}</div></section>
@@ -90,7 +88,6 @@ const STATE_ORDER = { owned: 0, soon: 1, locked: 2, class: 3 };
 function stateLine(state, kind, look) {
   if (state === 'owned') return '';
   if (state === 'soon') return `<small class="wr-state is-soon">${esc(t('wardrobe.state.soon'))}</small>`;
-  if (state === 'class') return `<small class="wr-state">${esc(t('wardrobe.state.class', { cls: t(`wardrobe.cls.${look.cls === 'endurance' ? 'hybrid' : 'endurance'}`) }))}</small>`;
   return `<small class="wr-state">${svg('lock')}${esc(t(`wardrobe.how.${kind}`))}</small>`;
 }
 
@@ -125,7 +122,8 @@ function slotCards(slot, look, owned, colour = null) {
 }
 
 function gearPanel(look, owned) {
-  return SLOTS.filter((slot) => !slot.free).map((slot) =>
+  const tool = everything() ? `<button type="button" class="fe-open" data-wr-fit>${esc(t('wardrobe.fit.open'))}</button>` : '';
+  return tool + SLOTS.filter((slot) => !slot.free).map((slot) =>
     `<section class="wr-sec"><h3>${esc(t(`wardrobe.slot.${slot.id}`))}${slot.buff ? ` <span class="wr-buff">${svg('bolt')}${esc(t('wardrobe.buff'))}</span>` : ''}</h3>
       <div class="wr-grid">${slotCards(slot, look, owned)}</div></section>`).join('');
 }
@@ -182,7 +180,10 @@ export function openWardrobe() {
     const b = e.target.closest('button');
     if (!b || !root.contains(b)) return;
     if (b.dataset.wrTab) { if (b.dataset.wrTab !== tab) { tab = b.dataset.wrTab; draw(); panelEl.scrollTop = 0; slideIn(); haptic('tick'); } return; }
-    if (b.dataset.wrCls) return update({ ...look, cls: b.dataset.wrCls });
+    if (b.hasAttribute('data-wr-fit')) {
+      import('./fit-editor.js').then(({ openFitEditor }) => openFitEditor(look, { onClose: () => stage?.refit() }));
+      return;
+    }
     if (b.dataset.wrBody) return update({ ...look, body: b.dataset.wrBody });
     if (b.dataset.wrSkin) return update({ ...look, skin: b.dataset.wrSkin });
     if (b.dataset.wrEyes) return update({ ...look, eyes: b.dataset.wrEyes });

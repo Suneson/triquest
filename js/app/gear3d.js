@@ -18,7 +18,7 @@ const FIT = {
   helmet: { across: 1.34, top: 0.24, back: 0.12 },
   // eye: the lenses' middle, as a share of the head's height from its lowest point
   glasses: { across: 1.06, eye: 0.56, front: 0.02 },
-  shoes: { along: 1.22 },
+  shoes: { along: 1.08, wide: 0.96 },
 };
 
 /** Changes for one item, over its slot's rule. */
@@ -84,7 +84,7 @@ export function place(slot, size, box, fit = {}) {
   const w = b.max.x - b.min.x, h = b.max.y - b.min.y, d = b.max.z - b.min.z;
   const cx = (b.min.x + b.max.x) / 2, cz = (b.min.z + b.max.z) / 2;
   if (slot === 'shoes') {
-    const s = Math.max((d * f.along) / size.z, (w * 1.08) / size.x);
+    const s = Math.max((d * f.along) / size.z, (w * f.wide) / size.x);
     return { s, x: cx, y: b.min.y - 0.012, z: cz - d * 0.05 };
   }
   const s = (w * f.across) / size.x;

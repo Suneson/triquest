@@ -2558,6 +2558,9 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
   touch-action: none; -webkit-tap-highlight-color: transparent; }
 .dg-item img { display: block; width: 100%; height: auto; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 6px 4px rgba(0, 0, 0, .45)); }
 .dg-item:focus-visible { outline: 3px solid #6EA8FF; outline-offset: 4px; border-radius: 8px; }
+/* the item you hold gets its own layer: moved inside the room's layer with a shadow filter, iPhone
+   Safari left smeared copies of its shadow behind until the next tap */
+.dg-item.is-sel { will-change: transform; }
 .dg-item.is-sel img { filter: drop-shadow(0 0 10px rgba(110, 168, 255, .95)) drop-shadow(0 6px 4px rgba(0, 0, 0, .45)); }
 .dg-item.bounce { animation: dg-bounce 340ms cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes dg-bounce { 0% { transform: translate(-50%, var(--ty)) scale(1); } 45% { transform: translate(-50%, var(--ty)) scale(1.18); } 100% { transform: translate(-50%, var(--ty)) scale(1); } }

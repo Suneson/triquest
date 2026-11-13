@@ -27,11 +27,12 @@
 .st-note { margin: 0; color: #CFE0FF; font-size: 11px; font-weight: 700; text-align: center; }
 
 /* Talk to the boss: a gold plate (talk-plate.webp) standing over the Close bar */
-.st-talk { position: absolute; left: 50%; bottom: calc(var(--safe-b) + 90px); z-index: 115; margin: 0 !important; translate: -50% 0; width: min(280px, 76vw);
-  aspect-ratio: 600 / 220; margin: 0; padding: 0 0 7%; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+/* the size of the Close plate under it, with a clear gap between the two */
+.st-talk { position: absolute; left: 50%; bottom: calc(var(--safe-b) + 104px); z-index: 115; margin: 0 !important; translate: -50% 0; width: 184px;
+  height: 80px; margin: 0; padding: 0 0 12px; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   background: url('../icons/Pixelart/NEW/UI/talk-plate.webp') center / 100% 100% no-repeat; filter: drop-shadow(0 6px 8px rgba(4, 10, 28, .45));
   animation: close-in var(--pop-ms) var(--spring-pop) 240ms both; }
-.st-talk span { display: block; color: #fff; font: 900 20px/1 var(--font-header); font-variation-settings: 'wght' 900;
+.st-talk span { display: block; color: #fff; font: 900 18px/1 var(--font-header); white-space: nowrap; font-variation-settings: 'wght' 900;
   -webkit-text-stroke: 4px #0B1E48; paint-order: stroke fill; text-shadow: 0 3px 0 #0B1E48; }
 .st-talk:active { background-image: url('../icons/Pixelart/NEW/UI/talk-plate-down.webp'); }
 .st-talk:active span { translate: 0 4px; }

@@ -1,7 +1,7 @@
 // delivery-view.js — the deliveries on their way (docs/CITY.md, "In the app").
 //
 // Everything bought in the shop is a workshop job with a finish time; until then it's a
-// delivery. The street sign by the garage door counts down to the next one (city3d.js) and
+// delivery. The street sign by the garage door counts down to the next one (city2d.js) and
 // the MOSKE truck brings it as the countdown runs out. Tapping the sign opens this list: one
 // beige card per delivery (the Journal's cards), soonest first, each counting down.
 

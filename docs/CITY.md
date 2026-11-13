@@ -16,7 +16,7 @@ The base now stands in the middle of an island of nine 2 x 2 plots.
 - **Plots:** `js/app/island-view.js` draws them and handles taps. The Mall opens the shop and a built club base opens the club screen.
 - **Rebuilds:** the rules are in `js/core/island.js` and the server keeps the same ones (`supabase/migrations/0033_island.sql`, held together by `tests/island-sql.test.js`). The club, the pool and the market start in ruins. Under works, the club shows its own picture and the pool and the market show their ruin, until the construction box exists. A timer floats over each one.
 - **Taps:** the viewport takes the finger only once it moves (`TAP_TARGETS` in `js/app/diorama-view.js`), so a tap reaches a building's button and a drag still pans the map.
-- **The van:** while driving, it's covered by the Mall and the market, in whatever state they're in (`islandFront`).
+- **The van:** while driving, it's covered by the Mall and the market, in whatever state they're in. It sits among the island's pictures just after the pool, so the pictures after it in the page cover it.
 
 ## The idea
 
@@ -185,17 +185,18 @@ The plate is built like a game map rather than expanded by an image model.
 - **Swiping:** you can swipe across the whole city.
 - **Moving between floors:** still covered by the cloud bank.
 
-### What moves (`js/app/city3d.js`)
+### What moves (`js/app/city2d.js`)
 
-One transparent canvas covers the stage, over the city picture. The app's one WebGL renderer draws it (`js/app/gl-shared.js`), and only when something on it changes: the stage pans or zooms, the sign's countdown ticks (once a second), or the truck drives (then every frame).
-- **The camera:** orthographic and tied to the stage's pan and zoom. The 3D ground is the city's own: X runs along e1 = (1, 0.489) world px, Z along e2 = (−1, 0.489), and Y up.
+The sign and the truck are pictures in the world, so they pan and zoom with it at no cost (`icons/City/street/`).
+- **Where the pictures come from:** `tools/bake-street.js` draws the 3D models (`models/city/sign.glb`, `truck.glb`) from the city's own camera: the sign once, and the truck once facing up the screen and once facing down it, the two ways it faces on its road. Run it again if a model changes.
+- **Before November 2026** they were live 3D on a transparent canvas the size of the screen. It was redrawn every second for the clock and every frame while panning, which made the island lag (`docs/PERFORMANCE.md`).
 
 What's on them:
 - **No clouds** since November 2026: the far clouds and the three 3D cloud models kept the whole screen redrawing 30 times a second, so they were taken out to cut lag. (The cloud bank between floors of the tower is a flat picture and stays.)
-- **The delivery sign** (`models/city/sign.glb`) stands on the pavement left of the garage door, its panel facing out.
+- **The delivery sign** stands on the pavement left of the garage door, its panel facing out.
   - Its white panel counts down to the next delivery: every shop order is a workshop job with a finish time (`js/core/deliveries.js`).
   - Tapping it opens the list of deliveries on their way (`js/app/delivery-view.js`), as beige cards like the Journal's.
-- **The MOSKE truck** (`models/city/truck.glb`) brings whichever delivery is ending (`truckAt`).
+- **The MOSKE truck** brings whichever delivery is ending (`truckAt`). It moves by transform, and only while it drives.
   - It drives in from the right along the road between the stadium and the pool, turns at the stadium's crossing onto the road past the garage, and arrives at the door as the countdown ends.
   - It waits at the door, under its parcel bubble, for as long as a parcel is waiting there or being opened. Once you've opened it and closed the screen, it carries on down the same road and out at the bottom left.
   - The route is `ROUTE_IN` and `ROUTE_OUT`, given as street-grid coordinates (`lat(a, b)`).

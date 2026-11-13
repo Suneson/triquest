@@ -40,7 +40,7 @@ const loadLib = () => (lib ||= Promise.all([
   import(`${VENDOR}meshopt_decoder.module.js`),
 ]).then(([THREE, { GLTFLoader }, { MeshoptDecoder }]) => ({ THREE, GLTFLoader, MeshoptDecoder })));
 
-/** three.js, its glTF loader and the meshopt decoder, loaded once (city3d.js shares them). */
+/** three.js, its glTF loader and the meshopt decoder, loaded once. */
 export const loadThree = () => loadLib();
 
 /** Can this device draw WebGL at all? (Without it the treadmill simply stands empty.) */

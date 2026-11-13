@@ -80,7 +80,10 @@ At every zoom tested, no picture that's on screen was culled.
 1. ~~**Make the city's 3D sign and truck 2D.**~~ Done (above).
 2. **Lighter island pictures.** The item copies and culling are done (above). What's left:
    - **The base picture** (2,690 px wide, drawn 2,152 wide; 15 MB). Use a smaller copy when zoomed out and the full one when zoomed in, the way the big rooms already do (`midArt`).
-   - **Bake the shadows** into the market pictures instead of using CSS drop-shadows.
+   - ~~**Bake the shadows** into the market pictures.~~ Done (sw v145).
+     - `tools/bake-market-shadows.py` draws the same shadow, `drop-shadow(0 10px 8px rgba(10, 30, 20, .25))` scaled to the picture, into padded copies in `icons/Market/island/` (548 KB for all eight).
+     - The island takes the padding back off when it places them (`SHADOW_PAD` in `js/app/island-view.js`), so each market stands where it did, to within 0.1 px.
+     - The island's markets now have no filter. The market screen still uses the plain pictures.
 3. **Draw 3D straight into the page when only one view shows.** One shared renderer is right (iPhone allows only a few WebGL contexts), but the copy into each view is costly. When a single 3D view is on screen (the stadium, the wardrobe, the run room), it can be drawn directly instead. This is a careful change: test it on an iPhone before merging.
 4. ~~**Let go of 3D models when their screen closes.**~~ Done for the stadium (sw v141) and the wardrobe (sw v144).
    - `js/app/char3d.js` counts how many figures use each model file, from the moment one starts loading it.

@@ -48,6 +48,11 @@ function shopBox(spot, ratio) {
   return { left: fx - SHOP_FOOT * w, top: fy - h + w * 0.02, w, h };
 }
 const RATIO = 578 / 720;
+// The markets on the island are copies with their shadow drawn in (tools/bake-market-shadows.py),
+// on a canvas padded by this much (px of the picture): it's taken back off when they're placed.
+// A CSS drop-shadow on six big pictures was redrawn off screen at full size on every zoom.
+const SHADOW_PAD = { l: 16, t: 16, r: 16, b: 32 };
+const islandMarket = (level) => marketPicture(level).replace('icons/Market/', 'icons/Market/island/');
 
 /** The construction box on a plot: one picture for all of them. */
 const boxOn = (plot) => ({ ...ART.box, x: PLOT[plot][0] + ART.box.dx, y: PLOT[plot][1] + ART.box.dy });
@@ -150,12 +155,21 @@ function paintShops() {
     img.hidden = !built || !m; if (hit) hit.hidden = !built;
     if (!built) continue;
     if (m) {
-      const src = marketPicture(m.level);
+      const src = islandMarket(m.level);
       if (img.getAttribute('src') !== src) img.src = src;
       if (!img.complete) img.addEventListener('load', () => paintShops(), { once: true });
     }
-    const box = shopBox(x.spot, m && img.naturalWidth ? img.naturalHeight / img.naturalWidth : RATIO);
-    if (m) Object.assign(img.style, { left: `${box.left.toFixed(1)}px`, top: `${box.top.toFixed(1)}px`, width: `${box.w.toFixed(1)}px`, height: 'auto' });
+    // the market's own shape, without the shadow's padding
+    const P = SHADOW_PAD;
+    const pw = img.naturalWidth - P.l - P.r; const ph = img.naturalHeight - P.t - P.b;
+    const box = shopBox(x.spot, m && img.naturalWidth ? ph / pw : RATIO);
+    if (m && img.naturalWidth) {   // placed once it's loaded (paintShops runs again then)
+      const k = box.w / pw;   // world px per px of the picture
+      Object.assign(img.style, {
+        left: `${(box.left - P.l * k).toFixed(1)}px`, top: `${(box.top - P.t * k).toFixed(1)}px`,
+        width: `${(box.w + (P.l + P.r) * k).toFixed(1)}px`, height: 'auto',
+      });
+    }
     if (hit) {
       Object.assign(hit.style, { left: `${(box.left + box.w * 0.12).toFixed(1)}px`, top: `${(box.top + box.h * 0.1).toFixed(1)}px`, width: `${(box.w * 0.76).toFixed(1)}px`, height: `${(box.h * 0.85).toFixed(1)}px` });
       hit.setAttribute('aria-label', m ? t('mkt.market', { n: x.spot }) : t('mkt.buildMarket', { n: x.spot }));

@@ -7,7 +7,7 @@
 //
 // The track has two lanes: the boss runs in the inner one, the robot waits in the outer one. Both
 // stand just behind the start line during the warm-up. The view is zoomed in, follows the boss,
-// and can be dragged sideways to look round the track.
+// and can be dragged sideways to look round the track, or pinched out until the whole stadium shows.
 //
 // Drawn by the app's one WebGL renderer (gl-shared.js): at most 30 times a second, at most 2× the
 // screen's sharpness, and not at all while hidden.
@@ -139,6 +139,9 @@ export async function mountStadium(host, boss, robot) {
   // the camera: orthographic, tilted to the picture's slant, zoomed in so the runners read
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
   let w = 1, h = 1, scale = 1;        // css px per px of the picture
+  // zoom: 1 is the close view (base); pinched out, down to the whole picture across the screen
+  let base = 1, zoom = 1;
+  const minZoom = () => Math.min(1, w / (PIC.w * base));
   let camX = 0, follow = true, dragged = null, followAt = 0;
   const mid = PIC.w / 2 - PIC.cx;     // the picture's middle, from the track's centre
   const aim = () => {
@@ -158,7 +161,9 @@ export async function mountStadium(host, boss, robot) {
     // the track fills the room between the top band and the buttons at the foot: the picture 62% of
     // the screen high (its stands go under the bands), never narrower than the screen; drag left and
     // right for the rest. Sharpness at most 1.5×: a whole screen of 3D is a big draw.
-    scale = Math.max(w / PIC.w, (h * 0.62) / PIC.h);
+    base = Math.max(w / PIC.w, (h * 0.62) / PIC.h);
+    zoom = Math.max(minZoom(), Math.min(1, zoom));
+    scale = base * zoom;
     const r = Math.min(1.5, ratio());
     view.size(w * r, h * r);
     aim();
@@ -178,11 +183,43 @@ export async function mountStadium(host, boss, robot) {
   });
   const ro = new ResizeObserver(fit); ro.observe(host);
 
-  // drag sideways to look round the track; it goes back to following the boss a little later
-  canvas.addEventListener('pointerdown', (e) => { dragged = { x: e.clientX, camX }; follow = false; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', (e) => { if (!dragged) return; camX = dragged.camX - (e.clientX - dragged.x) / scale; aim(); view.draw(); });
-  const up = () => { if (!dragged) return; dragged = null; followAt = performance.now() + 5000; };
+  // zoom to `nz`, keeping the point under screen x `cx` where it is
+  const zoomTo = (nz, cx) => {
+    const at = camX + (cx - w / 2) / scale;
+    zoom = Math.max(minZoom(), Math.min(1, nz));
+    scale = base * zoom;
+    camX = at - (cx - w / 2) / scale;
+    aim(); view.draw();
+  };
+  // drag sideways to look round the track, pinch to zoom; it goes back to following the boss a
+  // little later
+  const pts = new Map(); let pinch = null;
+  const box = () => canvas.getBoundingClientRect();
+  const spread = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, cx: (a.x + b.x) / 2 - box().left }; };
+  canvas.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); follow = false; canvas.setPointerCapture(e.pointerId);
+    if (pts.size === 2) { dragged = null; pinch = { ...spread(), zoom }; } else if (pts.size === 1) dragged = { x: e.clientX, camX };
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) { const s = spread(); zoomTo(pinch.zoom * (s.d / pinch.d), s.cx); return; }
+    if (!dragged) return;
+    camX = dragged.camX - (e.clientX - dragged.x) / scale; aim(); view.draw();
+  });
+  const up = (e) => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    // one finger left after a pinch: it drags on from where it is
+    if (pts.size === 1) { const [p] = pts.values(); dragged = { x: p.x, camX }; return; }
+    if (pts.size) return;
+    dragged = null; followAt = performance.now() + 5000;
+  };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault(); follow = false; followAt = performance.now() + 5000;
+    zoomTo(zoom * Math.exp(-e.deltaY * 0.002), e.clientX - box().left);
+  }, { passive: false });
 
   const v = new THREE.Vector3();
   const project = (x, y, z) => {

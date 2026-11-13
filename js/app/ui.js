@@ -19,6 +19,7 @@ import { t, fmtDate, fmtNum, capFirst } from '../core/i18n.js';
 import { planTitle, planNotes, planWord, planItem } from '../core/plan-i18n.js';
 import { sessionXp, splitText } from './xp-split.js';
 import { gelChip } from './gel-chip.js';
+import { roomArt } from '../core/placement.js';
 
 export { DISCIPLINES, INTENSITIES };
 
@@ -156,7 +157,9 @@ export function sportArtSrc(type, level) {
   return s.kind === 'still' ? s.entry.src : s.entry.char;
 }
 
-function sportFrames(type) {
+function sportFrames(type, room) {
+  // a room's ten pictures (the 32 × 32 rooms), when the sheet is about a room
+  if (room) return Array.from({ length: 10 }, (_, i) => ({ level: i + 1, src: roomArt(room, i + 1), entry: null }));
   const s = SCENES[type];
   if (!s) return [];
   return s.levels.map((e, i) => ({ level: i + 1, src: s.kind === 'still' ? e.src : e.char, entry: s.kind === 'still' ? e : null }));
@@ -170,8 +173,9 @@ export function stillCorners(entry) {
 
 // Horizontally-swipeable level carousel (modal body). Current level centred +
 // themed border, past levels scaled down (left), future levels dimmed + locked.
-export function sportLevelCarousel(type, level) {
-  const frames = sportFrames(type);
+// `room`: show that room's own level pictures (roomArt) instead of the sport's old scenes.
+export function sportLevelCarousel(type, level, { room = null } = {}) {
+  const frames = sportFrames(type, room);
   if (!frames.length) return `<p class="muted">${t('ui.noLevels')}</p>`;
   const d = DISCIPLINES[type] || DISCIPLINES.other;
   const items = frames.map((f) => {
@@ -188,7 +192,7 @@ export function sportLevelCarousel(type, level) {
   }).join('');
   return `<div class="lvl-carousel-head"><b>${svg(type, `tint-${type}`)} ${esc(d.label)}</b><span class="lvl-chip">LVL ${level}</span></div>
     <div class="lvl-carousel" data-current="${level}">${items}</div>
-    <p class="muted small">${esc(t('ui.unlockMore', { sport: d.label.toLowerCase() }))}</p>`;
+    <p class="muted small">${esc(t(room ? 'ui.unlockRoom' : 'ui.unlockMore', { sport: d.label.toLowerCase() }))}</p>`;
 }
 
 // Profile dashboard: one tappable row per sport the athlete has earned XP in.

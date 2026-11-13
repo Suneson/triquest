@@ -28,6 +28,8 @@ import { PRESTIGE, canPrestige } from '../core/collections.js';
 import { onSwipe, nextSport } from './swipe.js';
 import { openOnboarding } from './onboarding.js';
 import { svg } from '../core/icons.js';
+import { ROOM_OF } from '../core/placement.js';
+import { quadrantLevel } from '../core/workshop.js';
 import { openEditor } from './editor.js';
 import { handleGymAction, finishView, startTicker, wireLogger } from './gym-logger.js';
 import { routineRows, startRoutine, deleteRoutine, getRoutines } from './gym-routines.js';
@@ -883,11 +885,14 @@ function openSportLevels(sport) {
   if (!sport) return;
   const xp = buildCtx().boost.sportXp[sport] || 0;
   const lv = sportLevelOf(sport, xp);
+  // the room's own ten pictures, at the level its plate shows (its gear's points)
+  const room = ROOM_OF[sport] || null;
+  const roomLv = room ? quadrantLevel(sport, gearState().inventory).level : 0;
   const root = openLayer('levels');
   root.innerHTML = `<div class="modal-backdrop" data-wd-close></div>
     <div class="modal wd-modal lvl-sheet" role="dialog" aria-modal="true" aria-label="${esc(t('main.levelsAria', { sport: (DISCIPLINES[sport] || DISCIPLINES.other).label }))}">
       ${sheetHead({ icon: 'star', title: t('main.levels'), closeAttr: 'data-wd-close' })}
-      <div class="modal-body">${sportLevelCarousel(sport, lv.artLevel)}${prestigePanel(sport, xp)}</div>
+      <div class="modal-body">${room ? sportLevelCarousel(sport, roomLv, { room }) : sportLevelCarousel(sport, lv.artLevel)}${prestigePanel(sport, xp)}</div>
     </div>`;
   root.querySelectorAll('[data-wd-close]').forEach((b) => b.addEventListener('click', () => closeLayer(root)));
   root.querySelector('[data-prestige]')?.addEventListener('click', async (e) => {

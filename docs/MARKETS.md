@@ -2,10 +2,10 @@
 
 ## The market plot (0035, from 2026-11-12)
 
-The old markets round the lobby are no longer drawn. Markets now stand on the island's rebuilt market plot: a bare plaza with six spots, two rows of three (`js/app/island-view.js`). Tap one to open the markets' screen (`js/app/shop-view.js`, styles in `css/market.css`). The rules are in `js/core/shop.js` and the server is `supabase/migrations/0035_shop.sql` (`tests/shop-sql.test.js` keeps them in step).
+The old markets round the lobby are no longer drawn. Markets now stand on the island's rebuilt market plot: a bare plaza with six spots, two rows of three (`js/app/island-view.js`). Each spot is its own button: tap a market to open the markets' screen on its tab (an empty spot opens on building one there); the plaza round them is not a button (`js/app/shop-view.js`, styles in `css/market.css`). The rules are in `js/core/shop.js` and the server is `supabase/migrations/0035_shop.sql` (`tests/shop-sql.test.js` keeps them in step).
 
 - **Building and levels:** a market costs 300, 600, 1000, 1500, 2200 and then 3000 coins, the 1st to the 6th. It goes from level 1 to 8 (pictures `icons/Market/market-<level>.webp`), and each level opens a slot and holds more of each item (10 up to 50).
-- **Stock:** 60 items, 15 per sport (gym, bike, run, swim, pictures `icons/Market/items/<id>.webp`). Each unlocks at a market level. You buy them wholesale into a storeroom that holds 1000 of each. Selling one puts it in a slot: a slot that already has it fills up first, otherwise you pick the slot it replaces.
+- **Stock:** 60 items, 15 per sport (gym, bike, run, swim, pictures `icons/Market/items/<id>.webp`). Each unlocks at a market level. You buy them wholesale into a storeroom that holds 1000 of each. **Restock** (the button was "Sell" until PR 82) puts one on a shelf: you pick the shelf it replaces. An item stands on one shelf only per market: if it's already on one, that shelf wiggles and the rest grey out; tapping it tops it up, or says "Shelf already full" and leaves placing mode. (The app keeps this rule; the server would still allow two.)
 - **Sales:** a slot sells one unit at a time (6 to 30 minutes, by tier). **Collect** banks the coins and **Restock all** refills every slot, from the storeroom first and the rest bought.
 - **Training twists:**
   - **Demand:** a sport trained in the last 4 hours sells for 30% more.
@@ -18,6 +18,11 @@ The old markets round the lobby are no longer drawn. Markets now stand on the is
   - **Switching sport** slides only the shop sideways, in from the side its tab is on; the kit sways as it lands.
   - **Tapping an item** lifts it, and Buy and Sell float over the cards below it in a pop-over. Nothing moves; a tap elsewhere puts it down.
   - **Close** stands on a navy bar at the foot (sheetHead's `foot` option), as well as the back arrow at the top.
+- **PR 82:**
+  - **Opening a market** (or its tab): the eight shelves scale down into place one after another, 1 to 8 (about half a second), and the market's picture with them. The picture then jiggles every few seconds; tapping it closes the screen.
+  - **Restocking a shelf:** the units fly in one by one (up to eight, 130 ms apart), each fully seen, and the shelf shows them as soon as the last lands. (Before, the last step threw on a malformed spring easing and the shelf only showed them on the next tap.)
+  - **Buying stock:** the slider goes in fives.
+  - **On the island:** a coin bubble over each market with coins waiting; tapping any one collects every market, one after another, each one's coins flying to the coin gauge. A crate over a market whose shelves are under 60% of their room (`RESTOCK_BELOW`, `shelfFill` in `js/core/shop.js`), or a red one when every open shelf is empty (`icons/Market/stock/`, keyed by `tools/cut-stock-icons.py`); tapping it opens that market.
 
 ## The old markets (0028)
 

@@ -189,10 +189,12 @@ function watchWorkshop() {
 }
 
 /** Read everything again from the server. Resolves to the state (or the cached copy offline). */
+let reads = 0;   // each read's number: one that started earlier never overwrites a later one
 export async function refreshGear() {
   if (isDemo()) { watchWorkshop(); return gearState(); }
   if (!gearEnabled()) return gearState();
   const uid = currentUser().id;
+  const mine = ++reads;
   try {
     const c = await client();
     // the workshop first: it settles finished jobs into user_gear before the rest is read
@@ -224,6 +226,7 @@ export async function refreshGear() {
     // before 0022 is live there's no workshop: everything bought is owned at once, as before
     const w = ws.error ? null : ws.data;
     const offset = w?.now ? Date.parse(w.now) - (t0 + t1) / 2 : 0;
+    if (mine !== reads) return gearState();
     state = { uid, inventory: inv.data || [], spends: sp.data || [], boosts: bo.data || [], quests: qc.data || [], wallet: wa.data || null,
       jobs: w?.jobs || [], bays: w?.bays || WORKSHOP_RULES.bays, offset: Number.isFinite(offset) ? offset : 0, at: Date.now(),
       // before 0023 is live these tables aren't there: nothing built, no stars
@@ -480,16 +483,17 @@ export const shopsOpen = () => gearEnabled() && rawState().shopsLive !== false;
 /**
  * Ask the server to do something to the markets (0035_shop.sql: build_shop, upgrade_shop,
  * buy_shop_stock, shop_stock_slot, shop_clear_slot, collect_shop, restock_shop, use_shop_crate,
- * shop_vip). Resolves to what it answers, once the state is read again; throws with a `gear:` code.
+ * shop_vip). Resolves to what it answers, once the state is read again (unless `refresh` is false:
+ * several calls in a row, read once after); throws with a `gear:` code.
  */
-export async function shopCall(fn, args = {}) {
+export async function shopCall(fn, args = {}, { refresh = true } = {}) {
   if (isDemo()) throw new Error('gear:demo');
   if (!shopsOpen()) throw new Error('gear:not_signed_in');
   if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new Error('gear:offline');
   const c = await client();
   const { data, error } = await c.rpc(fn, args);
   if (error) throw error;
-  await refreshGear();
+  if (refresh) await refreshGear();
   return data || {};
 }
 /** The rooms you've expanded to 16 × 16 ({ room, cost, bought_at }). */

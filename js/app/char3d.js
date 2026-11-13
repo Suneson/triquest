@@ -23,6 +23,26 @@ export function loadGltf(L, url) {
   return files.get(url);
 }
 
+/**
+ * Let a file go: its geometry and textures leave the GPU, and it's read again (from the service
+ * worker's cache) the next time it's wanted. Only for a file nothing on screen uses any more: the
+ * stadium's boss and robot when it closes. (Figures share the cached file's geometry and textures;
+ * their own dispose() frees only their cloned materials.)
+ */
+export function forgetGltf(url) {
+  const p = files.get(url);
+  if (!p) return;
+  files.delete(url);
+  p.then((g) => g.scene.traverse((o) => {
+    o.geometry?.dispose();
+    const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    for (const m of mats) {
+      for (const v of Object.values(m)) if (v?.isTexture) v.dispose();
+      m.dispose();
+    }
+  })).catch(() => {});
+}
+
 /** The skin and iris tint, patched into three.js's standard material after its map is read. */
 export function tintable(mat, uniforms) {
   mat.onBeforeCompile = (shader) => {

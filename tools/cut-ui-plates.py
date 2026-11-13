@@ -4,6 +4,7 @@
 
   close-plate.png, close-plate-down.png, gold-plate.png -> icons/Pixelart/NEW/UI/*.webp  (480 px wide)
   sheet-handle.png                                      -> icons/Pixelart/NEW/UI/sheet-handle.webp (240 px wide)
+  clock-plate.png, talk-plate.png, talk-plate-down.png  -> icons/Pixelart/NEW/UI/*.webp  (600 px wide, the stadium)
 
 The plates carry no lettering: the app writes the label over them, so it can be translated.
 Build-time only (Pillow, numpy).
@@ -27,7 +28,9 @@ def key_green(rgb):
 
 
 OUT = os.path.join(os.path.dirname(HERE), 'icons', 'Pixelart', 'NEW', 'UI')
-WIDTH = {'close-plate': 480, 'close-plate-down': 480, 'gold-plate': 480, 'sheet-handle': 240}
+WIDTH = {'close-plate': 480, 'close-plate-down': 480, 'gold-plate': 480, 'sheet-handle': 240,
+         # the stadium screen's countdown plate and Talk button (tools/gen-stadium-ui.mjs)
+         'clock-plate': 600, 'talk-plate': 600, 'talk-plate-down': 600}
 
 
 def main():

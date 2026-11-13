@@ -4,15 +4,17 @@
 // over the 72 hours, his km over his head. Before that, 10 hours of warm-up: he and the clan's
 // robot stand behind the start line, stretching and showing off, and the clock counts down to the
 // start. The robot waits there at 0 km until the server counts the clan's km.
-// The bar at the top (the HUD's gauge) fills with his km; the clock at the foot of the stage counts
-// down. The first time you come in to a race, the boss talks you through it: a line at a time, a
-// different pose each, tap to go on. "Talk to <boss>" plays it again.
+// A screen of its own, the track filling it: it can be dragged left and right, and follows the boss.
+// Over it, a navy band at the top with the countdown on its plate (icons/Pixelart/NEW/UI/clock-plate,
+// tools/gen-stadium-ui.mjs) and a bar that fills with his km; at the foot, the Close bar as on the
+// markets, and over it a gold "Talk to <boss>" button. The first time you come in to a race, the
+// boss talks you through it: a line at a time, a different pose each, tap to go on. The button
+// plays it again.
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { openLayer } from './nav.js';
-import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { raceAt, bossKm, clock, INTRO_POSES, WARM_MS, ROBOT } from '../core/stadium.js';
 
@@ -28,26 +30,28 @@ export function openStadium({ now = () => Date.now() } = {}) {
   const poses = boss.poses || INTRO_POSES;
   const total = bossKm(SQUAD);
   const root = openLayer('stadium', {
-    className: 'st-layer', sheet: true,
+    className: 'st-layer',
     onClose: () => { closed = true; clearInterval(tick); stage?.dispose(); talk?.dispose(); },
   });
 
   root.innerHTML = `<div class="fh-screen st-screen" role="dialog" aria-modal="true" aria-labelledby="st-title">
-    ${sheetHead({ title: esc(t('stadium.title', { boss: boss.name })), lead: 'back', noLead: true, id: 'st-title' })}
-    <div class="st-bar dg-gauge is-km" role="img" data-st-bar>
-      <span class="dg-track"><i class="dg-fill"></i><b class="dg-num" data-st-km></b></span>
-      <span class="st-bar-ico" aria-hidden="true">${svg('flag')}</span>
-    </div>
     <div class="st-stage" data-st-stage>
       <p class="wr-stage-msg" data-st-msg>${esc(t('wardrobe.loading'))}</p>
-      <div class="st-clock" data-st-clock aria-live="off"><small data-st-label>${esc(t('stadium.left'))}</small><b class="data-num" data-st-time></b></div>
       <div class="st-tag" data-st-tag hidden><b>${esc(boss.name.split(' ').pop())}</b><span class="data-num" data-st-tagkm></span></div>
       <div class="st-tag is-robot" data-st-rtag hidden><b>${esc(t('stadium.robot'))}</b><span class="data-num" data-st-rtagkm></span></div>
     </div>
-    <div class="st-foot">
+    <header class="st-top" data-st-top>
+      <h2 class="st-title" id="st-title">${esc(t('stadium.title', { boss: boss.name }))}</h2>
+      <div class="st-clock" data-st-clock aria-live="off"><small data-st-label>${esc(t('stadium.left'))}</small><b class="data-num" data-st-time></b></div>
+      <div class="st-bar dg-gauge is-km" role="img" data-st-bar>
+        <span class="dg-track"><i class="dg-fill"></i><b class="dg-num" data-st-km></b></span>
+        <span class="st-bar-ico" aria-hidden="true">${svg('flag')}</span>
+      </div>
       <p class="st-note">${esc(t('stadium.robotSoon'))}</p>
-      <button type="button" class="st-talk" data-st-talk>${svg('chat')}<span>${esc(t('stadium.talk', { boss: boss.name.split(' ').pop() }))}</span></button>
-    </div>
+    </header>
+    <button type="button" class="st-talk" data-st-talk><span>${esc(t('stadium.talk', { boss: boss.name.split(' ').pop() }))}</span></button>
+    <div class="sh-footbar" aria-hidden="true"></div>
+    <button type="button" class="sh-close" data-layer-close><span>${esc(t('sheet.close'))}</span></button>
   </div>`;
   const $ = (s) => root.querySelector(s);
   const label = $('[data-st-label]');
@@ -72,10 +76,11 @@ export function openStadium({ now = () => Date.now() } = {}) {
   tick = setInterval(update, 1000);
 
   // the tags over the runners' heads follow them
+  const band = $('[data-st-top]');
   const put = (el, p) => {
     el.hidden = !p;
-    // kept inside the stage when a runner's head is near its top (the far straight)
-    if (p) el.style.transform = `translate(${p.x.toFixed(1)}px, ${Math.max(p.y, el.offsetHeight + 8).toFixed(1)}px) translate(-50%, -100%)`;
+    // kept below the top band when a runner's head is near it (the far straight)
+    if (p) el.style.transform = `translate(${p.x.toFixed(1)}px, ${Math.max(p.y, band.offsetHeight + el.offsetHeight + 8).toFixed(1)}px) translate(-50%, -100%)`;
   };
   const follow = () => {
     if (!stage) return;

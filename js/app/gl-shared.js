@@ -127,6 +127,14 @@ export function addView(THREE, { canvas, scene, camera, tick = null, live = null
     },
     /** Whether it is being drawn now (on screen, not paused). */
     shown: () => canvas.isConnected && v.onscreen && !v.paused?.() && !document.hidden,
-    dispose() { views.delete(v); io?.unobserve(canvas); },
+    dispose() {
+      views.delete(v); io?.unobserve(canvas);
+      // a big view (the stadium, full screen) gone: the shared canvas shrinks back to what's left,
+      // so its drawing buffer doesn't stay full-screen for the rest of the session
+      if (!gl) return;
+      let w = 1, h = 1;
+      for (const x of views) { w = Math.max(w, x.canvas.width); h = Math.max(h, x.canvas.height); }
+      if (w < gl.w || h < gl.h) { gl.w = w; gl.h = h; gl.renderer.setSize(w, h, false); }
+    },
   };
 }

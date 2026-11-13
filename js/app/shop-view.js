@@ -195,7 +195,7 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
       <section class="sv-deck" data-sv-deck>${shopsOpen() ? deck() : `<p class="sv-soon">${esc(t('mkt.soon'))}</p>`}</section>
       <nav class="sv-sports" role="tablist">${SPORTS.map((s) => `<button type="button" class="sv-sport is-${s}${s === sport ? ' is-on' : ''}" data-sv-sport="${s}" aria-pressed="${s === sport}">${svg(s)}<b>${esc(t(`mkt.sports.${s}`))}</b></button>`).join('')}</nav>
       <section class="sv-store" data-sv-store>${pane()}</section>
-      ${selling ? '' : '<div class="sv-foot" aria-hidden="true"></div>'}
+      ${selling ? '' : '<div class="sh-footbar" aria-hidden="true"></div>'}
       ${selling ? `<div class="sv-dock" data-sv-dock>
         <span class="sv-card sv-item is-${shopItem(selling).sport}" data-sv-from><span class="sv-art"><img src="${itemPicture(selling)}" alt=""></span></span>
         <p>${esc(t('mkt.pick'))}</p>

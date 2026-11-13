@@ -52,6 +52,7 @@ import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
 import { mountRunner, webglOk } from './runner3d.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
+import { roomCopy } from '../core/room-art.js';
 import { mountCity, unmountCity, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city2d.js';
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
@@ -357,6 +358,9 @@ function itemBox(it, p, geom, src) {
   const w = ((maxX - minX) * fit) / f.w;
   return { x: cx + (0.5 - f.mid) * w, y: cy + ((maxY - minY) / 2) * fit, w, pad: f.pad, cx, cy, sw: (maxX - minX) * fit, sh: (maxY - minY) * fit };
 }
+
+/** The world's pictures that aren't drawn while far off the screen (cull, in render). */
+const CULLED = '.dg-env > img, .dg-tower > img, .dg-plots > img:not(.dg-truck)';
 
 // ---- the tape round a room's 8 × 8, until it's expanded (docs/ROOMS-16-NEXT.md) ----------------
 
@@ -675,8 +679,10 @@ export function wireDiorama(root, ctx) {
       moveEl(el, it, p.u, p.v);
       el.setAttribute('aria-pressed', String(sel));
       el.setAttribute('aria-label', t(sel ? 'cp.itemSelAria' : 'cp.itemAria', { name: itemName(it.id), room: roomName(p.room) }));
-      const img = el.querySelector('img'); const a = artOf(it);
-      if (img.getAttribute('src') !== a) img.src = a;
+      // drawn from its room copy (tools/make-room-items.py): a fifth of the original's memory, and
+      // still as sharp as the room ever shows it; `a` stays the item's own picture (its fit)
+      const img = el.querySelector('img'); const a = artOf(it); const pic = roomCopy(a);
+      if (img.getAttribute('src') !== pic) img.src = pic;
       if (it.runner3d) {
         // your athlete is on the treadmill while it trains on it (and walks the floor the rest of the time)
         if (use?.kind === 'drill' && use.id === it.id && ath.at === it.id) {
@@ -771,7 +777,33 @@ export function wireDiorama(root, ctx) {
       // the labels' counter-scale: an inherited value, so it's only touched when the zoom changes
       if (invAt !== view.v.s) { invAt = view.v.s; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
     }
+    cull();
     sharpen();
+  };
+  // The world's big pictures (the city's ground, the tower, the island's plots) that are far off
+  // the screen aren't drawn (.is-culled: display none). The screen shows a few of the 30-odd at a
+  // time; the rest needn't be painted, and the browser can let their decoded pixels go (each is
+  // 4-15 MB). A margin of half a screen each side is kept drawn, so panning finds them ready,
+  // and the check runs only when the view has moved a seventh of a screen or zoomed a tenth.
+  let culledAt = null;
+  const cull = () => {
+    const r = box(); const v = view.v;
+    if (!r.width || !v) return;
+    if (culledAt && Math.abs(v.tx - culledAt.tx) < r.width * 0.15 && Math.abs(v.ty - culledAt.ty) < r.height * 0.15
+      && Math.abs(v.s - culledAt.s) < culledAt.s * 0.1) return;
+    culledAt = { ...v };
+    const mx = (r.width / v.s) * 0.5; const my = (r.height / v.s) * 0.5;
+    const x0 = -v.tx / v.s - mx; const x1 = (r.width - v.tx) / v.s + mx;
+    const y0 = -v.ty / v.s - my; const y1 = (r.height - v.ty) / v.s + my;
+    for (const el of worldEl.querySelectorAll(CULLED)) {
+      const st = el.style;
+      const l = parseFloat(st.left); const tp = parseFloat(st.top); const w = parseFloat(st.width);
+      if (Number.isNaN(l) || Number.isNaN(tp) || !w) continue;   // not placed yet
+      // a height of auto (the markets): as tall as the picture's shape makes it, or square for now
+      const h = parseFloat(st.height) || (el.naturalWidth ? (w * el.naturalHeight) / el.naturalWidth : w);
+      const off = l > x1 || l + w < x0 || tp > y1 || tp + h < y0;
+      if (el.classList.contains('is-culled') !== off) el.classList.toggle('is-culled', off);
+    }
   };
   const apply = () => {
     const r = box();

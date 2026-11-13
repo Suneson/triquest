@@ -1,9 +1,10 @@
 /* market.css: the markets' screen (js/app/shop-view.js), laid out like a card game's deck screen:
-   the deck (tabs, eight slots, buttons) on a blue panel at the top, the storeroom below on the quilt,
-   tinted by the sport picked. Motion uses the tokens in js/core/spring.js. */
+   the deck (tabs, eight slots, buttons) on a blue panel at the top, the sport tabs, then the sport's
+   shop: a rail with its kit and sign, and its items on its own quilt (icons/Market/shop/), which
+   scrolls with them. Close stands on a bar at the foot. Motion uses the tokens in js/core/spring.js. */
 
 .sv-layer .sv-screen { --sv-gym: #8B4FD8; --sv-bike: #F6C431; --sv-run: #E0383E; --sv-swim: #2F8FE8;
-  --sv-ease: cubic-bezier(0.16, 1, 0.3, 1); padding-bottom: 120px; }
+  --sv-ease: cubic-bezier(0.16, 1, 0.3, 1); padding-bottom: 0 !important; }
 .sv-screen .sh-head .sh-act { display: flex; align-items: center; }
 
 /* numbers on cards: white with a dark edge, like the reference */
@@ -16,7 +17,7 @@
 .sv-wallet .sv-price img { width: 20px; height: 20px; }
 
 /* ---- the deck ------------------------------------------------------------------------------------ */
-.sv-screen > .sv-deck { margin: 0 0 14px; padding: 0 10px 14px; scroll-margin-top: 64px;
+.sv-screen > .sv-deck { margin: 0; padding: 0 10px 14px; scroll-margin-top: 64px;
   background: linear-gradient(#2E6AD6, #1F4FB0 30%, #1A438F); border-bottom: 3px solid #0E2A63;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .25), 0 6px 14px rgba(5, 15, 40, .35); }
 .sv-soon { margin: 0; padding: 28px 12px; text-align: center; font-weight: 700; }
@@ -131,35 +132,99 @@
 .sv-build p { margin: 0; font-weight: 700; color: #DCE7F7; }
 
 /* ---- the storeroom ------------------------------------------------------------------------------ */
-.sv-screen > .sv-sports { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 0; position: sticky; top: 58px; z-index: 5; }
+.sv-screen > .sv-sports { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 !important; padding: 8px 8px 0; background: #16264D; position: sticky; top: calc(var(--safe-t) + 62px); z-index: 5; }
 .sv-sport { display: grid; justify-items: center; gap: 2px; padding: 8px 4px 7px; border: 0; border-radius: 14px 14px 6px 6px; cursor: pointer;
   font-family: var(--font-display); font-size: 15px; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .35); background: var(--c);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .4), inset 0 -4px 0 rgba(0, 0, 0, .2); opacity: .72;
-  transform-origin: bottom center; transition: transform 160ms var(--sv-ease), opacity 160ms ease; }
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .4), inset 0 -4px 0 rgba(0, 0, 0, .2); filter: saturate(.55) brightness(.78);
+  transform-origin: bottom center; transition: transform 160ms var(--sv-ease), filter 160ms ease; }
 .sv-sport svg { width: 22px; height: 22px; }
 .sv-sport.is-gym { --c: linear-gradient(#A876EE, #7442C4); }
 .sv-sport.is-bike { --c: linear-gradient(#FFE07A, #E9AE1C); color: #2A2000; text-shadow: none; }
 .sv-sport.is-run { --c: linear-gradient(#FF7A7A, #C8323A); }
 .sv-sport.is-swim { --c: linear-gradient(#7CC4FF, #2A7FD6); }
-.sv-sport.is-on { opacity: 1; transform: translateY(-3px) scale(1.04); }
+.sv-sport.is-on { filter: none; transform: translateY(-3px) scale(1.04); }
 .sv-sport:active { transform: scale(.95, .9); }
 
-/* the shelf under the buttons takes the sport's colour, as in the reference */
-.sv-screen > .sv-store { margin: 0 6px; padding: 14px 8px 18px; border-radius: 0 0 16px 16px; min-height: 60vh;
-  background: linear-gradient(var(--tint), rgba(0, 0, 0, 0) 90%); border-top: 4px solid var(--edge); }
-.sv-store.is-gym { --tint: rgba(139, 79, 216, .55); --edge: #8B4FD8; }
-.sv-store.is-bike { --tint: rgba(246, 196, 49, .45); --edge: #F6C431; }
-.sv-store.is-run { --tint: rgba(224, 56, 62, .5); --edge: #E0383E; }
-.sv-store.is-swim { --tint: rgba(47, 143, 232, .55); --edge: #2F8FE8; }
-.sv-grid { row-gap: 14px; align-items: start; }
+/* ---- the shop: one per sport, the part that swipes ------------------------------------------- */
+.sv-screen > .sv-store { position: relative; overflow: hidden; margin: 0; padding: 0; }
+.sv-pane { position: relative; min-height: 72vh; padding: 0 8px calc(var(--safe-b) + 210px);
+  background: #557BA8 url('../icons/Market/shop/quilt-swim.webp') center top / 100% auto repeat-y;
+  box-shadow: inset 0 10px 14px -8px rgba(5, 15, 40, .45); }
+.sv-pane.is-gym { background-color: #7A4CC4; background-image: url('../icons/Market/shop/quilt-gym.webp'); }
+.sv-pane.is-run { background-color: #C8424A; background-image: url('../icons/Market/shop/quilt-run.webp'); }
+.sv-pane.is-bike { background-color: #E8B530; background-image: url('../icons/Market/shop/quilt-bike.webp'); }
+/* the shop going out lies over the one coming in, which sets the height */
+.sv-pane.is-leaving { position: absolute; inset: 0 0 auto 0; pointer-events: none; }
 
-/* an item picked: framed, with Buy and Sell under it */
-.sv-pick { display: grid; gap: 6px; padding: 5px; margin: -5px; border-radius: 14px; z-index: 3;
-  background: linear-gradient(#5AA8FF, #2A6FD6); box-shadow: 0 0 0 2px #fff, 0 8px 16px rgba(5, 15, 40, .45);
-  animation: sv-in 240ms var(--sv-ease) both; transform-origin: top center; }
-.sv-pick .sv-btn { min-height: 38px; padding: 4px 6px; font-size: 14px; }
-.sv-pick .sv-item.is-picked { box-shadow: none; }
-@keyframes sv-in { from { opacity: 0; transform: scale(.9); } }
+/* the rail: a navy rod across the shop, the kit hanging off it on cords, the sign in the middle */
+.sv-rail { position: relative; height: 146px; margin: 0 -8px 4px; }
+.sv-rod { position: absolute; left: -4px; right: -4px; top: 8px; height: 14px; border-radius: 9999px; z-index: 2;
+  background: linear-gradient(#3C5A9E, #16264D 55%, #0B1630); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .3), 0 4px 6px rgba(5, 15, 40, .45); }
+/* gold mounts holding the rod at each side */
+.sv-rod::before, .sv-rod::after { content: ''; position: absolute; top: -5px; width: 12px; height: 24px; border-radius: 5px;
+  background: linear-gradient(#FFE07A, #F0A92A 60%, #B87410); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .6), 0 2px 0 #8A5200; }
+.sv-rod::before { left: 8px; } .sv-rod::after { right: 8px; }
+.sv-hang { --x: 8%; --drop: 16px; position: absolute; top: 15px; left: var(--x); z-index: 1; display: grid; justify-items: center; width: 50px;
+  translate: -50% 0; transform-origin: 50% 0; pointer-events: none; width: 54px; }
+.sv-hang i { position: relative; display: block; width: 2px; height: var(--drop); background: #0B1630; }
+/* the gold hook round the rod */
+.sv-hang i::before { content: ''; position: absolute; left: 50%; top: -6px; width: 9px; height: 9px; translate: -50% 0; border-radius: 50%;
+  border: 2.5px solid #F2C14E; box-shadow: 0 1px 0 #8A5200; }
+.sv-hang img { width: 54px; height: 54px; margin-top: -4px; object-fit: contain; filter: drop-shadow(0 5px 4px rgba(5, 15, 40, .4)); }
+.sv-hang.is-0 { --x: 8%; --drop: 16px; }
+.sv-hang.is-1 { --x: 19.5%; --drop: 44px; }
+.sv-hang.is-2 { --x: 30.5%; --drop: 14px; }
+.sv-hang.is-3 { --x: 69.5%; --drop: 22px; }
+.sv-hang.is-4 { --x: 80.5%; --drop: 46px; }
+.sv-hang.is-5 { --x: 92%; --drop: 14px; }
+/* the sign, on two cords: the app's navy plate with a gold rim, the sport's colour under the name */
+.sv-sign { position: absolute; left: 50%; top: 30px; z-index: 1; translate: -50% 0; transform-origin: 50% -20px;
+  width: 29%; min-height: 58px; display: grid; place-items: center; padding: 8px 8px 12px; border-radius: 14px; text-align: center;
+  background: linear-gradient(#2B4A8E, #16264D 70%); border: 3px solid #F2C14E;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .28), 0 4px 0 #0B1630, 0 10px 16px rgba(5, 15, 40, .4); }
+.sv-sign::before, .sv-sign::after { content: ''; position: absolute; top: -24px; width: 2px; height: 21px; background: #0B1630; }
+.sv-sign::before { left: 22%; } .sv-sign::after { right: 22%; }
+.sv-sign b { font-family: var(--font-display); font-weight: 400; font-size: 19px; line-height: 1.05; color: #fff; letter-spacing: .01em;
+  -webkit-text-stroke: 3px #0B1630; paint-order: stroke fill; text-shadow: 0 2px 0 #0B1630; }
+.sv-sign > i { position: absolute; left: 14%; right: 14%; bottom: 5px; height: 4px; border-radius: 9999px; background: var(--sv-c, #2F8FE8); }
+.is-gym > .sv-rail .sv-sign { --sv-c: var(--sv-gym); }
+.is-run > .sv-rail .sv-sign { --sv-c: var(--sv-run); }
+.is-bike > .sv-rail .sv-sign { --sv-c: var(--sv-bike); }
+.is-swim > .sv-rail .sv-sign { --sv-c: var(--sv-swim); }
+/* a shop that has just swung in: its kit and sign sway and settle */
+.sv-pane.is-arriving .sv-hang, .sv-pane.is-arriving .sv-sign { animation: sv-sway 900ms ease-out both; animation-delay: calc(var(--i, 3) * 40ms + 120ms); }
+@keyframes sv-sway { 0% { rotate: 0deg; } 25% { rotate: 7deg; } 55% { rotate: -4deg; } 80% { rotate: 1.5deg; } 100% { rotate: 0deg; } }
+
+.sv-grid { row-gap: 14px; align-items: start; }
+.sv-cell { position: relative; min-width: 0; }
+.sv-cell > .sv-card { width: 100%; }
+
+/* an item picked: it lifts, and Buy and Sell float over the cards below it; nothing moves */
+.sv-cell.is-picked { z-index: 4; }
+.sv-cell.is-picked > .sv-item { animation: sv-lift 220ms var(--sv-ease) both;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5), 0 0 0 2.5px #fff, 0 12px 20px rgba(5, 15, 40, .5); }
+@keyframes sv-lift { to { transform: scale(1.08); } }
+.sv-pop { position: absolute; top: calc(100% + 10px); left: -8px; right: -8px; display: grid; gap: 6px; padding: 6px; border-radius: 14px;
+  background: linear-gradient(#5AA8FF, #2A6FD6); box-shadow: 0 0 0 2px #fff, 0 12px 22px rgba(5, 15, 40, .5);
+  transform-origin: 50% 0; animation: sv-in 200ms var(--sv-ease) both; scroll-margin-bottom: calc(var(--safe-b) + 110px); }
+.sv-cell.is-col0 .sv-pop { left: 0; right: -16px; }
+.sv-cell.is-col3 .sv-pop { left: -16px; right: 0; }
+/* the point up at the card */
+.sv-pop::before { content: ''; position: absolute; left: 50%; top: -7px; width: 14px; height: 14px; translate: -50% 0; rotate: 45deg;
+  background: #5AA8FF; border-radius: 3px 0 0 0; box-shadow: -2px -2px 0 #fff; }
+.sv-cell.is-col0 .sv-pop::before { left: calc(50% - 8px); }
+.sv-cell.is-col3 .sv-pop::before { left: calc(50% + 8px); }
+.sv-pop .sv-btn { position: relative; min-height: 42px; padding: 4px 6px; font-size: 15px; }
+@keyframes sv-in { from { opacity: 0; transform: scale(.9) translateY(-6px); } }
+
+/* ---- Close at the foot: a bar across the bottom, the Close plate standing on it --------------- */
+.sv-foot { position: fixed; left: 0; right: 0; margin: 0 !important; bottom: calc(-1 * var(--sheet-over, 64px)); z-index: 110; pointer-events: none;
+  height: calc(var(--safe-b) + 58px + var(--sheet-over, 64px));
+  background: linear-gradient(#24407F, #16264D 40%, #0B1630); border-top: 3px solid #F2C14E;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), 0 -8px 18px rgba(4, 10, 28, .45);
+  animation: sv-foot-in 300ms var(--sv-ease) both; }
+.sv-layer .sh-close { bottom: calc(var(--safe-b) + 4px); }
+@keyframes sv-foot-in { from { transform: translateY(100%); } }
 
 /* ---- picking a slot: the dock at the foot, like "select card to be replaced" ------------------ */
 .sv-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center;
@@ -185,5 +250,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sv-slot.is-target, .sv-vip { animation: none; }
-  .sv-pick, .sv-dock { animation: none; }
+  .sv-pop, .sv-dock, .sv-foot, .sv-cell.is-picked > .sv-item, .sv-pane.is-arriving .sv-hang, .sv-pane.is-arriving .sv-sign { animation: none; }
+  .sv-cell.is-picked > .sv-item { transform: scale(1.08); }
 }

@@ -13,6 +13,11 @@ The old markets round the lobby are no longer drawn. Markets now stand on the is
   - **Specialty:** every open slot (two or more) holding one sport's gear earns 10% more and shows a gold border.
   - **Wholesale crate:** one per reward chest opened, it fills a market's slots for free.
   - **VIP:** on a brick day (two sports trained), once a day, a VIP buys out your best market at 1.5×.
+- **The screen (PR 80):** the deck (market tabs, slots, buttons) on a blue panel; the sport tabs on a navy strip that stays pinned under the header; then the sport's shop.
+  - **Each sport is a shop:** a navy rod with gold mounts, six of its items hanging off it on cords, and a sign in the middle ("Gym shop", `mkt.shops.*`). Under it, the items on the sport's own quilt (`icons/Market/shop/quilt-<sport>.webp`, made from the blue quilt by `tools/make-shop-quilts.py`: 8 repeats tall, so it tiles down with no seam and scrolls with the items).
+  - **Switching sport** slides only the shop sideways, in from the side its tab is on; the kit sways as it lands.
+  - **Tapping an item** lifts it, and Buy and Sell float over the cards below it in a pop-over. Nothing moves; a tap elsewhere puts it down.
+  - **Close** stands on a navy bar at the foot (sheetHead's `foot` option), as well as the back arrow at the top.
 
 ## The old markets (0028)
 

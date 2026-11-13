@@ -3355,6 +3355,12 @@ es.mkt = {
   "pick": "Elige un hueco",
   "cancel": "Cancelar",
   "soon": "Los mercados abren tras la próxima actualización. Desliza para actualizar.",
+  "shops": {
+    "gym": "Tienda de gimnasio",
+    "bike": "Tienda de bici",
+    "run": "Tienda de carrera",
+    "swim": "Tienda de natación"
+  },
   "sports": {
     "gym": "Gym",
     "bike": "Bici",

@@ -61,13 +61,26 @@ The city's sign and truck were a 3D canvas the size of the screen, redrawn every
 - **What's gone:** the full-screen canvas, its copy from the GPU every second and every pan frame, and the 3D models' memory on the base. Panning moves the sign and the truck with the island at no extra cost.
 - **What's left:** the island's one always-present 3D view is the athlete.
 
+### Fixed in sw v143: lighter pictures on the base
+
+A closer look changed the plan for item 2. The island's buildings and ground are already stored *smaller* than they're drawn: a building is 1,291 px wide and drawn 2,152 world px wide, a ground tile 1,376 px for 3,242. At the normal zoom on a 3× iPhone (0.27 × 3 = 0.8 screen px per world px), half-size copies would be visibly blurry. So they stay as they are, and two other changes save memory without losing sharpness:
+- **Room copies of the item pictures.** An item in a room is drawn at most about 200 world px wide, and the base zooms in to about 2 screen px per world px. So 384 px on the longer side is as sharp as an item is ever shown. The originals are 500–1,000 px, because the shop and the sheets show them big. `tools/make-room-items.py` writes the 79 copies to `icons/room-items/` and lists them in `js/core/room-art.js`. Decoded, all item pictures go from 123 MB to 35 MB, and each item on the base from about 1.8 MB to 0.4 MB.
+- **Pictures far off the screen aren't drawn** (`cull` in `js/app/diorama-view.js`). Ground tiles, the tower and the island's plots more than half a screen outside the view get `display: none`, so they aren't painted and the browser can let their decoded pixels go. In the demo:
+
+| View | Pictures drawn | Not drawn |
+|---|---|---|
+| The normal view | 16 of 24 | the sea edges, the hall and the arena |
+| Zoomed into a room | 3 of 24 | 21 |
+| Zoomed all the way out | 24 of 24 | none |
+
+At every zoom tested, no picture that's on screen was culled.
+
 ### Next, most effective first
 
 1. ~~**Make the city's 3D sign and truck 2D.**~~ Done (above).
-2. **Use lighter island pictures. This is the biggest memory cost.** The island holds 115 MB of pictures before you open anything, yet it's shown at about a quarter of its size most of the time.
-   - Ship **half-size copies** of the ground tiles, the base and the buildings, and switch to full size only past a zoom level. That's about 4× less memory for the normal view.
+2. **Lighter island pictures.** The item copies and culling are done (above). What's left:
+   - **The base picture** (2,690 px wide, drawn 2,152 wide; 15 MB). Use a smaller copy when zoomed out and the full one when zoomed in, the way the big rooms already do (`midArt`).
    - **Bake the shadows** into the market pictures instead of using CSS drop-shadows.
-   - Item pictures in the rooms are 3–6× larger than they're ever shown (from 2026-11-11). Smaller room copies would save about 20–30 MB.
 3. **Draw 3D straight into the page when only one view shows.** One shared renderer is right (iPhone allows only a few WebGL contexts), but the copy into each view is costly. When a single 3D view is on screen (the stadium, the wardrobe, the run room), it can be drawn directly instead. This is a careful change: test it on an iPhone before merging.
 4. **Let go of 3D models when their screen closes.** This is done for the stadium. The wardrobe (every outfit you try stays loaded) and the room mechanics should do the same. Only the athlete on the base needs to stay.
 5. **Load less at launch.** Load only the language in use (−120 KB). Load the gym logger, onboarding, chat, challenges, wardrobe and chest screens when they're first opened, the way the markets and the stadium already are. This makes launch faster but isn't what crashes.
@@ -76,7 +89,7 @@ The city's sign and truck were a 3D canvas the size of the screen, redrawn every
 ### Features to scale down if crashes continue
 
 - **The always-moving 3D athlete on the base.** It draws 30 times a second whenever the base shows. Options: run it at 20 frames a second, or keep it still until tapped and animate it only in the run room.
-- **How far you can zoom into the island.** Full detail at every zoom keeps the big pictures loaded. A lower zoom limit lets the half-size pictures (see 2) cover everything.
+- **How far you can zoom out on the island.** Zoomed all the way out, every island picture is drawn at once (about 95 MB decoded). A higher lowest zoom would keep the sea edges and far buildings off screen.
 - **One 3D scene on screen at a time, everywhere.** The stadium, the wardrobe and now the base (only the athlete) work this way.
 
 ### How to tell if it's better

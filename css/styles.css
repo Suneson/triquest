@@ -2902,6 +2902,8 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 @keyframes mk-pop { 0% { opacity: 0; transform: translateY(6px) scale(.6); } 18% { opacity: 1; transform: translateY(-8px) scale(1.15); } 100% { opacity: 0; transform: translateY(-70px) scale(1); } }
 
 /* the island's plots (island-view.js) */
+/* far off the screen: not drawn (the base's cull, diorama-view.js) */
+.dg-world img.is-culled { display: none; }
 .dg-plots { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
 .dg-plots img { position: absolute; max-width: none; -webkit-user-drag: none; transform-origin: 50% 75%; }
 /* what stands in front of the base's collectors covers them; the collectors' layer is z-index 4 */

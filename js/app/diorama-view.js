@@ -645,7 +645,9 @@ export function wireDiorama(root, ctx) {
     return a;
   };
   const draw = () => {
-    const shown = roomImg.getAttribute('src') === src;
+    // the room's picture is up: its first picture, or the sharp one it swaps to once you zoom in
+    // (sharpen). Checking only the first made the first tap after a zoom take every item away.
+    const shown = [src, full].includes(roomImg.getAttribute('src'));
     const use = inUse();
     const ath = syncAthlete(shown, use);
     const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];

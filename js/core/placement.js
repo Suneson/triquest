@@ -148,7 +148,8 @@ const ITEM3D = 'icons/Items';
 export const tierFor = (level, bands) => 1 + bands.filter((b) => (Number(level) || 1) >= b).length;
 
 /** `runner`: where the 3D runner stands (tiles from the footprint's back corner) and which way it faces. */
-const RUNNER = { a: { u: 1, v: 1.35, yaw: 0, y: 0.3, scale: 1.26 }, b: { u: 1.35, v: 1, yaw: Math.PI / 2, y: 0.3, scale: 1.26 } };
+// (on the 3 x 4 treadmill: GROW below; it stands as tall on the belt as the athlete walking the floor)
+const RUNNER = { a: { u: 1.5, v: 1.8, yaw: 0, y: 0.45, scale: 2.52 }, b: { u: 1.8, v: 1.5, yaw: Math.PI / 2, y: 0.45, scale: 2.52 } };
 export const TREADMILL_BANDS = [4, 7, 10];
 
 /**
@@ -163,7 +164,15 @@ const stashed = (id, home, w, h, fit, extra = {}) => ({
   ...extra,
 });
 
-export const PLACEABLES = [
+/**
+ * How many tiles every item is bigger than it was drawn for, each way: a 1 x 1 is 2 x 2, a 2 x 3 is
+ * 3 x 4. The rooms looked empty and the items small, a 32 x 32 room couldn't be filled. Pictures
+ * are sized by their footprint, so they grow with it. Saved spots that no longer fit are moved to
+ * the first free one (resolvePlacements) until you move them yourself.
+ */
+export const GROW = 1;
+
+const ITEMS = [
   // the coffee machine: tier 1 to 3 with the locker room's level (4 and 7 step it up)
   { id: 'coffee-machine', w: 2, h: 2, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/coffee-machine-t${tierFor(o?.levels?.locker, [4, 7])}-${o?.face || 'a'}.webp` },
@@ -219,6 +228,7 @@ export const PLACEABLES = [
     owned: (inv) => (inv || []).some((r) => r.item_id === s.id),
   })),
 ];
+export const PLACEABLES = ITEMS.map((p) => ({ ...p, w: p.w + GROW, h: p.h + GROW }));
 export const placeableById = (id) => PLACEABLES.find((p) => p.id === id) || null;
 
 /**

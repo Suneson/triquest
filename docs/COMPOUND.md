@@ -105,3 +105,9 @@ The house type is Franklin Gothic Heavy where it's installed, else Libre Frankli
 | Run | The T3 running shoe |
 | Gym | A dumbbell from `tools/gen-shop-ui.mjs`, styled like the shop tab icons |
 | Locker | The backpack, cut from the old locker tile |
+
+## Items a tile bigger, the athlete twice the size (2026-11-13)
+
+The rooms looked empty and a 32 × 32 floor couldn't be filled, so every item takes one more tile each way than it was drawn for (`GROW` in `js/core/placement.js`): a 1 × 1 is 2 × 2, a 2 × 3 is 3 × 4. The catalogue keeps the old sizes; `PLACEABLES` adds `GROW`. Pictures are sized by their footprint, so they grow with it. A saved spot that no longer fits is moved to the first free one until you move the item yourself.
+
+The athlete is twice the size: walking (`js/app/walker.js`: scale 2.52, a 3-tile canvas, 2.5 tiles a second so the feet don't slide) and on the treadmill (`RUNNER` in placement.js).

@@ -242,8 +242,12 @@ function shell(root, { title, icon, id, body, workouts, cls = '', bars = true, f
   const head = sheetHead({ lead: 'back', icon, title, id, action: '' });
   // a redraw (a tab, a purchase) keeps the page where it was: same scroll, no jump
   const top = root.querySelector('.fh-screen')?.scrollTop || 0;
-  root.innerHTML = `<div class="fh-screen gw-screen ${cls}" role="dialog" aria-modal="true" aria-labelledby="${id}">${head}
-    ${bars ? resourceBars(workouts, { cls: 'in-sheet' }) : ''}${body}</div>${foot}`;
+  // `foot`: the currency bar. It's pinned under the header (kept there as the page scrolls), and the
+  // Close button stands on a navy bar across the foot, as on the markets' screen
+  root.innerHTML = `<div class="fh-screen gw-screen ${cls}${foot ? ' has-wallet' : ''}" role="dialog" aria-modal="true" aria-labelledby="${id}">${head}${foot}
+    ${bars ? resourceBars(workouts, { cls: 'in-sheet' }) : ''}${body}${foot ? '<div class="sh-footbar" aria-hidden="true"></div>' : ''}</div>`;
+  const hd = root.querySelector('.fh-screen > .sh-head');
+  if (hd) root.style.setProperty('--gw-head', `${hd.offsetHeight}px`);
   if (top) root.querySelector('.fh-screen').scrollTop = top;
   animateIn(root);
 }

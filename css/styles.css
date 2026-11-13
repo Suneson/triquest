@@ -2585,9 +2585,10 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-gauge.is-coins .dg-fill { --glow: rgba(255, 210, 80, .8); background: linear-gradient(#FFE78A, #F2C14E 55%, #C98F1E); }
 .dg-gauge.is-carbs .dg-fill { --glow: rgba(120, 190, 255, .8); background: linear-gradient(#B8E1FF, #4FA8F0 55%, #1F6FC2); }
 .dg-gauge.is-stamina .dg-fill { --glow: rgba(255, 230, 60, .8); background: linear-gradient(#FFF59A, #FFE600 50%, #FFB800); }
-.dg-gauge.is-stamina .dg-fill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -40%;
+.dg-gauge.is-stamina .dg-fill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: 0;
   background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .7), transparent); animation: dg-sheen 2.6s ease-in-out infinite; }
-@keyframes dg-sheen { to { left: 110%; } }
+/* moved with a transform (composited), not `left`, which laid out and repainted every frame */
+@keyframes dg-sheen { from { transform: translateX(-100%); } to { transform: translateX(275%); } }
 .dg-num { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: flex-end; padding-right: 20px;
   font-size: 14px; color: #fff; text-shadow: 0 2px 3px rgba(0, 0, 0, .8), 0 0 2px #000; }
 .dg-ico { position: absolute; right: 0; top: 50%; width: 34px; height: 34px; transform: translateY(-50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5)); }

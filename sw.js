@@ -1,7 +1,10 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v140';
+const CACHE = 'triquest-v141';
+// pictures, models, fonts and the 3D library: kept across versions (see the fetch handler)
+const ASSETS_CACHE = 'triquest-assets';
+const checked = new Set();   // assets checked with the server while this worker runs
 const ASSETS = [
   './',
   './index.html',
@@ -55,6 +58,9 @@ const ASSETS = [
   './js/app/stadium3d.js',
   './js/core/stadium.js',
   './icons/Stadium/stadium.webp',
+  './icons/Pixelart/NEW/UI/clock-plate.webp',
+  './icons/Pixelart/NEW/UI/talk-plate.webp',
+  './icons/Pixelart/NEW/UI/talk-plate-down.webp',
   './icons/Market/shop/quilt-gym.webp',
   './icons/Market/shop/quilt-bike.webp',
   './icons/Market/shop/quilt-run.webp',
@@ -191,7 +197,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== ASSETS_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -205,19 +211,25 @@ self.addEventListener('fetch', (e) => {
   // and the server handle those, and a partial response can't be cached anyway
   if (request.headers.has('range') || /\.(webm|mp4|mov|mp3|m4a)$/i.test(url.pathname)) return;
 
-  // Pictures, models, fonts and the vendored 3D library: straight from this version's cache, no
-  // trip to the network. They only change with a deploy, and every deploy is a new cache (CACHE
-  // above), which starts empty and fills with fresh copies (no-cache: past the browser's own
-  // 10-minute copy). So a picture is asked for once per version, not once per visit.
+  // Pictures, models, fonts and the vendored 3D library: straight from their own cache (ASSETS_CACHE,
+  // kept across versions), no wait on the network. Each is checked with the server once while this
+  // worker runs (a cheap 304 when it hasn't changed), in the background; a changed one shows from
+  // the next launch. Before, every deploy started an empty cache and the phone fetched every picture
+  // and model again.
   if (sameOrigin && /\/(icons|models|fonts|vendor)\//.test(url.pathname)) {
-    e.respondWith(
-      caches.open(CACHE).then((c) => c.match(request).then((hit) => hit
-        || fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' }).then((res) => {
-          if (res.ok && res.status === 200) c.put(request, res.clone());
-          return res;
-        })))
-        .catch(() => fetch(request))
-    );
+    e.respondWith(caches.open(ASSETS_CACHE).then(async (c) => {
+      const fresh = () => fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' }).then((res) => {
+        if (res.ok && res.status === 200) c.put(request, res.clone());
+        return res;
+      });
+      // (or this version's precache, for the few it lists, so the first launch offline still has them)
+      const hit = (await c.match(request)) || (await caches.match(request));
+      const first = !checked.has(url.href);
+      checked.add(url.href);
+      if (!hit) return fresh();
+      if (first) e.waitUntil(fresh().catch(() => {}));
+      return hit;
+    }).catch(() => fetch(request)));
     return;
   }
 

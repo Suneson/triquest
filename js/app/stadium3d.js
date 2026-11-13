@@ -13,7 +13,7 @@
 // screen's sharpness, and not at all while hidden.
 
 import { loadThree, webglOk } from './runner3d.js';
-import { spawnChar } from './char3d.js';
+import { spawnChar, forgetGltf } from './char3d.js';
 import { addView, ratio } from './gl-shared.js';
 
 /**
@@ -155,9 +155,11 @@ export async function mountStadium(host, boss, robot) {
   let view = null;
   const fit = () => {
     w = host.clientWidth || 1; h = host.clientHeight || 1;
-    // the picture about 85% of the stage high (drag to see the rest), and never narrower than it
-    scale = Math.max(w / PIC.w, Math.min((h * 0.85) / PIC.h, (w * 2.4) / PIC.w));
-    const r = ratio();
+    // the track fills the room between the top band and the buttons at the foot: the picture 62% of
+    // the screen high (its stands go under the bands), never narrower than the screen; drag left and
+    // right for the rest. Sharpness at most 1.5×: a whole screen of 3D is a big draw.
+    scale = Math.max(w / PIC.w, (h * 0.62) / PIC.h);
+    const r = Math.min(1.5, ratio());
     view.size(w * r, h * r);
     aim();
   };
@@ -210,6 +212,8 @@ export async function mountStadium(host, boss, robot) {
       for (const r of all) { clearTimeout(r.timer); r.figure?.dispose(); }
       ground.geometry.dispose(); ground.material.dispose(); tex.dispose();
       blobGeo.dispose(); blobMat.dispose(); blobTex.dispose();
+      // the boss and the robot are only ever seen here: off the GPU until the stadium opens again
+      for (const url of [boss.model, boss.clips, robot?.model, robot?.clips]) if (url) forgetGltf(url);
       canvas.remove();
     },
   };

@@ -88,8 +88,16 @@
 .sh-close:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: 22px; }
 /* it lands from below, squashed, and stretches up into shape */
 @keyframes close-in { from { translate: -50% 70px; scale: 1.12 .7; opacity: 0; } }
-/* over a pinned currency bar (the shop, the inventory) it stands on the bar's top edge */
-.layer:has(> .sc-wallet) .sh-close { bottom: calc(var(--safe-b) + 76px); }
+/* a navy bar across the foot, gold-edged, that the Close plate stands on (the markets, the shop,
+   the inventory) */
+.sh-footbar { position: fixed; left: 0; right: 0; margin: 0 !important; bottom: calc(-1 * var(--sheet-over, 64px)); z-index: 110; pointer-events: none;
+  height: calc(var(--safe-b) + 58px + var(--sheet-over, 64px));
+  background: linear-gradient(#24407F, #16264D 40%, #0B1630); border-top: 3px solid #F2C14E;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), 0 -8px 18px rgba(4, 10, 28, .45);
+  animation: sh-footbar-in 300ms cubic-bezier(.23, 1, .32, 1) both; }
+.layer:has(.sh-footbar) .sh-close { bottom: calc(var(--safe-b) + 4px); }
+@keyframes sh-footbar-in { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { .sh-footbar { animation: none; } }
 /* room for the last lines to scroll clear of it */
 .fh-screen:has(> .sh-close) { padding-bottom: calc(var(--safe-b) + 104px); }
 .layer.is-sheet > .fh-screen:has(> .sh-close) { padding-bottom: calc(var(--safe-b) + 104px + var(--sheet-over)); }
@@ -161,6 +169,8 @@
 /* a full screen is over the base: its loops rest */
 body.base-covered .dg-screen *, body.base-covered .dg-screen *::after, body.base-covered .dg-screen *::before,
 body.base-covered .tabs * { animation-play-state: paused !important; }
+/* and not painted at all: the island is a 13 000 px layer full of big pictures */
+body.base-covered .dg-screen { visibility: hidden; }
 
 /* ---- 5. the skin ----------------------------------------------------------------------------------- */
 /* Scope: every partial sheet and every full screen that isn't one of the shop's (already redone). */

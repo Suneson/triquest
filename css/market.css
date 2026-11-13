@@ -225,13 +225,7 @@
 @keyframes sv-in { from { opacity: 0; transform: scale(.9) translateY(-6px); } }
 
 /* ---- Close at the foot: a bar across the bottom, the Close plate standing on it --------------- */
-.sv-foot { position: fixed; left: 0; right: 0; margin: 0 !important; bottom: calc(-1 * var(--sheet-over, 64px)); z-index: 110; pointer-events: none;
-  height: calc(var(--safe-b) + 58px + var(--sheet-over, 64px));
-  background: linear-gradient(#24407F, #16264D 40%, #0B1630); border-top: 3px solid #F2C14E;
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .2), 0 -8px 18px rgba(4, 10, 28, .45);
-  animation: sv-foot-in 300ms var(--sv-ease) both; }
-.sv-layer .sh-close { bottom: calc(var(--safe-b) + 4px); }
-@keyframes sv-foot-in { from { transform: translateY(100%); } }
+/* (the bar itself is .sh-footbar, css/polish.css) */
 
 /* ---- picking a slot: the dock at the foot, like "select card to be replaced" ------------------ */
 .sv-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center;
@@ -257,6 +251,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sv-slot.is-target, .sv-vip, .sv-head-pic img { animation: none; }
-  .sv-pop, .sv-dock, .sv-foot, .sv-cell.is-picked > .sv-item, .sv-pane.is-arriving .sv-hang, .sv-pane.is-arriving .sv-sign { animation: none; }
+  .sv-pop, .sv-dock, .sv-cell.is-picked > .sv-item, .sv-pane.is-arriving .sv-hang, .sv-pane.is-arriving .sv-sign { animation: none; }
   .sv-cell.is-picked > .sv-item { transform: scale(1.08); }
 }

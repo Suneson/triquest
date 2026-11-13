@@ -13,8 +13,8 @@
   color: var(--text-white);
   font-family: var(--font-reading);
   font-variation-settings: 'wght' 600;
-  /* clear the pinned currency bar */
-  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  /* clear the Close bar at the foot */
+  padding-bottom: calc(var(--safe-b) + 104px);
 }
 .gw-screen.is-shop h3, .gw-screen.is-shop .sh-title-text, .gw-screen.is-shop .sc-buy, .gw-screen.is-shop .sh-tab span {
   font-family: var(--font-header); font-variation-settings: 'wght' 860;
@@ -121,7 +121,12 @@
 .sc-buy.is-done { cursor: default; background: rgba(10, 39, 21, .1); color: var(--ink-green); font-size: 14px; box-shadow: inset 0 0 0 2px rgba(10, 39, 21, .2); }
 .sc-buy.is-done .ic { width: 16px; height: 16px; }
 
-/* ---- the currency, pinned to the bottom ---------------------------------------------------- */
+/* ---- the currency, pinned under the header (gear-view.js shell; --gw-head is the header's height) */
+.gw-screen.has-wallet > .sh-head { margin-bottom: 0; }
+.gw-screen > .sc-wallet { position: sticky; top: var(--gw-head, 64px); bottom: auto; z-index: 5; min-height: 54px; margin: 0 0 14px; padding: 6px 16px;
+  border-top: 0; border-bottom: 2px solid rgba(230, 215, 189, .15); box-shadow: 0 6px 12px rgba(4, 10, 28, .35);
+  background: linear-gradient(#1D3260, #12204A); -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* (it used to be pinned to the bottom) */
 .sc-wallet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 100; display: grid; grid-template-columns: 40px auto minmax(0, 1fr); gap: 10px;
   align-items: center; min-height: 64px; padding: 8px 20px calc(8px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(180deg, rgba(22, 38, 77, .9) 0%, var(--bg-surface-deep) 100%);

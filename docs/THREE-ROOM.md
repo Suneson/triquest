@@ -1,32 +1,34 @@
-# The three.js test room
+# Moving the base to three.js
 
-A first step towards drawing the base with a game renderer (docs/PERFORMANCE.md, item 6). The room on the stage, drawn by three.js on one canvas instead of as web page pictures, to compare how it feels on a phone.
+The base is moving from web page pictures to a game renderer (docs/PERFORMANCE.md, item 6), one part at a time, behind a switch until it's checked on an iPhone.
 
-## How to open it
+## The switch
 
-- Open the app with `?three=1` once. The setting stays on that device (`?three=0` turns it off).
-- A blue **3D test** button shows on the base, under the room's name. It opens the room you're looking at.
-- It looks best with the 32 × 32 rooms (`?rooms32=1`), the rooms all of this is heading for.
+- Open the app with `?three=1` once. It stays on for that device; `?three=0` turns it off.
+- With it off, the base is exactly as before.
 
-## What it does
+## Stage 1 (done): the items and the athlete
 
-- **One canvas, drawn straight into the page.** It borrows the app's one WebGL renderer (`borrow` in `js/app/gl-shared.js`), so there's no copy from the GPU into a 2D canvas, the step that made 3D costly on iPhone. The base's other 3D views wait until it's closed; they're under it anyway.
-- **The painted room** is a picture stuck to the camera, far back, laid so its floor's three corners fall exactly on the scene's floor corners. It comes at half size first and swaps to the sharp one once you zoom in far enough, as on the base.
-- **Items** are their room pictures on cards facing the camera, standing at the middle of their footprint, with a soft shadow on the floor. Size and placement follow the base's rules (`itemBox`, `js/core/item-fit.js`). Rugs and other flat items lie under everything.
-- **Your athlete** is the wardrobe's character in the same scene, wandering the floor as on the base (`js/core/walk.js`). It walks in front of and behind items with no special sorting code.
-- **Touch:** drag to pan, pinch or wheel to zoom, tap an item to pick it up (it bounces and shows its footprint), drag it tile by tile (the footprint turns red where it can't stand) and let go to set it down. Moves are saved as on the base.
-- **The top bar** shows frames a second and draw calls. It draws at most 60 frames a second.
+`js/app/base-gl.js` draws what stands in the room: every item's picture, and your athlete as a real 3D figure among them.
 
-## What it doesn't do yet
+- **Its own canvas, drawn straight into.** The athlete used to be drawn off screen and copied into the page every frame, the costly part on iPhone. Now it has a WebGL canvas of its own (the stadium and the wardrobe keep the shared one, `gl-shared.js`).
+- **The page still lays the base out:** the city, the room's picture, the floor's lines, the pan and zoom, and the item buttons. The buttons are what you tap and drag, and carry the tags (timers, counts). With three.js on, their pictures are see-through and three.js draws the item in their place.
+- **The canvas sits inside the items layer**, under the buttons and over the floor, counter-scaled so it's the size of the screen. It moves with the world, so the two can't drift apart, even while the view eases.
+- **The camera** is orthographic, tilted to the painted floor's slant, and its projection is worked out so each point of the floor lands on exactly the pixel the page puts it on. Checked by showing the old pictures over the new ones: they match.
+- **Each item** is its picture on a card facing the camera, standing at its footprint's middle (`data-uv` on its button), so the athlete walks in front of and behind it. It bounces when picked up, lifts while dragged, turns red where it can't stand, springs back and drops when set down, as the page's pictures did. Its drop shadow is a dark copy of it, a little lower.
+- **The athlete** walks the floor (`walker.js` drives it through `body`) and runs on the treadmill during a drill (`machine`).
+- It draws when the view moves (in the same frame), when an item changes, and 30 times a second while the athlete moves. It stops under a full screen and when the base isn't shown.
 
-- No item menu (rotate, stash, open), arrows, tags or the athlete training on a machine.
-- No city, tower or island round the room.
-- Items are still pictures. When the Tripo models arrive, an item can be its 3D model in the same scene instead of a card.
+The test room from PR 92 is gone: the base itself is the test now.
+
+## Next stages
+
+2. **The room's picture and the floor's lines** drawn by three.js too.
+3. **The city, the tower and the island**, then tapping by three.js instead of see-through buttons. Then the page draws only the HUD and the menus.
+4. **Items as 3D models** where a Tripo model exists, in the same scene.
 
 ## What to check on an iPhone
 
-1. Pan and pinch: does it feel smoother than the base?
-2. The frame counter while the athlete walks and you pan: does it stay near 60?
-3. Open and close it a few times, then use the app: does the base's 3D still show, and does it stay stable?
-
-If it's clearly smoother, the next step is moving the base itself onto this renderer, room first, then the city round it.
+1. Pan and pinch the base with the athlete walking: is it smoother than with `?three=0`?
+2. Pick an item up, drag it, set it down; train on the treadmill.
+3. Use the app for 10 minutes (the stadium, the wardrobe, the markets) and come back: is the base still drawn, and does the app stay up?

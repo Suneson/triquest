@@ -187,14 +187,11 @@ The plate is built like a game map rather than expanded by an image model.
 
 ### What moves (`js/app/city3d.js`)
 
-Two transparent WebGL canvases cover the stage.
-- **The back canvas** sits under the city picture, whose sky is transparent (`compose-city.py … nosky`). What it draws shows only through the sky, so its clouds pass behind the buildings.
-- **The front canvas** sits over the city picture.
+One transparent canvas covers the stage, over the city picture. The app's one WebGL renderer draws it (`js/app/gl-shared.js`), and only when something on it changes: the stage pans or zooms, the sign's countdown ticks (once a second), or the truck drives (then every frame).
 - **The camera:** orthographic and tied to the stage's pan and zoom. The 3D ground is the city's own: X runs along e1 = (1, 0.489) world px, Z along e2 = (−1, 0.489), and Y up.
 
 What's on them:
-- **Far clouds:** six flat clouds (`icons/City/sky-clouds/`, keyed from your two green-screen pictures). They drift right to left in screen space, slowest of all.
-- **3D clouds:** the three cloud models (`models/city/cloud-*.glb`), with their textures dropped for a soft white material of their own and their normals recomputed. They fly high above every roof (`CLOUD_UP`), turned with their long side square to the screen, and drift right to left across it like the far clouds: six behind the buildings and two in front.
+- **No clouds** since November 2026: the far clouds and the three 3D cloud models kept the whole screen redrawing 30 times a second, so they were taken out to cut lag. (The cloud bank between floors of the tower is a flat picture and stays.)
 - **The delivery sign** (`models/city/sign.glb`) stands on the pavement left of the garage door, its panel facing out.
   - Its white panel counts down to the next delivery: every shop order is a workshop job with a finish time (`js/core/deliveries.js`).
   - Tapping it opens the list of deliveries on their way (`js/app/delivery-view.js`), as beige cards like the Journal's.
@@ -202,7 +199,7 @@ What's on them:
   - It drives in from the right along the road between the stadium and the pool, turns at the stadium's crossing onto the road past the garage, and arrives at the door as the countdown ends.
   - It waits at the door, under its parcel bubble, for as long as a parcel is waiting there or being opened. Once you've opened it and closed the screen, it carries on down the same road and out at the bottom left.
   - The route is `ROUTE_IN` and `ROUTE_OUT`, given as street-grid coordinates (`lat(a, b)`).
-- **Reduced motion:** the clouds stand still and the truck only appears parked.
+- **Reduced motion:** the truck only appears parked.
 
 **Models:** export GLB from Meshy, then run `npx @gltf-transform/cli optimize in.glb out.glb --texture-compress webp --texture-size 1024 --compress meshopt`. The five models went from 42 MB to under 0.9 MB.
 
@@ -216,8 +213,7 @@ The city has one more row of blocks below the street floor's crossroads, so you 
 
 On the base the page's own colour is the roads' asphalt (#877688), so the strip iPhone paints under the dock reads as street.
 
-- **The far clouds** are sized as a share of the screen from the start and drift on their own loop. If WebGL isn't available they still move, and they never show at their pictures' natural size.
-- **The 3D layers** draw at most 1.5 px per CSS pixel, without antialiasing.
+- **The 3D layer** draws at most 1.5 px per CSS pixel.
 
 ### Parcels
 

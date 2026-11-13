@@ -8,10 +8,10 @@
   border-radius: 50%; background: linear-gradient(#FFE78A, #F2C14E 55%, #C98F1E); color: #16264D; box-shadow: 0 2px 4px rgba(0, 0, 0, .35); }
 .st-bar-ico svg { width: 18px; height: 18px; }
 .st-stage { position: relative; flex: 1; min-height: 0; margin: 10px 0 0; overflow: hidden; background: #0E1A38; }
-.st-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
-.st-clock { position: absolute; left: 0; top: 0; z-index: 2; display: grid; justify-items: center; gap: 2px; padding: 10px 18px 12px;
+.st-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.st-clock { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; z-index: 2; display: grid; justify-items: center; gap: 2px; padding: 8px 18px 10px;
   border-radius: 18px; background: rgba(11, 22, 48, .86); border: 2.5px solid #F2C14E; box-shadow: 0 6px 18px rgba(0, 0, 0, .4);
-  color: #fff; pointer-events: none; will-change: transform; }
+  color: #fff; pointer-events: none; }
 .st-clock small { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #F2C14E; }
 .st-clock b { font-size: 30px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
 .st-tag { position: absolute; left: 0; top: 0; z-index: 3; display: grid; justify-items: center; padding: 4px 10px 5px; border-radius: 12px;
@@ -20,6 +20,7 @@
 .st-tag span { font-size: 13px; font-weight: 800; color: #B23A22; font-variant-numeric: tabular-nums; }
 .st-tag::after { content: ''; position: absolute; bottom: -6px; left: 50%; translate: -50% 0; border: 6px solid transparent; border-bottom: 0; border-top-color: #fff; }
 .st-tag[hidden] { display: none; }
+.st-tag.is-robot span { color: #1F6FC2; }
 .st-foot { flex: none; display: grid; gap: 8px; padding: 10px 16px calc(var(--safe-b, 0px) + 16px); }
 .st-note { margin: 0; color: var(--text-white); opacity: .8; font-size: 13px; text-align: center; }
 .st-talk { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border: 0; border-radius: 14px;

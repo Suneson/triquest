@@ -751,10 +751,8 @@ export function wireDiorama(root, ctx) {
   if (view.onResize) window.removeEventListener('resize', view.onResize);
   view.onResize = () => { vpBox = null; apply(); };
   window.addEventListener('resize', view.onResize);
-  // the city's clouds, the delivery sign and the truck (city3d.js), on the city's floors
+  // the delivery sign and the truck (city3d.js), on the city's floors
   const city = env.floor != null && webglOk() ? mountCity3d(vp, {
-    worldX0: env.x0,
-    worldW: env.w,
     deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
     now: serverNow,
     label: { title: t('city.sign.title'), clock: clockLeft },

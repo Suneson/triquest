@@ -3,11 +3,13 @@
 // One canvas, one character (char3d.js): 1.8 units tall, feet on y = 0, facing +Z, tinted with the
 // look's skin tone and eye colour. It plays its idle clip, and now and then shows off (a taunt or
 // the victory clip) before going back to it. Drag sideways to turn the character round.
+// Drawn by the app's one WebGL renderer (gl-shared.js).
 
 import { loadThree, webglOk } from './runner3d.js';
 import { skinTint, eyeColour, hairColour } from '../core/wardrobe.js';
 import { spawnChar } from './char3d.js';
 import { retune, fitFor } from './gear3d.js';
+import { addView, ratio } from './gl-shared.js';
 
 /** What the character does between idles, and how long it waits (seconds) before the next. */
 const FLOURISH = ['taunt1', 'victory', 'taunt2'];
@@ -25,12 +27,6 @@ export async function mountWardrobe(host, { editor = false } = {}) {
   const canvas = document.createElement('canvas');
   canvas.className = 'wr-canvas';
   host.appendChild(canvas);
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xeaf2ff, 0x2a3550, 1.25));
   const key = new THREE.DirectionalLight(0xffffff, 2.1); key.position.set(-1.6, 3, 2.4); scene.add(key);
@@ -49,14 +45,15 @@ export async function mountWardrobe(host, { editor = false } = {}) {
   const camera = new THREE.PerspectiveCamera(24, 1, 0.1, 50);
   const uniforms = { uSkin: { value: new THREE.Vector3(1, 1, 1) }, uEye: { value: new THREE.Vector3(0.3, 0.2, 0.1) } };
   const turn = new THREE.Group(); scene.add(turn);
-  let figure = null, url = null, width = 1.2, yaw = 0, drag = null, raf = 0, last = 0, t0 = performance.now(), gone = false;
+  let figure = null, url = null, width = 1.2, yaw = 0, drag = null, t0 = performance.now(), gone = false;
   let flourishAt = 0, backAt = 0, nth = 0;
   let focus = 'body', moving = !editor;
   const wait = () => WAIT[0] + Math.random() * (WAIT[1] - WAIT[0]);
 
   const fit = () => {
     const w = host.clientWidth || 1, h = host.clientHeight || 1;
-    renderer.setSize(w, h, false);
+    const r = ratio();
+    view.size(w * r, h * r);
     camera.aspect = w / h;
     const vfov = THREE.MathUtils.degToRad(camera.fov);
     if (focus !== 'body' && figure) {
@@ -81,37 +78,31 @@ export async function mountWardrobe(host, { editor = false } = {}) {
     camera.lookAt(0, 0.92, 0);
     camera.updateProjectionMatrix();
   };
-  const ro = new ResizeObserver(fit); ro.observe(host);
-
-  const frame = (now) => {
-    raf = 0;
-    if (gone) return;
-    if (document.hidden) { last = 0; return; }
-    if (now - last >= 30) {
-      const dt = last ? (now - last) / 1000 : 0;
-      last = now;
-      const s = (now - t0) / 1000;
-      if (figure && moving) {
-        figure.update(Math.min(0.1, dt));
-        // now and then a flourish, then back to the idle
-        if (flourishAt && s > flourishAt && !editor) {
-          const name = FLOURISH[nth++ % FLOURISH.length];
-          const len = figure.length(name);
-          if (len && figure.play(name, { fade: 0.25 })) backAt = s + len - 0.3;
-          flourishAt = 0;
-        }
-        if (backAt && s > backAt) { figure.play('idle', { fade: 0.3 }); backAt = 0; flourishAt = s + wait(); }
-        // a slow look round while nobody's turning it
-        if (!drag && !editor) yaw += (Math.sin(s * 0.3) * 0.32 - yaw) * 0.02;
+  // drawn while it moves (its clips, or a finger turning it), else only when something changes
+  const tick = (dt, now) => {
+    const s = (now - t0) / 1000;
+    if (figure && moving) {
+      figure.update(dt);
+      // now and then a flourish, then back to the idle
+      if (flourishAt && s > flourishAt && !editor) {
+        const name = FLOURISH[nth++ % FLOURISH.length];
+        const len = figure.length(name);
+        if (len && figure.play(name, { fade: 0.25 })) backAt = s + len - 0.3;
+        flourishAt = 0;
       }
-      turn.rotation.y = yaw;
-      renderer.render(scene, camera);
+      if (backAt && s > backAt) { figure.play('idle', { fade: 0.3 }); backAt = 0; flourishAt = s + wait(); }
+      // a slow look round while nobody's turning it
+      if (!drag && !editor) yaw += (Math.sin(s * 0.3) * 0.32 - yaw) * 0.02;
     }
-    raf = requestAnimationFrame(frame);
+    turn.rotation.y = yaw;
   };
-  const run = () => { if (!raf && !gone) raf = requestAnimationFrame(frame); };
-  const onVis = () => { if (!document.hidden) run(); };
-  document.addEventListener('visibilitychange', onVis);
+  const view = addView(THREE, {
+    canvas, scene, camera, tick, fps: 33,
+    live: () => !!figure && (moving || !!drag),
+    toneMapping: THREE.ACESFilmicToneMapping, exposure: 1.05,
+  });
+  const run = () => view.draw();
+  const ro = new ResizeObserver(fit); ro.observe(host);
 
   canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, yaw }; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', (e) => { if (drag) yaw = drag.yaw + (e.clientX - drag.x) * 0.012; });
@@ -163,11 +154,9 @@ export async function mountWardrobe(host, { editor = false } = {}) {
     refit: () => { for (const p of figure?.root.userData.gear || []) p.apply(p.body ? fitFor(p.body, p.id) : null); run(); },
     dispose() {
       gone = true;
-      cancelAnimationFrame(raf); ro.disconnect();
-      document.removeEventListener('visibilitychange', onVis);
+      view.dispose(); ro.disconnect();
       figure?.dispose();
       shadow.geometry.dispose(); shadow.material.dispose(); shadowTex.dispose();
-      renderer.dispose(); renderer.forceContextLoss();
       canvas.remove();
     },
   };

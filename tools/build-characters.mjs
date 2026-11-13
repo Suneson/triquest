@@ -5,7 +5,7 @@
 //     @gltf-transform/functions@4.1.1 meshoptimizer@0.22.0
 //   node tools/build-characters.mjs "<path to MOSKE APP/Characters>" [name ...]
 //
-// With names (male, female, mechanic, clips, bosses, boss-<name>, or an outfit file's name) it builds only those.
+// With names (male, female, mechanic, robot, clips, bosses, boss-<name>, or an outfit file's name) it builds only those.
 //
 // What it reads:
 //   Clips/Male/*.fbx      Mixamo clips. One of them must be "With Skin": that's the rigged male.
@@ -72,6 +72,8 @@ const CLIP_NAMES = {
   fixingitemonknees: 'work', confidentstrut: 'walk', confidentwalk: 'walk',
   // the bosses' own (Clips/Bosses/<name>/)
   armstretching: 'stretch', laughing: 'laugh', rumbadancing: 'dance', sillydancing: 'dance2', running: 'run',
+  // the clan robot's (Clips/ClubRobot/)
+  breathingidle: 'idle', sadidle: 'sad',
 };
 /** Clips that travel in Mixamo unless "In Place" was ticked: any drift is taken out here. */
 const IN_PLACE = ['walk', 'run', 'run-slow', 'run-fast'];
@@ -626,6 +628,35 @@ for (const file of find(path.join(SRC, 'GLB Assets', 'Bosses'), /\.glb$/i)) {
   }
   const r = bind(rig, rig.bones, rig.quats, g.mesh, name);
   await writeChar(name, r.mesh, r.skin, r, { base: g.base, normal: g.normal });
+}
+
+// ---- the clan robot: ten levels on one skeleton (Clips/ClubRobot, made in Mixamo on level 1) ----
+// GLB Assets/Robot/robot-lvl-<n>.glb → robot-<n>.glb, and robot-clips.glb drives every level.
+
+if (want('robot')) {
+  const files = find(path.join(SRC, 'GLB Assets', 'Robot'), /^robot-lvl-\d+\.glb$/i);
+  const own = clipsIn(path.join(SRC, 'Clips', 'ClubRobot'), new Set(maleRig.bones.map((b) => b.name)));
+  if (files.length && own.rest) {
+    console.log('robot');
+    // the same as a boss's own skeleton: brought to the male's size, its hips to the middle
+    const at = new Map(male.rest.map((b) => [b.name, b]));
+    const span = (bones, ref) => bones.reduce((t, b) => t + (ref.has(b.name) && b.parent >= 0 ? b.pos.length() : 0), 0);
+    const grow = span(male.rest, at) / span(own.rest, at);
+    const standing = own.rest[0].pos.y * grow;
+    for (const b of own.rest) b.pos.multiplyScalar(grow);
+    if (standing > LIFT / 2) own.rest[0].pos.y -= LIFT;
+    for (const c of Object.values(own.clips)) if (c.hips) c.hips.values = c.hips.values.map((v) => v * grow);
+    console.log(`  its skeleton came ${grow.toFixed(2)} times too small: scaled up`);
+    let rig = null;
+    const lvl = (f) => Number(f.match(/(\d+)\.glb$/i)[1]);
+    for (const file of files.sort((a, b) => lvl(a) - lvl(b))) {
+      const g = await meshOfGlb(io, file);
+      const r = bind(maleRig, own.rest, bindLike(own.rest), g.mesh, `robot-${lvl(file)}`);
+      rig ||= r;
+      await writeChar(`robot-${lvl(file)}`, r.mesh, r.skin, r, { base: g.base, normal: g.normal });
+    }
+    await writeClips('robot-clips', rig, own.clips);
+  }
 }
 
 // ---- the mechanic ---------------------------------------------------------------------------

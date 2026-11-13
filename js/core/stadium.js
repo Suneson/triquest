@@ -13,8 +13,11 @@ export const RACE_MS = 72 * 3600e3;
 /** The warm-up before each race. */
 export const WARM_MS = 10 * 3600e3;
 export const CYCLE_MS = WARM_MS + RACE_MS;
-/** The first warm-up started here (a Monday, 00:00 UTC). */
-export const EPOCH = Date.UTC(2026, 10, 9);
+/**
+ * The first warm-up started here: when the robot joined the stadium (PR 79), so its first race
+ * starts 10 hours after that went live.
+ */
+export const EPOCH = Date.UTC(2026, 10, 13, 1, 30);
 
 /** The bosses, in turn: one a race for now (once a month later). */
 export const BOSSES = [
@@ -92,8 +95,20 @@ export function trackPoint(f, lane = 1, geom = TRACK) {
 }
 export const LAP_M = LAP;
 
-// ---- the clan robot (next) ---------------------------------------------------------------------
-// Clan XP comes from clan PVP (Clan Games) and clan PVE (this race). The robot's level follows it.
+// ---- the clan robot ----------------------------------------------------------------------------
+// It stands on the start line with the boss (stadium3d.js), in the outer lane. Until the server
+// counts each clan's km it waits there at 0 km. Clan XP comes from clan PVP (Clan Games) and clan
+// PVE (this race), and the robot's level (its look, models/chars/robot-<level>.glb) follows it.
+
+export const ROBOT = {
+  /** Its look at a level (1..10). */
+  model: (level = 1) => `models/chars/robot-${Math.min(10, Math.max(1, level))}.glb`,
+  clips: 'models/chars/robot-clips.glb',
+  /** What it does on the start line in the warm-up, in turn. */
+  warmup: ['stretch', 'idle'],
+  /** And while the boss runs and it has no km yet. */
+  waiting: ['idle', 'sad'],
+};
 
 export const ROBOT_XP = [0, 500, 1500, 3000, 5000, 8000, 12000, 17000, 23000, 30000];
 /** The robot's level (1..10) for a clan's XP. */

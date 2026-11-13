@@ -2481,9 +2481,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 /* the city's sky, its far clouds and its 3D layers (city3d.js): the sky and what's behind the
    buildings under the world (the city picture's sky is transparent), the rest over it */
 .dg-viewport { background: linear-gradient(#96CBF3, #B2DAF6); }
-.dg-far, .dg-3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-.dg-far { overflow: hidden; }
-.dg-far img { position: absolute; height: auto; max-width: none; -webkit-user-drag: none; }
+.dg-3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
 .dg-3d.is-front { z-index: 2; }
 /* the world's front layer, over the 3D one: it moves with the world (the same transform) */
 .dg-front { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; transform-origin: 0 0; pointer-events: none; }

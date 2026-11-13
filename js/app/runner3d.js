@@ -2,9 +2,10 @@
 // bath (docs/RUNNER3D.md, docs/CHARACTERS.md).
 //
 // The room is painted art and so is the item; the athlete is your wardrobe character (char3d.js),
-// drawn into a transparent WebGL canvas that sits inside the item's element, so it pans, zooms,
-// stacks and moves with it like any other item. three.js (vendor/three/) is only loaded when an
-// athlete is on screen.
+// drawn into a transparent canvas that sits inside the item's element, so it pans, zooms, stacks
+// and moves with it like any other item. The app's one WebGL renderer draws it (gl-shared.js):
+// only while it is on screen and the base isn't covered. three.js (vendor/three/) is only loaded
+// when an athlete is on screen.
 //
 // The camera is orthographic and matches the painted floor exactly: one scene
 // unit is one floor tile, X runs along the floor's u axis (towards the right
@@ -88,9 +89,7 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
     const { spawnChar } = await import('./char3d.js');
     const figure = await spawnChar(L, { model: char.model, clips: char.clips, uniforms, gear: char.gear || [], hair: char.hair || null });
     if (disposed) { figure.dispose(); return null; }
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
-    renderer.setClearColor(0x000000, 0);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const { addView, ratio } = await import('./gl-shared.js');
     const scene = new THREE.Scene();
 
     // warm, soft light like the painted art: a warm key from the top left, a cool rim behind
@@ -127,40 +126,32 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
       canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
       canvas.style.left = `${an.x - w / 2}px`;
       canvas.style.top = `${an.y - h * (1 - FRAME.below)}px`;
-      const dpr = Math.min(2, window.devicePixelRatio || 1) * 1.5; // the stage is usually zoomed in
-      renderer.setPixelRatio(1);
-      renderer.setSize(Math.round(w * dpr), Math.round(h * dpr), false);
+      const dpr = ratio(1.5);   // the stage is usually zoomed in (at most 2: gl-shared.js)
+      view?.size(w * dpr, h * dpr);
       camera.left = -w / 2 / s; camera.right = w / 2 / s;
       camera.top = (h * (1 - FRAME.below)) / s; camera.bottom = -(h * FRAME.below) / s;
       camera.updateProjectionMatrix();
     };
     const setYaw = (r) => { pending.yaw = r; rig.rotation.y = at.yaw + r; };
     setYaw(pending.yaw);
+    // off screen (another tab keeps the stage's DOM aside), in the background or under a full
+    // screen: not drawn, everything kept, so coming back to HOME carries on mid-stride with no
+    // reload. The diorama disposes the runner when its treadmill leaves the room.
+    let view = null;
+    view = addView(THREE, {
+      canvas, scene, camera,
+      tick: (dt) => figure.update(dt),
+      live: () => !still,
+      paused: () => document.body.classList.contains('base-covered'),
+    });
     layout();
-
-    const clock = new THREE.Clock();
-    let raf = 0;
-    let last = 0;
-    const frame = (now) => {
-      if (disposed) return;
-      raf = requestAnimationFrame(frame);
-      // off screen (another tab keeps the stage's DOM aside) or in the background: pause, keep
-      // everything, so coming back to HOME carries on mid-stride with no reload. The diorama
-      // disposes the runner when its treadmill leaves the room.
-      if (!canvas.isConnected || document.hidden || now - last < 1000 / 30) return; // 30 fps is plenty
-      if (document.body.classList.contains('base-covered')) { clock.getDelta(); return; }   // a full screen hides the base: rest
-      last = now;
-      figure.update(Math.min(0.1, clock.getDelta()));
-      renderer.render(scene, camera);
-    };
-    if (still) { figure.update(0.2); renderer.render(scene, camera); } else raf = requestAnimationFrame(frame);
+    if (still) figure.update(0.2);
 
     api = {
-      setYaw: (r) => { setYaw(r); if (still) renderer.render(scene, camera); },
-      layout: (o) => { layout(o); renderer.render(scene, camera); },
-      play: (name, o) => { figure.play(name, o); if (still) { figure.update(0.2); renderer.render(scene, camera); } },
-      stop: () => { cancelAnimationFrame(raf); figure.dispose(); },
-      renderer,
+      setYaw: (r) => { setYaw(r); view.draw(); },
+      layout: (o) => { layout(o); view.draw(); },
+      play: (name, o) => { figure.play(name, o); if (still) figure.update(0.2); view.draw(); },
+      stop: () => { view.dispose(); figure.dispose(); },
     };
     return api;
   })().catch((e) => { console.warn('3D runner unavailable', e); return null; });
@@ -169,8 +160,6 @@ export function mountRunner(host, { tile, anchor, yaw = 0, still = false, spot =
     if (disposed) return;
     disposed = true;
     api?.stop();
-    api?.renderer.dispose();
-    api?.renderer.forceContextLoss?.();
     canvas.remove();
   }
   return {

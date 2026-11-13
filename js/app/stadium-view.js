@@ -1,12 +1,12 @@
 // stadium-view.js: the stadium's PVE race (the stadium on the island; rules in js/core/stadium.js).
 //
-// Seen from above: the boss runs his one lap of the track over the 72 hours, his km over his head.
-// Before that, 10 hours of warm-up: he stretches and shows off on the start line, and the clock
-// counts down to the start.
-// The bar at the top (the HUD's gauge) fills with his km; the clock in the middle of the infield
-// counts down to the end. The first time you come in to a race, the boss talks you through it:
-// a line at a time, a different pose each, tap to go on. "Talk to <boss>" plays it again.
-// The clan robot that races him comes next.
+// The stadium at a slant, zoomed in on its two-lane track (stadium3d.js). The boss runs his one lap
+// over the 72 hours, his km over his head. Before that, 10 hours of warm-up: he and the clan's
+// robot stand behind the start line, stretching and showing off, and the clock counts down to the
+// start. The robot waits there at 0 km until the server counts the clan's km.
+// The bar at the top (the HUD's gauge) fills with his km; the clock at the foot of the stage counts
+// down. The first time you come in to a race, the boss talks you through it: a line at a time, a
+// different pose each, tap to go on. "Talk to <boss>" plays it again.
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
@@ -14,7 +14,7 @@ import { t, fmtNum } from '../core/i18n.js';
 import { openLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
-import { raceAt, bossKm, clock, INTRO_POSES, WARM_MS } from '../core/stadium.js';
+import { raceAt, bossKm, clock, INTRO_POSES, WARM_MS, ROBOT } from '../core/stadium.js';
 
 const SEEN_KEY = 'moske-stadium-intro';
 const SQUAD = 12;   // until clans queue: the full squad's race
@@ -42,6 +42,7 @@ export function openStadium({ now = () => Date.now() } = {}) {
       <p class="wr-stage-msg" data-st-msg>${esc(t('wardrobe.loading'))}</p>
       <div class="st-clock" data-st-clock aria-live="off"><small data-st-label>${esc(t('stadium.left'))}</small><b class="data-num" data-st-time></b></div>
       <div class="st-tag" data-st-tag hidden><b>${esc(boss.name.split(' ').pop())}</b><span class="data-num" data-st-tagkm></span></div>
+      <div class="st-tag is-robot" data-st-rtag hidden><b>${esc(t('stadium.robot'))}</b><span class="data-num" data-st-rtagkm></span></div>
     </div>
     <div class="st-foot">
       <p class="st-note">${esc(t('stadium.robotSoon'))}</p>
@@ -49,8 +50,9 @@ export function openStadium({ now = () => Date.now() } = {}) {
     </div>
   </div>`;
   const $ = (s) => root.querySelector(s);
-  const label = $('[data-st-label]'), tagName = $('[data-st-tag] b');
-  const bar = $('[data-st-bar]'), kmEl = $('[data-st-km]'), timeEl = $('[data-st-time]'), tag = $('[data-st-tag]'), tagKm = $('[data-st-tagkm]'), clockEl = $('[data-st-clock]');
+  const label = $('[data-st-label]');
+  const rtag = $('[data-st-rtag]'), rtagKm = $('[data-st-rtagkm]');
+  const bar = $('[data-st-bar]'), kmEl = $('[data-st-km]'), timeEl = $('[data-st-time]'), tag = $('[data-st-tag]'), tagKm = $('[data-st-tagkm]');
 
   // the numbers, once a second
   const update = () => {
@@ -60,6 +62,7 @@ export function openStadium({ now = () => Date.now() } = {}) {
     bar.setAttribute('aria-label', t('stadium.kmAria', { boss: boss.name, km: fmtNum(Math.floor(km)), total }));
     kmEl.textContent = t('stadium.km', { km: km.toFixed(1), total });
     tagKm.textContent = r.warming ? t('stadium.warming') : t('stadium.tagKm', { km: km.toFixed(1) });
+    rtagKm.textContent = r.warming ? t('stadium.warming') : t('stadium.tagKm', { km: (0).toFixed(1) });
     label.textContent = r.warming ? t('stadium.startsIn') : t('stadium.left');
     timeEl.textContent = clock(r.warming ? r.startsIn : r.left);
     stage?.setWarm(r.warming);
@@ -68,16 +71,20 @@ export function openStadium({ now = () => Date.now() } = {}) {
   update();
   tick = setInterval(update, 1000);
 
-  // the tag over the boss's head and the clock on the infield follow the picture
+  // the tags over the runners' heads follow them
+  const put = (el, p) => {
+    el.hidden = !p;
+    // kept inside the stage when a runner's head is near its top (the far straight)
+    if (p) el.style.transform = `translate(${p.x.toFixed(1)}px, ${Math.max(p.y, el.offsetHeight + 8).toFixed(1)}px) translate(-50%, -100%)`;
+  };
   const follow = () => {
     if (!stage) return;
-    const h = stage.bossHead(); tag.hidden = false;
-    tag.style.transform = `translate(${h.x.toFixed(1)}px, ${h.y.toFixed(1)}px) translate(-50%, -100%)`;
-    const c = stage.centre();
-    clockEl.style.transform = `translate(${c.x.toFixed(1)}px, ${c.y.toFixed(1)}px) translate(-50%, -50%)`;
+    const h = stage.heads();
+    put(tag, h.boss); put(rtag, h.robot);
   };
 
-  import('./stadium3d.js').then(({ mountStadium }) => mountStadium($('[data-st-stage]'), boss)).then((s) => {
+  const robot = { ...ROBOT, model: ROBOT.model(1) };   // level 1 until clans have XP
+  import('./stadium3d.js').then(({ mountStadium }) => mountStadium($('[data-st-stage]'), boss, robot)).then((s) => {
     if (closed) { s?.dispose(); return; }
     stage = s;
     if (!stage) { $('[data-st-msg]').textContent = t('wardrobe.noGl'); return; }

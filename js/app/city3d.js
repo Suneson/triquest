@@ -1,20 +1,19 @@
 // city3d.js — what moves in the base's city (docs/CITY.md, "In the app"):
 //
-//   far clouds     flat pictures far behind everything (icons/City/sky-clouds/), drifting right
-//                  to left slowly in screen space, so they feel far away
-//   clouds         3D clouds (models/city/cloud-*.glb) drifting right to left in the city: some
-//                  behind the buildings, a few in front of them
 //   the sign       a street sign by the garage door (models/city/sign.glb), its white panel
 //                  counting down to the next delivery; tap it for the list (delivery-view.js)
 //   the truck      the MOSKE van (models/city/truck.glb): it drives in from the bottom right as a
 //                  delivery's countdown runs out, waits at the garage door, and drives off
 //
-// A transparent WebGL canvas covers the stage's viewport, over the island. Its
-// orthographic camera matches the city: X runs along the ground's e1 = (1, SLOPE) world px,
+// A transparent canvas covers the stage's viewport, over the island, drawn by the app's one WebGL
+// renderer (gl-shared.js) only when something on it changes: the stage pans or zooms, the sign's
+// countdown ticks (once a second), or the truck drives. (The 3D clouds that drifted over the city
+// are gone: they kept the whole viewport redrawing 30 times a second.) Its orthographic camera matches the city: X runs along the ground's e1 = (1, SLOPE) world px,
 // Z along e2 = (−1, SLOPE), Y up, so a ground point (X, Z) is world px (X − Z, SLOPE (X + Z)).
 // The camera follows the stage's pan and zoom (setView). three.js loads only on the base.
 
 import { loadThree } from './runner3d.js';
+import { addView } from './gl-shared.js';
 import { ISLAND_ART } from '../core/island-art.js';
 
 const SLOPE = 0.489;
@@ -22,7 +21,6 @@ const EL = Math.asin(SLOPE);              // the camera's tilt: a ground edge fa
 const SIGMA = Math.SQRT2;                 // world px per camera unit (X runs 1 px across per unit)
 const UP = Math.cos(EL) * SIGMA;          // world px a point rises on screen per unit of height
 const FPS = 30;
-const CLOUD_UP = 2400;                    // how high the 3D clouds fly (units: above the tallest roof)
 
 // in px of the city picture (CITY in diorama.js; drawn in tiles, icons/City/layers/tiles/)
 const [BASE_X, BASE_Y] = ISLAND_ART.plots.base;
@@ -81,71 +79,33 @@ export function truckAt(t) {
   return { ...along(ROUTE_OUT, (t - WAIT) * SPEED), moving: true };
 }
 
-const FAR = [];   // the island fills the screen: there's no sky behind it for far clouds to show in
-// the 3D clouds: which model, where (px of the city picture), how wide (px), and how fast (px/s)
-const CLOUDS = [
-  { m: 'a', at: [8000, 500], w: 420, v: 22, front: true },
-  { m: 'c', at: [2500, 2500], w: 520, v: 24, front: true },
-  { m: 'b', at: [10500, 5200], w: 460, v: 21, front: true },
-];
-
-let shared = null;   // the canvases and the far clouds, kept across the stage's re-renders
+let shared = null;   // the canvas, kept across the stage's re-renders
 
 /**
  * The city's moving things over the stage's viewport `vp` (an element the world is in).
- *   worldX0, worldW  the city picture's left edge and width (px), for where the clouds wrap round
  *   deliveries()  when each delivery ends (epoch ms): those still coming and those just come
  *   now()         the server's time (epoch ms)
  *   label         { title, clock(ms) }: the sign's words and its countdown format
  *   parked()      true while a parcel waits at the door: the truck stays until it's opened
- *   reduced()     true under reduced motion: no drifting, the truck only appears parked
+ *   reduced()     true under reduced motion: the truck only appears parked
  *   front         the buildings in front of its road out, [{ src, x, y, w, h }] in px of the city, or a function giving them
  *                 picture: drawn over the truck while it's about (and gone again after), so it
  *                 drives off behind them
  * Returns { setView(v, w, h) }.
  */
-export function mountCity3d(vp, { worldX0 = 0, worldW, deliveries, now, label, parked, reduced, front: frontArt = [] }) {
-  if (!shared) shared = makeShared();
-  const { far, front } = shared;
-  // into this render's viewport: the far clouds under the world, the canvas over it
-  const world = vp.querySelector('[data-dg-world]');
-  vp.insertBefore(far, world); world.after(front.canvas);
-  shared.opts = { worldX0, worldW, deliveries, now, label, parked, reduced, front: frontArt };
-  if (!shared.farLoop) farLoop();
+export function mountCity3d(vp, { deliveries, now, label, parked, reduced, front: frontArt = [] }) {
+  if (!shared) {
+    const c = document.createElement('canvas'); c.className = 'dg-3d is-front'; c.setAttribute('aria-hidden', 'true');
+    shared = { front: { canvas: c }, view: null };
+  }
+  // into this render's viewport, over the world
+  vp.querySelector('[data-dg-world]').after(shared.front.canvas);
+  shared.opts = { deliveries, now, label, parked, reduced, front: frontArt };
   if (!shared.started) start();
+  shared.draw?.();
   return {
-    setView(v, w, h) { shared.view = { v, w, h }; shared.dirty = true; },
+    setView(v, w, h) { shared.view = { v, w, h }; shared.draw?.(); },
   };
-}
-
-function makeShared() {
-  const far = document.createElement('div');
-  far.className = 'dg-far';
-  far.setAttribute('aria-hidden', 'true');
-  // each one sized as a share of the viewport straight away (never its picture's natural size)
-  far.innerHTML = FAR.map((c, i) => `<img src="${c.src}" alt="" draggable="false"
-    style="width:${(c.w * 100).toFixed(1)}%;left:${((i / FAR.length) * 100).toFixed(1)}%;top:${(c.y * 100).toFixed(1)}%">`).join('');
-  const canvas = (cls) => { const c = document.createElement('canvas'); c.className = `dg-3d ${cls}`; c.setAttribute('aria-hidden', 'true'); return c; };
-  return { far, front: { canvas: canvas('is-front') }, view: null, dirty: true, t0: performance.now(), farX: FAR.map((c, i) => i / FAR.length) };
-}
-
-/** The far clouds drift on their own, WebGL or not (left as a share of the viewport). */
-function farLoop() {
-  shared.farLoop = true;
-  let last = performance.now();
-  const step = (now) => {
-    requestAnimationFrame(step);
-    const dt = Math.min(0.2, (now - last) / 1000); last = now;
-    if (!shared.far.isConnected || shared.opts?.reduced?.()) return;
-    const vw = shared.far.clientWidth || 1;
-    [...shared.far.children].forEach((el, i) => {
-      const c = FAR[i];
-      shared.farX[i] -= (c.v * dt) / vw;
-      if (shared.farX[i] < -c.w) shared.farX[i] = 1 + Math.random() * 0.3;
-      el.style.left = `${(shared.farX[i] * 100).toFixed(2)}%`;
-    });
-  };
-  requestAnimationFrame(step);
 }
 
 async function start() {
@@ -156,47 +116,19 @@ async function start() {
   const loader = new L.GLTFLoader(); loader.setMeshoptDecoder(L.MeshoptDecoder);
   const load = (name) => new Promise((res, rej) => loader.load(new URL(`../../models/city/${name}.glb`, import.meta.url).href, (g) => res(g.scene), undefined, rej));
 
-  const mkRenderer = (canvas) => {
-    const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
-    r.setClearColor(0x000000, 0);
-    return r;
-  };
   const lights = (scene) => {
     // soft sky light from above, a pale blue bounce from below, the sun from the upper left
     scene.add(new THREE.HemisphereLight(0xffffff, 0xa9c2ea, 2.1));
     const sun = new THREE.DirectionalLight(0xfff4e6, 1.6); sun.position.set(-3, 6, 2); scene.add(sun);
   };
   const frontScene = new THREE.Scene(); lights(frontScene);
-  const frontR = mkRenderer(shared.front.canvas);
   const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 40000);
   const D = 20000;
   cam.position.set(D * Math.cos(EL) * Math.SQRT1_2, D * Math.sin(EL), D * Math.cos(EL) * Math.SQRT1_2);
   cam.lookAt(0, 0, 0);
 
-  // the clouds: their own soft white, not the model's texture
-  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, emissive: 0xdfe9fb, emissiveIntensity: 0.18 });
-  const models = {};
-  const [ca, cb, cc, sign, truck] = await Promise.all(['cloud-a', 'cloud-b', 'cloud-c', 'sign', 'truck'].map((n) => load(n).catch(() => null)));
-  // smooth normals of their own: the compressed model's are packed integers, so they're dropped
-  // and worked out again in full floats
-  const prepCloud = (g) => {
-    if (!g) return null;
-    g.traverse((o) => { if (o.isMesh) { o.material = cloudMat; o.geometry.deleteAttribute('normal'); o.geometry.computeVertexNormals(); } });
-    return g;
-  };
-  models.a = prepCloud(ca); models.b = prepCloud(cb); models.c = prepCloud(cc);
+  const [sign, truck] = await Promise.all(['sign', 'truck'].map((n) => load(n).catch(() => null)));
   const size = (g) => new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());
-  const clouds = CLOUDS.filter((c) => models[c.m]).map((c) => {
-    const g = models[c.m].clone();
-    const s = size(models[c.m]);
-    // its width on screen is about the model's X extent across (1 px per unit of X)
-    const k = c.w / Math.max(s.x, s.z);
-    g.scale.setScalar(k);
-    // long side square to the screen, so it drifts across it like the far clouds
-    g.rotation.y = Math.PI / 4;
-    frontScene.add(g);
-    return { ...c, g };
-  });
 
   // the sign: standing on the pavement, its panel facing out from the lobby (towards +X)
   let signObj = null; let panel = null; let panelCanvas = null; let panelTex = null;
@@ -256,7 +188,7 @@ async function start() {
           const m = new THREE.Mesh(geo, mat);
           m.renderOrder = 10; m.frustumCulled = false;
           frontScene.add(m); live.meshes.push(m);
-          shared.dirty = true;
+          shared.draw?.();
         });
       }
     }
@@ -274,36 +206,22 @@ async function start() {
     panelTex.needsUpdate = true;
   };
 
-  let last = 0;
-  const frame = (now) => {
-    requestAnimationFrame(frame);
-    if (!shared.front.canvas.isConnected) return;
-    // a full screen is over the base (js/app/nav.js): nothing of the city shows, so nothing is drawn
-    if (document.body.classList.contains('base-covered')) return;
-    if (now - last < 1000 / FPS && !shared.dirty) return;
-    const dt = Math.min(0.2, (now - last) / 1000); last = now;
+  // Drawn only when something changes: the view (setView), the sign's countdown (once a second,
+  // below), or the truck while it drives (then every frame: `live`).
+  let driving = false;
+  const tick = (dt, now) => {
     const o = shared.opts || {};
     const still = o.reduced?.();
     const vw = shared.view?.w || 1; const vh = shared.view?.h || 1; const v = shared.view?.v;
     if (!v) return;
-    // the canvases fill the viewport at the device's pixel ratio (at most 1.5: they're soft shapes)
+    // the canvas fills the viewport at the device's pixel ratio (at most 1.5: they're soft shapes)
     const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-    for (const r of [frontR]) { const c = r.domElement; if (c.width !== Math.round(vw * dpr) || c.height !== Math.round(vh * dpr)) { r.setPixelRatio(dpr); r.setSize(vw, vh, false); } }
+    const c = shared.front.canvas;
+    if (c.width !== Math.round(vw * dpr) || c.height !== Math.round(vh * dpr)) view.size(vw * dpr, vh * dpr);
     // the camera shows exactly the part of the city the stage shows
     cam.left = (-v.tx / v.s) / SIGMA; cam.right = ((vw - v.tx) / v.s) / SIGMA;
     cam.top = (v.ty / v.s) / SIGMA; cam.bottom = (-(vh - v.ty) / v.s) / SIGMA;
     cam.updateProjectionMatrix();
-
-    // the clouds drift right to left and come round again past the city's right edge
-    const X0 = o.worldX0 || 0; const W = o.worldW || 7000;
-    for (const c of clouds) {
-      if (!still) c.at = [c.at[0] - c.v * dt, c.at[1]];
-      if (c.at[0] < X0 - c.w) c.at = [X0 + W + c.w, c.at[1]];
-      // high in the sky, above every roof: the point under it on the ground is CLOUD_UP lower
-      // on screen, so it shows where `at` says
-      const p = ground([c.at[0], c.at[1] + CLOUD_UP * UP]);
-      c.g.position.set(p.x, CLOUD_UP, p.z);
-    }
 
     // the sign counts down to the next delivery; the truck brings whichever is ending now
     const t = o.now?.() ?? Date.now();
@@ -326,6 +244,7 @@ async function start() {
       }
       const show = at && (!still || !at.moving);
       truckObj.visible = !!show;
+      driving = !!show && at.moving;
       coverOn(tr.mode === 'in' || tr.mode === 'out');  // parked, nothing stands in front of it
       if (show) {
         const p = ground(at.p); const d = ground([at.p[0] + at.dir[0], at.p[1] + at.dir[1]]);
@@ -335,8 +254,14 @@ async function start() {
         truckObj.rotation.y = Math.atan2(dZ, -dX);
       }
     }
-    shared.dirty = false;
-    frontR.render(frontScene, cam);
   };
-  requestAnimationFrame(frame);
+  const view = addView(THREE, {
+    canvas: shared.front.canvas, scene: frontScene, camera: cam, tick, fps: FPS,
+    live: () => driving,
+    // a full screen is over the base (js/app/nav.js): nothing of the city shows, so nothing is drawn
+    paused: () => document.body.classList.contains('base-covered'),
+  });
+  shared.draw = () => view.draw();
+  // the sign's countdown, and a truck setting off: looked at once a second
+  setInterval(() => { if (shared.front.canvas.isConnected) view.draw(); }, 1000);
 }

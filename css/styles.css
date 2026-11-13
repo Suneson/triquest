@@ -2909,7 +2909,8 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 /* what stands in front of the base's collectors covers them; the collectors' layer is z-index 4 */
 .dg-plots [data-plot="pool"], .dg-plots [data-plot="mall"], .dg-plots [data-plot="market"], .dg-plots .dg-stand { z-index: 5; }
 .dg-plots img.is-tap { animation: dg-isl-tap 240ms ease-out; }
-.dg-plots .dg-shop { z-index: 5; filter: drop-shadow(0 10px 8px rgba(10, 30, 20, .25)); }
+/* their shadow is drawn into the picture (tools/bake-market-shadows.py): no filter to redraw on every zoom */
+.dg-plots .dg-shop { z-index: 5; }
 .dg-plots .dg-shop[hidden] { display: none; }
 .dg-shop-hit { position: absolute; z-index: 2; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .dg-shop-hit[hidden] { display: none; }

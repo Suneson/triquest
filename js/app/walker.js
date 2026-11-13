@@ -25,13 +25,15 @@ const SPOT = { u: 1.5, v: 1.5, y: 0, scale: 2.52 };
  *   char    the character (runner3d.js mountRunner)
  *   still   reduced motion: it stands, never wanders, and goes to places at once
  *   onMove  (tile) → called each time it reaches a tile
+ *   body    the athlete drawn somewhere else (base-gl.js): { at(u, v), setYaw, play, dispose }; then
+ *           there's no canvas of its own
  * @returns {{ goTo(tile, done), jump(tile), wander(on), tile(), model, dispose() }}
  */
-export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {} }) {
+export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {}, body = null }) {
   const host = document.createElement('div');
   host.className = 'dg-walker';
-  layer.append(host);
-  const r3d = mountRunner(host, { tile, anchor: { x: 0, y: 0 }, foot: FOOT, spot: SPOT, char, clip: 'idle', still });
+  if (!body) layer.append(host);
+  const r3d = body || mountRunner(host, { tile, anchor: { x: 0, y: 0 }, foot: FOOT, spot: SPOT, char, clip: 'idle', still });
   let pos = [at[0], at[1]];        // where it is now, in tiles (fractions while walking)
   let path = []; let done = null;
   let yaw = 0.6; let want = yaw;   // a three-quarter turn to the camera to begin with
@@ -39,6 +41,7 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
   let raf = 0; let last = performance.now(); let gone = false;
 
   const place = () => {
+    if (body) { body.at(pos[0] + 0.5, pos[1] + 0.5); return; }
     const [x, y] = toPx(pos[0] + 0.5, pos[1] + 0.5);
     // moved by transform: no layout work for the page while it walks
     host.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
@@ -52,7 +55,7 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     if (gone) return;
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (!host.isConnected) return;
+    if (!body && !host.isConnected) return;
     if (path.length) {
       const [tu, tv] = path[0];
       const du = tu - pos[0]; const dv = tv - pos[1];

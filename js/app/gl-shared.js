@@ -60,46 +60,9 @@ function listen() {
   new MutationObserver(() => { if (views.size) wake(); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 }
 
-// a full screen drawing straight into the renderer's own canvas (borrow, below): the views wait
-let borrowed = false;
-
-/**
- * Take the renderer for a full screen of its own: its canvas goes into the page and is drawn
- * straight into, with no copy (the three.js test room, room-gl.js). The other views aren't drawn
- * until it's given back; they're under the full screen anyway.
- * Returns { renderer, canvas, size(w, h, dpr) (CSS px), release() }.
- */
-export function borrow(THREE) {
-  const g = shared(THREE);
-  borrowed = true;
-  const { renderer } = g;
-  renderer.setScissorTest(false);
-  return {
-    renderer, canvas: g.canvas,
-    size(w, h, dpr) { renderer.setPixelRatio(dpr); renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), false); },
-    release() {
-      if (!borrowed) return;
-      borrowed = false;
-      g.canvas.remove();
-      g.canvas.removeAttribute('style');
-      g.canvas.removeAttribute('class');
-      renderer.setPixelRatio(1);
-      renderer.setScissorTest(true);
-      renderer.setClearColor(0x000000, 0);
-      renderer.autoClear = true;
-      renderer.toneMapping = THREE.NoToneMapping;
-      let w = 1, h = 1;
-      for (const x of views) { w = Math.max(w, x.canvas.width); h = Math.max(h, x.canvas.height); }
-      g.w = w; g.h = h; renderer.setSize(w, h, false);
-      for (const v of views) v.dirty = true;
-      wake();
-    },
-  };
-}
-
 function loop(now) {
   raf = 0;
-  if (document.hidden || borrowed) return;
+  if (document.hidden) return;
   let wanted = false;
   for (const v of views) {
     if (!v.canvas.isConnected || !v.onscreen || v.paused?.()) { v.last = 0; continue; }

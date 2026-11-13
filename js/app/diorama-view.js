@@ -49,7 +49,8 @@ import { haptic } from './haptics.js';
 import { playPlace, prefersReducedMotion } from './effects.js';
 import * as store from './store.js';
 import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
-import { mountRunner, webglOk } from './runner3d.js';
+import { mountRunner, webglOk, RUNNER_SPOT } from './runner3d.js';
+import { mountBaseGL } from './base-gl.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
 import { roomCopy } from '../core/room-art.js';
@@ -99,7 +100,7 @@ const rooms32Preview = () => {
     return localStorage.getItem(ROOMS32_KEY) === '1';
   } catch { return false; }
 };
-// the three.js test room (room-gl.js): ?three=1 shows its button on the base for this device, ?three=0 hides it
+// ?three=1: what stands in the room is drawn by three.js (base-gl.js), on this device; ?three=0 turns it off
 const THREE_KEY = 'moske-three';
 const threeTest = () => {
   try {
@@ -220,7 +221,6 @@ export function renderDiorama(ctx, avatarBtn = '') {
       ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
     <div class="dg-side is-right">${liftPanel(room)}</div>
-    ${threeTest() && webglOk() ? '<button type="button" class="dg-gltest" data-dg-gltest>3D test</button>' : ''}
   </section>`;
 }
 
@@ -237,6 +237,12 @@ function athlete() {
   return { model, clips: clipsFor(look), skin: skinTint(look.skin), eye: eyeColour(look.eyes), gear, hair: hairColour(look.hairColour),
     // what makes it a different figure: a change here loads it again
     key: `${model}|${look.hairColour}|${gear.map((g) => g.id).join(',')}` };
+}
+
+/** Where the athlete stands on a machine (its `runner` spot), in the room's tiles, for base-gl.js. */
+function machineSpot(it, p) {
+  const s = { ...RUNNER_SPOT, yaw: 0, ...(it.runner?.[it.face] || {}) };
+  return { u: p.u + s.u, v: p.v + s.v, y: s.y, yaw: s.yaw + (runnerYaw() * Math.PI) / 180, scale: s.scale };
 }
 
 /** A treadmill's tier, 1 to 4: the gift one grows with the run room, the others say it in their id. */
@@ -495,6 +501,19 @@ export function wireDiorama(root, ctx) {
       <div class="dg-shadows"></div>
       <div class="dg-items"></div>`;
   }
+  // ?three=1: the items and the athlete are drawn by three.js on a canvas in the items layer
+  // (base-gl.js); the buttons stay, see-through, for tapping and dragging
+  if (threeTest() && webglOk() && !stage.gl) {
+    const gl = stage.gl = mountBaseGL(worldEl.querySelector('.dg-items'), { reduced: () => prefersReducedMotion() || document.body.classList.contains('rm') });
+    gl.ready.then((ok) => {
+      if (!ok) return;
+      stage.world?.classList.add('is-gl');
+      walk.w?.dispose(); walk.w = null;   // its own canvas goes; it comes back drawn by three.js
+      walk.redraw?.();
+    });
+  }
+  const glOn = () => !!stage.gl?.on();
+  stage.gl?.setRoom(`${geom}|${M.join(',')}`, (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))), ROOM_GEOMETRY[geom].cols, ROOM_GEOMETRY[geom].rows);
   // the world this room stands in (a floor of the city tower, or the terrain)
   worldEl.style.width = `${env.w}px`; worldEl.style.height = `${env.h}px`;
   const envImg = worldEl.querySelector('.dg-env');
@@ -574,6 +593,9 @@ export function wireDiorama(root, ctx) {
     el.style.left = `${b.x.toFixed(1)}px`; el.style.top = `${b.y.toFixed(1)}px`; el.style.width = `${b.w.toFixed(1)}px`;
     el.style.setProperty('--lift', b.pad);
     el.style.zIndex = String(it.flat ? 1 : Math.round(b.y));
+    // for base-gl.js: the footprint's middle (its depth among the others), and whether it lies flat
+    el.dataset.uv = `${u + it.w / 2},${v + it.h / 2}`;
+    if (it.flat) el.dataset.flat = '1';
     const sh = worldEl.querySelector(`.dg-shadow[data-for="${it.id}"]`);
     if (sh) Object.assign(sh.style, { left: `${b.cx.toFixed(1)}px`, top: `${b.cy.toFixed(1)}px`, width: `${b.sw.toFixed(1)}px`, height: `${b.sh.toFixed(1)}px` });
   };
@@ -643,6 +665,7 @@ export function wireDiorama(root, ctx) {
         toPx: (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))),
         grid: () => walk.grid(),
         onMove: ([u, v]) => athSave({ ...athSaved(), u, v }),
+        body: glOn() ? stage.gl.body(char) : null,
       });
     }
     walk.w.wander(!use);
@@ -672,6 +695,7 @@ export function wireDiorama(root, ctx) {
     layer.querySelectorAll('[data-item]').forEach((el) => { if (!keep.has(el.dataset.item)) { el._r3d?.dispose(); el.remove(); } });
     const shadows = worldEl.querySelector('.dg-shadows');
     shadows.querySelectorAll('[data-for]').forEach((el) => { if (!keep.has(el.dataset.for)) el.remove(); });
+    let onMachine = null;   // three.js: the treadmill the athlete is on
     for (const it0 of here) {
       const it = itemAt(it0.id);
       let el = layer.querySelector(`[data-item="${it.id}"]`);
@@ -697,7 +721,8 @@ export function wireDiorama(root, ctx) {
       if (img.getAttribute('src') !== pic) img.src = pic;
       if (it.runner3d) {
         // your athlete is on the treadmill while it trains on it (and walks the floor the rest of the time)
-        if (use?.kind === 'drill' && use.id === it.id && ath.at === it.id) {
+        const on = use?.kind === 'drill' && use.id === it.id && ath.at === it.id;
+        if (glOn()) { el._r3d?.dispose(); el._r3d = null; el._r3dFace = null; if (on) onMachine = { it, p }; } else if (on) {
           const go = () => placeRunner(el, it, p, geom, a, reduced());
           if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go, { once: true });
         } else { el._r3d?.dispose(); el._r3d = null; el._r3dFace = null; }
@@ -724,6 +749,7 @@ export function wireDiorama(root, ctx) {
         tag.classList.toggle('is-all', n === slots);
       }
     }
+    if (glOn()) stage.gl.machine(onMachine && machineSpot(onMachine.it, onMachine.p), runnerClip(), athlete());
     // the picked-up item's menu: its name over square buttons for what it can do
     const menu = root.querySelector('[data-dg-menu]');
     if (menu) {
@@ -784,6 +810,7 @@ export function wireDiorama(root, ctx) {
     if (!worldEl.isConnected) return;
     const tf = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
     worldEl.style.transform = tf;
+    stage.gl?.setView(view.v, box());   // three.js draws the same view, in this frame
     if (stage.front) {
       stage.front.style.transform = tf;
       // the labels' counter-scale: an inherited value, so it's only touched when the zoom changes
@@ -1041,21 +1068,6 @@ export function wireDiorama(root, ctx) {
   };
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
-  // the three.js test room: this room, its items and the athlete, drawn by three.js (room-gl.js)
-  const glBtn = root.querySelector('[data-dg-gltest]');
-  if (glBtn) glBtn.onclick = (e) => {
-    e.stopPropagation(); deselect(); haptic('tick');
-    const a = athSaved();
-    import('./room-gl.js').then((m) => m.openRoomGL({
-      room, geom, title: `${roomName(room)} · three.js`, src, full, reduced: reduced(),
-      items: items.filter((it) => placements[it.id]?.room === room).map((it0) => { const it = itemAt(it0.id); return { it, p: placements[it.id], src: artOf(it) }; }),
-      canPlace: (it, u, v, pl) => canPlace(geom, room, it, u, v, pl),
-      save: (id, to) => { placements = { ...placements, [id]: to }; savePlacement(id, to); },
-      grid: (pl) => floorGrid(geom, room, pl),
-      start: a.room === room && Number.isInteger(a.u) ? [a.u, a.v] : null,
-      char: athlete(),
-    }));
-  };
   root.querySelector('[data-dg-open]').onclick = (e) => { e.stopPropagation(); haptic('tick'); openItem(view.sel && itemAt(view.sel)); };
   // put the picked-up item away in the inventory's Stash tab
   root.querySelector('[data-dg-stash]').onclick = (e) => {

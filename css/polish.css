@@ -312,10 +312,11 @@ body.has-layer .toast-wrap { bottom: calc(var(--safe-b) + 150px); }
   box-shadow: 0 0 0 2px rgba(169, 211, 255, .5), 0 6px 14px rgba(8, 25, 60, .35); }
 
 /* ---- 6. the strip at the foot of an installed app (iOS 26) ---------------------------------------- */
-/* On iPhone, installed to the home screen, a fixed box with inset 0 can stop short of the bottom edge,
-   leaving the strip by the home bar unfilled (a WebKit bug in iOS 26). 100vh there is the whole
-   screen, so the shell, every layer and every full screen reach the bottom edge. */
+/* On iPhone, installed to the home screen with the see-through status bar (black-translucent +
+   viewport-fit=cover), iOS 26 makes the page's screen short by the status bar's height while the
+   page is no taller than the screen, and nothing can paint in the strip left under it (WebKit bug
+   301108). A root that much taller makes iOS hand over the whole screen; 100lvh caps it so the
+   page doesn't scroll. */
 @media (display-mode: standalone) {
-  .app, .modal-root { bottom: auto; height: 100vh; }
-  .layer:not(.is-sheet) > .fh-screen { bottom: auto; height: 100vh; }
+  html { height: min(100lvh, calc(100% + env(safe-area-inset-top))); min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); }
 }

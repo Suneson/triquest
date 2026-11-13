@@ -99,6 +99,15 @@ const rooms32Preview = () => {
     return localStorage.getItem(ROOMS32_KEY) === '1';
   } catch { return false; }
 };
+// the three.js test room (room-gl.js): ?three=1 shows its button on the base for this device, ?three=0 hides it
+const THREE_KEY = 'moske-three';
+const threeTest = () => {
+  try {
+    const q = new URLSearchParams(location.search).get('three');
+    if (q != null) localStorage.setItem(THREE_KEY, q === '1' ? '1' : '0');
+    return localStorage.getItem(THREE_KEY) === '1';
+  } catch { return false; }
+};
 const bigRoom = (room) => (rooms32Preview() ? ROOM32[room] : null);
 const geomOf = (room) => (bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
 // every room, for working out where items stand
@@ -211,6 +220,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
       ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
     <div class="dg-side is-right">${liftPanel(room)}</div>
+    ${threeTest() && webglOk() ? '<button type="button" class="dg-gltest" data-dg-gltest>3D test</button>' : ''}
   </section>`;
 }
 
@@ -1031,6 +1041,21 @@ export function wireDiorama(root, ctx) {
   };
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
+  // the three.js test room: this room, its items and the athlete, drawn by three.js (room-gl.js)
+  const glBtn = root.querySelector('[data-dg-gltest]');
+  if (glBtn) glBtn.onclick = (e) => {
+    e.stopPropagation(); deselect(); haptic('tick');
+    const a = athSaved();
+    import('./room-gl.js').then((m) => m.openRoomGL({
+      room, geom, title: `${roomName(room)} · three.js`, src, full, reduced: reduced(),
+      items: items.filter((it) => placements[it.id]?.room === room).map((it0) => { const it = itemAt(it0.id); return { it, p: placements[it.id], src: artOf(it) }; }),
+      canPlace: (it, u, v, pl) => canPlace(geom, room, it, u, v, pl),
+      save: (id, to) => { placements = { ...placements, [id]: to }; savePlacement(id, to); },
+      grid: (pl) => floorGrid(geom, room, pl),
+      start: a.room === room && Number.isInteger(a.u) ? [a.u, a.v] : null,
+      char: athlete(),
+    }));
+  };
   root.querySelector('[data-dg-open]').onclick = (e) => { e.stopPropagation(); haptic('tick'); openItem(view.sel && itemAt(view.sel)); };
   // put the picked-up item away in the inventory's Stash tab
   root.querySelector('[data-dg-stash]').onclick = (e) => {

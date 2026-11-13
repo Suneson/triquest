@@ -10,6 +10,10 @@
 import { dress } from './gear3d.js';
 
 const files = new Map();   // url -> Promise<gltf>, shared between every view
+// url -> how many figures use it (counted from the moment one starts loading it until it's
+// disposed): a file in use is never let go, even while another view frees what it opened
+const users = new Map();
+const use = (urls, by) => { for (const u of urls) { const n = (users.get(u) || 0) + by; if (n > 0) users.set(u, n); else users.delete(u); } };
 
 /** A glTF file, loaded once. `L` is runner3d.js's loadThree(). */
 export function loadGltf(L, url) {
@@ -30,6 +34,7 @@ export function loadGltf(L, url) {
  * their own dispose() frees only their cloned materials.)
  */
 export function forgetGltf(url) {
+  if (users.has(url)) return;   // a figure still wears it
   const p = files.get(url);
   if (!p) return;
   files.delete(url);
@@ -42,6 +47,18 @@ export function forgetGltf(url) {
     }
   })).catch(() => {});
 }
+
+/**
+ * Let go of each of these files that no figure uses now (letGo after a screen closes, or after the
+ * wardrobe swaps an outfit). Every outfit, hair and hat tried on used to stay on the GPU until the
+ * app closed. A file in use (the athlete on the base wearing it) stays.
+ */
+export function letGo(urls) {
+  for (const u of urls) if (u && !users.has(u)) forgetGltf(u);
+}
+
+/** The files loaded now, and how many figures use each (for checking what's let go). */
+export const loadedFiles = () => [...files.keys()].map((u) => [u, users.get(u) || 0]);
 
 /** The skin and iris tint, patched into three.js's standard material after its map is read. */
 export function tintable(mat, uniforms) {
@@ -83,6 +100,12 @@ function rebindSkins(src, dst) {
  *   play(name, { fade = 0.2, speed = 1 }): cross-fade to that clip (an unknown name keeps the current one)
  */
 export async function spawnChar(L, { model, clips, uniforms = null, gear = [], hair = null }) {
+  const urls = [model, clips, ...gear.map((g) => g.url)].filter(Boolean);
+  use(urls, 1);
+  try { return await spawn(L, { model, clips, uniforms, gear, hair }, urls); } catch (e) { use(urls, -1); throw e; }
+}
+
+async function spawn(L, { model, clips, uniforms, gear, hair }, urls) {
   const { THREE } = L;
   const [gltf, anim] = await Promise.all([loadGltf(L, model), clips ? loadGltf(L, clips) : null]);
   const root = gltf.scene.clone(true);
@@ -101,9 +124,9 @@ export async function spawnChar(L, { model, clips, uniforms = null, gear = [], h
   mats.push(...await dress(THREE, root, gear, { load: (url) => loadGltf(L, url), hair }));
   const mixer = new THREE.AnimationMixer(root);
   const byName = new Map((anim?.animations || []).map((c) => [c.name, c]));
-  let now = null;
+  let now = null; let done = false;
   return {
-    root, mixer,
+    root, mixer, urls,
     has: (name) => byName.has(name),
     /** A clip's length in seconds (0 when the body hasn't got it). */
     length: (name) => byName.get(name)?.duration || 0,
@@ -119,6 +142,11 @@ export async function spawnChar(L, { model, clips, uniforms = null, gear = [], h
       return true;
     },
     update: (dt) => mixer.update(dt),
-    dispose() { mixer.stopAllAction(); for (const m of mats) m.dispose(); },
+    dispose() {
+      if (done) return;
+      done = true;
+      mixer.stopAllAction(); for (const m of mats) m.dispose();
+      use(urls, -1);
+    },
   };
 }

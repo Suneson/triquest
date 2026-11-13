@@ -53,13 +53,17 @@ A home-screen app on iPhone runs in one WebKit process with a memory limit. When
 
 The markets and the stadium already loaded their code, pictures and models only when tapped, so they weren't the problem.
 
+### Fixed in sw v142: the sign and the truck are 2D
+
+The city's sign and truck were a 3D canvas the size of the screen, redrawn every second for the clock and every frame while panning. They're now pictures in the world (`js/app/city2d.js`), drawn once from the same 3D models by the city's camera (`tools/bake-street.js`; 39 KB for all three).
+- **The sign:** a picture, with the countdown as ordinary text skewed onto its panel. Only the text changes each second.
+- **The truck:** one picture for each way it faces on its road. It moves by transform, and only while it drives. Driving, the mall and the market still cover it.
+- **What's gone:** the full-screen canvas, its copy from the GPU every second and every pan frame, and the 3D models' memory on the base. Panning moves the sign and the truck with the island at no extra cost.
+- **What's left:** the island's one always-present 3D view is the athlete.
+
 ### Next, most effective first
 
-1. **Make the city's 3D sign and truck 2D. This is the biggest steady cost.** Today a whole-screen 3D render is copied every second to show a clock, and on every frame while you pan. Two ways to fix it:
-   - **Make them 2D:** the sign is a picture with the clock as ordinary text over it, and the truck is a short sprite or a picture sliding along its road.
-   - **Keep them 3D, but small:** give the sign and the truck each their own canvas, the size of the object rather than the whole screen.
-
-   Either way, the island loses one of its two always-present canvases.
+1. ~~**Make the city's 3D sign and truck 2D.**~~ Done (above).
 2. **Use lighter island pictures. This is the biggest memory cost.** The island holds 115 MB of pictures before you open anything, yet it's shown at about a quarter of its size most of the time.
    - Ship **half-size copies** of the ground tiles, the base and the buildings, and switch to full size only past a zoom level. That's about 4× less memory for the normal view.
    - **Bake the shadows** into the market pictures instead of using CSS drop-shadows.
@@ -71,12 +75,11 @@ The markets and the stadium already loaded their code, pictures and models only 
 
 ### Features to scale down if crashes continue
 
-- **The 3D sign and truck on the island** (see 1): the highest cost for the least value. 2D would look almost the same.
 - **The always-moving 3D athlete on the base.** It draws 30 times a second whenever the base shows. Options: run it at 20 frames a second, or keep it still until tapped and animate it only in the run room.
 - **How far you can zoom into the island.** Full detail at every zoom keeps the big pictures loaded. A lower zoom limit lets the half-size pictures (see 2) cover everything.
-- **One 3D scene on screen at a time, everywhere.** The stadium and the wardrobe already work this way, but the base has two: the athlete, and the sign with the truck.
+- **One 3D scene on screen at a time, everywhere.** The stadium, the wardrobe and now the base (only the athlete) work this way.
 
 ### How to tell if it's better
 
 - **Crashes:** use the app for 10 minutes, moving between the island, the markets, the shop, the stadium and the wardrobe. Before, it reloaded by itself. If it still does, item 2 is next.
-- **Lag:** pan the island and open the markets. The first launch after an update still downloads pictures; from the second launch on, nothing should download again. If panning still lags, item 1 is next.
+- **Lag:** pan the island and open the markets. The first launch after an update still downloads pictures; from the second launch on, nothing should download again. If panning still lags, item 3 is next.

@@ -2478,14 +2478,24 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-viewport { position: absolute; left: 0; right: 0; top: 0; bottom: 0;
   overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none; }
 .dg-viewport:focus-visible { box-shadow: inset 0 0 0 3px #fff; }
-/* the city's sky, its far clouds and its 3D layers (city3d.js): the sky and what's behind the
-   buildings under the world (the city picture's sky is transparent), the rest over it */
+/* the city's sky, under the world (the city picture's sky is transparent) */
 .dg-viewport { background: linear-gradient(#96CBF3, #B2DAF6); }
 .dg-3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
-.dg-3d.is-front { z-index: 2; }
-/* the world's front layer, over the 3D one: it moves with the world (the same transform) */
+/* the world's front layer: it moves with the world (the same transform) */
 .dg-front { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; transform-origin: 0 0; pointer-events: none; }
 .dg-front .dg-parcel { pointer-events: auto; }
+/* the delivery sign and the truck (city2d.js), pictures in the world. The truck sits among the
+   island's pictures just after the pool: driving, it's at their level (z 5), so the mall and the
+   market, later in the page, cover it; parked at the garage door, it's over them all. */
+.dg-street-sign { position: absolute; z-index: 6; pointer-events: none; }
+.dg-street-sign img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
+.dg-sign-panel { position: absolute; left: 0; top: 0; transform-origin: 0 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; color: #16264D; line-height: 1; text-align: center; white-space: nowrap; }
+.dg-sign-panel small { font-size: 8.6px; font-weight: 800; }
+.dg-sign-panel b { margin-top: 4px; font-size: 21px; font-weight: 900; }
+.dg-truck { position: absolute; left: 0; top: 0; z-index: 6; max-width: none; pointer-events: none; -webkit-user-drag: none; }
+.dg-truck.is-driving { z-index: 5; }
+.dg-truck[hidden] { display: none; }
 .dg-sign-hit { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .dg-sign-hit:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 12px; }
 /* the parcel waiting at the garage door: a bubble that bobs until it's opened */

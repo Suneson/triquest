@@ -30,7 +30,7 @@ cc = importlib.util.module_from_spec(spec); spec.loader.exec_module(cc)
 CITY = os.path.join(HERE, '..', 'icons', 'City')
 
 S = 0.489
-C0, P_OLD = (2691.5, 3245.5), 1391.0     # city3d.js GRID: the base's block centre and the old pitch
+C0, P_OLD = (2691.5, 3245.5), 1391.0     # city2d.js GRID: the base's block centre and the old pitch
 OLD_BLOCK, OLD_ROAD = 1075.0, 316.0      # the old block and road, px of the city picture
 BLOCK_K = OLD_BLOCK / (2 * OLD_BLOCK + OLD_ROAD)   # two new blocks and a road make one old block
 BLOCK, ROAD = OLD_BLOCK * BLOCK_K, OLD_ROAD * BLOCK_K

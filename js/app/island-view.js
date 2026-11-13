@@ -60,9 +60,6 @@ function pictureOf(plot) {
   return state === 'building' ? boxOn(plot) : ART[`${plot}-ruin`];
 }
 
-/** What can stand in front of the delivery van on its road: the mall and the market. */
-export const islandFront = () => [ART.mall, pictureOf('market')];
-
 let ctx = { workouts: () => [], screen: null, world: null, front: null };
 
 const clock = (ms) => {

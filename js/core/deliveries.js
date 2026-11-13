@@ -2,7 +2,7 @@
 //
 // Everything bought in the shop is a workshop job with a finish time; until then it's a
 // delivery. The base's street sign counts down to the next one and the truck brings it
-// (js/app/city3d.js); the list is js/app/delivery-view.js.
+// (js/app/city2d.js); the list is js/app/delivery-view.js.
 
 import { jobPhase } from './workshop.js';
 

@@ -1,5 +1,5 @@
 // gl-shared.js: one WebGL renderer for every 3D view in the app: the athletes on the base
-// (runner3d.js, walker.js), the city's sign and truck (city3d.js), the wardrobe (wardrobe3d.js) and
+// (runner3d.js, walker.js), the wardrobe (wardrobe3d.js) and
 // the stadium (stadium3d.js).
 //
 // Each view keeps a plain 2D canvas where it sits in the page, so it still pans, zooms and stacks

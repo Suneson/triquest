@@ -1,7 +1,7 @@
-// The delivery truck's timing (js/app/city3d.js truckAt).
+// The delivery truck's timing (js/app/city2d.js truckAt).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { truckAt, TRUCK_AFTER } from '../js/app/city3d.js';
+import { truckAt, TRUCK_AFTER } from '../js/app/city2d.js';
 import { deliveryEnds, deliveriesComing } from '../js/core/deliveries.js';
 
 test('the truck drives in before a delivery ends, waits at the door, then leaves', () => {

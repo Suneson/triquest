@@ -52,11 +52,11 @@ import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
 import { mountRunner, webglOk } from './runner3d.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
-import { mountCity3d, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city3d.js';
+import { mountCity, unmountCity, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city2d.js';
 import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 import { showCoins, closeBar } from './market-view.js';
-import { mountIsland, tickIsland, islandFront, closeBar as closeIslandBar } from './island-view.js';
+import { mountIsland, tickIsland, closeBar as closeIslandBar } from './island-view.js';
 const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-shop-hit, .dg-mk-hit, .dg-mk-coin, .dg-shop-warn, .dg-sign-hit';
 
 const ROOM_KEY = 'moske-room';
@@ -516,7 +516,7 @@ export function wireDiorama(root, ctx) {
     if (el.getAttribute('src') !== r.src) el.src = r.src;
     Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
   }
-  // the delivery sign's tap target (the sign itself is drawn in 3D over the world)
+  // the delivery sign's tap target (the sign itself is a picture, city2d.js)
   let signHit = worldEl.querySelector('.dg-sign-hit');
   if (env.floor != null) {
     if (!signHit) {
@@ -742,21 +742,21 @@ export function wireDiorama(root, ctx) {
   if (view.onResize) window.removeEventListener('resize', view.onResize);
   view.onResize = () => { vpBox = null; apply(); };
   window.addEventListener('resize', view.onResize);
-  // the delivery sign and the truck (city3d.js), on the city's floors
-  const city = env.floor != null && webglOk() ? mountCity3d(vp, {
-    deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
-    now: serverNow,
-    label: { title: t('city.sign.title'), clock: clockLeft },
-    // the truck waits while a parcel is at the door or being opened
-    parked: () => parcels().length > 0 || parcelOpen(),
-    reduced,
-    front: islandFront,
-  }) : null;
   // the island's plots; the markets live on its market plot now (island-view.js, shop-view.js),
   // so the old markets round the lobby (market-view.js) are no longer put in the city
   if (env.floor != null) {
     mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
+    // the delivery sign and the truck, pictures among the island's (city2d.js)
+    mountCity(worldEl, {
+      deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
+      now: serverNow,
+      label: { title: t('city.sign.title'), clock: clockLeft },
+      // the truck waits while a parcel is at the door or being opened
+      parked: () => parcels().length > 0 || parcelOpen(),
+      reduced,
+    });
   } else {
+    unmountCity(worldEl);
     closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }
   // The view changes at once; the screen follows once a frame, however many touch or wheel
   // events come in between (a phone sends 120 a second).
@@ -764,7 +764,6 @@ export function wireDiorama(root, ctx) {
   const paint = () => {
     frameAsked = 0;
     if (!worldEl.isConnected) return;
-    const r = box();
     const tf = `translate(${view.v.tx}px, ${view.v.ty}px) scale(${view.v.s})`;
     worldEl.style.transform = tf;
     if (stage.front) {
@@ -772,7 +771,6 @@ export function wireDiorama(root, ctx) {
       // the labels' counter-scale: an inherited value, so it's only touched when the zoom changes
       if (invAt !== view.v.s) { invAt = view.v.s; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
     }
-    city?.setView(view.v, r.width, r.height);
     sharpen();
   };
   const apply = () => {

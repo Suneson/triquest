@@ -2862,6 +2862,22 @@ body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-orb, body.rm .
 body.rm .cl-route-on { transition: none; }
 
 /* the 3D runner on the treadmill (js/app/runner3d.js): a canvas inside the item, over its picture */
+/* the three.js test room's button (?three=1) and its screen (room-gl.js) */
+.dg-gltest { position: absolute; left: 50%; top: calc(var(--safe-t) + 196px); transform: translateX(-50%); z-index: 4; min-height: 36px; padding: 4px 14px;
+  border: 3px solid #0B1222; border-radius: 9999px; background: linear-gradient(#3DA9FC, #1E6FD9); color: #fff; font: 800 13px/1 var(--font-header); cursor: pointer;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .25), 0 3px 0 rgba(0, 0, 0, .45); }
+/* a full screen's children get side margins (.fh-screen > *): not here */
+.rg-layer .rg-screen { padding: 0; background: #16264D; overflow: hidden; }
+.rg-layer .rg-stage, .rg-layer .rg-top, .rg-layer .rg-hint { margin: 0 !important; }
+.rg-stage { position: absolute; inset: 0; }
+.rg-canvas { display: block; width: 100%; height: 100%; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.rg-msg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #fff; font-weight: 700; }
+.rg-top { position: absolute; left: 12px; right: 12px; top: calc(var(--safe-t) + 10px); display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+.rg-top > * { padding: 6px 12px; border-radius: 9999px; background: rgba(11, 18, 34, .72); color: #fff; font-size: 13px; white-space: nowrap; }
+.rg-top > span:empty { display: none; }
+.rg-hint { position: absolute; left: 50%; bottom: calc(var(--safe-b) + 110px); transform: translateX(-50%); padding: 6px 12px; border-radius: 9999px;
+  background: rgba(11, 18, 34, .72); color: #fff; font-size: 13px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 160ms ease-out; }
+.rg-hint.on { opacity: 1; }
 .dg-item .r3d-canvas { position: absolute; pointer-events: none; image-rendering: auto; }
 /* admins: turn the runner to check how it sits on the belt */
 .dg-turn { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 14px); transform: translateX(-50%); z-index: 5;

@@ -57,7 +57,7 @@ import { parcels, openParcel, parcelOpen } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 import { showCoins, closeBar } from './market-view.js';
 import { mountIsland, tickIsland, islandFront, closeBar as closeIslandBar } from './island-view.js';
-const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-shop-hit, .dg-mk-hit, .dg-mk-coin, .dg-sign-hit';
+const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-shop-hit, .dg-mk-hit, .dg-mk-coin, .dg-shop-warn, .dg-sign-hit';
 
 const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);

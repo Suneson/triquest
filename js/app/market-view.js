@@ -168,7 +168,7 @@ async function collect(slot, from) {
 }
 
 /** Coins rising from where they were taken towards the coin gauge, and the count. */
-function flyCoins(from, n) {
+export function flyCoins(from, n) {
   const box = from?.getBoundingClientRect?.();
   const gauge = document.querySelector('.dg-gauge.is-coins')?.getBoundingClientRect();
   if (!box || prefersReducedMotion()) return;

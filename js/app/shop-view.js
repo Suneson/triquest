@@ -8,11 +8,15 @@
 //     hold (of 1000). Each sport is its own shop: a rail with its kit hanging off it and its sign,
 //     then its items on its own colour of quilt (icons/Market/shop/, tools/make-shop-quilts.py),
 //     which scrolls with them. Picking a sport swipes the shop sideways; the rest stays still.
-//   - tap an item: it lifts and Buy (a slider) and Sell float over the cards below it.
-//   - Close at the foot, over everything, as well as the back arrow at the top.
-//   - Sell sends it up to the market: a slot that already has it fills straight away; otherwise
-//     pick a slot (the item swaps in, what was there goes back to the storeroom). The units fly
-//     into the slot and its bar fills.
+//   - tap an item: it lifts and Buy (a slider, in fives) and Restock float over the cards below it.
+//   - Close at the foot, over everything, as well as the back arrow at the top; tapping the
+//     market's picture closes it too.
+//   - Restock sends it up to the market: pick a shelf (the item swaps in, what was there goes back
+//     to the storeroom). An item stands on one shelf only: if it's already on one, that shelf
+//     wiggles and the rest grey out; tapping it tops it up, or says it's full. The units fly into
+//     the shelf one by one and its bar fills.
+//   - Opening a market (or its tab) brings its eight shelves in one after another, scaling down
+//     into place, and its picture with them, which then jiggles now and then.
 // Everything is asked of the server (0035_shop.sql) and read back; the numbers between are worked
 // out here from the same rules, once a second.
 
@@ -24,7 +28,7 @@ import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 import { toast, prefersReducedMotion } from './effects.js';
 import { EASE_OUT, SPRING, springEasing } from '../core/spring.js';
-import { myShop, shopsOpen, shopCall, walletNow, serverNow, gearError, onGear } from './gear-state.js';
+import { myShop, shopsOpen, shopCall, walletNow, serverNow, gearError, onGear, refreshGear } from './gear-state.js';
 import {
   SHOP_RULES, SHOP_ITEMS, SPORTS, shopItem, itemBuy, itemSell, itemPicture, marketPicture, shopLevel, shopNext,
   buildCostFor, demandAt, weekMinutes, trafficFor, brickDay, marketSales, soldIn, specialty, restockCost, cratesLeft,
@@ -66,7 +70,7 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     const mins = weekMinutes(w, now);
     return { now, mins, traffic: trafficFor(mins), demand: demandAt(w, now), brick: brickDay(w, new Date(now).toISOString().slice(0, 10)) };
   };
-  if (!shopAt(cur)) cur = Number(shop().shops.map((m) => Number(m.spot)).sort((a, b) => a - b)[0]) || 0;
+  if (!shopAt(cur) && !(Number(spot) >= 1)) cur = Number(shop().shops.map((m) => Number(m.spot)).sort((a, b) => a - b)[0]) || 0;
 
   // ---- drawing ------------------------------------------------------------------------------------
 
@@ -76,20 +80,23 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
       aria-label="${esc(t('mkt.market', { n: s }))}">${m ? `<b class="data-num">${s}</b>` : svg('plus')}</button>`;
   }).join('');
 
-  const slotCard = (m, x, n, c) => {
+  const slotCard = (m, x, n, c, dup) => {
     const L = shopLevel(m.level);
     if (n > L.slots) {
       const need = SHOP_RULES.levels.find((l) => l.slots >= n)?.level || 8;
       return `<div class="sv-card sv-slot is-locked" data-slot="${n}"><span class="sv-art">${svg('lock')}</span><span class="sv-lock">${esc(t('mkt.locked', { n: need }))}</span></div>`;
     }
-    const target = selling && shopItem(selling).tier <= Number(m.level);
+    // placing an item: every open shelf takes it, unless it's already on one, which then is the
+    // only one (the rest grey out)
+    const target = !!selling && shopItem(selling).tier <= Number(m.level) && (!dup || dup.slot === n);
+    const off = selling && !target ? ' is-off' : '';
     if (!x?.item) {
-      return `<button type="button" class="sv-card sv-slot is-empty${target ? ' is-target' : ''}" data-slot="${n}" aria-label="${esc(t('mkt.empty'))}">
+      return `<button type="button" class="sv-card sv-slot is-empty${target ? ' is-target' : ''}${off}" data-slot="${n}" aria-label="${esc(t('mkt.empty'))}">
         <span class="sv-art">${svg('plus')}</span><span class="sv-bar" style="--f:0"><i></i><b class="data-num">0/${L.capacity}</b></span></button>`;
     }
     const left = x.units - soldIn(x, c.now, c.traffic.f);
     const it = shopItem(x.item);
-    return `<button type="button" class="sv-card sv-slot is-${it.sport}${target ? ' is-target' : ''}${c.demand.has(it.sport) ? ' is-hot' : ''}" data-slot="${n}" data-item="${x.item}"
+    return `<button type="button" class="sv-card sv-slot is-${it.sport}${target ? ' is-target' : ''}${off}${c.demand.has(it.sport) ? ' is-hot' : ''}" data-slot="${n}" data-item="${x.item}"
       aria-label="${esc(`${itemName(x.item)}: ${left}/${L.capacity}`)}">
       <span class="sv-art"><img src="${itemPicture(x.item)}" alt="" draggable="false"></span>
       <span class="sv-bar" style="--f:${(left / L.capacity).toFixed(3)}"><i></i><b class="data-num" data-sv-left>${left}/${L.capacity}</b></span></button>`;
@@ -115,6 +122,7 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     const rs = restockCost(m.level, slots, stock);
     const crates = cratesLeft(shop().chests, shop().moves);
     const spec = specialty(slots, m.level);
+    const dup = selling ? slots.find((x) => x.item === selling && x.slot <= L.slots) : null;
     const vipToday = shop().moves.some((x) => x.kind === 'vip' && String(x.day) === new Date(c.now).toISOString().slice(0, 10));
     const chips = [
       `<span class="sv-chip is-traffic is-${c.traffic.id}">${svg('user')}<b>${esc(t(`mkt.traffic.${c.traffic.id}`))}</b><small class="data-num">${esc(c.traffic.next
@@ -124,13 +132,13 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     ].join('');
     return `<nav class="sv-tabs" role="tablist">${tabs()}</nav>
       <div class="sv-head">
-        <img class="sv-head-pic" src="${marketPicture(m.level)}" alt="">
+        <button type="button" class="sv-head-pic" data-sv-close aria-label="${esc(t('city.market.close'))}"><img src="${marketPicture(m.level)}" alt="" draggable="false"></button>
         <div class="sv-head-txt"><b>${esc(t('mkt.market', { n: cur }))}</b><span>${esc(t('mkt.levelInfo', { l: m.level, open: L.slots, cap: L.capacity }))}</span></div>
         ${next ? `<button type="button" class="sv-btn is-green sv-up" data-sv-upgrade>${svg('chevron')}<span>${esc(t('mkt.upgrade'))}</span>${coinTag(next.cost, coins < next.cost)}</button>`
           : `<span class="sv-top">${esc(t('mkt.top'))}</span>`}
       </div>
       <div class="sv-chips">${chips}</div>
-      <div class="sv-slots${spec ? ' is-spec' : ''}">${Array.from({ length: 8 }, (_, i) => slotCard(m, slots.find((x) => x.slot === i + 1), i + 1, c)).join('')}</div>
+      <div class="sv-slots${spec ? ' is-spec' : ''}">${Array.from({ length: 8 }, (_, i) => slotCard(m, slots.find((x) => x.slot === i + 1), i + 1, c, dup)).join('')}</div>
       <div class="sv-acts">
         <button type="button" class="sv-btn is-gold sv-collect" data-sv-collect ${waiting ? '' : 'disabled'}>${svg('coin')}<span>${esc(t('mkt.collect'))}</span><b class="data-num" data-sv-waiting>${fmtNum(waiting)}</b></button>
         <button type="button" class="sv-btn is-blue" data-sv-restock ${rs.units ? '' : 'disabled'}>${svg('sync')}<span>${esc(t('mkt.restock'))}</span>${rs.coins ? coinTag(rs.coins, coins < rs.coins) : ''}</button>
@@ -215,7 +223,17 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
   };
 
   const redraw = () => { if (!busy) { const y = root.querySelector('.sv-screen')?.scrollTop || 0; draw(); const s = root.querySelector('.sv-screen'); if (s) s.scrollTop = y; } };
+  /** The shelves come in one after another, 1 to 8, scaling down into place; the picture too. */
+  const enter = () => {
+    if (prefersReducedMotion()) return;
+    root.querySelectorAll('.sv-slots .sv-slot').forEach((el, i) => el.animate([
+      { scale: '1.16', opacity: 0 }, { opacity: 1, offset: 0.35 }, { scale: '1', opacity: 1 },
+    ], { duration: 280, delay: i * 32, easing: EASE_OUT, fill: 'backwards' }));
+    root.querySelector('.sv-head-pic img')?.animate([{ scale: '1.25', opacity: 0 }, { opacity: 1, offset: 0.3 }, { scale: '1', opacity: 1 }],
+      { ...springEasing(SPRING.pop), fill: 'backwards' });
+  };
   draw();
+  enter();
   tick = setInterval(live, 1000);
   off = onGear(() => redraw());
 
@@ -229,31 +247,45 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     } catch (e) { haptic('refuse'); toast(esc(gearError(e))); return null; }
   };
 
-  /** Up to eight of the item fly from `from` into the slot, then the slot pops. */
+  /**
+   * Up to eight of the item fly from `from` into the slot one after another, slow enough to see
+   * each, then the slot pops. Resolves when the last lands, or after the time it should take
+   * (an animation the browser drops never holds the screen up).
+   */
   const fly = (from, slotEl, id, n) => new Promise((res) => {
     if (prefersReducedMotion() || !from || !slotEl) { res(); return; }
     const a = from.getBoundingClientRect(); const b = slotEl.getBoundingClientRect();
     const k = Math.max(1, Math.min(8, n));
-    let left = k;
+    const DUR = 760; const GAP = 130;
+    let left = k; let done = false;
+    const finish = () => {
+      if (done) return; done = true;
+      slotEl.animate([{ scale: '1.12' }, { scale: '1' }], { ...springEasing(SPRING.pop) });
+      res();
+    };
+    setTimeout(finish, DUR + GAP * (k - 1) + 400);
     for (let i = 0; i < k; i++) {
       const img = document.createElement('img');
       img.src = itemPicture(id); img.className = 'sv-fly'; img.alt = '';
-      const size = Math.min(a.width, 72);
+      const size = Math.min(a.width, 64);
       Object.assign(img.style, { width: `${size}px`, height: `${size}px`, left: `${a.left + a.width / 2 - size / 2}px`, top: `${a.top + a.height / 2 - size / 2}px` });
       document.body.append(img);
       const dx = b.left + b.width / 2 - (a.left + a.width / 2); const dy = b.top + b.height / 2 - (a.top + a.height / 2);
-      // an arc: up and over, landing small in the slot
-      img.animate([
-        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
-        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 60}px) scale(.85)`, opacity: 1, offset: 0.55 },
-        { transform: `translate(${dx}px, ${dy}px) scale(.45)`, opacity: 0.2 },
-      ], { duration: 420, delay: i * 45, easing: EASE_OUT, fill: 'both' }).finished.then(() => {
+      const side = (i % 2 ? 1 : -1) * 18;
+      // an arc, up and over, landing smaller in the slot; fully seen all the way
+      const anim = img.animate([
+        { transform: 'translate(0, 0) scale(1)', opacity: 0 },
+        { transform: 'translate(0, -6px) scale(1.05)', opacity: 1, offset: 0.12 },
+        { transform: `translate(${dx * 0.5 + side}px, ${dy * 0.5 - 70}px) scale(.9)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(${dx}px, ${dy}px) scale(.55)`, opacity: 1, offset: 0.94 },
+        { transform: `translate(${dx}px, ${dy}px) scale(.45)`, opacity: 0 },
+      ], { duration: DUR, delay: i * GAP, easing: 'cubic-bezier(.45, 0, .25, 1)', fill: 'both' });
+      const landed = () => {
         img.remove();
-        if (--left === 0) {
-          slotEl.animate([{ transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { duration: 300, easing: springEasing(SPRING.pop) });
-          res();
-        }
-      });
+        if (!done) slotEl.animate([{ scale: '1.05' }, { scale: '1' }], { duration: 160, easing: EASE_OUT });
+        if (--left === 0) finish();
+      };
+      anim.finished.then(landed, landed);
     }
   });
 
@@ -286,6 +318,9 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     if (res.e) { busy = false; haptic('refuse'); toast(esc(gearError(res.e))); selling = null; redraw(); return; }
     haptic('place');
     await fly(from, slotEl, id, res.r.put);
+    // the shelf as the server has it now; if the read came back before it caught up, read again
+    const shows = () => slotsOf(cur).some((x) => x.slot === n && x.item === id && x.units > 0);
+    if (!shows()) await refreshGear();
     busy = false; selling = null; picked = null;
     draw();
     toast(esc(t('mkt.put', { n: res.r.put, item: itemName(id) })), { icon: `<img src="${itemPicture(id)}" alt="" class="sv-toast-ico">`, duration: 2200 });
@@ -297,14 +332,10 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     const it = shopItem(id);
     if (it.tier > Number(m.level)) { haptic('refuse'); toast(esc(t('mkt.lockedToast', { n: it.tier }))); return; }
     if (!(shop().stock[id] > 0)) { haptic('refuse'); toast(esc(t('mkt.noneHeld'))); return; }
-    const L = shopLevel(m.level);
-    const same = slotsOf(cur).find((x) => x.item === id && x.slot <= L.slots && x.units < L.capacity);
     selling = id; picked = null;
     draw();
     root.querySelector('[data-sv-deck]')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
-    // a slot that already has it fills straight away
-    if (same) setTimeout(() => stockSlot(same.slot, id), prefersReducedMotion() ? 0 : 380);
-    else haptic('select');
+    haptic('select');
   };
 
   const buySheet = (id) => {
@@ -313,7 +344,10 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     const coins = walletNow(workouts()).coins;
     const max = Math.max(0, Math.min(SHOP_RULES.stockMax - held, Math.floor(coins / price)));
     const sheet = openLayer('market-buy', { sheet: true, className: 'sv-buy-layer' });
-    let n = Math.min(max, Math.max(1, Math.min(10, max)));
+    // in fives (ones when fewer than five fit)
+    const step = max >= 5 ? 5 : 1;
+    const top = max - (max % step);
+    let n = Math.min(top, 10);
     const draw2 = () => {
       sheet.innerHTML = `<div class="modal-backdrop" data-layer-close></div>
       <div class="modal sv-buy" role="dialog" aria-modal="true" aria-labelledby="sv-buy-title">
@@ -321,7 +355,7 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
         <div class="sv-buy-body">
           <div class="sv-card sv-item is-${shopItem(id).sport}"><span class="sv-art"><img src="${itemPicture(id)}" alt=""></span></div>
           <p class="sv-buy-note">${esc(t('mkt.each', { price, sell: itemSell(id) }))}<br>${esc(t('mkt.heldNow', { n: held }))}</p>
-          ${max ? `<input type="range" class="sv-range" min="1" max="${max}" value="${n}" data-sv-range aria-label="${esc(t('mkt.howMany'))}">
+          ${max ? `<input type="range" class="sv-range" min="${step}" max="${top}" step="${step}" value="${n}" data-sv-range aria-label="${esc(t('mkt.howMany'))}">
             <div class="sv-buy-n"><b class="data-num" data-sv-n>${n}</b>${coinTag(n * price)}</div>
             <button type="button" class="sv-btn is-green is-wide" data-sv-buygo>${esc(t('mkt.buyGo', { n }))}</button>`
           : `<p class="sv-buy-note">${esc(t(held >= SHOP_RULES.stockMax ? 'mkt.storeFull' : 'gear.err.insufficient'))}</p>`}
@@ -375,8 +409,9 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
   root.addEventListener('click', async (e) => {
     const q = (s) => e.target.closest(s);
     let b;
+    if (q('[data-sv-close]')) { haptic('tick'); closeLayer(root); return; }
     if ((b = q('[data-sv-tab]'))) {
-      haptic('tick'); cur = Number(b.dataset.svTab); selling = null; draw(); return;
+      haptic('tick'); cur = Number(b.dataset.svTab); selling = null; draw(); enter(); return;
     }
     if ((b = q('[data-sv-sport]'))) { if (b.dataset.svSport !== sport) swipeTo(b.dataset.svSport); return; }
     if (q('[data-sv-cancel]')) { haptic('tick'); selling = null; draw(); return; }
@@ -393,7 +428,15 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     if (picked && !q('.sv-pop')) { picked = null; const g = root.querySelector('[data-sv-grid]'); if (g) g.innerHTML = store(); }
     if ((b = q('.sv-slot[data-slot]')) && selling) {
       if (!b.matches('.is-target')) { haptic('refuse'); return; }
-      stockSlot(Number(b.dataset.slot), selling); return;
+      const n = Number(b.dataset.slot);
+      const x = slotsOf(cur).find((r) => r.slot === n);
+      if (x?.item === selling) {
+        const c = ctxNow();
+        if (x.units - soldIn(x, c.now, c.traffic.f) >= shopLevel(shopAt(cur).level).capacity) {
+          haptic('refuse'); toast(esc(t('mkt.shelfFull'))); selling = null; draw(); return;
+        }
+      }
+      stockSlot(n, selling); return;
     }
     if ((b = q('.sv-slot[data-item]'))) {
       // a filled slot: its item, picked in the storeroom below
@@ -415,7 +458,7 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
       const lvl = Number(shopAt(cur)?.level) + 1;
       await ask('upgrade_shop', { p_spot: cur }, () => {
         haptic('record'); toast(esc(t('mkt.upgraded', { n: cur, l: lvl })), { icon: svg('star') });
-        root.querySelector('.sv-head-pic')?.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 300, easing: springEasing(SPRING.pop) });
+        root.querySelector('.sv-head-pic img')?.animate([{ transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { ...springEasing(SPRING.pop) });
       });
       return;
     }

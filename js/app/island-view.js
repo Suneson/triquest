@@ -5,6 +5,12 @@
 // over it, until the mechanic is done.
 // Then the club base opens the club screen and the mall opens the shop. The rebuilt market plot is a
 // bare plaza with six spots, two rows of three, each holding one of your markets (shop-view.js).
+// Each spot is its own button, opening the markets' screen on that market (or on building one
+// there); the plaza round them isn't one. Over each market:
+//   - a coin bubble while it has coins waiting: tapping any one collects every market, one after
+//     another, and each one's coins fly up to the coin gauge;
+//   - a crate when its shelves run low (under RESTOCK_BELOW of their room), or a red one when every
+//     shelf is empty (icons/Market/stock/, tools/cut-stock-icons.py): tapping it opens that market.
 // The stadium opens its PVE race (stadium-view.js).
 
 import { esc } from './ui.js';
@@ -12,10 +18,12 @@ import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import { ISLAND_ART } from '../core/island-art.js';
 import { ISLAND_RULES, pieceState } from '../core/island.js';
-import { myIsland, islandOpen, startIslandBuild, serverNow, walletNow, gearError, onGear, myShop } from './gear-state.js';
-import { marketPicture, SHOP_RULES } from '../core/shop.js';
+import { myIsland, islandOpen, startIslandBuild, serverNow, walletNow, gearError, onGear, myShop, shopCall, refreshGear } from './gear-state.js';
+import {
+  marketPicture, SHOP_RULES, marketSales, shelfFill, RESTOCK_BELOW, demandAt, weekMinutes, trafficFor,
+} from '../core/shop.js';
 import { setChatMode } from './chat.js';
-import { closeBar as closeMarketBar } from './market-view.js';
+import { closeBar as closeMarketBar, flyCoins } from './market-view.js';
 import { haptic } from './haptics.js';
 import { toast, prefersReducedMotion } from './effects.js';
 
@@ -90,6 +98,18 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
       worldEl.querySelector('.dg-items').before(hit);
     }
   }
+  for (const x of SHOP_SPOTS) {
+    if (front.querySelector(`.dg-shop-coin[data-shop="${x.spot}"]`)) continue;
+    const coin = document.createElement('button');
+    coin.className = 'dg-mk-coin dg-shop-coin'; coin.dataset.shop = String(x.spot); coin.hidden = true;
+    coin.innerHTML = `<img src="${COIN}" alt="" draggable="false">`;
+    coin.addEventListener('click', (e) => { e.stopPropagation(); collectAll(); });
+    const warn = document.createElement('button');
+    warn.className = 'dg-shop-warn'; warn.dataset.shop = String(x.spot); warn.hidden = true;
+    warn.innerHTML = '<img alt="" draggable="false">';
+    warn.addEventListener('click', (e) => { e.stopPropagation(); openShops(x.spot); });
+    front.append(coin, warn);
+  }
   for (const p of REBUILT) {
     if (front.querySelector(`.dg-isl-timer[data-isl="${p}"]`)) continue;
     const el = document.createElement('div');
@@ -115,25 +135,100 @@ function paint() {
   tickIsland();
 }
 
-/** Each built market's picture on its spot (its level's picture), and a tap target over it. */
+/**
+ * Each built market's picture on its spot (its level's picture), and a tap target on every spot
+ * (an empty one opens on building a market there), and where its coin and crate float.
+ */
 function paintShops() {
   const w = ctx.world;
   const built = pieceState(myIsland(), 'market', serverNow()).state === 'built';
   const shops = myShop().shops;
+  // the plaza itself isn't a button once it's built: its six spots are
+  const plotHit = w.querySelector('.dg-isl-hit[data-isl="market"]');
+  if (plotHit) plotHit.hidden = built;
   for (const x of SHOP_SPOTS) {
     const img = w.querySelector(`.dg-shop[data-shop="${x.spot}"]`);
     const hit = w.querySelector(`.dg-shop-hit[data-shop="${x.spot}"]`);
     const m = shops.find((r) => Number(r.spot) === x.spot);
-    img.hidden = !built || !m; if (hit) hit.hidden = !built || !m;
-    if (img.hidden) continue;
-    const src = marketPicture(m.level);
-    if (img.getAttribute('src') !== src) img.src = src;
-    const box = shopBox(x.spot, img.naturalWidth ? img.naturalHeight / img.naturalWidth : RATIO);
-    Object.assign(img.style, { left: `${box.left.toFixed(1)}px`, top: `${box.top.toFixed(1)}px`, width: `${box.w.toFixed(1)}px`, height: 'auto' });
-    if (!img.complete) img.addEventListener('load', () => paintShops(), { once: true });
-    if (hit) Object.assign(hit.style, { left: `${(box.left + box.w * 0.12).toFixed(1)}px`, top: `${(box.top + box.h * 0.1).toFixed(1)}px`, width: `${(box.w * 0.76).toFixed(1)}px`, height: `${(box.h * 0.85).toFixed(1)}px` });
-    hit?.setAttribute('aria-label', t('mkt.market', { n: x.spot }));
+    img.hidden = !built || !m; if (hit) hit.hidden = !built;
+    if (!built) continue;
+    if (m) {
+      const src = marketPicture(m.level);
+      if (img.getAttribute('src') !== src) img.src = src;
+      if (!img.complete) img.addEventListener('load', () => paintShops(), { once: true });
+    }
+    const box = shopBox(x.spot, m && img.naturalWidth ? img.naturalHeight / img.naturalWidth : RATIO);
+    if (m) Object.assign(img.style, { left: `${box.left.toFixed(1)}px`, top: `${box.top.toFixed(1)}px`, width: `${box.w.toFixed(1)}px`, height: 'auto' });
+    if (hit) {
+      Object.assign(hit.style, { left: `${(box.left + box.w * 0.12).toFixed(1)}px`, top: `${(box.top + box.h * 0.1).toFixed(1)}px`, width: `${(box.w * 0.76).toFixed(1)}px`, height: `${(box.h * 0.85).toFixed(1)}px` });
+      hit.setAttribute('aria-label', m ? t('mkt.market', { n: x.spot }) : t('mkt.buildMarket', { n: x.spot }));
+    }
+    const coin = ctx.front?.querySelector(`.dg-shop-coin[data-shop="${x.spot}"]`);
+    const warn = ctx.front?.querySelector(`.dg-shop-warn[data-shop="${x.spot}"]`);
+    if (coin) Object.assign(coin.style, { left: `${(box.left + box.w * 0.42).toFixed(1)}px`, top: `${(box.top + box.h * 0.14).toFixed(1)}px` });
+    if (warn) Object.assign(warn.style, { left: `${(box.left + box.w * 0.66).toFixed(1)}px`, top: `${(box.top + box.h * 0.2).toFixed(1)}px` });
   }
+  shopBadges();
+}
+
+/** What each market shows over it now: its coins waiting, and whether its shelves need stock. */
+function shopBadges() {
+  if (!ctx.front) return;
+  const built = pieceState(myIsland(), 'market', serverNow()).state === 'built';
+  const { shops, slots } = myShop();
+  const now = serverNow(); const ws = ctx.workouts() || [];
+  const f = trafficFor(weekMinutes(ws, now)).f; const demand = demandAt(ws, now);
+  for (const x of SHOP_SPOTS) {
+    const coin = ctx.front.querySelector(`.dg-shop-coin[data-shop="${x.spot}"]`);
+    const warn = ctx.front.querySelector(`.dg-shop-warn[data-shop="${x.spot}"]`);
+    if (!coin || !warn) continue;
+    const m = built ? shops.find((r) => Number(r.spot) === x.spot) : null;
+    if (!m) { coin.hidden = true; warn.hidden = true; continue; }
+    const mine = slots.filter((r) => Number(r.spot) === x.spot).map((r) => ({ ...r, slot: Number(r.slot), units: Number(r.units) }));
+    const n = marketSales(m.level, mine, now, { f, demand }).coins;
+    if (!coin.classList.contains('is-taking')) coin.hidden = n < 1;
+    coin.setAttribute('aria-label', t('mkt.collectAll'));
+    const fill = shelfFill(m.level, mine, now, f);
+    const out = fill.empty === fill.open;
+    const low = !out && fill.frac < RESTOCK_BELOW;
+    warn.hidden = !out && !low;
+    warn.classList.toggle('is-out', out);
+    const src = `icons/Market/stock/${out ? 'out-of-stock' : 'restock'}.webp`;
+    const pic = warn.querySelector('img');
+    if (!warn.hidden && pic.getAttribute('src') !== src) pic.src = src;
+    warn.setAttribute('aria-label', t(out ? 'mkt.outOfStock' : 'mkt.needsRestock', { n: x.spot }));
+  }
+}
+
+/** Collect every market with coins waiting, one after another; each one's coins fly to the gauge. */
+let collecting = false;
+async function collectAll() {
+  if (collecting || !ctx.front) return;
+  const spots = [...ctx.front.querySelectorAll('.dg-shop-coin')].filter((el) => !el.hidden).map((el) => Number(el.dataset.shop)).sort((a, b) => a - b);
+  if (!spots.length) return;
+  collecting = true;
+  haptic('tick');
+  let total = 0;
+  try {
+    for (const spot of spots) {
+      const el = ctx.front.querySelector(`.dg-shop-coin[data-shop="${spot}"]`);
+      el?.classList.add('is-taking');
+      try {
+        const r = await shopCall('collect_shop', { p_spot: spot }, { refresh: false });
+        const n = Number(r?.coins) || 0;
+        total += n;
+        haptic('record');
+        if (n && el) flyCoins(el, n);
+      } catch (e) { toast(esc(gearError(e))); break; } finally { if (el) { el.classList.remove('is-taking'); el.hidden = true; } }
+      // the next one a moment later, so each is seen
+      if (!prefersReducedMotion()) await new Promise((r) => setTimeout(r, 280));
+    }
+  } finally {
+    collecting = false;
+    await refreshGear();
+    shopBadges();
+  }
+  return total;
 }
 
 /** The markets' screen, on one market's tab. */
@@ -149,6 +244,7 @@ function openShops(spot = 0) {
 export function tickIsland() {
   if (!ctx.front) return;
   const now = serverNow();
+  shopBadges();
   let done = false;
   ctx.front.querySelectorAll('.dg-isl-timer').forEach((el) => {
     const p = el.dataset.isl;
@@ -187,7 +283,7 @@ function tap(plot) {
     return;
   }
   if (state === 'built' && plot === 'pool') { closeBar(); return; }
-  if (state === 'built' && plot === 'market') { const first = myShop().shops.map((r) => Number(r.spot)).sort((a, b) => a - b)[0]; openShops(first || 0); return; }
+  if (state === 'built' && plot === 'market') return;   // its six spots are the buttons
   if (barPlot === plot && bar?.isConnected) { closeBar(); return; }
   openBar(plot);
 }

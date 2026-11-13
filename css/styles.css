@@ -3090,3 +3090,15 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 /* your athlete walking the floor (js/app/walker.js): a point on the floor, its canvas above it */
 .dg-walker { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; will-change: transform; }
 .dg-walker .r3d-canvas { position: absolute; pointer-events: none; }
+
+/* the island's markets (island-view.js): a smaller coin bubble over each, and a crate when its
+   shelves run low (red when they're empty); both bob, out of step */
+.dg-shop-coin { scale: .58; transform-origin: 50% 100%; }
+.dg-front .dg-shop-warn { pointer-events: auto; }
+.dg-shop-warn { position: absolute; z-index: 3; width: 210px; height: 210px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
+  translate: -50% -100%; scale: .62; transform-origin: 50% 100%; -webkit-tap-highlight-color: transparent; animation: dg-bob 1.6s ease-in-out -.8s infinite; }
+.dg-shop-warn img { display: block; width: 100%; height: 100%; -webkit-user-drag: none; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, .35)); }
+.dg-shop-warn.is-out img { animation: dg-warn-shake 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+.dg-shop-warn[hidden] { display: none; }
+@keyframes dg-warn-shake { 0%, 30%, 100% { rotate: 0deg; } 6% { rotate: -7deg; } 12% { rotate: 6deg; } 18% { rotate: -4deg; } 24% { rotate: 2deg; } }
+@media (prefers-reduced-motion: reduce) { .dg-shop-warn, .dg-shop-warn.is-out img { animation: none; } }

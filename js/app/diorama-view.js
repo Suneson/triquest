@@ -210,7 +210,6 @@ export function renderDiorama(ctx, avatarBtn = '') {
       ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
     <div class="dg-side is-right">${liftPanel(room)}</div>
-    ${room === 'run' && (isChestAdmin() || isDemo()) ? turnBar() : ''}
   </section>`;
 }
 
@@ -218,14 +217,6 @@ export function renderDiorama(ctx, avatarBtn = '') {
 
 const YAW_KEY = 'moske-runner-yaw';
 const runnerYaw = () => { try { return Number(localStorage.getItem(YAW_KEY)) || 0; } catch { return 0; } };
-const saveYaw = (deg) => { try { localStorage.setItem(YAW_KEY, String(deg)); } catch { /* private mode */ } };
-
-/** Admins: turn the runner 45° at a time, to check how it sits on the belt. */
-const turnBar = () => `<div class="dg-turn" role="group" aria-label="${esc(t('cp.r3d.aria'))}">
-    <button data-r3d-turn="-45" aria-label="${esc(t('cp.r3d.left'))}">${svg('back')}<span>${t('cp.r3d.left')}</span></button>
-    <b data-r3d-angle>${runnerYaw()}°</b>
-    <button data-r3d-turn="45" aria-label="${esc(t('cp.r3d.right'))}"><span>${t('cp.r3d.right')}</span>${svg('back')}</button>
-  </div>`;
 
 /** Your athlete as the wardrobe dressed them: the model, its clips, the tints and the accessories. */
 function athlete() {
@@ -1033,13 +1024,6 @@ export function wireDiorama(root, ctx) {
     place(id, { room, u: p.u, v: p.v, face: next.face });
     if (!reduced()) { rotBtn.classList.remove('spin'); void rotBtn.offsetWidth; rotBtn.classList.add('spin'); }
   };
-  root.querySelectorAll('[data-r3d-turn]').forEach((b) => b.addEventListener('click', () => {
-    const deg = (((runnerYaw() + Number(b.dataset.r3dTurn)) % 360) + 360) % 360;
-    saveYaw(deg);
-    root.querySelector('[data-r3d-angle]').textContent = `${deg}°`;
-    worldEl.querySelectorAll('.dg-item').forEach((el) => el._r3d?.setYaw((deg * Math.PI) / 180));
-    haptic('tick');
-  }));
 
   // an item just taken from the stash: fly to its room if it's another, then bring it to the middle
   // of the screen, a little closer than the room's home view

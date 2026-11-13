@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v138';
+const CACHE = 'triquest-v139';
 const ASSETS = [
   './',
   './index.html',
@@ -59,6 +59,8 @@ const ASSETS = [
   './icons/Market/shop/quilt-bike.webp',
   './icons/Market/shop/quilt-run.webp',
   './icons/Market/shop/quilt-swim.webp',
+  './icons/Market/stock/restock.webp',
+  './icons/Market/stock/out-of-stock.webp',
   './js/app/drill-view.js',
   './js/app/walker.js',
   './js/app/wardrobe-view.js',
@@ -236,6 +238,9 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
+
+  // The server's data (Supabase) always straight from the network, never from a cache.
+  if (/\.supabase\.(co|in)$/.test(url.hostname)) return;
 
   // Cross-origin (e.g. CDN): cache-first.
   e.respondWith(caches.match(request).then((c) => c || fetch(request)));

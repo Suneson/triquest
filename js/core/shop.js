@@ -126,6 +126,27 @@ export function soldIn(slot, nowMs, f = 1) {
   return Math.max(0, Math.min(slot.units, Math.floor((nowMs - Date.parse(slot.since)) / periodOf(slot.item, f))));
 }
 
+/** Below this share of its shelves' room, a market on the island asks to be restocked. */
+export const RESTOCK_BELOW = 0.6;
+
+/**
+ * How full a market's open shelves are now: { left, cap, frac, empty, open }. `empty`: open shelves
+ * with nothing left on them. The island shows "restock" under RESTOCK_BELOW and "out of stock" when
+ * every open shelf is empty.
+ */
+export function shelfFill(level, slots, nowMs, f = 1) {
+  const L = shopLevel(level);
+  let left = 0; let empty = 0;
+  for (let n = 1; n <= L.slots; n++) {
+    const s = (slots || []).find((x) => Number(x.slot) === n);
+    const row = s?.item ? { ...s, units: Number(s.units) || 0 } : null;
+    const k = row ? Math.max(0, row.units - soldIn(row, nowMs, f)) : 0;
+    left += k; if (!k) empty += 1;
+  }
+  const cap = L.slots * L.capacity;
+  return { left, cap, frac: cap ? left / cap : 0, empty, open: L.slots };
+}
+
 /** Is every open slot of a market (two or more) filled with one sport's gear? (The specialty bonus.) */
 export function specialty(slots, level) {
   const open = shopLevel(level).slots;

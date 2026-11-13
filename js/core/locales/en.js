@@ -3355,6 +3355,12 @@ en.mkt = {
   "pick": "Pick a slot for it",
   "cancel": "Cancel",
   "soon": "Markets open after the next update. Pull to refresh.",
+  "shops": {
+    "gym": "Gym shop",
+    "bike": "Bike shop",
+    "run": "Run shop",
+    "swim": "Swim shop"
+  },
   "sports": {
     "gym": "Gym",
     "bike": "Bike",

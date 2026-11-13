@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v136';
+const CACHE = 'triquest-v137';
 const ASSETS = [
   './',
   './index.html',
@@ -55,6 +55,10 @@ const ASSETS = [
   './js/app/stadium3d.js',
   './js/core/stadium.js',
   './icons/Stadium/stadium.webp',
+  './icons/Market/shop/quilt-gym.webp',
+  './icons/Market/shop/quilt-bike.webp',
+  './icons/Market/shop/quilt-run.webp',
+  './icons/Market/shop/quilt-swim.webp',
   './js/app/drill-view.js',
   './js/app/walker.js',
   './js/app/wardrobe-view.js',

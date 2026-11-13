@@ -310,3 +310,12 @@ body.has-layer .toast-wrap { bottom: calc(var(--safe-b) + 150px); }
 /* another athlete's level card, on the quilt */
 .layer > .fh-screen:not(.is-shop) .pg-hud { --b: transparent; --e: transparent; border-radius: 16px; background: linear-gradient(#2A3E6E, #16264D); color: #fff;
   box-shadow: 0 0 0 2px rgba(169, 211, 255, .5), 0 6px 14px rgba(8, 25, 60, .35); }
+
+/* ---- 6. the strip at the foot of an installed app (iOS 26) ---------------------------------------- */
+/* On iPhone, installed to the home screen, a fixed box with inset 0 can stop short of the bottom edge,
+   leaving the strip by the home bar unfilled (a WebKit bug in iOS 26). 100vh there is the whole
+   screen, so the shell, every layer and every full screen reach the bottom edge. */
+@media (display-mode: standalone) {
+  .app, .modal-root { bottom: auto; height: 100vh; }
+  .layer:not(.is-sheet) > .fh-screen { bottom: auto; height: 100vh; }
+}

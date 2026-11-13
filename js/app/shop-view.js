@@ -4,8 +4,12 @@
 //   - at the top, the deck: a tab for each of your six markets, the market's eight slots (locked
 //     past its level), each an item card with a bar of the units left, and its buttons: Collect,
 //     Restock all, a crate, Upgrade. Chips say what your training is doing for it now.
-//   - below, on the quilt, the storeroom: Gym, Bike, Run and Swim, fifteen items each, with a bar
-//     of how many you hold (of 1000). Tap one: Buy (a slider) or Sell.
+//   - below, the storeroom: Gym, Bike, Run and Swim, fifteen items each, with a bar of how many you
+//     hold (of 1000). Each sport is its own shop: a rail with its kit hanging off it and its sign,
+//     then its items on its own colour of quilt (icons/Market/shop/, tools/make-shop-quilts.py),
+//     which scrolls with them. Picking a sport swipes the shop sideways; the rest stays still.
+//   - tap an item: it lifts and Buy (a slider) and Sell float over the cards below it.
+//   - Close at the foot, over everything, as well as the back arrow at the top.
 //   - Sell sends it up to the market: a slot that already has it fills straight away; otherwise
 //     pick a slot (the item swaps in, what was there goes back to the storeroom). The units fly
 //     into the slot and its bar fills.
@@ -29,6 +33,13 @@ import {
 const COIN = 'icons/Pixelart/GEAR/coin.png';
 const coinTag = (n, short = false) => `<span class="sv-price data-num${short ? ' is-short' : ''}">${fmtNum(n)}<img src="${COIN}" alt=""></span>`;
 const itemName = (id) => t(`mkt.items.${id}`);
+/** The kit hanging off each shop's rail: three each side of the sign. */
+const RAIL = {
+  gym: ['gym-kettlebell', 'gym-gloves', 'gym-rope', 'gym-dumbbells', 'gym-medball', 'gym-bands'],
+  bike: ['bike-helmet', 'bike-bottle', 'bike-gloves', 'bike-pump', 'bike-shoes', 'bike-computer'],
+  run: ['run-racers', 'run-cap', 'run-watch', 'run-flask', 'run-shades', 'run-headband'],
+  swim: ['swim-goggles', 'swim-cap', 'swim-paddles', 'swim-fins', 'swim-buoy', 'swim-kickboard'],
+};
 
 /**
  * Open the markets' screen on market `spot` (the first one built when it's left out).
@@ -143,25 +154,40 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     const lvl = Number(shopAt(cur)?.level) || 0;
     const stock = shop().stock;
     const list = SHOP_ITEMS.filter((i) => i.sport === sport);
-    return list.map((it) => {
+    // each card in a cell of its own size; the picked one's Buy and Sell float over the cards below,
+    // so nothing moves
+    return list.map((it, i) => {
       const card = itemCard(it, stock[it.id] || 0, lvl);
-      if (picked !== it.id) return card;
-      return `<div class="sv-pick">${card}
-        <button type="button" class="sv-btn is-green" data-sv-buy="${it.id}"><span>${esc(t('mkt.buy'))}</span>${coinTag(itemBuy(it.id))}</button>
-        <button type="button" class="sv-btn is-orange" data-sv-sell="${it.id}" ${(stock[it.id] || 0) && it.tier <= lvl ? '' : 'disabled'}><span>${esc(t('mkt.sell'))}</span></button>
+      if (picked !== it.id) return `<div class="sv-cell">${card}</div>`;
+      return `<div class="sv-cell is-picked is-col${i % 4}">${card}
+        <div class="sv-pop">
+          <button type="button" class="sv-btn is-green" data-sv-buy="${it.id}"><span>${esc(t('mkt.buy'))}</span>${coinTag(itemBuy(it.id))}</button>
+          <button type="button" class="sv-btn is-orange" data-sv-sell="${it.id}" ${(stock[it.id] || 0) && it.tier <= lvl ? '' : 'disabled'}><span>${esc(t('mkt.sell'))}</span></button>
+        </div>
       </div>`;
     }).join('');
   };
+
+  /** A sport's shop: its rail, kit and sign, then its items, on its quilt. */
+  const pane = () => `<div class="sv-pane is-${sport}" data-sv-pane role="region" aria-label="${esc(t(`mkt.shops.${sport}`))}">
+      <div class="sv-rail" aria-hidden="true">
+        <i class="sv-rod"></i>
+        ${RAIL[sport].map((id, i) => `<span class="sv-hang is-${i}" style="--i:${i}"><i></i><img src="${itemPicture(id)}" alt="" draggable="false"></span>`).join('')}
+        <span class="sv-sign"><i></i><b>${esc(t(`mkt.shops.${sport}`))}</b></span>
+      </div>
+      <div class="sv-grid" data-sv-grid>${store()}</div>
+    </div>`;
 
   const draw = () => {
     if (closed) return;
     const coins = walletNow(workouts()).coins;
     root.innerHTML = `<div class="fh-screen sv-screen" role="dialog" aria-modal="true" aria-labelledby="sv-title">
-      ${sheetHead({ title: esc(t('mkt.title')), lead: 'back', arrow: true, id: 'sv-title',
+      ${sheetHead({ title: esc(t('mkt.title')), lead: 'back', arrow: true, foot: !selling, id: 'sv-title',
         action: `<span class="sv-wallet" data-sv-wallet>${coinTag(coins)}</span>` })}
       <section class="sv-deck" data-sv-deck>${shopsOpen() ? deck() : `<p class="sv-soon">${esc(t('mkt.soon'))}</p>`}</section>
       <nav class="sv-sports" role="tablist">${SPORTS.map((s) => `<button type="button" class="sv-sport is-${s}${s === sport ? ' is-on' : ''}" data-sv-sport="${s}" aria-pressed="${s === sport}">${svg(s)}<b>${esc(t(`mkt.sports.${s}`))}</b></button>`).join('')}</nav>
-      <section class="sv-store is-${sport}"><div class="sv-grid" data-sv-grid>${store()}</div></section>
+      <section class="sv-store" data-sv-store>${pane()}</section>
+      ${selling ? '' : '<div class="sv-foot" aria-hidden="true"></div>'}
       ${selling ? `<div class="sv-dock" data-sv-dock>
         <span class="sv-card sv-item is-${shopItem(selling).sport}" data-sv-from><span class="sv-art"><img src="${itemPicture(selling)}" alt=""></span></span>
         <p>${esc(t('mkt.pick'))}</p>
@@ -317,21 +343,54 @@ export function openMarket({ spot = 0, workouts = () => [] } = {}) {
     });
   };
 
+  /** Another sport's shop slides in from the side its tab is on; the old one slides out. */
+  let swiping = null;
+  const swipeTo = (next) => {
+    haptic('tick');
+    const dir = SPORTS.indexOf(next) > SPORTS.indexOf(sport) ? 1 : -1;
+    sport = next; picked = null;
+    root.querySelectorAll('[data-sv-sport]').forEach((b) => {
+      const on = b.dataset.svSport === sport;
+      b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on));
+    });
+    const host = root.querySelector('[data-sv-store]');
+    if (!host) { draw(); return; }
+    swiping?.();
+    const old = host.querySelector('[data-sv-pane]');
+    host.insertAdjacentHTML('beforeend', pane());
+    const fresh = host.lastElementChild;
+    if (!old || prefersReducedMotion()) { old?.remove(); return; }
+    // the old one keeps its place over the top while the new one sets the height
+    old.removeAttribute('data-sv-pane'); old.querySelector('[data-sv-grid]')?.removeAttribute('data-sv-grid');
+    old.classList.add('is-leaving');
+    const opts = { duration: 380, easing: EASE_OUT, fill: 'both' };
+    old.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${-dir * 100}%)` }], opts);
+    const inn = fresh.animate([{ transform: `translateX(${dir * 100}%)` }, { transform: 'translateX(0)' }], opts);
+    fresh.classList.add('is-arriving');
+    const done = () => { old.remove(); inn.cancel(); fresh.classList.remove('is-arriving'); swiping = null; };
+    swiping = done;
+    inn.finished.then(done, () => {});
+  };
+
   root.addEventListener('click', async (e) => {
     const q = (s) => e.target.closest(s);
     let b;
     if ((b = q('[data-sv-tab]'))) {
       haptic('tick'); cur = Number(b.dataset.svTab); selling = null; draw(); return;
     }
-    if ((b = q('[data-sv-sport]'))) { haptic('tick'); sport = b.dataset.svSport; picked = null; draw(); return; }
+    if ((b = q('[data-sv-sport]'))) { if (b.dataset.svSport !== sport) swipeTo(b.dataset.svSport); return; }
     if (q('[data-sv-cancel]')) { haptic('tick'); selling = null; draw(); return; }
     if ((b = q('[data-sv-buy]'))) { haptic('tick'); buySheet(b.dataset.svBuy); return; }
     if ((b = q('[data-sv-sell]'))) { sell(b.dataset.svSell); return; }
     if ((b = q('[data-sv-item]'))) {
       haptic('tick'); picked = picked === b.dataset.svItem ? null : b.dataset.svItem;
       root.querySelector('[data-sv-grid]').innerHTML = store();
+      // Buy and Sell in view, clear of the Close bar
+      root.querySelector('.sv-pop')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
       return;
     }
+    // a tap anywhere else puts a lifted item back down
+    if (picked && !q('.sv-pop')) { picked = null; const g = root.querySelector('[data-sv-grid]'); if (g) g.innerHTML = store(); }
     if ((b = q('.sv-slot[data-slot]')) && selling) {
       if (!b.matches('.is-target')) { haptic('refuse'); return; }
       stockSlot(Number(b.dataset.slot), selling); return;

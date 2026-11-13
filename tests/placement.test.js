@@ -56,7 +56,8 @@ test('the floor maps both ways', () => {
 test('placing: walls and edges, the pool, other items', () => {
   const coffee = placeableById('coffee-machine');
   const trainer = placeableById('smart-trainer');
-  assert.deepEqual(footprint(trainer, 2, 3), [[2, 3], [3, 3]]);
+  // every item is a tile bigger each way than drawn for (GROW): the 2 x 1 trainer takes 3 x 2
+  assert.deepEqual(footprint(trainer, 2, 3), [[2, 3], [2, 4], [3, 3], [3, 4], [4, 3], [4, 4]]);
   assert.equal(canPlace('gym', 'gym', coffee, 0, 0).ok, true);
   assert.equal(canPlace('gym', 'gym', coffee, -1, 0).reason, 'bounds', 'off the floor: into the wall');
   assert.equal(canPlace('gym', 'gym', trainer, 7, 0).reason, 'bounds', 'half through the right wall');
@@ -66,11 +67,11 @@ test('placing: walls and edges, the pool, other items', () => {
   assert.equal(canPlace('pool', 'pool', trainer, 3, 2).reason, 'blocked', 'one tile on the deck, one in the water');
   const placed = { 'coffee-machine': { room: 'bike', u: 1, v: 1 } };
   assert.equal(canPlace('bike', 'bike', trainer, 0, 1, placed).reason, 'occupied');
-  assert.equal(canPlace('bike', 'bike', trainer, 3, 1, placed).ok, true);
+  assert.equal(canPlace('bike', 'bike', trainer, 4, 1, placed).ok, true);
   assert.equal(canPlace('gym', 'gym', trainer, 0, 1, placed).ok, true, 'another room is another floor');
   assert.equal(canPlace('bike', 'bike', coffee, 1, 1, placed).ok, true, 'an item never blocks itself');
   // the wide locker has its own shape
-  assert.equal(canPlace('locker-landscape', 'locker', coffee, 6, 14).ok, true);
+  assert.equal(canPlace('locker-landscape', 'locker', coffee, 5, 13).ok, true);
   assert.equal(canPlace('locker-landscape', 'locker', coffee, 8, 0).reason, 'bounds');
 });
 
@@ -93,8 +94,8 @@ test('the gifts and the trainer; a spot for each, kept when it still fits', () =
   assert.ok(canPlace('bike', 'bike', placeableById('smart-trainer'), at['smart-trainer'].u, at['smart-trainer'].v, at).ok);
   assert.ok(canPlace('bike', 'bike', orient(placeableById('smart-bike'), at['smart-bike'].face), at['smart-bike'].u, at['smart-bike'].v, at).ok, 'they do not overlap');
   // a saved spot stays; one that no longer fits (or whose room is gone) moves
-  const kept = resolvePlacements(full, items, { 'coffee-machine': { room: 'pool', u: 0, v: 6 } });
-  assert.deepEqual(kept['coffee-machine'], { room: 'pool', u: 0, v: 6, face: 'a' });
+  const kept = resolvePlacements(full, items, { 'coffee-machine': { room: 'pool', u: 0, v: 5 } });
+  assert.deepEqual(kept['coffee-machine'], { room: 'pool', u: 0, v: 5, face: 'a' });
   const runOnly = resolvePlacements(compoundLayout(['run']), placeablesFor([{ item_id: 'bike-power-t3' }], ['run', 'locker']), { 'coffee-machine': { room: 'pool', u: 0, v: 7 } });
   assert.equal(runOnly['coffee-machine'].room, 'locker');
   assert.equal(runOnly['smart-trainer'].room, 'locker', 'no bike room: the trainer waits in the locker');
@@ -117,10 +118,10 @@ test('a mission board stands in every room, at the back, and only in rooms you h
 
 test('facings: turning an item turns its footprint, and a saved facing is kept', () => {
   const tm = placeableById('treadmill');
-  assert.deepEqual([orient(tm).face, orient(tm).w, orient(tm).h], ['a', 2, 3], 'the treadmill stands long along v at first');
-  assert.deepEqual([orient(tm, 'b').w, orient(tm, 'b').h], [3, 2]);
+  assert.deepEqual([orient(tm).face, orient(tm).w, orient(tm).h], ['a', 3, 4], 'the treadmill stands long along v at first');
+  assert.deepEqual([orient(tm, 'b').w, orient(tm, 'b').h], [4, 3]);
   assert.equal(turned('a'), 'b'); assert.equal(turned('b'), 'a');
-  assert.equal(orient(placeableById('smart-trainer'), 'b').w, 2, 'one facing: as it is');
+  assert.equal(orient(placeableById('smart-trainer'), 'b').w, 3, 'one facing: as it is');
   assert.equal(tierFor(1, [4, 7]), 1); assert.equal(tierFor(4, [4, 7]), 2); assert.equal(tierFor(9, [4, 7]), 3);
   assert.match(tm.art({ face: 'a', levels: { run: 6 } }), /treadmill-t2-a\.webp$/);
   const full = compoundLayout(DISCIPLINES);
@@ -129,7 +130,7 @@ test('facings: turning an item turns its footprint, and a saved facing is kept',
   assert.deepEqual(at.treadmill, { room: 'run', u: 2, v: 2, face: 'b' });
   // two turned items can't overlap: the coffee machine beside a turned treadmill
   const cells = footprint(orient(tm, 'b'), 2, 2).map((c) => c.join(','));
-  assert.deepEqual(cells, ['2,2', '2,3', '3,2', '3,3', '4,2', '4,3']);
+  assert.deepEqual(cells, ['2,2', '2,3', '2,4', '3,2', '3,3', '3,4', '4,2', '4,3', '4,4', '5,2', '5,3', '5,4']);
 });
 
 test('the treadmill steps up to tier 4 with the run room', () => {
@@ -188,9 +189,9 @@ test('the taped room: its picture is 16 x 16, only the back 8 x 8 can be used', 
   const c = placeableById('coffee-machine');
   assert.equal(stageGeom('locker', true, true), 'locker-16-tape');
   assert.equal(ROOM_GEOMETRY['locker-16-tape'].cols, 32);
-  assert.ok(canPlace('locker-16-tape', 'locker', c, 6, 6).ok, 'inside the tape');
-  assert.equal(canPlace('locker-16-tape', 'locker', c, 7, 6).reason, 'bounds', 'across the tape');
-  assert.ok(canPlace('locker-16', 'locker', c, 7, 6).ok, 'expanded, the whole floor');
+  assert.ok(canPlace('locker-16-tape', 'locker', c, 5, 5).ok, 'inside the tape');
+  assert.equal(canPlace('locker-16-tape', 'locker', c, 6, 5).reason, 'bounds', 'across the tape');
+  assert.ok(canPlace('locker-16', 'locker', c, 6, 5).ok, 'expanded, the whole floor');
   const spot = firstFree('locker-16-tape', 'locker', c, {});
   assert.ok(spot.u + c.w <= 8 && spot.v + c.h <= 8);
 });

@@ -8,13 +8,13 @@ import { mountRunner } from './runner3d.js';
 import { findPath, wanderTile, facing } from '../core/walk.js';
 
 /** Tiles a second: about the walk clip's own pace at this size. */
-const SPEED = 1.25;
+const SPEED = 2.5;
 /** How long it stands before wandering again (seconds). */
 const REST = [4, 10];
-/** The canvas round the tile: 1.5 tiles each way, so the whole character fits above it. */
-const FOOT = { w: 1.5, h: 1.5 };
+/** The canvas round the tile: 3 tiles each way, so the whole (twice-size) character fits above it. */
+const FOOT = { w: 3, h: 3 };
 /** The treadmill's athlete is this size too (placement.js RUNNER). */
-const SPOT = { u: 0.75, v: 0.75, y: 0, scale: 1.26 };
+const SPOT = { u: 1.5, v: 1.5, y: 0, scale: 2.52 };
 
 /**
  * Stand the athlete on a tile in `layer` (the room's items layer).

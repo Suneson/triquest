@@ -82,7 +82,12 @@ At every zoom tested, no picture that's on screen was culled.
    - **The base picture** (2,690 px wide, drawn 2,152 wide; 15 MB). Use a smaller copy when zoomed out and the full one when zoomed in, the way the big rooms already do (`midArt`).
    - **Bake the shadows** into the market pictures instead of using CSS drop-shadows.
 3. **Draw 3D straight into the page when only one view shows.** One shared renderer is right (iPhone allows only a few WebGL contexts), but the copy into each view is costly. When a single 3D view is on screen (the stadium, the wardrobe, the run room), it can be drawn directly instead. This is a careful change: test it on an iPhone before merging.
-4. **Let go of 3D models when their screen closes.** This is done for the stadium. The wardrobe (every outfit you try stays loaded) and the room mechanics should do the same. Only the athlete on the base needs to stay.
+4. ~~**Let go of 3D models when their screen closes.**~~ Done for the stadium (sw v141) and the wardrobe (sw v144).
+   - `js/app/char3d.js` counts how many figures use each model file, from the moment one starts loading it.
+   - When the wardrobe swaps an outfit, body, hair or hat, the old one's files are freed (`letGo`). When it closes, so is everything it opened.
+   - A file still in use is never freed. The athlete on the base wearing an outfit keeps it loaded.
+   - In the demo, trying five outfits kept one loaded at a time. After closing, only the athlete's body and clips were left.
+   - The cost: going back to an outfit you just tried reads it again from the phone's cache, a moment's wait.
 5. **Load less at launch.** Load only the language in use (−120 KB). Load the gym logger, onboarding, chat, challenges, wardrobe and chest screens when they're first opened, the way the markets and the stadium already are. This makes launch faster but isn't what crashes.
 6. **If it's still not enough:** draw the island on one canvas (a game renderer) instead of web page elements, as native games do. This is a big job.
 

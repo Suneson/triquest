@@ -3,11 +3,12 @@
 // One canvas, one character (char3d.js): 1.8 units tall, feet on y = 0, facing +Z, tinted with the
 // look's skin tone and eye colour. It plays its idle clip, and now and then shows off (a taunt or
 // the victory clip) before going back to it. Drag sideways to turn the character round.
-// Drawn by the app's one WebGL renderer (gl-shared.js).
+// Drawn by the app's one WebGL renderer (gl-shared.js). An outfit swapped out, and everything it
+// opened when it closes, leaves the GPU unless the athlete on the base is wearing it (letGo).
 
 import { loadThree, webglOk } from './runner3d.js';
 import { skinTint, eyeColour, hairColour } from '../core/wardrobe.js';
-import { spawnChar } from './char3d.js';
+import { spawnChar, letGo } from './char3d.js';
 import { retune, fitFor } from './gear3d.js';
 import { addView, ratio } from './gl-shared.js';
 
@@ -124,8 +125,8 @@ export async function mountWardrobe(host, { editor = false } = {}) {
     if (key === url) return;
     url = key;
     const next = await spawnChar(L, { model, clips, uniforms, gear, hair: hairColour(look.hairColour) });
-    if (gone || url !== key) { next.dispose(); return; }
-    if (figure) { turn.remove(figure.root); figure.dispose(); }
+    if (gone || url !== key) { next.dispose(); letGo(next.urls); return; }
+    if (figure) { turn.remove(figure.root); figure.dispose(); letGo(figure.urls); }
     figure = next;
     figure.play('idle', { fade: 0 });
     figure.update(0);
@@ -156,6 +157,7 @@ export async function mountWardrobe(host, { editor = false } = {}) {
       gone = true;
       view.dispose(); ro.disconnect();
       figure?.dispose();
+      if (figure) letGo(figure.urls);
       shadow.geometry.dispose(); shadow.material.dispose(); shadowTex.dispose();
       canvas.remove();
     },

@@ -3216,7 +3216,10 @@ en.wardrobe = {
     "first-finisher": "First finisher",
     "streak-keeper": "Streak keeper",
     "blomvelt-set": "Blomvelt set",
-      "clan-champion": "Clan champion"
+    "kipchomba-set": "Kipchomba set",
+    "ledrick-set": "Ledrick set",
+    "mcintosh-set": "McIntosh set",
+      "clan-champion": "Club champion"
   },
   "item": {
     "helmet-road": "Road helmet",
@@ -3313,16 +3316,16 @@ en.stadium = {
   "km": "{km} / {total} km",
   "tagKm": "{km} km",
   "kmAria": "{boss} has run {km} of {total} km",
-  "robotSoon": "Your clan's robot is on the start line. Soon every km your clan logs will move it.",
-  "robot": "Clan robot",
+  "robotSoon": "Your club's robot is on the start line. Soon every km your club logs will move it.",
+  "robot": "Club robot",
   "talk": "Talk to {boss}",
   "next": "Tap to go on",
   "go": "Let's race!",
   "intro": {
     "0": "Welcome to my stadium! I'm {boss}, and nobody beats me on my own track.",
     "1": "Here's the race: I run {total} km in {hours} hours, once round this track. The clock in the middle shows how long is left.",
-    "2": "Your clan races me with its robot. Every km your clan logs in real training moves it forward.",
-    "3": "Get to the line before me and your whole clan wins my kit. The more km, the higher you go in the world ranking.",
+    "2": "Your club races me with its robot. Every km your club logs in real training moves it forward.",
+    "3": "Get to the line before me and your whole club wins my kit. The more km, the higher you go in the world ranking.",
     "4": "When the clock hits zero, I warm up for {warm} hours and the next race starts. Ready? Go and train!"
   },
 };

@@ -1,5 +1,5 @@
 // base-gl.js: the base drawn by three.js: the city round the room, the room, its floor, its items
-// and your athlete (docs/THREE-ROOM.md), on with
+// (as pictures, or as 3D models with ?models=1) and your athlete (docs/THREE-ROOM.md), on with
 // ?three=1 for now.
 //
 // The page still lays the base out: the city, the room and its floor, the item buttons (their
@@ -27,6 +27,29 @@ const DIST = 160;
 const FAR_Z = -(DIST + 80);
 /** Frames a second while only the athlete moves (panning draws at once, every frame). */
 const FPS = 30;
+/** The items with a 3D model (models/items, tools/build-items.mjs), by their picture's name. */
+const ITEM_MODELS = new Set([
+  'coffee-machine-t1', 'coffee-machine-t2', 'coffee-machine-t3', 'treadmill-t1', 'treadmill-t2',
+  'treadmill-t3', 'road-bike-stand', 'trophy-gold-mountain', 'lockers-t1', 'drinks-fridge',
+  'dumbbell-rack', 'ice-bath', 'kettlebell-set', 'massage-table', 'bike-workstand', 'race-podium',
+  'punching-bag', 'rowing-machine', 'shoe-rack', 'trophy-cabinet-t1', 'trophy-cabinet-t2',
+]);
+/** The models' turn for facing a: the pictures' camera sat on the other side of the floor's corner. */
+const YAW_A = -Math.PI / 2;
+/**
+ * ?models=1 draws the items that have one as 3D models, painted with their picture; ?models=raw as
+ * Tripo made them, lit by the room. It stays on for this device; ?models=0 turns it off.
+ */
+const MODELS = (() => {
+  try {
+    const q = new URLSearchParams(location.search).get('models');
+    if (q === '1' || q === '0' || q === 'raw') localStorage.setItem('moske-models', q);
+    const m = localStorage.getItem('moske-models');
+    return m === '1' || m === 'raw' ? m : '';
+  } catch { return ''; }
+})();
+const MODELS_ON = !!MODELS;
+const PAINTED = MODELS === '1';
 
 const ease = (t) => 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2;   // easeOutBack, as the CSS spring
 
@@ -191,9 +214,10 @@ function build(L, canvas, layer, reduced) {
         const shade = new THREE.MeshBasicMaterial({ map: t.tex, color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide });
         const mesh = new THREE.Mesh(cardGeo, mat); mesh.frustumCulled = false; mesh.visible = !!t.tex;
         const under = new THREE.Mesh(cardGeo, shade); under.frustumCulled = false; mesh.add(under);
-        c = { id, src, t, mat, shade, mesh, under, z: null, shown: null, cls: '', anim: null, from: null };
+        c = { id, src, t, mat, shade, mesh, under, z: null, shown: null, cls: '', anim: null, from: null, model: modelOf(src) };
         cards.add(mesh);
         byId.set(id, c);
+        if (c.model) loadModel(c);
       }
       const st = el.style;
       const x = parseFloat(st.left), y = parseFloat(st.top), w = parseFloat(st.width);
@@ -207,7 +231,10 @@ function build(L, canvas, layer, reduced) {
         if (fresh.has(`${id}:bounce`) || (/\bbounce\b/.test(cls) && !/\bbounce\b/.test(had))) c.anim = { kind: 'bounce', t0: now, ms: 340 };
         if (fresh.has(`${id}:landed`) || (/\blanded\b/.test(cls) && !/\blanded\b/.test(had))) c.anim = { kind: 'land', t0: now, ms: 220 };
         // springing back to where it was: from where it's drawn now
-        if (/\bspring\b/.test(cls) && c.shown && (c.shown.x !== x || c.shown.y !== y)) c.from = { x: c.shown.x, y: c.shown.y, t0: now };
+        if (/\bspring\b/.test(cls) && c.shown && (c.shown.x !== x || c.shown.y !== y)) {
+          c.from = { x: c.shown.x, y: c.shown.y, t0: now };
+          if (c.model?.at) c.model.fromUV = { ...c.model.at };
+        }
       }
       c.cls = cls;
       c.box = { x, y, w, pad, cu, cv, flat, lift: /\bis-lift\b/.test(cls), bad: /\bis-bad\b/.test(cls) };
@@ -217,16 +244,20 @@ function build(L, canvas, layer, reduced) {
     for (const c of [...byId.values()]) if (!seen.has(c.id)) remove(c);
     dirty = true; wake();
   }
-  function remove(c) { cards.remove(c.mesh); c.mat.dispose(); c.shade.dispose(); dropTex(c.src); byId.delete(c.id); }
+  function remove(c) {
+    if (c.model?.obj) { things.remove(c.model.obj); for (const m of c.model.mats) m.dispose(); }
+    c.model = null;
+    cards.remove(c.mesh); c.mat.dispose(); c.shade.dispose(); dropTex(c.src); byId.delete(c.id);
+  }
   // where a card is drawn now: its box, its state and what it's in the middle of
   function place(c, now = performance.now()) {
     const b = c.box;
     if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.w)) { c.mesh.visible = false; return false; }
     if (c.z == null && G) c.z = b.flat ? FAR_Z + 1 : viewOf(b.cu, 0, b.cv).z;
-    let x = b.x, y = b.y; let k = 1; let lift = b.lift ? 8 : 0; let busy = false;
+    let x = b.x, y = b.y; let k = 1; let lift = b.lift ? 8 : 0; let busy = false; let spring = null;
     if (c.from) {
       const t = Math.min(1, (now - c.from.t0) / 440);
-      const e = ease(t);
+      const e = ease(t); spring = e;
       x = c.from.x + (b.x - c.from.x) * e; y = c.from.y + (b.y - c.from.y) * e;
       if (t >= 1) c.from = null; else busy = true;
     }
@@ -246,6 +277,8 @@ function build(L, canvas, layer, reduced) {
     c.mesh.scale.set(b.w * k, h * k, 1);
     c.mesh.renderOrder = b.flat ? -8 : 0;
     c.mesh.visible = !!c.t.tex;
+    // its 3D model in its place, once it's in
+    if (c.model && placeModel(c, k, lift, spring)) c.mesh.visible = false;
     c.mat.color.set(b.bad ? 0xff9a9a : 0xffffff);
     c.mat.opacity = b.bad ? 0.75 : 1;
     // the shadow: 6 px lower, a little behind (in the card's own units: it's scaled with it)
@@ -547,6 +580,122 @@ function build(L, canvas, layer, reduced) {
     return busy;
   };
 
+  // ---- items as 3D models (docs/THREE-ROOM.md, stage 5): where one exists, with ?models=1 for now ----
+  // models/items/<name>.glb (tools/build-items.mjs), named like the item's picture without its
+  // facing. The picture still loads: the model is sized to it (its width on screen), and it stands
+  // in until the model is in. The model stands on its footprint's middle, so the athlete and the
+  // other items pass in front of and behind it by depth.
+  const things = new THREE.Group(); scene.add(things);
+  // Painted: the base's camera never turns, so a model only ever shows the side its picture shows.
+  // Each point of it takes the colour of the picture's pixel in front of it (the picture as it's
+  // laid out now, bounce and lift too): it looks just as the picture, and stands in 3D.
+  const paintVert = `varying vec2 vView;
+    void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vView = mv.xy; gl_Position = projectionMatrix * mv; }`;
+  const paintFrag = `uniform sampler2D uMap; uniform vec3 uGx; uniform vec3 uGy; uniform vec4 uRect; uniform vec3 uTint; uniform float uOpacity;
+    varying vec2 vView;
+    void main() {
+      vec2 w = vec2(dot(uGx, vec3(vView, 1.0)), dot(uGy, vec3(vView, 1.0)));   // the world px it's drawn at
+      vec4 c = texture2D(uMap, vec2((w.x - uRect.x) / uRect.z, 1.0 - (w.y - uRect.y) / uRect.w));
+      if (c.a < 0.04) discard;   // past the picture's edge
+      gl_FragColor = vec4(c.rgb * uTint, uOpacity);
+      #include <colorspace_fragment>
+    }`;
+  const paintMat = () => new THREE.ShaderMaterial({
+    vertexShader: paintVert, fragmentShader: paintFrag,
+    uniforms: { uMap: { value: null }, uGx: { value: new THREE.Vector3() }, uGy: { value: new THREE.Vector3() }, uRect: { value: new THREE.Vector4(0, 0, 1, 1) }, uTint: { value: new THREE.Color(1, 1, 1) }, uOpacity: { value: 1 } },
+  });
+  const modelOf = (src) => {
+    if (!MODELS_ON) return null;
+    const m = /\/Items\/([^/]+)-([ab])\.webp$/.exec(src || '');   // icons/Items, or its room copy
+    return m && ITEM_MODELS.has(m[1]) ? { name: m[1], face: m[2], obj: null, mats: [], pts: null, span: null, at: null, fromUV: null } : null;
+  };
+  // facing a as the pictures were rendered (their camera sat on the other side of the room's
+  // corner), and facing b turned 90° from it
+  const yawOf = (md) => YAW_A + (md.face === 'b' ? Math.PI / 2 : 0);
+  function loadModel(c) {
+    const md = c.model;
+    import('./char3d.js').then(({ loadGltf }) => loadGltf(L, `models/items/${md.name}.glb`)).then((g) => {
+      if (c.model !== md || byId.get(c.id) !== c) return;   // gone meanwhile
+      const obj = g.scene.clone(true);
+      obj.updateMatrixWorld(true);
+      // a few thousand of its points, in its own space: what its width on screen is measured from
+      const pts = [];
+      if (PAINTED) md.mats.push(paintMat());
+      obj.traverse((o) => {
+        if (!o.isMesh) return;
+        if (PAINTED) o.material = md.mats[0];
+        else { o.material = o.material.clone(); o.material.userData.c0 = o.material.color.clone(); md.mats.push(o.material); }
+        o.frustumCulled = false;
+        const p = o.geometry.attributes.position; const step = Math.max(1, Math.floor(p.count / 3000));
+        for (let i = 0; i < p.count; i += step) pts.push(new THREE.Vector3().fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld));
+      });
+      md.pts = pts; md.obj = obj; things.add(obj);
+      place(c); dirty = true; wake();
+    }).catch((e) => console.warn('item model', md.name, e));
+  }
+  // how wide the model is on screen, in world px, at scale 1 (for this room's camera and its facing)
+  const spanOf = (md) => {
+    const key = `${roomKey}|${md.face}`;
+    if (md.span?.key === key) return md.span.px;
+    const turn = new THREE.Matrix4().makeRotationY(yawOf(md));
+    const m = new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse, turn);
+    let lo = Infinity, hi = -Infinity; const v = new THREE.Vector3();
+    for (const p of md.pts) { v.copy(p).applyMatrix4(m); const x = G[0] * v.x + G[1] * v.y; if (x < lo) lo = x; if (x > hi) hi = x; }
+    md.span = { key, px: hi - lo || 1 };
+    return md.span.px;
+  };
+  // how wide the picture is where it's solid (its soft shadow left out), as a share of its width
+  const solidW = (t) => {
+    const k = maskOf(t);
+    if (!k) return null;
+    if (k.solid != null) return k.solid;
+    let lo = k.w, hi = -1;
+    for (let y = 0; y < k.h; y++) for (let x = 0; x < k.w; x++) if (k.a[y * k.w + x] > 140) { if (x < lo) lo = x; if (x > hi) hi = x; }
+    return (k.solid = hi >= lo ? (hi - lo + 1) / k.w : 1);
+  };
+  // world px a step of one unit up the screen is
+  const pxPerUp = () => { const a = viewOf(0, 0, 0), b = viewOf(0, 1, 0); return Math.abs(G[3] * (b.x - a.x) + G[4] * (b.y - a.y)) || 1; };
+  const tint = new THREE.Color();
+  /** Put c's model where its picture would be: `k` its bounce, `lift` px up, `e` its spring back. */
+  function placeModel(c, k, lift, e) {
+    const md = c.model; const b = c.box;
+    if (!md.obj) return false;
+    const sw = solidW(c.t);
+    if (!sw || !G) { md.obj.visible = false; return false; }
+    let u = b.cu, v = b.cv;
+    if (e != null && md.fromUV) { u = md.fromUV.u + (b.cu - md.fromUV.u) * e; v = md.fromUV.v + (b.cv - md.fromUV.v) * e; }
+    md.at = { u, v };
+    md.obj.position.set(u, lift / pxPerUp(), v);
+    md.obj.rotation.y = yawOf(md);
+    md.obj.scale.setScalar(((sw * b.w) / spanOf(md)) * k);
+    md.obj.visible = true;
+    // where it can't stand: red and see-through, as the picture
+    tint.set(b.bad ? 0xff9a9a : 0xffffff);
+    if (PAINTED) {
+      const u = md.mats[0].uniforms; const cm = c.mesh;
+      u.uMap.value = c.t.tex;
+      u.uGx.value.set(G[0], G[1], G[2]); u.uGy.value.set(G[3], G[4], G[5]);
+      u.uRect.value.set(cm.position.x - cm.scale.x / 2, cm.position.y - cm.scale.y, cm.scale.x, cm.scale.y);
+      u.uTint.value.copy(tint); u.uOpacity.value = b.bad ? 0.75 : 1;
+      if (md.mats[0].transparent !== b.bad) { md.mats[0].transparent = b.bad; md.mats[0].needsUpdate = true; }
+      return true;
+    }
+    for (const m of md.mats) {
+      m.color.copy(m.userData.c0).multiply(tint);
+      if (m.transparent !== b.bad) { m.transparent = b.bad; m.needsUpdate = true; }
+      m.opacity = b.bad ? 0.75 : 1;
+    }
+    return true;
+  }
+  // a tap on a model: a ray from the camera through the world point (x, y)
+  const ray = new THREE.Raycaster(); const rayFrom = new THREE.Vector3(); const rayDir = new THREE.Vector3();
+  const onModel = (obj, x, y) => {
+    rayFrom.set(x, y, 0).applyMatrix4(cards.matrix); rayFrom.z = 0; rayFrom.applyMatrix4(camera.matrixWorld);
+    rayDir.set(0, 0, -1).transformDirection(camera.matrixWorld);
+    ray.set(rayFrom, rayDir);
+    return ray.intersectObject(obj, true).length > 0;
+  };
+
   // ---- the athlete ----
   const blob = (() => {
     const c = document.createElement('canvas'); c.width = 64; c.height = 64;
@@ -677,6 +826,7 @@ function build(L, canvas, layer, reduced) {
   };
   // is the world point (x, y) on a drawn pixel of card c?
   const solid = (c, x, y) => {
+    if (c.model?.obj?.visible) return onModel(c.model.obj, x, y);
     const m = c.mesh; const sx = m.scale.x, sy = m.scale.y;
     if (!(sx > 0 && sy > 0)) return false;
     const u = (x - (m.position.x - sx / 2)) / sx;
@@ -688,7 +838,7 @@ function build(L, canvas, layer, reduced) {
   };
   /** The id of the item drawn at world px (x, y), or null; `slop` px round it if nothing's right there. */
   function pick(x, y, slop = 0) {
-    const order = [...byId.values()].filter((c) => c.mesh.visible)
+    const order = [...byId.values()].filter((c) => c.mesh.visible || c.model?.obj?.visible)
       .sort((a, b) => (b.mesh.renderOrder - a.mesh.renderOrder) || (b.mesh.position.z - a.mesh.position.z));
     for (const c of order) if (solid(c, x, y)) return c.id;
     if (slop > 0) {

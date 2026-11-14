@@ -1,0 +1,213 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bike rig spike</title>
+<style>body{margin:0;background:#dfe7f2}canvas{display:block}</style>
+<canvas id="c" width="900" height="700"></canvas>
+<script type="module">
+// A test, not part of the app: can the rigged athlete ride a 3D bike with the
+// feet locked to the pedals? Solves the pose with IK, frame by frame, in world
+// space, on the app's own runner.glb and the road bike's Tripo model.
+import * as THREE from '../../vendor/three/three.module.min.js';
+import { GLTFLoader } from '../../vendor/three/GLTFLoader.js';
+import { MeshoptDecoder } from '../../vendor/three/meshopt_decoder.module.js';
+
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true, preserveDrawingBuffer: true });
+renderer.setClearColor(0xdfe7f2);
+const scene = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+const key = new THREE.DirectionalLight(0xfff2dd, 2.2); key.position.set(2, 4, 3); scene.add(key);
+const rim = new THREE.DirectionalLight(0xbcd6ff, 1); rim.position.set(-3, 2, -2); scene.add(rim);
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const load = (u) => new Promise((res, rej) => loader.load(u, res, undefined, rej));
+
+const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 50);
+let span = 0.7;
+const target = new THREE.Vector3(0, 0.1, 0);
+const views = { side: [1, 0, 0], front: [0, 0, -1], back: [0, 0, 1], iso: [Math.SQRT1_2, 0.56, Math.SQRT1_2], iso2: [-Math.SQRT1_2, 0.56, Math.SQRT1_2], iso3: [Math.SQRT1_2, 0.56, -Math.SQRT1_2] };
+const draw = () => renderer.render(scene, cam);
+window.setView = (name, s = span, ty = target.y) => {
+  span = s; target.set(0, ty, 0);
+  const d = new THREE.Vector3(...views[name]).normalize().multiplyScalar(10);
+  cam.position.copy(target).add(d); cam.up.set(0, 1, 0); cam.lookAt(target);
+  const a = 900 / 700; cam.left = -span * a; cam.right = span * a; cam.top = span; cam.bottom = -span; cam.updateProjectionMatrix();
+  draw();
+};
+
+const bike = (await load('../../art/items/glb/road-bike-t1.glb')).scene;
+scene.add(bike);
+bike.updateMatrixWorld(true);
+
+// Measured off the model, in its own units. The front of the bike is towards -z.
+const BB = new THREE.Vector3(0, -0.1426, 0.0505);
+const CRANK = 0.096;
+const PEDAL_X = 0.075;
+const SADDLE = new THREE.Vector3(0, 0.314, 0.165);
+const HOOD = new THREE.Vector3(0.115, 0.25, -0.205);   // the tops of the bars
+
+// Take the model's static cranks and pedals out of the mesh.
+bike.traverse((o) => {
+  if (!o.isMesh) return;
+  const g = o.geometry, p = g.attributes.position, idx = g.index, keep = [];
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  for (let i = 0; i < idx.count; i += 3) {
+    a.fromBufferAttribute(p, idx.getX(i)).applyMatrix4(o.matrixWorld);
+    b.fromBufferAttribute(p, idx.getX(i + 1)).applyMatrix4(o.matrixWorld);
+    c.fromBufferAttribute(p, idx.getX(i + 2)).applyMatrix4(o.matrixWorld);
+    const m = a.add(b).add(c).multiplyScalar(1 / 3);
+    const r = Math.hypot(m.y - BB.y, m.z - BB.z);
+    if (r < 0.16 && Math.abs(m.x) > 0.042) continue;
+    keep.push(idx.getX(i), idx.getX(i + 1), idx.getX(i + 2));
+  }
+  g.setIndex(keep);
+});
+
+// New cranks and pedals: plain boxes that turn.
+const crankMat = new THREE.MeshStandardMaterial({ color: 0x20242c, roughness: 0.5, metalness: 0.4 });
+const crank = new THREE.Group(); crank.position.copy(BB); scene.add(crank);
+const makeSide = (sign) => {
+  const g = new THREE.Group(); crank.add(g);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.012, CRANK + 0.016, 0.02), crankMat);
+  arm.position.set(sign * (PEDAL_X - 0.024), -CRANK / 2, 0); g.add(arm);
+  const pedal = new THREE.Group(); pedal.position.set(sign * PEDAL_X, -CRANK, 0); g.add(pedal);
+  pedal.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.01, 0.045), crankMat));
+  return { g, pedal };
+};
+const sides = { Left: makeSide(-1), Right: makeSide(1) };   // facing -z, the left is towards -x
+
+// The rider faces -z like the bike.
+const rider = (await load('../../models/runner.glb')).scene;
+const root = new THREE.Group(); root.rotation.y = Math.PI; root.add(rider); scene.add(root);
+const B = {};
+rider.traverse((o) => { if (o.isBone) B[o.name.replace(/^mixamorig:?/, '')] = o; o.frustumCulled = false; });
+const bind = new Map(); Object.values(B).forEach((b) => bind.set(b, { q: b.quaternion.clone(), p: b.position.clone() }));
+const wp = (b) => b.getWorldPosition(new THREE.Vector3());
+const wq = (b) => b.getWorldQuaternion(new THREE.Quaternion());
+const refresh = () => root.updateMatrixWorld(true);
+const rotW = (bone, delta) => {
+  bone.quaternion.copy(wq(bone.parent).invert().multiply(delta).multiply(wq(bone)));
+  refresh();
+};
+const aim = (bone, childPos, to) => {
+  const a = childPos.clone().sub(wp(bone)).normalize();
+  const b = to.clone().sub(wp(bone)).normalize();
+  rotW(bone, new THREE.Quaternion().setFromUnitVectors(a, b));
+};
+function twoBone(up, lo, end, goal, pole) {
+  const a = wp(up), l1 = a.distanceTo(wp(lo)), l2 = wp(lo).distanceTo(wp(end));
+  const t = goal.clone().sub(a);
+  const d = Math.min(t.length(), (l1 + l2) * 0.999);
+  const dir = t.normalize();
+  const x = (l1 * l1 - l2 * l2 + d * d) / (2 * d);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - x * x));
+  const side = pole.clone().sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize();
+  const knee = a.clone().add(dir.clone().multiplyScalar(x)).add(side.multiplyScalar(h));
+  aim(up, wp(lo), knee);
+  aim(lo, wp(end), a.clone().add(dir.clone().multiplyScalar(d)));
+}
+const resetPose = () => { bind.forEach((v, b) => { b.quaternion.copy(v.q); b.position.copy(v.p); }); refresh(); };
+
+// Size the rider to the bike: the leg nearly straight at the bottom of the stroke.
+resetPose();
+const leg1 = wp(B.LeftUpLeg).distanceTo(wp(B.LeftLeg)) + wp(B.LeftLeg).distanceTo(wp(B.LeftFoot));
+const ankleUp1 = wp(B.LeftFoot).y - wp(B.LeftToeBase).y;
+const foot1 = wp(B.LeftFoot).distanceTo(wp(B.LeftToeBase));
+const HIP_GAP = 0.06;
+const K = ((SADDLE.y + HIP_GAP) - (BB.y - CRANK) - 0.02) / (leg1 * 0.97 + ankleUp1);
+root.scale.setScalar(K); refresh();
+const size = new THREE.Box3().setFromObject(rider).getSize(new THREE.Vector3());
+window.rigInfo = { K, riderBindSize: size.toArray(), bikeHeight: 0.65 };
+
+const X = new THREE.Vector3(1, 0, 0), Z = new THREE.Vector3(0, 0, 1);
+const rotX = (a) => new THREE.Quaternion().setFromAxisAngle(X, a);
+let LEAN = 0.85;
+const pedalPos = (s) => s.pedal.getWorldPosition(new THREE.Vector3());
+
+window.setPhase = (t) => {
+  const ang = t * Math.PI * 2;
+  sides.Left.g.rotation.x = -ang; sides.Right.g.rotation.x = -ang + Math.PI;
+  sides.Left.pedal.rotation.x = ang; sides.Right.pedal.rotation.x = ang - Math.PI;
+  crank.updateMatrixWorld(true);
+  resetPose();
+  // seat the pelvis, with a little rock from side to side
+  const rock = Math.sin(ang) * 0.03;
+  const want = SADDLE.clone().add(new THREE.Vector3(Math.sin(ang) * 0.003, HIP_GAP, 0.012));
+  B.Hips.position.copy(B.Hips.parent.worldToLocal(want)); refresh();
+  // bend over the bars
+  rotW(B.Hips, rotX(-LEAN * 0.3).multiply(new THREE.Quaternion().setFromAxisAngle(Z, rock)));
+  rotW(B.Spine, rotX(-LEAN * 0.25));
+  rotW(B.Spine1, rotX(-LEAN * 0.25));
+  rotW(B.Spine2, rotX(-LEAN * 0.2));
+  rotW(B.Neck, rotX(LEAN * 0.5));
+  rotW(B.Head, rotX(LEAN * 0.35));
+  // legs to the pedals
+  for (const [name, sign, phase] of [['Left', -1, ang], ['Right', 1, ang + Math.PI]]) {
+    const pedal = pedalPos(sides[name]);
+    const pitch = 0.62 + Math.sin(phase + 0.6) * 0.14;   // from ball of foot up to the ankle
+    const ball = pedal.clone().add(new THREE.Vector3(0, 0.012, 0));
+    const ankle = ball.clone().add(new THREE.Vector3(0, foot1 * K * Math.sin(pitch), foot1 * K * Math.cos(pitch)));
+    twoBone(B[name + 'UpLeg'], B[name + 'Leg'], B[name + 'Foot'], ankle, new THREE.Vector3(sign * 0.1, 0.25, -1));
+    aim(B[name + 'Foot'], wp(B[name + 'ToeBase']), ball);
+  }
+  // arms to the hoods
+  for (const [name, sign] of [['Left', -1], ['Right', 1]]) {
+    const goal = HOOD.clone(); goal.x *= sign;
+    twoBone(B[name + 'Arm'], B[name + 'ForeArm'], B[name + 'Hand'], goal, new THREE.Vector3(sign * 0.7, -0.5, 0.6));
+  }
+  draw();
+};
+
+// The lean that leaves the arms a little bent.
+{
+  let best = 0.85, bestErr = 9;
+  for (let l = 0.3; l < 1.6; l += 0.05) {
+    LEAN = l; window.setPhase(0);
+    const arm = wp(B.LeftArm).distanceTo(wp(B.LeftForeArm)) + wp(B.LeftForeArm).distanceTo(wp(B.LeftHand));
+    const err = Math.abs(wp(B.LeftArm).distanceTo(HOOD.clone().setX(-HOOD.x)) - arm * 0.92);
+    if (err < bestErr) { bestErr = err; best = l; }
+  }
+  LEAN = best; window.rigInfo.lean = best;
+}
+
+// How far the feet and hands get from where they belong, over one turn. Model units.
+window.report = () => {
+  const out = [];
+  for (let i = 0; i < 48; i++) {
+    window.setPhase(i / 48);
+    out.push([
+      wp(B.LeftToeBase).distanceTo(pedalPos(sides.Left)),
+      wp(B.RightToeBase).distanceTo(pedalPos(sides.Right)),
+      wp(B.LeftHand).distanceTo(HOOD.clone().setX(-HOOD.x)),
+      wp(B.RightHand).distanceTo(HOOD),
+    ]);
+  }
+  const max = (i) => +Math.max(...out.map((x) => x[i])).toFixed(4);
+  return { footL: max(0), footR: max(1), handL: max(2), handR: max(3) };
+};
+
+// Eight frames of one turn in one picture.
+let sheetEl = null;
+window.contact = (view, s, ty, n = 8) => {
+  if (!sheetEl) { sheetEl = document.createElement('canvas'); sheetEl.width = 900; sheetEl.height = 700; document.body.appendChild(sheetEl); }
+  const g = sheetEl.getContext('2d');
+  g.fillStyle = '#dfe7f2'; g.fillRect(0, 0, 900, 700);
+  const cols = Math.ceil(Math.sqrt(n)), w = 900 / cols, h = 700 / cols;
+  renderer.domElement.style.display = 'block';
+  for (let i = 0; i < n; i++) {
+    window.setView(view, s, ty);
+    window.setPhase(i / n);
+    g.drawImage(renderer.domElement, (i % cols) * w, Math.floor(i / cols) * h, w, h);
+  }
+  renderer.domElement.style.display = 'none';
+  sheetEl.style.display = 'block';
+};
+window.single = (view, s, ty, t) => {
+  if (sheetEl) sheetEl.style.display = 'none';
+  renderer.domElement.style.display = 'block';
+  window.setView(view, s, ty); window.setPhase(t);
+};
+
+window.dbg = () => { window.setPhase(0.1); const f = (n) => wp(B[n]).toArray().map((x) => +x.toFixed(3)); return { hips: f('Hips'), spine: f('Spine'), s1: f('Spine1'), s2: f('Spine2'), neck: f('Neck'), head: f('Head'), lArm: f('LeftArm'), lFore: f('LeftForeArm'), lHand: f('LeftHand'), lean: LEAN, parents: [B.Spine.parent.name, B.Spine1.parent.name, B.Neck.parent.name] }; };
+window.setView('side', 0.72, 0.15);
+window.setPhase(0);
+window.ready = true;
+</script>

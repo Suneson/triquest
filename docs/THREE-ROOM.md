@@ -77,6 +77,8 @@ Once three.js draws a picture, the page no longer lays it out or paints it (`dis
 
 ## What to check on an iPhone
 
+With `?three=1&models=1`. Once these pass, three.js can become the base's default and the old page drawing can go.
+
 1. Pan and pinch the base with the athlete walking: is it smoother than with `?three=0`?
 2. Pick an item up, drag it, set it down; train on the treadmill.
 3. Use the app for 10 minutes (the stadium, the wardrobe, the markets) and come back: is the base still drawn, and does the app stay up?

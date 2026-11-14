@@ -54,9 +54,20 @@ A finger now finds its item by the pixels three.js draws, not by the item's butt
 - A mouse over an item shows the hand, as before.
 - Checked in the browser: tap to pick up, a see-through corner puts it down, drag and drop, arrow nudge, and the mall opening its shop.
 
+## Stage 5 (done): items as 3D models
+
+With `?models=1` as well (it stays on for that device; `?models=0` turns it off), the 21 items with a Tripo model stand in the room as real 3D models: the treadmills t1 to t3, the coffee machines, the lockers, the fridge, the racks, the ice bath, the massage table, the workstand, the podium, the bag, the rower, the shoe rack, the trophy and its cabinets, and the bike stand.
+
+- **The models:** `tools/build-items.mjs` makes them from `art/items/glb` (the models the pictures were rendered from) into `models/items/<name>.glb`, named like the picture without its facing. Each is about 14,000 triangles with one 1024 px texture, about 230 KB. A model loads only once its item is in a room.
+- **Placed by its picture:** each model stands on its footprint's middle, turned for its facing (a, or b turned 90°), and sized so it's as wide on screen as its picture. Laid over the picture, the two match.
+- **Painted with its picture.** The pictures were repainted after rendering, and the models still have Tripo's plain textures. But the base's camera never turns, so a model only ever shows the side its picture shows. Each point of the model takes the colour of the picture's pixel in front of it: it looks just as before.
+- **What changes is depth.** The athlete is hidden behind the treadmill's console rail as it walks past, and runs on the belt behind the console. A picture could only be all in front or all behind.
+- Picking a model is by a ray from the camera, so taps follow its real shape.
+- `?models=raw` shows the models as Tripo made them, lit by the room, for comparing.
+- The treadmill t4, the bike on rollers, the start block and the stall's items have no model yet and stay pictures.
+
 ## Next stages
 
-5. **Items as 3D models** where a Tripo model exists, in the same scene.
 6. **The page draws only the HUD and the menus:** the item buttons and the city's pictures leave the page (it keeps their tap areas, or those move to three.js too).
 
 ## What to check on an iPhone

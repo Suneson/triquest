@@ -47,6 +47,7 @@ const OUTFIT_COLOURS = {
   'tri-pro': ['#16264D', '#F2C14E'], 'storm-shell': ['#1E2E57', '#1E2E57'], 'gold-line': ['#15171C', '#15171C'],
   'marathon-elite': ['#FFFFFF', '#FFFFFF'], forge: ['#3A3F4A', '#0C4CAE'], 'first-finisher': ['#FFFFFF', '#16264D'],
   'streak-keeper': ['#123A8A', '#123A8A'], 'blomvelt-set': ['#D7263D', '#FFFFFF'], 'clan-champion': ['#1F4FC4', '#F2C14E'],
+  'kipchomba-set': ['#1F9A5E', '#1F9A5E'], 'ledrick-set': ['#167C86', '#167C86'], 'mcintosh-set': ['#F07A2A', '#3A3D45'],
 };
 const ITEM_COLOUR = (id) => (/gold/.test(id) ? '#F2C14E' : /white|starter|cycling/.test(id) ? '#F4F6FA' : /blue|sky|visor|runner/.test(id) ? '#6EA8FF'
   : /aero|navy|beanie|lifter|casual|trail/.test(id) ? '#16264D' : /bucket|trainer|grey/.test(id) ? '#8A93A3' : '#2A2F3A');

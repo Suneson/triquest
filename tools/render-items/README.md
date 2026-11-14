@@ -31,3 +31,6 @@ ARGS="tools/render-items/rig.py|<decoded glb dir>|<out dir>" \
 - **`render-batch2.py`:** the second batch.
   - It holds 15 new models and the treadmills (t1 to t3) again, now facing with their console towards the camera, so the runner faces it.
   - Set `ONLY=<name>,<name>` to render just some of them.
+- **`render-batch3.py`:** the clan room's 30 items and 23 new base items (gym, smoothie bars, pool, trophies), from the 14 Nov Tripo GLBs.
+  - Decode them first with `node tools/decode-glb.mjs <in.glb> <out.glb>` into `<dec>/club` and `<dec>/base`, then run Blender itself: `ARGS="tools/render-items/rig.py|<dec>|<out>" blender -b --python tools/render-items/render-batch3.py`.
+  - Models are found by the start of Tripo's file id; names match the concept art they were made from, so each sheet goes to Gemini with its reference (`RETEXTURE-PROMPT.md`, "Items with a concept picture").

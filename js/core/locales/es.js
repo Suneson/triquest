@@ -3216,7 +3216,10 @@ es.wardrobe = {
     "first-finisher": "Primer finisher",
     "streak-keeper": "Guardián de la racha",
     "blomvelt-set": "Equipación Blomvelt",
-      "clan-champion": "Campeón del clan"
+    "kipchomba-set": "Equipación Kipchomba",
+    "ledrick-set": "Equipación Ledrick",
+    "mcintosh-set": "Equipación McIntosh",
+      "clan-champion": "Campeón del club"
   },
   "item": {
     "helmet-road": "Casco de carretera",
@@ -3313,8 +3316,8 @@ es.stadium = {
   "km": "{km} / {total} km",
   "tagKm": "{km} km",
   "kmAria": "{boss} ha corrido {km} de {total} km",
-  "robotSoon": "El robot de tu clan está en la salida. Pronto cada km que registre tu clan lo moverá.",
-  "robot": "Robot del clan",
+  "robotSoon": "El robot de tu club está en la salida. Pronto cada km que registre tu club lo moverá.",
+  "robot": "Robot del club",
   "talk": "Habla con {boss}",
   "next": "Toca para seguir",
   "go": "¡A correr!",

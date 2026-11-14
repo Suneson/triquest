@@ -718,6 +718,9 @@ export function wireDiorama(root, ctx) {
       // still as sharp as the room ever shows it; `a` stays the item's own picture (its fit)
       const img = el.querySelector('img'); const a = artOf(it); const pic = roomCopy(a);
       if (img.getAttribute('src') !== pic) img.src = pic;
+      // its shape, for when three.js draws it and the page doesn't lay its picture out (styles.css)
+      const shape = () => { const ar = img.naturalWidth ? `${img.naturalWidth} / ${img.naturalHeight}` : ''; if (ar && el.style.getPropertyValue('--ar') !== ar) el.style.setProperty('--ar', ar); };
+      if (img.complete) shape(); else img.addEventListener('load', shape, { once: true });
       if (it.runner3d) {
         // your athlete is on the treadmill while it trains on it (and walks the floor the rest of the time)
         const on = use?.kind === 'drill' && use.id === it.id && ath.at === it.id;

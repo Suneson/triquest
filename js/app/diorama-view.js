@@ -507,7 +507,6 @@ export function wireDiorama(root, ctx) {
     const gl = stage.gl = mountBaseGL(worldEl.querySelector('.dg-items'), { reduced: () => prefersReducedMotion() || document.body.classList.contains('rm') });
     gl.ready.then((ok) => {
       if (!ok) return;
-      stage.world?.classList.add('is-gl');
       walk.w?.dispose(); walk.w = null;   // its own canvas goes; it comes back drawn by three.js
       walk.redraw?.();
     });

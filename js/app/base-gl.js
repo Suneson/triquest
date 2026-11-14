@@ -2,8 +2,9 @@
 // and your athlete (docs/THREE-ROOM.md), on with
 // ?three=1 for now.
 //
-// The page still lays the base out: the city, the room and its floor, the item buttons (what you
-// tap and drag, and their tags) and the view's pan and zoom. This draws the room on one canvas: its
+// The page still lays the base out: the city, the room and its floor, the item buttons (their
+// tags, and keyboard focus) and the view's pan and zoom. Which item a finger is on is found here,
+// by the pixels drawn (pick). This draws the room on one canvas: its
 // picture, the tape, the floor shadows, the held item's footprint and arrows, each item's picture
 // on a card, and the athlete as a real 3D figure among them, so it walks in front of and behind them. Before this, the athlete was drawn
 // off screen and copied into the page every frame (the costly part on iPhone); now it's drawn
@@ -58,6 +59,8 @@ export function mountBaseGL(layer, { reduced = () => false } = {}) {
     body: (char) => api.body(char),
     /** The athlete on a machine ({ u, v, y, yaw, scale } in tiles), or off it (null). */
     machine: (spot, clip, char) => api?.machine(spot, clip, char),
+    /** The id of the item drawn at world px (x, y), or null. */
+    pick: (x, y, slop) => api?.pick(x, y, slop) ?? null,
     dispose() { gone = true; api?.dispose(); canvas.remove(); },
   };
 }
@@ -651,8 +654,52 @@ function build(L, canvas, layer, reduced) {
     if (moving || busy) raf = requestAnimationFrame(loop);
   }
 
+  // ---- picking: which item is under a point, by the pixels drawn (docs/THREE-ROOM.md, stage 4) ----
+  // A tap through a picture's see-through corner reaches what's behind it. Each picture's alpha is
+  // read once, small (64 px across), the first time a tap needs it. The cards are tried front to
+  // back, as they're drawn: by renderOrder, then nearest the camera.
+  const MASK = 64;
+  const maskOf = (t) => {
+    if (t.mask !== undefined) return t.mask;
+    const im = t.tex?.image;
+    if (!im?.width) return null;   // not in yet: asked again next time
+    try {
+      const w = MASK, h = Math.max(1, Math.round(MASK * t.aspect));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const x = cv.getContext('2d', { willReadFrequently: true });
+      x.drawImage(im, 0, 0, w, h);
+      const d = x.getImageData(0, 0, w, h).data;
+      const a = new Uint8Array(w * h);
+      for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+      t.mask = { w, h, a };
+    } catch { t.mask = null; }   // a picture that can't be read: its whole card counts
+    return t.mask;
+  };
+  // is the world point (x, y) on a drawn pixel of card c?
+  const solid = (c, x, y) => {
+    const m = c.mesh; const sx = m.scale.x, sy = m.scale.y;
+    if (!(sx > 0 && sy > 0)) return false;
+    const u = (x - (m.position.x - sx / 2)) / sx;
+    const v = (y - (m.position.y - sy)) / sy;   // from the picture's top
+    if (u < 0 || u >= 1 || v < 0 || v >= 1) return false;
+    const k = maskOf(c.t);
+    if (!k) return true;
+    return k.a[Math.floor(v * k.h) * k.w + Math.floor(u * k.w)] > 24;
+  };
+  /** The id of the item drawn at world px (x, y), or null; `slop` px round it if nothing's right there. */
+  function pick(x, y, slop = 0) {
+    const order = [...byId.values()].filter((c) => c.mesh.visible)
+      .sort((a, b) => (b.mesh.renderOrder - a.mesh.renderOrder) || (b.mesh.position.z - a.mesh.position.z));
+    for (const c of order) if (solid(c, x, y)) return c.id;
+    if (slop > 0) {
+      const around = [[slop, 0], [-slop, 0], [0, slop], [0, -slop], [slop, slop], [-slop, slop], [slop, -slop], [-slop, -slop]];
+      for (const c of order) if (around.some(([dx, dy]) => solid(c, x + dx, y + dy))) return c.id;
+    }
+    return null;
+  }
+
   return {
-    setRoom, setView, body, machine,
+    setRoom, setView, body, machine, pick,
     dispose() {
       cancelAnimationFrame(raf); mo.disconnect(); floorObs.disconnect(); cityObs.disconnect();
       for (const p of pics.values()) p.mesh.material.dispose();

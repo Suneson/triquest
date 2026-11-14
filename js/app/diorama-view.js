@@ -501,8 +501,8 @@ export function wireDiorama(root, ctx) {
       <div class="dg-shadows"></div>
       <div class="dg-items"></div>`;
   }
-  // ?three=1: the items and the athlete are drawn by three.js on a canvas in the items layer
-  // (base-gl.js); the buttons stay, see-through, for tapping and dragging
+  // ?three=1: the base is drawn by three.js (base-gl.js); the item buttons stay, see-through, for
+  // their tags and keyboard focus, and a finger finds its item by the pixels drawn (itemUnder)
   if (threeTest() && webglOk() && !stage.gl) {
     const gl = stage.gl = mountBaseGL(worldEl.querySelector('.dg-items'), { reduced: () => prefersReducedMotion() || document.body.classList.contains('rm') });
     gl.ready.then((ok) => {
@@ -959,10 +959,28 @@ export function wireDiorama(root, ctx) {
   const pts = new Map();
   let g = null;
   let panned = false;
+  let swallow = false;   // a tap that went to an item drawn over a tap area: not a tap on that area too
   // a drag that started on a building isn't a tap on it
-  vp.addEventListener('click', (e) => { if (panned) { panned = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  vp.addEventListener('click', (e) => { if (panned || swallow) { panned = false; swallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  const isGl = () => glOn() && worldEl.classList.contains('is-gl');
+  // the layer an element is painted in, in the world (its outermost z-index)
+  const layerZ = (el) => { let z = 0; for (let n = el; n && n !== worldEl; n = n.parentElement) { const k = getComputedStyle(n).zIndex; if (k !== 'auto') z = Number(k) || 0; } return z; };
+  const ITEMS_Z = 2;   // .dg-items
+  // which item a finger is on: with three.js, by the pixels drawn, so a tap through a picture's
+  // see-through corner reaches what's behind it; else by its button
+  const itemUnder = (e) => {
+    if (!isGl()) return e.target.closest('[data-item]');
+    const tag = e.target.closest('[data-item]');   // only its tag takes taps now
+    if (tag) return tag;
+    // a tap area painted over the items (a market, the sign) keeps its tap
+    const hit = e.target.closest(TAP_TARGETS);
+    if (hit && layerZ(hit) > ITEMS_Z) return null;
+    const p = toWorld(e.clientX, e.clientY);
+    const id = stage.gl.pick(p.x, p.y, (e.pointerType === 'mouse' ? 2 : 8) / view.v.s);
+    return id ? worldEl.querySelector(`[data-item="${CSS.escape(id)}"]`) : null;
+  };
   vp.onpointerdown = (e) => {
-    panned = false;
+    panned = false; swallow = false;
     if (e.button !== undefined && e.button > 0) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
@@ -974,7 +992,8 @@ export function wireDiorama(root, ctx) {
     if (pts.size > 2) return;
     const nud = e.target.closest('[data-nudge]');
     if (nud) { g = { mode: 'nudge', dir: nud.dataset.nudge, x0: e.clientX, y0: e.clientY }; return; }
-    const itemEl = e.target.closest('[data-item]');
+    const itemEl = itemUnder(e);
+    if (itemEl && e.target.closest(TAP_TARGETS)) swallow = true;
     // a tap on a building has to reach its button, so the viewport takes the finger only once it moves
     if (!e.target.closest(TAP_TARGETS)) vp.setPointerCapture?.(e.pointerId);
     if (itemEl && itemEl.dataset.item === view.sel) {
@@ -986,7 +1005,8 @@ export function wireDiorama(root, ctx) {
   };
   vp.addEventListener('pointerdown', () => { vpBox = null; }, { capture: true });
   vp.onpointermove = (e) => {
-    if (!pts.has(e.pointerId)) return;
+    // a mouse over an item: the hand, as over its button before
+    if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse' && isGl()) vp.style.cursor = itemUnder(e) ? 'pointer' : ''; return; }
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (!g) return;
     if (g.mode === 'pinch' && pts.size === 2) {

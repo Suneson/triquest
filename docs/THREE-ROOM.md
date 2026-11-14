@@ -43,10 +43,21 @@ three.js now draws every other picture in the base too: the city's ground, the t
 - A tap on a plot squeezes it here as on the page.
 - Checked the same way: the page's pictures, inverted, cancel to flat grey over the three.js ones, under and over the room.
 
+## Stage 4 (done): tapping by three.js
+
+A finger now finds its item by the pixels three.js draws, not by the item's button.
+
+- **A tap through a picture's see-through corner** reaches what's behind it: the floor, another item, or a plot of the island. Before, the button's whole box caught it.
+- **How:** `base-gl.js` keeps each picture's alpha, small (64 px across), read the first time a tap needs it. `pick(x, y)` tries the cards front to back, in the order they're drawn. A finger gets 8 screen px of slack, a mouse 2, when nothing is right under it.
+- **The buttons stay** (`pointer-events: none` under `.is-gl`) for keyboard focus and their tags. A tag (a timer, a count) still takes a tap and picks its item.
+- **The city keeps its own tap areas.** One painted over the items (a market, the mall, the sign) wins over an item behind it. Under the items (a plot), the item drawn over it wins, and the plot doesn't get the tap as well.
+- A mouse over an item shows the hand, as before.
+- Checked in the browser: tap to pick up, a see-through corner puts it down, drag and drop, arrow nudge, and the mall opening its shop.
+
 ## Next stages
 
-4. **Tapping by three.js** instead of see-through buttons. Then the page draws only the HUD and the menus.
 5. **Items as 3D models** where a Tripo model exists, in the same scene.
+6. **The page draws only the HUD and the menus:** the item buttons and the city's pictures leave the page (it keeps their tap areas, or those move to three.js too).
 
 ## What to check on an iPhone
 

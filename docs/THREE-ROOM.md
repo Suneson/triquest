@@ -66,11 +66,18 @@ With `?models=1` as well (it stays on for that device; `?models=0` turns it off)
 - `?models=raw` shows the models as Tripo made them, lit by the room, for comparing.
 - The treadmill t4, the bike on rollers, the start block and the stall's items have no model yet and stay pictures.
 
-## Next stages
+## Stage 6 (done): the page draws only the HUD, the menus and the words
 
-6. **The page draws only the HUD and the menus:** the item buttons and the city's pictures leave the page (it keeps their tap areas, or those move to three.js too).
+Once three.js draws a picture, the page no longer lays it out or paints it (`display: none`, not just see-through), so the browser needn't keep it decoded. That was the last of the page's copies: the items, the city's pictures, the tape and the floor shadows.
+
+- **What the page still draws:** the HUD, the menus, and the words in the world: the item tags, the sign's countdown, the market timers and coins.
+- **What it keeps, unseen, for taps:** the tap areas of the city and the floor's lines (the arrows).
+- **An item's button keeps its picture's shape** (`--ar`, set as its picture loads), so its tags still sit on its top. Its picture still loads: three.js reads its address, and the size of a picture still places a market.
+- Checked in the browser: no page picture is laid out, and the tags, the city, the markets and their coins are all in place.
 
 ## What to check on an iPhone
+
+With `?three=1&models=1`. Once these pass, three.js can become the base's default and the old page drawing can go.
 
 1. Pan and pinch the base with the athlete walking: is it smoother than with `?three=0`?
 2. Pick an item up, drag it, set it down; train on the treadmill.

@@ -2865,16 +2865,22 @@ body.rm .cl-route-on { transition: none; }
 /* ?three=1: three.js draws the items and the athlete (base-gl.js) on a canvas under the buttons;
    the buttons' pictures stay for their size, unseen */
 .dg-gl { position: absolute; left: 0; top: 0; z-index: 0; transform-origin: 0 0; pointer-events: none; }
-.dg-world.is-gl .dg-item img { opacity: 0; filter: none; }
+/* stage 6 (docs/THREE-ROOM.md): what three.js draws isn't laid out or painted by the page at all,
+   so the browser needn't keep it decoded. A button keeps its picture's shape (--ar, set as it
+   loads), so its tags still sit on its top. */
+.dg-world.is-gl .dg-item { aspect-ratio: var(--ar, auto); }
+.dg-world.is-gl .dg-item img { display: none; }
 .dg-world.is-gl .dg-walker { display: none; }
 /* items are found by the pixels three.js draws (diorama-view.js itemUnder): only their tags take taps */
 .dg-world.is-gl .dg-item { pointer-events: none; }
 .dg-world.is-gl .dg-item .dg-tag { pointer-events: auto; cursor: pointer; }
 /* the city's pictures once three.js draws them (base-gl.js marks each one) */
-.dg-world.is-gl img.gl-on { visibility: hidden; }
+.dg-world.is-gl img.gl-on { display: none; }
 /* and the room, its floor and its shadows: the arrows stay, unseen, for tapping */
 .dg-world.is-gl .dg-room-art > img { display: none; }
-.dg-world.is-gl .dg-floor, .dg-world.is-gl .dg-tape, .dg-world.is-gl .dg-shadows { opacity: 0; }
+/* the floor's lines stay, unseen, for the arrows' taps */
+.dg-world.is-gl .dg-floor { opacity: 0; }
+.dg-world.is-gl .dg-tape, .dg-world.is-gl .dg-shadows { display: none; }
 .dg-world.is-gl .dg-arrow, .dg-world.is-gl .dg-cell { animation: none; filter: none; }
 .dg-item .r3d-canvas { position: absolute; pointer-events: none; image-rendering: auto; }
 /* admins: turn the runner to check how it sits on the belt */

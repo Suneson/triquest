@@ -2867,6 +2867,10 @@ body.rm .cl-route-on { transition: none; }
 .dg-gl { position: absolute; left: 0; top: 0; z-index: 0; transform-origin: 0 0; pointer-events: none; }
 .dg-world.is-gl .dg-item img { opacity: 0; filter: none; }
 .dg-world.is-gl .dg-walker { display: none; }
+/* and the room, its floor and its shadows: the arrows stay, unseen, for tapping */
+.dg-world.is-gl .dg-room-art > img { display: none; }
+.dg-world.is-gl .dg-floor, .dg-world.is-gl .dg-tape, .dg-world.is-gl .dg-shadows { opacity: 0; }
+.dg-world.is-gl .dg-arrow, .dg-world.is-gl .dg-cell { animation: none; filter: none; }
 .dg-item .r3d-canvas { position: absolute; pointer-events: none; image-rendering: auto; }
 /* admins: turn the runner to check how it sits on the belt */
 .dg-turn { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 14px); transform: translateX(-50%); z-index: 5;

@@ -21,9 +21,19 @@ The base is moving from web page pictures to a game renderer (docs/PERFORMANCE.m
 
 The test room from PR 92 is gone: the base itself is the test now.
 
+## Stage 2 (done): the room and its floor
+
+three.js now also draws the room's picture, the tape round an unexpanded room and the dimmed floor beyond it, the soft shadows under the items, the held item's footprint and its four arrows.
+
+- **Read from the page as it lays them out:** the room's art element (its size, its matrix in the world and its picture, half size or sharp), the floor's SVG, the tape's strips and the shadows layer. A change to any of them builds the floor again.
+- **Drawn in a pass of their own** before the items and the athlete, in the page's order: picture, dimmed floor, tape, footprint, arrows, shadows.
+- **Lines stay the same width on screen** as the page's (2 px round a tile, 2.5 px round an arrow): they're built again once the zoom changes by a sixth.
+- **The page's copies are hidden** once the room's picture is drawn here, so the room never shows empty. The page's picture isn't drawn at all (`display: none`), so the browser doesn't keep it decoded. Its arrows stay, unseen, so tapping one still moves the item.
+- Checked by laying the page's picture, inverted, over the three.js one: they cancel to flat grey.
+- Not drawn yet: the arrows' slow pulse and the glow round the footprint.
+
 ## Next stages
 
-2. **The room's picture and the floor's lines** drawn by three.js too.
 3. **The city, the tower and the island**, then tapping by three.js instead of see-through buttons. Then the page draws only the HUD and the menus.
 4. **Items as 3D models** where a Tripo model exists, in the same scene.
 

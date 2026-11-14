@@ -1,10 +1,10 @@
-// base-gl.js: the base's items and your athlete drawn by three.js (docs/THREE-ROOM.md), on with
+// base-gl.js: the base's room, its floor, its items and your athlete drawn by three.js (docs/THREE-ROOM.md), on with
 // ?three=1 for now.
 //
-// The page still lays the base out: the city, the room's picture, the floor's lines, the item
-// buttons (what you tap and drag, and their tags) and the view's pan and zoom. This draws what
-// stands in the room on one canvas: each item's picture on a card, and the athlete as a real 3D
-// figure among them, so it walks in front of and behind them. Before this, the athlete was drawn
+// The page still lays the base out: the city, the room and its floor, the item buttons (what you
+// tap and drag, and their tags) and the view's pan and zoom. This draws the room on one canvas: its
+// picture, the tape, the floor shadows, the held item's footprint and arrows, each item's picture
+// on a card, and the athlete as a real 3D figure among them, so it walks in front of and behind them. Before this, the athlete was drawn
 // off screen and copied into the page every frame (the costly part on iPhone); now it's drawn
 // straight onto a canvas of its own, with its own WebGL context.
 //
@@ -66,6 +66,7 @@ function build(L, canvas, layer, reduced) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.autoClear = false;   // the floor's pass, then the scene over it (render)
   const scene = new THREE.Scene();
   scene.add(new THREE.AmbientLight(0xffffff, 1.5));
   const key = new THREE.DirectionalLight(0xfff5e6, 2.5); key.position.set(-2, 5, 3); scene.add(key);
@@ -103,6 +104,8 @@ function build(L, canvas, layer, reduced) {
     const h11 = g22 / gd, h12 = -g12 / gd, h21 = -g21 / gd, h22 = g11 / gd;
     cards.matrix.set(h11, h12, 0, -(h11 * G[2] + h12 * G[5]), h21, h22, 0, -(h21 * G[2] + h22 * G[5]), 0, 0, 1, 0, 0, 0, 0, 1);
     cards.matrixWorldNeedsUpdate = true;
+    floorRoot.matrix.multiplyMatrices(camera.matrixWorld, cards.matrix); floorRoot.matrixWorldNeedsUpdate = true;
+    buildFloor();
     for (const c2 of byId.values()) c2.z = null;   // depths are per room
     project(); sync(); dirty = true;
   }
@@ -121,6 +124,7 @@ function build(L, canvas, layer, reduced) {
     // inside the world, which is scaled by s: undo that, so the canvas is the screen's size
     canvas.style.transform = `translate(${(-v.tx / v.s).toFixed(2)}px, ${(-v.ty / v.s).toFixed(2)}px) scale(${(1 / v.s).toFixed(6)})`;
     project();
+    reline();
     drawNow();   // in the same frame the page moves the world, so they never part
   }
   function project() {
@@ -260,6 +264,149 @@ function build(L, canvas, layer, reduced) {
   });
   mo.observe(layer, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'src', 'data-uv'], attributeOldValue: true });
 
+  // ---- the floor: the room's picture, the tape, the floor shadows, the footprint and the arrows ----
+  // Read from the page as it lays them out (the room's art element, its floor's SVG, the tape, the
+  // shadows layer), drawn in a pass of their own before the scene, in the page's order. The page's
+  // copies are hidden (styles.css, .is-gl); its arrows stay, unseen, for tapping.
+  const world = layer.parentElement;
+  const artEl = world.querySelector('.dg-room-art');
+  const shadowsEl = world.querySelector('.dg-shadows');
+  const floorScene = new THREE.Scene();
+  const floorRoot = new THREE.Group(); floorRoot.matrixAutoUpdate = false; floorScene.add(floorRoot);
+  const overlay = new THREE.Group(); floorRoot.add(overlay);   // rebuilt whenever the floor changes
+  const flatMat = (color, opacity, map = null) => new THREE.MeshBasicMaterial({ color, opacity, map, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+  const quadGeo = (pts, uvs = [0, 1, 1, 1, 1, 0, 0, 0]) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts.flatMap(([x, y]) => [x, y, FAR_Z]), 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    g.setIndex([0, 1, 2, 0, 2, 3]);
+    return g;
+  };
+  // the room's picture: its own mesh, kept while the overlay is rebuilt
+  const pic = { mesh: null, src: '', key: '', tex: null, loading: '' };
+  let art = null;   // { rw, rh, m: [a, b, c, d, e, f] }: the art's size and its matrix in the world
+  const artToWorld = (x, y) => { const [a, b, c, d, e, f] = art.m; return [a * x + c * y + e, b * x + d * y + f]; };
+  const readArt = () => {
+    const st = artEl?.style;
+    const m = /matrix\(([^)]+)\)/.exec(st?.transform || '');
+    const rw = parseFloat(st?.width), rh = parseFloat(st?.height);
+    art = m && rw && rh ? { rw, rh, m: m[1].split(',').map(Number) } : null;
+  };
+  function roomPicture() {
+    const img = artEl?.querySelector(':scope > img');
+    const src = img?.getAttribute('src') || '';
+    if (!art || !src) { if (pic.mesh) pic.mesh.visible = false; return; }
+    const key = `${art.rw}x${art.rh}|${art.m.join(',')}`;
+    const corners = [[0, 0], [art.rw, 0], [art.rw, art.rh], [0, art.rh]].map(([x, y]) => artToWorld(x, y));
+    if (!pic.mesh) {
+      pic.mesh = new THREE.Mesh(quadGeo(corners), flatMat(0xffffff, 1));
+      pic.mesh.renderOrder = 0; pic.mesh.frustumCulled = false; pic.mesh.visible = false;
+      floorRoot.add(pic.mesh);
+    } else if (key !== pic.key) {
+      pic.mesh.geometry.dispose(); pic.mesh.geometry = quadGeo(corners);
+    }
+    // another room: hidden until its picture is in (a sharper copy of the same room swaps in place)
+    if (key !== pic.key) { pic.key = key; if (src !== pic.src) pic.mesh.visible = false; }
+    if (src === pic.src || src === pic.loading) return;
+    pic.loading = src;
+    new THREE.TextureLoader().load(src, (tx) => {
+      if (pic.loading !== src) { tx.dispose(); return; }
+      tx.colorSpace = THREE.SRGBColorSpace;
+      tx.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      pic.tex?.dispose();
+      pic.tex = tx; pic.src = src; pic.loading = '';
+      pic.mesh.material.map = tx; pic.mesh.material.needsUpdate = true; pic.mesh.visible = true;
+      world.classList.add('is-gl');
+      dirty = true; wake();
+    }, undefined, () => { if (pic.loading === src) pic.loading = ''; });
+  }
+  // a line along a polygon's edges, `px` screen px wide at the zoom it's built at
+  const strokeGeo = (pts, px) => {
+    const half = px / 2 / (V?.s || 1);
+    const pos = []; const idx = [];
+    pts.forEach(([x0, y0], i) => {
+      const [x1, y1] = pts[(i + 1) % pts.length];
+      const dx = x1 - x0, dy = y1 - y0; const l = Math.hypot(dx, dy) || 1;
+      const nx = (-dy / l) * half, ny = (dx / l) * half;
+      const ex = (dx / l) * half, ey = (dy / l) * half;   // past each end, so the corners close
+      const n = pos.length / 3;
+      pos.push(x0 - ex + nx, y0 - ey + ny, FAR_Z, x1 + ex + nx, y1 + ey + ny, FAR_Z, x1 + ex - nx, y1 + ey - ny, FAR_Z, x0 - ex - nx, y0 - ey - ny, FAR_Z);
+      idx.push(n, n + 1, n + 2, n, n + 2, n + 3);
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
+    return g;
+  };
+  const fillGeo = (pts) => {
+    const g = new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))));
+    g.translate(0, 0, FAR_Z);
+    return g;
+  };
+  const add = (geo, mat, order, dy = 0) => { const m = new THREE.Mesh(geo, mat); m.renderOrder = order; m.position.y = dy; m.frustumCulled = false; overlay.add(m); return m; };
+  const tapeTex = new THREE.TextureLoader().load('icons/UI/tape.webp', (tx) => { tx.colorSpace = THREE.SRGBColorSpace; dirty = true; wake(); });
+  tapeTex.wrapS = THREE.RepeatWrapping;
+  const shadowTex = (() => {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+    const x = c.getContext('2d');
+    const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);   // .dg-shadow's gradient
+    g.addColorStop(0, 'rgba(8,10,20,.55)'); g.addColorStop(0.6, 'rgba(8,10,20,.28)'); g.addColorStop(1, 'rgba(8,10,20,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx;
+  })();
+  const M = {
+    dim: flatMat(0x0b1222, 0.34), tape: flatMat(0xffffff, 1, tapeTex), shadow: flatMat(0xffffff, 1, shadowTex),
+    okFill: flatMat(0x0c4cae, 0.45), okLine: flatMat(0x6ea8ff, 1), badFill: flatMat(0xd9443b, 0.6), badLine: flatMat(0xd9443b, 1),
+    arrow: flatMat(0x6ea8ff, 1), arrowLine: flatMat(0x0b1222, 1), arrowShade: flatMat(0x000000, 0.45),
+  };
+  let builtAt = 1;   // the zoom the lines were built at (they're a fixed width on screen)
+  function buildFloor() {
+    readArt();
+    roomPicture();
+    for (const m of [...overlay.children]) { m.geometry.dispose(); overlay.remove(m); }
+    if (!art) return;
+    builtAt = V?.s || 1;
+    const pct = (s) => s.trim().split(/\s+/).map((p) => p.split(',').map(Number)).map(([x, y]) => artToWorld((x * art.rw) / 100, (y * art.rh) / 100));
+    // the tape round an unexpanded room: the floor beyond it dimmed, and its two strips
+    const tape = artEl.querySelector('.dg-tape');
+    if (tape) {
+      for (const p of tape.querySelectorAll('polygon')) add(fillGeo(pct(p.getAttribute('points'))), M.dim, 1);
+      for (const i of tape.querySelectorAll('i')) {
+        const w = parseFloat(i.style.width), h = parseFloat(i.style.height);
+        const m = /matrix\(([^)]+)\)/.exec(i.style.transform || '');
+        if (!w || !h || !m) continue;
+        const [a, b, c, d, e, f] = m[1].split(',').map(Number);
+        const pts = [[0, 0], [w, 0], [w, h], [0, h]].map(([x, y]) => artToWorld(a * x + c * y + e, b * x + d * y + f));
+        add(quadGeo(pts, [0, 1, w / 256, 1, w / 256, 0, 0, 0]), M.tape, 2);
+      }
+    }
+    // the footprint of what's held, and the four arrows round it
+    for (const p of artEl.querySelectorAll('.dg-floor polygon')) {
+      const pts = pct(p.getAttribute('points'));
+      const cls = p.getAttribute('class') || '';
+      if (/dg-arrow/.test(cls)) {
+        add(fillGeo(pts), M.arrowShade, 6, 2 / builtAt);
+        add(fillGeo(pts), M.arrow, 7);
+        add(strokeGeo(pts, 2.5), M.arrowLine, 8);
+      } else if (/dg-cell/.test(cls)) {
+        const bad = /is-bad/.test(cls);
+        add(fillGeo(pts), bad ? M.badFill : M.okFill, 4);
+        add(strokeGeo(pts, 2), bad ? M.badLine : M.okLine, 5);
+      }
+    }
+    // the soft shadows under the items
+    for (const s of shadowsEl?.querySelectorAll('.dg-shadow') || []) {
+      const x = parseFloat(s.style.left), y = parseFloat(s.style.top), w = parseFloat(s.style.width), h = parseFloat(s.style.height);
+      if (![x, y, w, h].every(Number.isFinite)) continue;
+      add(quadGeo([[x - w / 2, y - h / 2], [x + w / 2, y - h / 2], [x + w / 2, y + h / 2], [x - w / 2, y + h / 2]]), M.shadow, 9);
+    }
+    dirty = true; wake();
+  }
+  const floorObs = new MutationObserver(() => buildFloor());
+  if (artEl) floorObs.observe(artEl, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'src', 'points', 'class'] });
+  if (shadowsEl) floorObs.observe(shadowsEl, { subtree: true, childList: true, attributes: true, attributeFilter: ['style'] });
+  // the lines keep their width on screen: built again once the zoom has changed by a sixth
+  const reline = () => { if (overlay.children.length && V && Math.abs(V.s - builtAt) / builtAt > 0.16) buildFloor(); };
+
   // ---- the athlete ----
   const blob = (() => {
     const c = document.createElement('canvas'); c.width = 64; c.height = 64;
@@ -339,6 +486,8 @@ function build(L, canvas, layer, reduced) {
   document.addEventListener('visibilitychange', onVis);
   function render() {
     if (!G || !V || !W) return;
+    renderer.clear();
+    renderer.render(floorScene, camera);
     renderer.render(scene, camera);
     dirty = false;
   }
@@ -365,7 +514,10 @@ function build(L, canvas, layer, reduced) {
   return {
     setRoom, setView, body, machine,
     dispose() {
-      cancelAnimationFrame(raf); mo.disconnect(); io.disconnect(); bodyObs.disconnect();
+      cancelAnimationFrame(raf); mo.disconnect(); floorObs.disconnect();
+      for (const m of [...overlay.children]) m.geometry.dispose();
+      pic.mesh?.geometry.dispose(); pic.mesh?.material.dispose(); pic.tex?.dispose(); tapeTex.dispose(); shadowTex.dispose();
+      for (const m of Object.values(M)) m.dispose(); io.disconnect(); bodyObs.disconnect();
       document.removeEventListener('visibilitychange', onVis);
       for (const c of [...byId.values()]) remove(c);
       figure?.dispose(); blob.dispose(); shadow.geometry.dispose(); shadow.material.dispose(); cardGeo.dispose();

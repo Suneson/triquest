@@ -32,10 +32,21 @@ three.js now also draws the room's picture, the tape round an unexpanded room an
 - Checked by laying the page's picture, inverted, over the three.js one: they cancel to flat grey.
 - Not drawn yet: the arrows' slow pulse and the glow round the footprint.
 
+## Stage 3 (done): the city, the tower and the island
+
+three.js now draws every other picture in the base too: the city's ground, the tower, the railing, the island's plots, the pool, the mall, the markets, the port, the sign and the truck.
+
+- **Read from the page as it places them:** each picture's inline left, top and size (the truck's translate, the sign's box). A change to one moves just that one; anything else (a picture added, swapped or culled) collects them all again.
+- **In the page's own order:** what the page paints under the room is drawn before the floor, and the layers it paints over the items (the pool, the mall, the markets, the railing's front, the sign, the truck) in a pass after the items and the athlete.
+- **Only what's on the screen holds a picture.** A culled picture lets its texture go after 4 seconds, so panning back and forth doesn't load it again. Pictures are decoded off the main thread where the browser can (`ImageBitmapLoader`).
+- **The page's copy of each is hidden** (`.gl-on`) once it's drawn here. Its tap areas and its words (the sign's countdown, the market timers and coins) stay on top.
+- A tap on a plot squeezes it here as on the page.
+- Checked the same way: the page's pictures, inverted, cancel to flat grey over the three.js ones, under and over the room.
+
 ## Next stages
 
-3. **The city, the tower and the island**, then tapping by three.js instead of see-through buttons. Then the page draws only the HUD and the menus.
-4. **Items as 3D models** where a Tripo model exists, in the same scene.
+4. **Tapping by three.js** instead of see-through buttons. Then the page draws only the HUD and the menus.
+5. **Items as 3D models** where a Tripo model exists, in the same scene.
 
 ## What to check on an iPhone
 

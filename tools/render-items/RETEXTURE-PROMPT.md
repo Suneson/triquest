@@ -61,7 +61,7 @@ Add one line per item, if it needs one:
 A repaint without a reference comes out generic, so from batch 3 every sheet goes with the item's
 concept art. `PromptQueue Prompts/repaint-batch3.csv` holds one row per sheet:
 
-1. the sheet (`Items/11-14_Greenscreen batch/<club|base>/<item>.jpg`);
+1. the sheet (`Items/11-14_Greenscreen batch/<club|base>/<item>-sheet.jpg`; named apart from the concept art, because Gemini drops a second attachment with the same file name);
 2. the concept art (club: `Characters/Photos/Robots/Robots/Items/Clan/clan-<item>.jpg`, base: `Items/item/Items/<item>.jpg`);
 3. the MOSKE logo;
 4. the concept from the back, where there is one (`<item>-back.jpg`).

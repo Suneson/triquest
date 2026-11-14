@@ -1,4 +1,5 @@
-// base-gl.js: the base's room, its floor, its items and your athlete drawn by three.js (docs/THREE-ROOM.md), on with
+// base-gl.js: the base drawn by three.js: the city round the room, the room, its floor, its items
+// and your athlete (docs/THREE-ROOM.md), on with
 // ?three=1 for now.
 //
 // The page still lays the base out: the city, the room and its floor, the item buttons (what you
@@ -105,7 +106,9 @@ function build(L, canvas, layer, reduced) {
     cards.matrix.set(h11, h12, 0, -(h11 * G[2] + h12 * G[5]), h21, h22, 0, -(h21 * G[2] + h22 * G[5]), 0, 0, 1, 0, 0, 0, 0, 1);
     cards.matrixWorldNeedsUpdate = true;
     floorRoot.matrix.multiplyMatrices(camera.matrixWorld, cards.matrix); floorRoot.matrixWorldNeedsUpdate = true;
+    overRoot.matrix.copy(floorRoot.matrix); overRoot.matrixWorldNeedsUpdate = true;
     buildFloor();
+    collectCity();
     for (const c2 of byId.values()) c2.z = null;   // depths are per room
     project(); sync(); dirty = true;
   }
@@ -407,6 +410,140 @@ function build(L, canvas, layer, reduced) {
   // the lines keep their width on screen: built again once the zoom has changed by a sixth
   const reline = () => { if (overlay.children.length && V && Math.abs(V.s - builtAt) / builtAt > 0.16) buildFloor(); };
 
+  // ---- the city round the room: every other picture in the world (docs/THREE-ROOM.md, stage 3) ----
+  // The city's ground, the tower, the railing, the island's plots and markets, the sign and the
+  // truck: each a picture the page places with its inline style. They're drawn here in the page's
+  // own order: what the page paints under the room (its layer's z-index below the room's) before
+  // the floor, and what it paints over the items (the pool, the mall, the markets, the railing's
+  // front, the sign, the truck) after them. The page's copy of each is hidden (.gl-on) once it's
+  // drawn here. Its tap areas and its words (the sign's countdown, timers, coins) stay on top.
+  const cityUnder = new THREE.Group(); floorRoot.add(cityUnder);
+  const overScene = new THREE.Scene();
+  const overRoot = new THREE.Group(); overRoot.matrixAutoUpdate = false; overScene.add(overRoot);
+  const itemsEl = layer;
+  const pics = new Map();   // img → { mesh, src, z, i, under, box, tex }
+  const cityTex = new Map();   // src → { tex, n, ready: Promise }
+  // the picture's rows top first (flipY off, so ImageBitmaps and images agree)
+  const picUV = [0, 0, 1, 0, 1, 1, 0, 1];
+  const loadCity = (src) => {
+    let t = cityTex.get(src);
+    if (t) { t.n++; clearTimeout(t.drop); return t; }
+    t = { tex: null, n: 1, drop: 0 };
+    cityTex.set(src, t);
+    const done = (tx) => {
+      if (cityTex.get(src) !== t) { tx.dispose(); return; }
+      tx.colorSpace = THREE.SRGBColorSpace; tx.flipY = false; tx.needsUpdate = true;
+      t.tex = tx;
+      for (const p of pics.values()) if (p.src === src) { p.mesh.material.map = tx; p.mesh.material.needsUpdate = true; p.mesh.visible = !p.off; p.img.classList.add('gl-on'); }
+      dirty = true; wake();
+    };
+    // decoded off the main thread where the browser can
+    if (typeof createImageBitmap === 'function') {
+      new THREE.ImageBitmapLoader().setOptions({ imageOrientation: 'none', premultiplyAlpha: 'none' }).load(src, (bmp) => done(new THREE.Texture(bmp)), undefined, () => new THREE.TextureLoader().load(src, done));
+    } else new THREE.TextureLoader().load(src, done);
+    return t;
+  };
+  const dropCity = (src, now = false) => {
+    const t = cityTex.get(src);
+    if (!t || --t.n > 0) return;
+    // kept a moment: a picture that's just gone off the screen often comes back
+    const go = () => { if (cityTex.get(src) === t && t.n <= 0) { t.tex?.source?.data?.close?.(); t.tex?.dispose(); cityTex.delete(src); } };
+    if (now) go(); else t.drop = setTimeout(go, 4000);
+  };
+  // the stacking level the page paints a picture at: its own z-index, or its nearest layer's
+  const zOf = (el) => { for (let e = el; e && e !== world; e = e.parentElement) { const z = getComputedStyle(e).zIndex; if (z !== 'auto') return Number(z) || 0; } return 0; };
+  const roomArtEl = artEl;
+  const isMirrored = (img) => !itemsEl.contains(img) && !roomArtEl?.contains(img);
+  // where a picture is in the world: its inline left, top, size and translate (the truck moves by
+  // transform; the sign's picture fills its box)
+  const boxOf = (img) => {
+    const host = img.parentElement?.classList.contains('dg-street-sign') ? img.parentElement : img;
+    const st = host.style;
+    let x = parseFloat(st.left) || 0, y = parseFloat(st.top) || 0;
+    const tr = /translate\(\s*(-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(st.transform || '');
+    if (tr) { x += Number(tr[1]); y += Number(tr[2]); }
+    const w = parseFloat(st.width);
+    const h = parseFloat(st.height) || (img.naturalWidth ? (w * img.naturalHeight) / img.naturalWidth : NaN);
+    return Number.isFinite(w) && Number.isFinite(h) ? { x, y, w, h } : null;
+  };
+  const off = (img) => img.hidden || img.closest('[hidden]') || img.classList.contains('is-culled');
+  function placePic(p) {
+    p.box = boxOf(p.img);
+    p.off = !p.box || off(p.img);
+    if (p.box) {
+      const { x, y, w, h } = p.box;
+      // a tap on a plot gives it a little squeeze (the page's dg-isl-tap), round 50% 75%
+      const k = p.tap ? 1 + 0.018 * Math.sin(Math.PI * Math.min(1, p.tap.t / 0.8)) : 1;
+      p.mesh.position.set(x + w / 2, y + h * 0.75, FAR_Z);
+      p.mesh.scale.set(w * k, h * k, 1);
+    }
+    p.mesh.visible = !p.off && !!cityTex.get(p.src)?.tex;
+  }
+  const picGeo = new THREE.BufferGeometry();
+  picGeo.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, -0.75, 0, 0.5, -0.75, 0, 0.5, 0.25, 0, -0.5, 0.25, 0], 3));
+  picGeo.setAttribute('uv', new THREE.Float32BufferAttribute(picUV, 2));
+  picGeo.setIndex([0, 1, 2, 0, 2, 3]);
+  function collectCity() {
+    const imgs = [...world.querySelectorAll('img')].filter(isMirrored);
+    const seen = new Set(imgs);
+    for (const [img, p] of [...pics]) if (!seen.has(img)) { p.mesh.parent?.remove(p.mesh); p.mesh.material.dispose(); dropCity(p.src); pics.delete(img); }
+    // the page's paint order: by stacking level, then where it is in the page
+    imgs.forEach((img, i) => {
+      const src = img.getAttribute('src') || '';
+      let p = pics.get(img);
+      if (p && p.src !== src) { if (p.src) dropCity(p.src); p.src = ''; }
+      if (!p) {
+        const mesh = new THREE.Mesh(picGeo, new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide }));
+        mesh.frustumCulled = false; mesh.visible = false;
+        p = { img, mesh, src: '', z: 0, i, off: true, box: null, tap: null };
+        pics.set(img, p);
+      }
+      p.i = i; p.z = zOf(img);
+      const before = (el) => el && (img.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+      // painted before the room's picture: under it; the rest (the layers at z-index 3 to 6) over the items
+      const under = p.z < 1 || (p.z === 1 && !!before(roomArtEl));
+      (under ? cityUnder : overRoot).add(p.mesh);
+      p.mesh.renderOrder = under ? -100000 + p.z * 1000 + i : p.z * 1000 + i;
+      const isOff = off(img);
+      // a picture on the screen has its texture; one that's off it lets it go (after a moment)
+      if (!isOff && !p.src && src) { p.src = src; const t = loadCity(src); if (t.tex) { p.mesh.material.map = t.tex; p.mesh.material.needsUpdate = true; img.classList.add('gl-on'); } }
+      else if (isOff && p.src) { dropCity(p.src); p.src = ''; p.mesh.material.map = null; }
+      placePic(p);
+    });
+    dirty = true; wake();
+  }
+  const cityObs = new MutationObserver((recs) => {
+    let full = false;
+    const moved = new Set();
+    for (const r of recs) {
+      const el = r.target;
+      if (el === canvas || itemsEl.contains(el) || roomArtEl?.contains(el) || shadowsEl?.contains(el)) continue;
+      if (r.type === 'attributes' && r.attributeName === 'class') {
+        // only our own mark, or the tap squeeze (taken off and put back in one go)
+        const strip = (s) => (s || '').replace(/\b(gl-on|is-tap)\b/g, '').trim().replace(/\s+/g, ' ');
+        if (strip(r.oldValue) === strip(el.getAttribute('class'))) {
+          if (el.classList.contains('is-tap') && pics.has(el) && !reduced()) pics.get(el).tap = { t: 0 };
+          continue;
+        }
+      }
+      if (r.type === 'attributes' && r.attributeName === 'style' && (pics.has(el) || el.classList?.contains('dg-street-sign'))) { moved.add(el); continue; }
+      full = true;
+    }
+    if (full) collectCity();
+    else if (moved.size) {
+      for (const el of moved) { const img = pics.has(el) ? el : el.querySelector('img'); const p = pics.get(img); if (p) placePic(p); }
+      dirty = true; wake();
+    }
+  });
+  cityObs.observe(world, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class', 'src', 'hidden'], attributeOldValue: true });
+  // a picture's size can wait on it loading (the markets are as tall as their picture makes them)
+  world.addEventListener('load', (e) => { if (pics.has(e.target)) { placePic(pics.get(e.target)); dirty = true; wake(); } }, true);
+  const tapping = (dt) => {
+    let busy = false;
+    for (const p of pics.values()) if (p.tap) { p.tap.t += dt / 0.24; if (p.tap.t >= 1) p.tap = null; else busy = true; placePic(p); }
+    return busy;
+  };
+
   // ---- the athlete ----
   const blob = (() => {
     const c = document.createElement('canvas'); c.width = 64; c.height = 64;
@@ -475,7 +612,7 @@ function build(L, canvas, layer, reduced) {
   }
 
   // ---- drawing: at once when the view moves, and FPS times a second while something moves ----
-  let dirty = true; let raf = 0; let last = 0; let onscreen = true;
+  let dirty = true; let raf = 0; let last = 0; let lastT = 0; let onscreen = true;
   const covered = () => document.body.classList.contains('base-covered');
   const paused = () => document.hidden || !onscreen || covered() || !canvas.isConnected;
   const io = new IntersectionObserver((es) => { onscreen = es.some((e) => e.isIntersecting); if (onscreen) { dirty = true; wake(); } });
@@ -489,6 +626,7 @@ function build(L, canvas, layer, reduced) {
     renderer.clear();
     renderer.render(floorScene, camera);
     renderer.render(scene, camera);
+    renderer.render(overScene, camera);
     dirty = false;
   }
   function drawNow() { if (paused()) { dirty = true; return; } render(); }
@@ -499,6 +637,8 @@ function build(L, canvas, layer, reduced) {
     if (paused()) return;
     let busy = false;
     for (const c of byId.values()) if (c.anim || c.from) busy = place(c, now) || busy;
+    if (tapping(lastT ? Math.min(0.1, (now - lastT) / 1000) : 0.016)) busy = true;
+    lastT = busy ? now : 0;
     if (busy) dirty = true;
     const moving = live();
     if (moving && (!last || now - last >= 1000 / FPS - 2)) {
@@ -514,7 +654,10 @@ function build(L, canvas, layer, reduced) {
   return {
     setRoom, setView, body, machine,
     dispose() {
-      cancelAnimationFrame(raf); mo.disconnect(); floorObs.disconnect();
+      cancelAnimationFrame(raf); mo.disconnect(); floorObs.disconnect(); cityObs.disconnect();
+      for (const p of pics.values()) p.mesh.material.dispose();
+      for (const src of [...cityTex.keys()]) { const t = cityTex.get(src); t.n = 1; dropCity(src, true); }
+      picGeo.dispose();
       for (const m of [...overlay.children]) m.geometry.dispose();
       pic.mesh?.geometry.dispose(); pic.mesh?.material.dispose(); pic.tex?.dispose(); tapeTex.dispose(); shadowTex.dispose();
       for (const m of Object.values(M)) m.dispose(); io.disconnect(); bodyObs.disconnect();

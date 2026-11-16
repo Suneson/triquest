@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
   fitsBody,
-  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, TRY_ALL_ACCESSORIES, normaliseLook, outfitState, accessoryState, modelFor, gearFor, DEFAULT_HAIR, skinTint, ownsItem, slotOf,
+  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, TRY_ALL_ACCESSORIES, normaliseLook, outfitState, accessoryState, modelFor, gearFor, DEFAULT_HAIR, HAT_HAIR, skinTint, ownsItem, slotOf,
 } from '../js/core/wardrobe.js';
 
 const look = (o = {}) => ({ ...DEFAULT_LOOK, gear: { ...DEFAULT_LOOK.gear }, ...o });
@@ -50,12 +50,12 @@ test('accessories: you wear what you have and what has a model; hair is free', (
   assert.equal(accessoryState('helmet-aero'), TRY_ALL_ACCESSORIES ? 'owned' : 'locked', 'free to try for now');
   assert.equal(accessoryState('helmet-aero', ['helmet-aero']), 'owned');
   assert.equal(accessoryState('watch-gold', ['watch-gold']), 'soon', 'no watch models yet');
-  assert.equal(accessoryState('hair-braids'), 'owned', 'every hair style is free');
+  assert.equal(accessoryState('hair-f-bob'), 'owned', 'every hair style is free');
   if (!TRY_ALL_ACCESSORIES) assert.equal(normaliseLook({ gear: { helmet: 'helmet-aero' } }).gear.helmet, null, 'not bought');
   assert.equal(normaliseLook({ gear: { watch: 'watch-gold' } }).gear.watch, null, 'no model, nothing to wear');
-  const l = normaliseLook({ body: 'female', hairColour: 'blonde', gear: { shoes: 'shoe-starter', hair: 'hair-long' } });
-  assert.equal(l.gear.shoes, 'shoe-starter'); assert.equal(l.gear.hair, 'hair-long'); assert.equal(l.hairColour, 'blonde');
-  assert.deepEqual(gearFor(l).map((g) => [g.slot, g.url]), [['hair', 'models/gear/hair-long.glb'], ['shoes', 'models/gear/shoe-starter.glb']]);
+  const l = normaliseLook({ body: 'female', hairColour: 'blonde', gear: { shoes: 'shoe-starter', hair: 'hair-f-lob' } });
+  assert.equal(l.gear.shoes, 'shoe-starter'); assert.equal(l.gear.hair, 'hair-f-lob'); assert.equal(l.hairColour, 'blonde');
+  assert.deepEqual(gearFor(l).map((g) => [g.slot, g.url]), [['hair', 'models/gear/hair-f-lob.glb'], ['shoes', 'models/gear/shoe-starter.glb']]);
   assert.equal(normaliseLook({ hairColour: 'green' }).hairColour, DEFAULT_LOOK.hairColour);
   assert.ok(HAIR_COLOURS.some((h) => h.id === DEFAULT_LOOK.hairColour));
   for (const s of SLOTS) assert.equal(typeof s.buff, 'boolean');
@@ -68,12 +68,22 @@ test('skin tints: the default leaves the painted skin as it is, darker tones onl
   assert.equal(EYE_COLOURS.length, new Set(EYE_COLOURS.map((e) => e.id)).size);
 });
 
-test('hair is per body: crop and curls for men, the rest for women', () => {
-  assert.equal(normaliseLook({ body: 'male', gear: { hair: 'hair-long' } }).gear.hair ?? null, null);
-  assert.equal(normaliseLook({ body: 'male', gear: { hair: 'hair-curls' } }).gear.hair, 'hair-curls');
-  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-crop' } }).gear.hair ?? null, null);
-  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-braids' } }).gear.hair, 'hair-braids');
+test('hair is per body: hair-m-* for men, hair-f-* for women', () => {
+  assert.equal(normaliseLook({ body: 'male', gear: { hair: 'hair-f-bob' } }).gear.hair ?? null, null);
+  assert.equal(normaliseLook({ body: 'male', gear: { hair: 'hair-m-quiff' } }).gear.hair, 'hair-m-quiff');
+  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-m-afro' } }).gear.hair ?? null, null);
+  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-f-pixie' } }).gear.hair, 'hair-f-pixie');
+  assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-long' } }).gear.hair ?? null, null, 'the old styles are gone');
   assert.equal(fitsBody('hat-visor', 'female'), true, 'only hair is per body');
+  for (const id of SLOTS.find((s) => s.id === 'hair').items) assert.ok(ACCESSORY_MODELS[id], id);
+});
+
+test('under a hat or helmet the hairstyle gives way to the hat hair; the visor hides none', () => {
+  const g = (body, gear) => gearFor(look({ body, gear: { ...DEFAULT_LOOK.gear, ...gear } })).filter((x) => x.slot === 'hair').map((x) => x.id);
+  assert.deepEqual(g('female', { hair: 'hair-f-bob', hat: 'hat-visor' }), ['hair-f-bob']);
+  const under = g('female', { hair: 'hair-f-bob', hat: 'hat-cap-navy' });
+  assert.deepEqual(under, ACCESSORY_MODELS[HAT_HAIR.female] ? [HAT_HAIR.female] : [], 'the hat hair, or only the scalp until it is made');
+  assert.deepEqual(g('male', { hair: 'hair-m-afro', helmet: 'helmet-road' }), g('male', { hair: 'hair-m-fade', helmet: 'helmet-road' }), 'the same whatever was picked');
 });
 
 test('with no hair picked, the female wears the default style and the male only the scalp', () => {
@@ -81,5 +91,5 @@ test('with no hair picked, the female wears the default style and the male only 
   assert.ok(ACCESSORY_MODELS[DEFAULT_HAIR.female], 'the default is a made model');
   assert.deepEqual(gearFor(look({ body: 'female' })).map((g) => g.id), [DEFAULT_HAIR.female]);
   assert.deepEqual(gearFor(look({ body: 'male' })), []);
-  assert.deepEqual(gearFor(look({ body: 'female', gear: { ...DEFAULT_LOOK.gear, hair: 'hair-long' } })).map((g) => g.id), ['hair-long']);
+  assert.deepEqual(gearFor(look({ body: 'female', gear: { ...DEFAULT_LOOK.gear, hair: 'hair-f-lob' } })).map((g) => g.id), ['hair-f-lob']);
 });

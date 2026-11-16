@@ -5,7 +5,8 @@
 //     @gltf-transform/functions@4.1.1 meshoptimizer@0.22.0 sharp
 //   node tools/build-accessories.mjs "<path to z_GLB MODELS>" [id ...]
 //
-// Each model is turned to face +Z (the characters do), stood on y = 0 and centred on x and z, cut
+// Each model is turned to face +Z (the characters do), stood on y = 0 and centred on x and z (hair
+// made on the head is left where it is: see tools/hair-on-head.py), cut
 // to a few thousand triangles, and given one 512 px WebP texture. A shoe comes as one shoe: it is
 // laid along Z with its toe at +Z (the heel is the taller end). The size and place on the body are
 // worked out in the app, from the head or the foot of whichever character wears it.
@@ -29,12 +30,16 @@ const MAX_TRIS = 6000;
  * The items: the app's id, the source file, and how far to turn it round Y (degrees) so its front
  * faces +Z. Shoes are turned automatically.
  */
+const HAIR = [
+  'hair-m-fade', 'hair-m-crew', 'hair-m-quiff', 'hair-m-side-part', 'hair-m-slick-back', 'hair-m-fringe',
+  'hair-m-spiky', 'hair-m-afro', 'hair-m-high-top', 'hair-m-cornrows', 'hair-m-curly-top', 'hair-m-waves',
+  'hair-m-man-bun', 'hair-m-mohawk', 'hair-m-surfer', 'hair-m-mullet', 'hair-m-locs',
+  'hair-f-high-pony', 'hair-f-pixie', 'hair-f-bob', 'hair-f-afro-puffs', 'hair-f-dutch-braids',
+  'hair-f-space-buns', 'hair-f-top-knot', 'hair-f-curls', 'hair-f-lob',
+];
 export const ITEMS = [
-  { id: 'hair-braids', file: 'hair/female/hairfemale1.glb', yaw: -90 },
-  { id: 'hair-bun-low', file: 'hair/female/hairfemale3.glb', yaw: -90 },
-  { id: 'hair-long', file: 'hair/female/hairfemale5.glb', yaw: -90 },
-  { id: 'hair-curls', file: 'hair/male/hairmale1.glb', yaw: -90 },
-  { id: 'hair-crop', file: 'hair/male/hairmale2.glb', yaw: -90 },
+  // hair made on the head (tools/hair-on-head.py): already in head-box units, kept where it is
+  ...HAIR.map((id) => ({ id, file: `hair/on-head/${id}.glb`, head: true })),
   { id: 'hat-beanie', file: 'hats/tripo_convert_20c57b6e-b332-4ac1-92ff-e98d5d427b6e.glb', yaw: 0 },
   { id: 'hat-cap-white', file: 'hats/tripo_convert_377ab5d5-7a2a-4855-be0d-e5790217afa7.glb', yaw: -90 },
   { id: 'hat-bucket', file: 'hats/tripo_convert_6877eb40-d64e-496f-9155-7f9ca54b9036.glb', yaw: 0 },
@@ -113,8 +118,10 @@ async function build(item) {
     const { front, back } = shoeEnds(doc);
     if (front > back) turnAll(doc, yawMatrix(180));   // the heel's at the front: turn it round
   } else if (item.yaw) turnAll(doc, yawMatrix(item.yaw));
-  const b = bounds(doc);
-  turnAll(doc, moveMatrix(-(b.min[0] + b.max[0]) / 2, -b.min[1], -(b.min[2] + b.max[2]) / 2));
+  if (!item.head) {
+    const b = bounds(doc);
+    turnAll(doc, moveMatrix(-(b.min[0] + b.max[0]) / 2, -b.min[1], -(b.min[2] + b.max[2]) / 2));
+  }
 
   // one plain material: the colour texture only, at 512 px
   for (const p of prims(doc)) {

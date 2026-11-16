@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { place } from '../js/app/gear3d.js';
+import { place, onScalp, hairCutFor } from '../js/app/gear3d.js';
 
 // a head about 0.24 wide, 0.26 tall, 0.27 deep, its top at 1.8, facing +Z
 const head = { min: { x: -0.12, y: 1.54, z: -0.14 }, max: { x: 0.12, y: 1.8, z: 0.13 } };
@@ -34,4 +34,19 @@ test('a hand-set fit keeps only real changes, rounded', () => {
   assert.equal(cleanFit(null), null);
   assert.equal(cleanFit({ x: 0, s: 1, rx: 0 }), null, 'nothing changed');
   assert.deepEqual(cleanFit({ y: 0.12345, s: 0.9, rz: '5', junk: 3, z: NaN }), { y: 0.123, s: 0.9, rz: 5 });
+});
+
+test('the scalp covers the crown and the nape, never the face or the ears', () => {
+  assert.ok(onScalp(0.95, 0.5), 'the crown');
+  assert.ok(onScalp(0.4, 0.05), 'the nape, low at the back');
+  assert.ok(!onScalp(0.6, 0.95), 'the forehead and face');
+  assert.ok(!onScalp(0.5, 0.55), 'the side of the face, below the hairline');
+  assert.ok(!onScalp(0.7, 0.5, 0.95), 'the ear, out at the side');
+});
+
+test('hats and helmets cut the hair above their brim, the visor none', () => {
+  assert.equal(hairCutFor({ id: 'hat-visor', slot: 'hat' }), null);
+  assert.ok(hairCutFor({ id: 'hat-cap-navy', slot: 'hat' }) > 0.3);
+  assert.ok(hairCutFor({ id: 'helmet-road', slot: 'helmet' }) > 0.3);
+  assert.ok(hairCutFor({ id: 'hat-beanie', slot: 'hat' }) < hairCutFor({ id: 'hat-cap-navy', slot: 'hat' }), 'a beanie comes down lower');
 });

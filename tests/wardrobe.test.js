@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
   fitsBody,
-  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, TRY_ALL_ACCESSORIES, normaliseLook, outfitState, accessoryState, modelFor, gearFor, skinTint, ownsItem, slotOf,
+  OUTFITS, SLOTS, SKIN_TONES, EYE_COLOURS, HAIR_COLOURS, BODY_MODELS, ACCESSORY_MODELS, DEFAULT_LOOK, TRY_ALL_ACCESSORIES, normaliseLook, outfitState, accessoryState, modelFor, gearFor, DEFAULT_HAIR, skinTint, ownsItem, slotOf,
 } from '../js/core/wardrobe.js';
 
 const look = (o = {}) => ({ ...DEFAULT_LOOK, gear: { ...DEFAULT_LOOK.gear }, ...o });
@@ -74,4 +74,12 @@ test('hair is per body: crop and curls for men, the rest for women', () => {
   assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-crop' } }).gear.hair ?? null, null);
   assert.equal(normaliseLook({ body: 'female', gear: { hair: 'hair-braids' } }).gear.hair, 'hair-braids');
   assert.equal(fitsBody('hat-visor', 'female'), true, 'only hair is per body');
+});
+
+test('with no hair picked, the female wears the default style and the male only the scalp', () => {
+  assert.equal(DEFAULT_HAIR.male, null);
+  assert.ok(ACCESSORY_MODELS[DEFAULT_HAIR.female], 'the default is a made model');
+  assert.deepEqual(gearFor(look({ body: 'female' })).map((g) => g.id), [DEFAULT_HAIR.female]);
+  assert.deepEqual(gearFor(look({ body: 'male' })), []);
+  assert.deepEqual(gearFor(look({ body: 'female', gear: { ...DEFAULT_LOOK.gear, hair: 'hair-long' } })).map((g) => g.id), ['hair-long']);
 });

@@ -49,7 +49,16 @@ Each accessory is a plain mesh, not skinned. The app fits it to whoever wears it
 2. it scales and places the accessory against that box, by its slot's rule (`FIT`) and any change for that item (`ITEM_FIT`);
 3. it hangs it on the head bone, or a shoe on each foot bone (the right one mirrored), so it follows every clip.
 
-So one file fits the male, the female and every outfit. A hat or helmet hides the hair (the visor doesn't). Hair is free, on the Look tab, and tinted with the hair colour: hair models are painted grey.
+So one file fits the male, the female and every outfit. Hair is free, on the Look tab, and tinted with the hair colour: hair models are painted grey.
+
+### Hair in layers
+
+A player's character is never bald:
+- **Scalp** (`addScalp`): a short buzz cut made at load time from the character's own head, the skin's triangles on the scalp (`onScalp`: low at the nape, over the ears at the sides, at the forehead in front; the ears stay bare), copied a little out from the skin in the hair colour. It's always there, under any hair and any hat, so it fits every outfit's head.
+- **Hair**: the picked style. With none picked, the male shows only the scalp and the female wears `DEFAULT_HAIR.female` (`js/core/wardrobe.js`).
+- **Under a hat or helmet**, the hair above the brim is cut away (`HAIR_CUT`: a share of the head's height); what hangs below it, a ponytail, long hair, braids, still shows. The visor cuts nothing.
+
+New hairstyles are drawn on the character's own bald head (`MOSKE APP/PromptQueue Prompts/hair-on-head.csv`, with `Rooms/references/head-<body>.png`), in light grey, so the hair follows the skull instead of floating as a shell. Tripo then makes a head with hair; the head is cut away in Blender (the hair is the grey, unsaturated part) before `build-accessories.mjs`.
 
 ### Adding one
 

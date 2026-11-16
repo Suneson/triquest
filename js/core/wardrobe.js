@@ -169,9 +169,15 @@ export function accessoryState(item, owned = []) {
 export const modelFor = (look, owned = []) =>
   (outfitState(look.outfit, look, owned) === 'owned' ? outfitModel(look.outfit, look) : BODY_MODELS[look.body]);
 
+/**
+ * The hair a body wears when none is picked. The male needs none: the scalp (a short buzz cut in
+ * the hair colour, js/app/gear3d.js addScalp) is always there, so no one is ever bald.
+ */
+export const DEFAULT_HAIR = { male: null, female: 'hair-bun-low' };
+
 /** What the 3D view hangs on the character: [{ id, slot, url, body }], only what can be worn. */
 export const gearFor = (look, owned = []) => SLOTS
-  .map((s) => ({ id: look.gear?.[s.id], slot: s.id }))
+  .map((s) => ({ id: look.gear?.[s.id] || (s.id === 'hair' ? DEFAULT_HAIR[look.body] : null), slot: s.id }))
   .filter((g) => g.id && accessoryState(g.id, owned) === 'owned' && fitsBody(g.id, look.body))
   .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id], body: look.body }));
 

@@ -1,7 +1,7 @@
 """render-club4.py: every club room item from all four sides, for items that turn four ways.
 
     node tools/decode-glb.mjs "<MOSKE APP>/Items/z_GLB MODELS/club" <dec>      # Tripo's meshopt GLBs
-    ARGS="tools/render-items/rig.py|<dec>|<out>" blender -b --python tools/render-items/render-club4.py
+    GPU=1 ARGS="tools/render-items/rig.py|<dec>|<out>" blender -b --python tools/render-items/render-club4.py
     python tools/render-items/sheets4.py <out> <sheets dir>
 
 Writes <out>/<name>-a.png .. -d.png. Facing a has the item's front towards the bottom left, b is a
@@ -60,6 +60,22 @@ ITEMS = {
         'clan-shuffleboard': ('c0295b50', 3.0, 'h', 0),
         'clan-pool-table': ('d92e3281', 2.6, 'h', 0),
 }
+def use_gpu():
+    # GPU=1: Cycles on the graphics card (OptiX, else CUDA), several times faster than the CPU
+    prefs = bpy.context.preferences.addons['cycles'].preferences
+    for kind in ('OPTIX', 'CUDA'):
+        try:
+            prefs.compute_device_type = kind
+        except TypeError:
+            continue
+        prefs.get_devices()
+        devs = [d for d in prefs.devices if d.type == kind]
+        if devs:
+            for d in prefs.devices: d.use = d.type == kind
+            bpy.context.scene.cycles.device = 'GPU'
+            return kind
+    return None
+
 only = os.environ.get('ONLY')
 os.makedirs(OUT, exist_ok=True)
 for name, (fid, size, axis, yaw_a) in ITEMS.items():
@@ -74,5 +90,6 @@ for name, (fid, size, axis, yaw_a) in ITEMS.items():
         root.scale = (s, s, s); bpy.context.view_layer.update()
         root.rotation_euler[2] = math.radians(yaw_a + turn); ground(root, ms)
         setup(ms, px_per_unit=PPM, samples=64)
+        if os.environ.get('GPU'): use_gpu()
         render(f'{OUT}/{name}-{face}.png')
         print('rendered', name, face, flush=True)

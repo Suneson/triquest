@@ -34,3 +34,7 @@ ARGS="tools/render-items/rig.py|<decoded glb dir>|<out dir>" \
 - **`render-batch3.py`:** the clan room's 30 items and 23 new base items (gym, smoothie bars, pool, trophies), from the 14 Nov Tripo GLBs.
   - Decode them first with `node tools/decode-glb.mjs <in.glb> <out.glb>` into `<dec>/club` and `<dec>/base`, then run Blender itself: `ARGS="tools/render-items/rig.py|<dec>|<out>" blender -b --python tools/render-items/render-batch3.py`.
   - Models are found by the start of Tripo's file id; names match the concept art they were made from, so each sheet goes to Gemini with its reference (`RETEXTURE-PROMPT.md`, "Items with a concept picture").
+- **`render-club4.py`:** the club room's 44 items from all four sides, for items that turn four ways.
+  - Facing `a` and `b` are as in batch 3; `c` is the back of `a`, `d` the back of `b`. Renders already in the out folder are kept, so batch 3's `a` and `b` can be dropped in.
+  - `GPU=1` renders on the graphics card (OptiX), about 10 s a view instead of 30 s.
+  - `sheets4.py <renders> <sheets>` puts the four on one 2048 × 2048 sheet, two by two (a b / c d), at one scale, with a `.json` of where each view sits for cutting the repaint back apart. The repaint prompt is `PromptQueue Prompts/repaint-club-4-sides.csv`, with each item's concept art.

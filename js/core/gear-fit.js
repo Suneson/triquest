@@ -10,8 +10,6 @@
 // Set in the fit editor, 12 November 2026. The aero helmet was turned round after: fit it again.
 export const GEAR_FIT = {
   male: {
-    'hair-crop': { y: 0.11, z: 0.02, s: 0.755, rx: 6 },
-    'hair-curls': { y: 0.215, z: 0.02, s: 0.875, rx: 6 },
     'helmet-road': { y: -0.02, z: -0.195, s: 0.84, rx: -16.5 },
     'helmet-blue': { z: -0.11, s: 0.765, rx: -18.5 },
     'helmet-gold': { y: 0.03, z: -0.205, s: 0.68, rx: -8 },
@@ -35,9 +33,6 @@ export const GEAR_FIT = {
     'glasses-casual': { z: 0.08, s: 0.755, rx: 9 },
   },
   female: {
-    'hair-long': { x: -0.015, y: 0.1, z: -0.06, s: 0.97, rx: 20.5 },
-    'hair-braids': { z: -0.07, s: 0.95, rx: -1 },
-    'hair-bun-low': { y: 0.13, z: 0.155, s: 0.725, rx: 10 },
     'helmet-road': { y: 0.02, z: -0.235, s: 0.82, rx: -23.5 },
     'helmet-blue': { y: 0.05, z: -0.175, s: 0.69, rx: -16.5 },
     'helmet-gold': { y: 0.06, z: -0.235, s: 0.735, rx: -3 },

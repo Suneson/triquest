@@ -91,8 +91,16 @@ export const OUTFITS = [
  * Accessory slots, in the order the wardrobe lists them. `buff`: it helps your training. `free`:
  * everyone has every item (hair is part of the look, on the Look tab).
  */
+/**
+ * The hairstyles, made on each body's own head (tools/hair-on-head.py): hair-m-* for the male,
+ * hair-f-* for the female. Their pictures are art/hair/<id>.webp.
+ */
+export const HAIRSTYLES = [
+  ...['fade', 'crew', 'quiff', 'side-part', 'slick-back', 'fringe', 'spiky', 'afro', 'high-top', 'cornrows', 'curly-top', 'waves', 'man-bun', 'mohawk', 'surfer', 'mullet', 'locs'].map((s) => `hair-m-${s}`),
+  ...['high-pony', 'pixie', 'bob', 'afro-puffs', 'dutch-braids', 'space-buns', 'top-knot', 'curls', 'lob'].map((s) => `hair-f-${s}`),
+];
 export const SLOTS = [
-  { id: 'hair', buff: false, free: true, items: ['hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-low'] },
+  { id: 'hair', buff: false, free: true, items: HAIRSTYLES },
   { id: 'helmet', buff: true, items: ['helmet-road', 'helmet-aero', 'helmet-blue', 'helmet-gold'] },
   { id: 'shoes', buff: true, items: ['shoe-starter', 'shoe-runner', 'shoe-racer', 'shoe-trail', 'shoe-lifter', 'shoe-trainer', 'shoe-cycling', 'shoe-gold'] },
   { id: 'hat', buff: false, items: ['hat-cap-navy', 'hat-cap-white', 'hat-visor', 'hat-beanie', 'hat-bucket', 'hat-gold'] },
@@ -101,20 +109,17 @@ export const SLOTS = [
 ];
 /** Accessory models made so far (tools/build-accessories.mjs), by item id. */
 export const ACCESSORY_MODELS = Object.fromEntries([
-  'hair-crop', 'hair-curls', 'hair-long', 'hair-braids', 'hair-bun-low',
+  ...HAIRSTYLES,
   'helmet-road', 'helmet-aero', 'helmet-blue', 'helmet-gold',
   'shoe-starter', 'shoe-runner', 'shoe-racer', 'shoe-trail', 'shoe-lifter', 'shoe-trainer', 'shoe-cycling', 'shoe-gold',
   'hat-cap-navy', 'hat-cap-white', 'hat-visor', 'hat-beanie', 'hat-bucket', 'hat-gold',
   'glasses-sport', 'glasses-blue', 'glasses-gold', 'glasses-casual',
 ].map((id) => [id, `models/gear/${id}.glb`]));
 
-/** Hair made for one body only: it is only offered to, and worn by, that body. */
-export const HAIR_FOR = {
-  'hair-crop': 'male', 'hair-curls': 'male',
-  'hair-long': 'female', 'hair-braids': 'female', 'hair-bun-low': 'female',
-};
+/** Hair is made for one body only (hair-m-*, hair-f-*): it is only offered to, and worn by, that body. */
+export const hairBody = (item) => (/^hair-m-/.test(item) ? 'male' : /^hair-f-/.test(item) ? 'female' : null);
 /** Can this body wear the item? */
-export const fitsBody = (item, body) => !HAIR_FOR[item] || HAIR_FOR[item] === body;
+export const fitsBody = (item, body) => !hairBody(item) || hairBody(item) === body;
 
 /** What every player has before buying anything: the plain body, the tracksuit and the free trainers. */
 export const STARTER = ['base', 'tracksuit', 'shoe-starter'];
@@ -173,13 +178,29 @@ export const modelFor = (look, owned = []) =>
  * The hair a body wears when none is picked. The male needs none: the scalp (a short buzz cut in
  * the hair colour, js/app/gear3d.js addScalp) is always there, so no one is ever bald.
  */
-export const DEFAULT_HAIR = { male: null, female: 'hair-bun-low' };
+export const DEFAULT_HAIR = { male: null, female: 'hair-f-high-pony' };
+
+/**
+ * Under a hat or a helmet every hairstyle gives way to one short hair, the same whatever was picked,
+ * so each hat is fitted once. The visor hides nothing. Until a body's hat hair is made (no model
+ * yet), only the scalp shows under the hat.
+ */
+export const HAT_HAIR = { male: 'hair-m-hat', female: 'hair-f-hat' };
+const SHOWS_HAIR = new Set(['hat-visor']);
+export const hidesHair = (gear = {}) => ['hat', 'helmet'].some((s) => gear[s] && !SHOWS_HAIR.has(gear[s]));
 
 /** What the 3D view hangs on the character: [{ id, slot, url, body }], only what can be worn. */
-export const gearFor = (look, owned = []) => SLOTS
-  .map((s) => ({ id: look.gear?.[s.id] || (s.id === 'hair' ? DEFAULT_HAIR[look.body] : null), slot: s.id }))
-  .filter((g) => g.id && accessoryState(g.id, owned) === 'owned' && fitsBody(g.id, look.body))
-  .map((g) => ({ ...g, url: ACCESSORY_MODELS[g.id], body: look.body }));
+export function gearFor(look, owned = []) {
+  const hatOn = hidesHair(look.gear || {});
+  return SLOTS
+    .map((s) => {
+      if (s.id !== 'hair') return { id: look.gear?.[s.id] || null, slot: s.id };
+      if (hatOn) return { id: ACCESSORY_MODELS[HAT_HAIR[look.body]] ? HAT_HAIR[look.body] : null, slot: s.id, hat: true };
+      return { id: look.gear?.hair || DEFAULT_HAIR[look.body], slot: s.id };
+    })
+    .filter((g) => g.id && (g.hat || (accessoryState(g.id, owned) === 'owned' && fitsBody(g.id, look.body))))
+    .map(({ hat, ...g }) => ({ ...g, url: ACCESSORY_MODELS[g.id], body: look.body }));
+}
 
 /** The hair colour as linear RGB, for the 3D view. */
 export const hairColour = (id) => hexToLinear((HAIR_COLOURS.find((h) => h.id === id) || HAIR_COLOURS[1]).hex);

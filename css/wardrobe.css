@@ -55,6 +55,7 @@
   text-align: center; cursor: pointer; }
 .wr-card b { font: 700 13px/1.2 var(--font-header); }
 .wr-kit { width: 60px; height: 60px; color: rgba(255, 255, 255, .5); }
+.wr-hairpic { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; background: #8a8a8a; }
 .wr-card.is-on { border-color: var(--gold-primary); box-shadow: 0 0 0 2px rgba(242, 193, 78, .3); }
 .wr-card:is(.is-locked, .is-class, .is-soon) { cursor: default; }
 .wr-card:is(.is-locked, .is-class) .wr-kit { opacity: .45; filter: grayscale(.6); }

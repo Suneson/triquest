@@ -11,6 +11,7 @@
 //     own from the fit editor, js/app/fit-editor.js);
 //  4. it is hung on the head bone (or the foot bones, a mirrored copy on the right), so it moves
 //     with every clip without being skinned.
+// Hair is made on the head instead (onHead): its file already knows where on the head it goes.
 
 import { GEAR_FIT, cleanFit } from '../core/gear-fit.js';
 
@@ -44,7 +45,6 @@ export const ITEM_FIT = {
   'hat-visor': { across: 1.1, top: -0.08 },
   'hat-beanie': { across: 1.12, top: 0.4 },
   'hat-bucket': { top: 0.34 },
-  'hair-bun-low': { top: 0.22, across: 1.28, front: -0.12 },
   'helmet-aero': { back: undefined, front: 0.1 },
   'hat-gold': { top: 0.3 },
   'glasses-gold': { eye: 0.4 },
@@ -52,16 +52,24 @@ export const ITEM_FIT = {
 };
 
 /**
- * How much of the hair a hat or helmet hides: the hair above this height (a share of the head's
- * height, from its lowest point) is cut away, so what hangs below it (a ponytail, long hair, the
- * nape) still shows under the brim. null: it hides no hair (the visor). Any other hat: HAIR_CUT.hat.
+ * Hair made on the head (hair-m-*, hair-f-*): the file is in head-box units, so (0,0,0)..(1,1,1) is
+ * the box of the skin that moves with the head, in the character's own axes (tools/hair-on-head.py
+ * lines it up with the plain body's head). It is stretched onto whichever head wears it.
  */
-export const HAIR_CUT = {
-  hat: 0.5, helmet: 0.48,
-  'hat-visor': null,
-  'hat-beanie': 0.42,
-};
-export const hairCutFor = (g) => (Object.hasOwn(HAIR_CUT, g.id) ? HAIR_CUT[g.id] : HAIR_CUT[g.slot]);
+export const onHead = (id) => /^hair-[mf]-/.test(id);
+
+/** The matrix that puts a head-box piece on this head (root space), then the hand-set fit `f`. */
+export function headMatrix(THREE, box, f) {
+  const k = f || {};
+  const size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+  const s = k.s ?? 1;
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((k.rx || 0) * D2R, (k.ry || 0) * D2R, (k.rz || 0) * D2R, 'YXZ'));
+  // the fit turns and sizes about the head's middle, and moves in head heights
+  const fit = new THREE.Matrix4().compose(
+    mid.clone().add(new THREE.Vector3(k.x || 0, k.y || 0, k.z || 0).multiplyScalar(size.y)), q, new THREE.Vector3(s, s, s))
+    .multiply(new THREE.Matrix4().makeTranslation(-mid.x, -mid.y, -mid.z));
+  return fit.multiply(new THREE.Matrix4().makeTranslation(box.min.x, box.min.y, box.min.z)).multiply(new THREE.Matrix4().makeScale(size.x, size.y, size.z));
+}
 
 /**
  * The scalp: where the hair grows on the head, in the head's box (u: height share from the lowest
@@ -180,24 +188,6 @@ export function addScalp(THREE, root, box, colour) {
   return made;
 }
 
-/** Cut away a hair piece's triangles above `y` (root space; `toRoot`: the piece's mesh to root). */
-function cutAbove(THREE, mesh, toRoot, y) {
-  const g = mesh.geometry.clone();
-  const pos = g.attributes.position;
-  const idx = g.index ? g.index.array : Array.from({ length: pos.count }, (_, i) => i);
-  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
-  const keep = [];
-  for (let t = 0; t < idx.length; t += 3) {
-    a.fromBufferAttribute(pos, idx[t]).applyMatrix4(toRoot);
-    b.fromBufferAttribute(pos, idx[t + 1]).applyMatrix4(toRoot);
-    c.fromBufferAttribute(pos, idx[t + 2]).applyMatrix4(toRoot);
-    if ((a.y + b.y + c.y) / 3 < y) keep.push(idx[t], idx[t + 1], idx[t + 2]);
-  }
-  g.setIndex(keep);
-  mesh.geometry = g;
-  return keep.length > 0;
-}
-
 /** Where an accessory goes, in the character's root space: { s, x, y, z } for a model of `size`. */
 export function place(slot, size, box, fit = {}) {
   const f = { ...FIT[slot], ...fit };
@@ -245,9 +235,6 @@ export async function dress(THREE, root, gear, { load, hair = null } = {}) {
   const body = hair || gear?.length ? measureBody(THREE, root) : null;
   if (hair && !body.head.box.isEmpty()) for (const s of addScalp(THREE, root, body.head.box, hair)) mats.push(s.material, s.geometry);
   if (!gear?.length) return mats;
-  // the lowest cut of any hat or helmet worn: the hair above it is hidden under that hat
-  const cuts = gear.filter((g) => g.slot === 'hat' || g.slot === 'helmet').map(hairCutFor).filter((c) => c != null);
-  const cut = cuts.length ? Math.min(...cuts) : null;
   const wear = gear;
   const files = await Promise.all(wear.map((g) => load(g.url).catch(() => null)));
   const rootInv = root.matrixWorld.clone().invert();
@@ -258,30 +245,20 @@ export async function dress(THREE, root, gear, { load, hair = null } = {}) {
       const { box, bone } = body[where];
       if (!bone || box.isEmpty()) continue;
       const obj = gltf.scene.clone(true);
-      const size = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
-      const p = place(g.slot, size, box, ITEM_FIT[g.id]);
-      const bs = box.getSize(new THREE.Vector3());
-      const unit = g.slot === 'shoes' ? bs.z : bs.y;
       // the bone's place in root space now (the bind pose): the piece keeps its place from it
       const fromBone = rootInv.clone().multiply(bone.matrixWorld).invert();
-      const piece = { id: g.id, slot: g.slot, body: g.body, obj, apply: (f) => { obj.matrix.copy(fromBone).multiply(compose(THREE, p, size, side, unit, f)); } };
+      let apply;
+      if (onHead(g.id)) apply = (f) => { obj.matrix.copy(fromBone).multiply(headMatrix(THREE, box, f)); };
+      else {
+        const size = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+        const p = place(g.slot, size, box, ITEM_FIT[g.id]);
+        const bs = box.getSize(new THREE.Vector3());
+        const unit = g.slot === 'shoes' ? bs.z : bs.y;
+        apply = (f) => { obj.matrix.copy(fromBone).multiply(compose(THREE, p, size, side, unit, f)); };
+      }
+      const piece = { id: g.id, slot: g.slot, body: g.body, obj, apply };
       piece.apply(g.body ? fitFor(g.body, g.id) : null);
       obj.matrixAutoUpdate = false;
-      if (g.slot === 'hair' && cut != null) {
-        // the piece's meshes in root space: the bone's place now, then the piece's own matrix
-        const pieceToRoot = rootInv.clone().multiply(bone.matrixWorld).multiply(obj.matrix);
-        obj.updateMatrixWorld(true);
-        const objInv = obj.matrixWorld.clone().invert();
-        const y = box.min.y + bs.y * cut;
-        const hide = [];
-        obj.traverse((o) => {
-          if (!o.isMesh) return;
-          const toRoot = pieceToRoot.clone().multiply(objInv.clone().multiply(o.matrixWorld));
-          if (!cutAbove(THREE, o, toRoot, y)) hide.push(o);
-          mats.push(o.geometry);   // a copy of its own, freed with the character
-        });
-        hide.forEach((o) => { o.visible = false; });
-      }
       obj.traverse((o) => {
         if (!o.isMesh) return;
         o.frustumCulled = false;

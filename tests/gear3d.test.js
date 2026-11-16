@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { place, onScalp, hairCutFor } from '../js/app/gear3d.js';
+import * as THREE from '../vendor/three/three.module.min.js';
+import { place, onScalp, onHead, headMatrix } from '../js/app/gear3d.js';
 
 // a head about 0.24 wide, 0.26 tall, 0.27 deep, its top at 1.8, facing +Z
 const head = { min: { x: -0.12, y: 1.54, z: -0.14 }, max: { x: 0.12, y: 1.8, z: 0.13 } };
@@ -44,9 +45,14 @@ test('the scalp covers the crown and the nape, never the face or the ears', () =
   assert.ok(!onScalp(0.7, 0.5, 0.95), 'the ear, out at the side');
 });
 
-test('hats and helmets cut the hair above their brim, the visor none', () => {
-  assert.equal(hairCutFor({ id: 'hat-visor', slot: 'hat' }), null);
-  assert.ok(hairCutFor({ id: 'hat-cap-navy', slot: 'hat' }) > 0.3);
-  assert.ok(hairCutFor({ id: 'helmet-road', slot: 'helmet' }) > 0.3);
-  assert.ok(hairCutFor({ id: 'hat-beanie', slot: 'hat' }) < hairCutFor({ id: 'hat-cap-navy', slot: 'hat' }), 'a beanie comes down lower');
+test('hair made on the head is stretched onto the head box', () => {
+  assert.ok(onHead('hair-m-fade') && onHead('hair-f-bob'));
+  assert.ok(!onHead('hat-cap-navy') && !onHead('hair-crop'));
+  const box = new THREE.Box3(new THREE.Vector3(-0.12, 1.54, -0.14), new THREE.Vector3(0.12, 1.8, 0.13));
+  const m = headMatrix(THREE, box, null);
+  const lo = new THREE.Vector3(0, 0, 0).applyMatrix4(m), hi = new THREE.Vector3(1, 1, 1).applyMatrix4(m);
+  assert.ok(lo.distanceTo(box.min) < 1e-9 && hi.distanceTo(box.max) < 1e-9, '0..1 is the head box');
+  // a hand-set move is in head heights, a size change keeps the head's middle
+  const up = new THREE.Vector3(0.5, 0.5, 0.5).applyMatrix4(headMatrix(THREE, box, { y: 0.1, s: 1.2 }));
+  assert.ok(Math.abs(up.y - (1.67 + 0.026)) < 1e-9);
 });

@@ -55,10 +55,14 @@ So one file fits the male, the female and every outfit. Hair is free, on the Loo
 
 A player's character is never bald:
 - **Scalp** (`addScalp`): a short buzz cut made at load time from the character's own head, the skin's triangles on the scalp (`onScalp`: low at the nape, over the ears at the sides, at the forehead in front; the ears stay bare), copied a little out from the skin in the hair colour. It's always there, under any hair and any hat, so it fits every outfit's head.
-- **Hair**: the picked style. With none picked, the male shows only the scalp and the female wears `DEFAULT_HAIR.female` (`js/core/wardrobe.js`).
-- **Under a hat or helmet**, the hair above the brim is cut away (`HAIR_CUT`: a share of the head's height); what hangs below it, a ponytail, long hair, braids, still shows. The visor cuts nothing.
+- **Hair**: the picked style, `hair-m-*` for the male and `hair-f-*` for the female (`HAIRSTYLES` in `js/core/wardrobe.js`, pictures in `art/hair/`). With none picked, the male shows only the scalp and the female wears `DEFAULT_HAIR.female`.
+- **Under a hat or helmet**, every style gives way to the body's one hat hair (`HAT_HAIR`: `hair-m-hat`, `hair-f-hat`), so each hat is fitted once, over the same hair. Until a hat hair's model is made, only the scalp shows under the hat. The visor hides nothing.
 
-New hairstyles are drawn on the character's own bald head (`MOSKE APP/PromptQueue Prompts/hair-on-head.csv`, with `Rooms/references/head-<body>.png`), in light grey, so the hair follows the skull instead of floating as a shell. Tripo then makes a head with hair; the head is cut away in Blender (the hair is the grey, unsaturated part) before `build-accessories.mjs`.
+Hairstyles are made on the character's own head:
+1. A picture: the bald head (`Rooms/references/head-<body>.png`) given the style in light grey (`MOSKE APP/PromptQueue Prompts/hair-on-head.csv`; the hat hair is `hair-hat.csv`).
+2. Tripo makes a model from it, often a whole body. Only the hair is used.
+3. `tools/hair-on-head.py` (Blender) cuts out the grey hair, lines the Tripo head up with the plain body's head, and writes the hair in head-box units to `Items/z_GLB MODELS/hair/on-head/<id>.glb`, with a preview from the front and the back.
+4. `tools/build-accessories.mjs` (the `HAIR` list) makes the game file. In the game, `gear3d.js` stretches it onto the head box of whatever outfit is worn (`onHead`, `headMatrix`), so no hand-set fit is needed.
 
 ### Adding one
 

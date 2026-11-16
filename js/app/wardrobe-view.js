@@ -82,7 +82,7 @@ function lookPanel(look) {
       <div class="wr-swatches is-eyes">${EYE_COLOURS.map((e) => swatch('data-wr-eyes', e, look.eyes === e.id, t(`wardrobe.eyeColours.${e.id}`))).join('')}</div></section>
     <section class="wr-sec"><h3>${esc(t('wardrobe.slot.hair'))}</h3>
       <div class="wr-swatches">${HAIR_COLOURS.map((h) => swatch('data-wr-hair', h, look.hairColour === h.id, t(`wardrobe.hairColours.${h.id}`))).join('')}</div>
-      <div class="wr-grid">${slotCards(SLOTS.find((s) => s.id === 'hair'), look, [], HAIR_COLOURS.find((h) => h.id === look.hairColour)?.hex)}</div></section>`;
+      <div class="wr-grid">${slotCards(SLOTS.find((s) => s.id === 'hair'), look, [])}</div></section>`;
 }
 
 const STATE_ORDER = { owned: 0, soon: 1, locked: 2, class: 3 };
@@ -107,8 +107,8 @@ function outfitsPanel(look, owned) {
   return `<p class="wr-note">${esc(t('wardrobe.outfitsNote'))}</p><div class="wr-grid">${rows.map(card).join('')}</div>`;
 }
 
-/** A slot's cards: none, then each item. `colour` paints every icon (the hair colour), else each item's own. */
-function slotCards(slot, look, owned, colour = null) {
+/** A slot's cards: none, then each item. Hairstyles show their picture, the rest an icon in the item's colour. */
+function slotCards(slot, look, owned) {
   const cur = look.gear[slot.id];
   const none = `<button type="button" class="wr-card is-owned${cur ? '' : ' is-on'}" data-wr-gear="${slot.id}:" aria-pressed="${!cur}">
       ${noneSvg}<b>${esc(t('wardrobe.none'))}</b></button>`;
@@ -116,7 +116,7 @@ function slotCards(slot, look, owned, colour = null) {
     const state = accessoryState(id, owned);
     const on = cur === id;
     return `<button type="button" class="wr-card is-${state}${on ? ' is-on' : ''}" data-wr-gear="${slot.id}:${id}" aria-pressed="${on}" ${state === 'owned' ? '' : 'aria-disabled="true"'}>
-        ${slotSvg(slot.id, colour || ITEM_COLOUR(id))}<b>${esc(t(`wardrobe.item.${id}`))}</b>
+        ${slot.id === 'hair' ? `<img class="wr-kit wr-hairpic" src="art/hair/${id}.webp" alt="" loading="lazy" decoding="async">` : slotSvg(slot.id, ITEM_COLOUR(id))}<b>${esc(t(`wardrobe.item.${id}`))}</b>
         ${state === 'soon' ? `<small class="wr-state is-soon">${esc(t('wardrobe.state.soon'))}</small>` : state === 'locked' ? `<small class="wr-state">${svg('lock')}${esc(t('wardrobe.how.shop'))}</small>` : ''}
       </button>`;
   }).join('');

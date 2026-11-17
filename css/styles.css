@@ -3157,3 +3157,8 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .dg-shop-warn[hidden] { display: none; }
 @keyframes dg-warn-shake { 0%, 30%, 100% { rotate: 0deg; } 6% { rotate: -7deg; } 12% { rotate: 6deg; } 18% { rotate: -4deg; } 24% { rotate: 2deg; } }
 @media (prefers-reduced-motion: reduce) { .dg-shop-warn, .dg-shop-warn.is-out img { animation: none; } }
+
+/* the club room: its own screen, the room alone on black (diorama-view.js), Close back to the tower */
+.dg-screen.is-club, .dg-screen.is-club .dg-viewport { background: #000; }
+.dg-screen.is-club .dg-row { display: none; }
+.app:has(.dg-screen.is-club) .tabs { display: none; }   /* a screen of its own, like the stadium */

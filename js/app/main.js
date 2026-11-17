@@ -20,7 +20,7 @@ import { shopShell, loadShop } from './shop.js';
 import { openPublicProfile } from './profile.js';
 import { renderProfileGame, openFitnessHub, openPublicFitness, SPORT_ORDER, avatarButton } from './profile-game.js';
 import { openWhatNext } from './base-view.js';
-import { renderDiorama, wireDiorama, resetDiorama } from './diorama-view.js';
+import { renderDiorama, wireDiorama, resetDiorama, closeClubRoom } from './diorama-view.js';
 import { openDeliveries } from './delivery-view.js';
 import { openExpansions } from './expansion-view.js';
 import { refreshPlacements, onPlacements } from './placement-state.js';
@@ -505,6 +505,7 @@ function onClick(e) {
     case 'open-missions': openMissionBoard(buildCtx()); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
+    case 'close-club-room': closeClubRoom(); break;
     case 'open-wardrobe': openWardrobe(); break;
     case 'open-chests': openChestQueue(); break;
     case 'open-trophies': openTrophyCase(el.dataset.sport); break;

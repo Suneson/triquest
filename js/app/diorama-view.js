@@ -67,20 +67,30 @@ const itemName = (id) => t(`cp.item.${id}`);
 
 // the rooms you can be in: the tower's floors, and the club room (in the club house: tap it)
 const ALL_ROOMS = [...STAGE_ROOMS, 'club'];
-// a building that has a room (island-view.js: the club house) asks for it
+// The club room is a screen of its own, opened from the club house on the map (island-view.js):
+// the room alone on black, a Close button back to the tower. It isn't remembered: the app always
+// opens on a floor of the tower.
+let inClub = false;
+const goRoom = () => document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true }));
 document.addEventListener('dg-enter-room', (e) => {
-  const to = e.detail?.room;
-  if (!ALL_ROOMS.includes(to) || to === activeRoom()) return;
-  setActiveRoom(to); view.landing = true;
-  document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true }));
+  if (e.detail?.room !== 'club' || inClub) return;
+  inClub = true; view.sel = null; view.v = null; view.landing = true;
+  goRoom();
 });
-/** The room on the stage (remembered on the device). */
-export function activeRoom() {
-  try { const r = localStorage.getItem(ROOM_KEY); if (ALL_ROOMS.includes(r)) return r; } catch { /* private mode */ }
-  return 'bike';
+export function closeClubRoom() {
+  if (!inClub) return;
+  inClub = false; view.sel = null; view.v = null;
+  goRoom();
 }
+const towerRoom = () => {
+  try { const r = localStorage.getItem(ROOM_KEY); if (STAGE_ROOMS.includes(r)) return r; } catch { /* private mode */ }
+  return 'bike';
+};
+/** The room on the stage: the club room while it's open, else the tower floor remembered on the device. */
+export function activeRoom() { return inClub ? 'club' : towerRoom(); }
 export function setActiveRoom(room) {
-  if (!ALL_ROOMS.includes(room)) return;
+  if (!STAGE_ROOMS.includes(room)) return;
+  inClub = false;
   try { localStorage.setItem(ROOM_KEY, room); } catch { /* private mode */ }
   view.sel = null;
   view.v = null; // a new room opens at its home view
@@ -211,7 +221,8 @@ function liftPanel(active) {
 export function renderDiorama(ctx, avatarBtn = '') {
   const room = activeRoom();
   const ready = unseenFinished().length;
-  return `<section class="dg-screen" data-dg>
+  const club = room === 'club';
+  return `<section class="dg-screen${club ? ' is-club' : ''}" data-dg>
     <div class="dg-viewport" data-dg-vp tabindex="0" role="application" aria-roledescription="${esc(t('cp.roledesc'))}" aria-label="${esc(t('cp.vpAria'))}">
       <div class="dg-world" data-dg-world style="width:${envFor(room).w}px;height:${envFor(room).h}px"></div>
     </div>
@@ -226,7 +237,8 @@ export function renderDiorama(ctx, avatarBtn = '') {
         <button class="dg-sq" data-dg-stash aria-label="${esc(t('cp.menu.stashAria'))}"><img src="icons/UI/stash.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.stash'))}</span></button>
       </div>
     </div>
-    <div class="dg-row">
+    ${club ? `<button type="button" class="sh-close dg-club-close" data-action="close-club-room"><span>${esc(t('sheet.close'))}</span></button>` : ''}
+    <div class="dg-row"${club ? ' hidden' : ''}>
       ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
       ${orb('navy', 'icons/UI/side/side-expand.webp', `data-action="open-expansions" aria-label="${esc(t('cp.expand.aria'))}"`,
@@ -237,7 +249,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
       ${orb('gold', 'icons/Pixelart/GEAR/btn-wardrobe.webp', `data-action="open-wardrobe" aria-label="${esc(t('wardrobe.title'))}"`)}
       ${orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
-    <div class="dg-side is-right">${liftPanel(room)}</div>
+    ${club ? '' : `<div class="dg-side is-right">${liftPanel(room)}</div>`}
   </section>`;
 }
 
@@ -781,8 +793,11 @@ export function wireDiorama(root, ctx) {
   window.addEventListener('resize', view.onResize);
   // the island's plots; the markets live on its market plot now (island-view.js, shop-view.js),
   // so the old markets round the lobby (market-view.js) are no longer put in the city
+  // the club room's screen shows the room alone: the map's buildings and their tags wait, hidden
+  worldEl.querySelector('.dg-plots')?.toggleAttribute('hidden', !!env.club);
+  stage.front?.toggleAttribute('hidden', !!env.club);
   if (env.floor != null) {
-    mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen'), inside: room === 'club' ? 'club' : null });
+    mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
     // the delivery sign and the truck, pictures among the island's (city2d.js)
     mountCity(worldEl, {
       deliveries: (kind) => deliveryEnds((gearState().jobs || []).filter((j) => !kind || kindOf(j) === kind), serverNow(), TRUCK_AFTER * 1000 + 60e3),

@@ -83,9 +83,8 @@ const clock = (ms) => {
 const name = (plot) => t(`island.name.${plot}`);
 
 /** Put the plots in the world, once, and bring them up to date. */
-export function mountIsland(worldEl, front, { workouts, screen, inside = null }) {
-  // `inside`: the building you're in (the club house while its room is on the stage): it's drawn away
-  ctx = { workouts: workouts || (() => []), screen, world: worldEl, front, inside };
+export function mountIsland(worldEl, front, { workouts, screen }) {
+  ctx = { workouts: workouts || (() => []), screen, world: worldEl, front };
   if (!worldEl.querySelector('.dg-plots')) {
     const layer = document.createElement('div');
     layer.className = 'dg-plots';
@@ -147,11 +146,7 @@ function paint() {
   for (const p of ORDER) {
     const el = w.querySelector(`.dg-plots [data-plot="${p}"]`);
     const a = pictureOf(p);
-    el.hidden = !a.src || ctx.inside === p;   // the coliseum is painted on the ground: only its button
-    const hit = ctx.front?.querySelector(`.dg-isl-hit[data-isl="${p}"]`);
-    if (hit) hit.hidden = ctx.inside === p;
-    const tag = ctx.front?.querySelector(`.dg-isl-tag[data-isl="${p}"]`);
-    if (tag && ctx.inside === p) tag.hidden = true;
+    el.hidden = !a.src;                       // the coliseum is painted on the ground: only its button
     if (!a.src) continue;
     if (el.getAttribute('src') !== a.src) el.src = a.src;
     Object.assign(el.style, { left: `${a.x}px`, top: `${a.y}px`, width: `${a.w}px`, height: `${a.h}px` });
@@ -285,7 +280,7 @@ export function tickIsland() {
     if (was && el.hidden) done = true;
     // the name tag gives way to the timer
     const tag = ctx.front.querySelector(`.dg-isl-tag[data-isl="${p}"]`);
-    if (tag) tag.hidden = !el.hidden || ctx.inside === p;
+    if (tag) tag.hidden = !el.hidden;
     if (el.hidden) return;
     const pic = pictureOf(p);
     el.style.left = `${pic.x + pic.w / 2}px`; el.style.top = `${pic.y + 20}px`;
@@ -311,7 +306,7 @@ function tap(plot) {
   const { state, left } = pieceState(myIsland(), plot, serverNow());
   if (state === 'building') { closeBar(); toast(esc(t('island.building', { name: name(plot), left: clock(left) })), { icon: svg('wrench') }); return; }
   if (state === 'built' && plot === 'club') {
-    // into the club room (diorama-view.js puts it on the club house's plot); the club's chat is on the Chat tab
+    // the club room opens on its own screen (diorama-view.js); the club's chat is on the Chat tab
     closeBar();
     document.dispatchEvent(new CustomEvent('dg-enter-room', { detail: { room: 'club' } }));
     return;

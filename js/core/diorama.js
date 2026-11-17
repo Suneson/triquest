@@ -65,20 +65,19 @@ const cityEnv = (n, geom) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, x0: C
   maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (slabOf(n).right[0] - slabOf(n).left[0])) / ROOM_GEOMETRY[geom].cols), plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n), rail: parapetOf(n) ? { front: parapetOf(n) } : null });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
-// The club room stands on the club house's own plot, on the ground (the club house is drawn away
-// while you're in it): a slab the club house's size (cut-grounds.py BUILDINGS.club side), the whole
-// base beside it at its full height.
-export const CLUB_SIDE = 0.84;
-function clubSlab() {
-  const [x, y] = PLOTS.club;
-  const hw = CLUB_SIDE * UNIT; const hh = CLUB_SIDE * SLOPE * UNIT;
-  return { top: [x, y - 2 * hh], right: [x + hw, y - hh], bottom: [x, y], left: [x - hw, y - hh] };
-}
+// The club room is a screen of its own (opened from the club house on the map): the room alone on
+// black, at its picture's own size. The world is the picture with black round it, tall enough for
+// a phone held upright to show the whole room's width.
 const clubEnv = (geom) => {
-  const plot = clubSlab();
-  return { src: CITY_TILES[0].src, tiles: CITY_TILES, x0: CITY.x0, y0: CITY.y0, w: CITY.w, h: CITY.h,
-    maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (plot.right[0] - plot.left[0])) / ROOM_GEOMETRY[geom].cols),
-    plot, floorShare: 0.5, floor: 0, club: true, slabView: 1.15, tower: towerPieces(STOREYS.length), rail: null };
+  const [w, h] = ROOM_SIZE[geom];
+  const g = ROOM_GEOMETRY[geom];
+  const W = Math.round(w * 1.3); const H = Math.round(Math.max(h * 1.6, w * 2.4));
+  const floorW = ((g.right[0] - g.left[0]) * w) / 100;
+  const plotW = floorW / (g.share ?? 0.5);   // so the room is drawn at scale 1
+  const cx = W / 2; const cy = H / 2 + ((((g.right[1] + g.left[1]) / 2) - 50) * h) / 100;
+  const plot = { top: [cx, cy], bottom: [cx, cy], left: [cx - plotW / 2, cy], right: [cx + plotW / 2, cy] };
+  return { src: '', tiles: [], w: W, h: H, plot, floorShare: 0.5, club: true, slabView: plotW / (w * 1.04),
+    maxS: TILE_ZOOM / (floorW / g.cols), tower: [], rail: null };
 };
 export const envFor = (room, geom = stageGeom(room)) => (room === 'club' ? clubEnv(geom) : room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
 

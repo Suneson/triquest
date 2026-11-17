@@ -66,14 +66,18 @@ const PARCEL_TAPS = 3;
 /** The product's own picture, if it has one (gear has; props and rare items fall back to none). */
 const itemArt = (id) => gearById(id)?.art || propById(id)?.art || rareById(id)?.art || '';
 
-/** The parcels waiting at the door, soonest first. */
-export const parcels = () => parcelsWaiting(gearState().jobs, serverNow(), openedParcels(), jobKey);
+/** Which vehicle brings a job: the bike the clothes (gear and kit), the boat everything else. */
+export const kindOf = (job) => (gearById(job.item_id) ? 'bike' : 'boat');
+
+/** The parcels waiting, soonest first: all of them, or those one vehicle (`kind`) brought. */
+export const parcels = (kind) => parcelsWaiting(gearState().jobs, serverNow(), openedParcels(), jobKey)
+  .filter((j) => !kind || kindOf(j) === kind);
 
 let opening = false;
 /** Is a parcel's opening on screen? (The truck waits until it's closed.) */
 export const parcelOpen = () => opening;
 
-export function openParcel(list = parcels(), onDone = null) {
+export function openParcel(list = parcels(), onDone = null, kind = null) {
   const job = list[0];
   if (!job) return null;
   const calm = prefersReducedMotion();
@@ -115,8 +119,8 @@ export function openParcel(list = parcels(), onDone = null) {
   root.addEventListener('click', (e) => {
     if (e.target.closest('[data-pc-collect]')) {
       closeLayer(root);
-      const rest = parcels();
-      if (rest.length) setTimeout(() => openParcel(rest, onDone), 140);
+      const rest = parcels(kind);
+      if (rest.length) setTimeout(() => openParcel(rest, onDone, kind), 140);
       return;
     }
     if (taps >= PARCEL_TAPS) return;

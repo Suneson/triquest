@@ -174,6 +174,886 @@ export const ITEM_FIT = {
     "mid": 0.608,
     "pad": 0.022
   },
+  "icons/Items/clan-arcade-cabinet-a.webp": {
+    "w": 0.926,
+    "mid": 0.52,
+    "pad": 0.015
+  },
+  "icons/Items/clan-arcade-cabinet-b.webp": {
+    "w": 0.848,
+    "mid": 0.564,
+    "pad": 0.015
+  },
+  "icons/Items/clan-arcade-cabinet-c.webp": {
+    "w": 0.827,
+    "mid": 0.573,
+    "pad": 0.021
+  },
+  "icons/Items/clan-arcade-cabinet-d.webp": {
+    "w": 0.87,
+    "mid": 0.545,
+    "pad": 0.024
+  },
+  "icons/Items/clan-back-bar-shelves-a.webp": {
+    "w": 0.857,
+    "mid": 0.56,
+    "pad": 0.008
+  },
+  "icons/Items/clan-back-bar-shelves-b.webp": {
+    "w": 0.796,
+    "mid": 0.591,
+    "pad": 0.01
+  },
+  "icons/Items/clan-back-bar-shelves-c.webp": {
+    "w": 0.789,
+    "mid": 0.593,
+    "pad": 0.011
+  },
+  "icons/Items/clan-back-bar-shelves-d.webp": {
+    "w": 0.796,
+    "mid": 0.589,
+    "pad": 0.011
+  },
+  "icons/Items/clan-bar-counter-corner-a.webp": {
+    "w": 0.922,
+    "mid": 0.468,
+    "pad": 0.03
+  },
+  "icons/Items/clan-bar-counter-corner-b.webp": {
+    "w": 0.904,
+    "mid": 0.54,
+    "pad": 0.028
+  },
+  "icons/Items/clan-bar-counter-corner-c.webp": {
+    "w": 0.903,
+    "mid": 0.54,
+    "pad": 0.118
+  },
+  "icons/Items/clan-bar-counter-corner-d.webp": {
+    "w": 0.825,
+    "mid": 0.575,
+    "pad": 0.081
+  },
+  "icons/Items/clan-bar-counter-long-a.webp": {
+    "w": 0.979,
+    "mid": 0.501,
+    "pad": 0.037
+  },
+  "icons/Items/clan-bar-counter-long-b.webp": {
+    "w": 0.981,
+    "mid": 0.5,
+    "pad": 0.034
+  },
+  "icons/Items/clan-bar-counter-long-c.webp": {
+    "w": 0.932,
+    "mid": 0.524,
+    "pad": 0.048
+  },
+  "icons/Items/clan-bar-counter-long-d.webp": {
+    "w": 0.938,
+    "mid": 0.523,
+    "pad": 0.046
+  },
+  "icons/Items/clan-bar-stool-a.webp": {
+    "w": 0.934,
+    "mid": 0.494,
+    "pad": 0.019
+  },
+  "icons/Items/clan-bar-stool-b.webp": {
+    "w": 0.933,
+    "mid": 0.498,
+    "pad": 0.018
+  },
+  "icons/Items/clan-bar-stool-c.webp": {
+    "w": 0.925,
+    "mid": 0.495,
+    "pad": 0.018
+  },
+  "icons/Items/clan-bar-stool-d.webp": {
+    "w": 0.927,
+    "mid": 0.493,
+    "pad": 0.018
+  },
+  "icons/Items/clan-beer-tap-a.webp": {
+    "w": 0.846,
+    "mid": 0.562,
+    "pad": 0.054
+  },
+  "icons/Items/clan-beer-tap-b.webp": {
+    "w": 0.803,
+    "mid": 0.561,
+    "pad": 0.064
+  },
+  "icons/Items/clan-beer-tap-c.webp": {
+    "w": 0.832,
+    "mid": 0.572,
+    "pad": 0.036
+  },
+  "icons/Items/clan-beer-tap-d.webp": {
+    "w": 0.861,
+    "mid": 0.557,
+    "pad": 0.042
+  },
+  "icons/Items/clan-bookcase-a.webp": {
+    "w": 0.886,
+    "mid": 0.541,
+    "pad": 0.012
+  },
+  "icons/Items/clan-bookcase-b.webp": {
+    "w": 0.844,
+    "mid": 0.558,
+    "pad": 0.014
+  },
+  "icons/Items/clan-bookcase-c.webp": {
+    "w": 0.841,
+    "mid": 0.565,
+    "pad": 0.017
+  },
+  "icons/Items/clan-bookcase-d.webp": {
+    "w": 0.839,
+    "mid": 0.566,
+    "pad": 0.015
+  },
+  "icons/Items/clan-brass-till-a.webp": {
+    "w": 0.838,
+    "mid": 0.572,
+    "pad": 0.008
+  },
+  "icons/Items/clan-brass-till-b.webp": {
+    "w": 0.876,
+    "mid": 0.551,
+    "pad": 0.008
+  },
+  "icons/Items/clan-brass-till-c.webp": {
+    "w": 0.836,
+    "mid": 0.572,
+    "pad": 0.012
+  },
+  "icons/Items/clan-brass-till-d.webp": {
+    "w": 0.836,
+    "mid": 0.572,
+    "pad": 0.011
+  },
+  "icons/Items/clan-cake-stand-a.webp": {
+    "w": 0.945,
+    "mid": 0.512,
+    "pad": 0.026
+  },
+  "icons/Items/clan-cake-stand-b.webp": {
+    "w": 0.935,
+    "mid": 0.511,
+    "pad": 0.026
+  },
+  "icons/Items/clan-cake-stand-c.webp": {
+    "w": 0.932,
+    "mid": 0.514,
+    "pad": 0.031
+  },
+  "icons/Items/clan-cake-stand-d.webp": {
+    "w": 0.932,
+    "mid": 0.512,
+    "pad": 0.031
+  },
+  "icons/Items/clan-card-table-a.webp": {
+    "w": 0.982,
+    "mid": 0.499,
+    "pad": 0.021
+  },
+  "icons/Items/clan-card-table-b.webp": {
+    "w": 0.979,
+    "mid": 0.502,
+    "pad": 0.021
+  },
+  "icons/Items/clan-card-table-c.webp": {
+    "w": 0.944,
+    "mid": 0.483,
+    "pad": 0.018
+  },
+  "icons/Items/clan-card-table-d.webp": {
+    "w": 0.978,
+    "mid": 0.501,
+    "pad": 0.018
+  },
+  "icons/Items/clan-champagne-bucket-a.webp": {
+    "w": 0.982,
+    "mid": 0.499,
+    "pad": 0.022
+  },
+  "icons/Items/clan-champagne-bucket-b.webp": {
+    "w": 0.979,
+    "mid": 0.5,
+    "pad": 0.026
+  },
+  "icons/Items/clan-champagne-bucket-c.webp": {
+    "w": 0.98,
+    "mid": 0.5,
+    "pad": 0.021
+  },
+  "icons/Items/clan-champagne-bucket-d.webp": {
+    "w": 0.979,
+    "mid": 0.5,
+    "pad": 0.021
+  },
+  "icons/Items/clan-chess-table-a.webp": {
+    "w": 0.969,
+    "mid": 0.501,
+    "pad": 0.019
+  },
+  "icons/Items/clan-chess-table-b.webp": {
+    "w": 0.972,
+    "mid": 0.5,
+    "pad": 0.02
+  },
+  "icons/Items/clan-chess-table-c.webp": {
+    "w": 0.971,
+    "mid": 0.499,
+    "pad": 0.024
+  },
+  "icons/Items/clan-chess-table-d.webp": {
+    "w": 0.968,
+    "mid": 0.499,
+    "pad": 0.017
+  },
+  "icons/Items/clan-chesterfield-armchair-a.webp": {
+    "w": 0.91,
+    "mid": 0.535,
+    "pad": 0.097
+  },
+  "icons/Items/clan-chesterfield-armchair-b.webp": {
+    "w": 0.897,
+    "mid": 0.542,
+    "pad": 0.097
+  },
+  "icons/Items/clan-chesterfield-armchair-c.webp": {
+    "w": 0.897,
+    "mid": 0.542,
+    "pad": 0.089
+  },
+  "icons/Items/clan-chesterfield-armchair-d.webp": {
+    "w": 0.908,
+    "mid": 0.536,
+    "pad": 0.078
+  },
+  "icons/Items/clan-chesterfield-sofa-a.webp": {
+    "w": 0.912,
+    "mid": 0.534,
+    "pad": 0.108
+  },
+  "icons/Items/clan-chesterfield-sofa-b.webp": {
+    "w": 0.896,
+    "mid": 0.544,
+    "pad": 0.104
+  },
+  "icons/Items/clan-chesterfield-sofa-c.webp": {
+    "w": 0.896,
+    "mid": 0.544,
+    "pad": 0.076
+  },
+  "icons/Items/clan-chesterfield-sofa-d.webp": {
+    "w": 0.914,
+    "mid": 0.535,
+    "pad": 0.078
+  },
+  "icons/Items/clan-cocktail-station-a.webp": {
+    "w": 0.943,
+    "mid": 0.516,
+    "pad": 0.04
+  },
+  "icons/Items/clan-cocktail-station-b.webp": {
+    "w": 0.947,
+    "mid": 0.518,
+    "pad": 0.041
+  },
+  "icons/Items/clan-cocktail-station-c.webp": {
+    "w": 0.94,
+    "mid": 0.52,
+    "pad": 0.043
+  },
+  "icons/Items/clan-cocktail-station-d.webp": {
+    "w": 0.942,
+    "mid": 0.521,
+    "pad": 0.042
+  },
+  "icons/Items/clan-coffee-cart-a.webp": {
+    "w": 0.974,
+    "mid": 0.5,
+    "pad": 0.036
+  },
+  "icons/Items/clan-coffee-cart-b.webp": {
+    "w": 0.973,
+    "mid": 0.498,
+    "pad": 0.031
+  },
+  "icons/Items/clan-coffee-cart-c.webp": {
+    "w": 0.979,
+    "mid": 0.501,
+    "pad": 0.036
+  },
+  "icons/Items/clan-coffee-cart-d.webp": {
+    "w": 0.968,
+    "mid": 0.495,
+    "pad": 0.032
+  },
+  "icons/Items/clan-coffee-table-a.webp": {
+    "w": 0.91,
+    "mid": 0.537,
+    "pad": 0.071
+  },
+  "icons/Items/clan-coffee-table-b.webp": {
+    "w": 0.91,
+    "mid": 0.537,
+    "pad": 0.043
+  },
+  "icons/Items/clan-coffee-table-c.webp": {
+    "w": 0.908,
+    "mid": 0.538,
+    "pad": 0.039
+  },
+  "icons/Items/clan-coffee-table-d.webp": {
+    "w": 0.91,
+    "mid": 0.537,
+    "pad": 0.036
+  },
+  "icons/Items/clan-corner-sofa-a.webp": {
+    "w": 0.943,
+    "mid": 0.517,
+    "pad": 0.04
+  },
+  "icons/Items/clan-corner-sofa-b.webp": {
+    "w": 0.949,
+    "mid": 0.512,
+    "pad": 0.028
+  },
+  "icons/Items/clan-corner-sofa-c.webp": {
+    "w": 0.896,
+    "mid": 0.542,
+    "pad": 0.025
+  },
+  "icons/Items/clan-corner-sofa-d.webp": {
+    "w": 0.891,
+    "mid": 0.543,
+    "pad": 0.019
+  },
+  "icons/Items/clan-cue-rack-a.webp": {
+    "w": 0.899,
+    "mid": 0.527,
+    "pad": 0.018
+  },
+  "icons/Items/clan-cue-rack-b.webp": {
+    "w": 0.899,
+    "mid": 0.527,
+    "pad": 0.018
+  },
+  "icons/Items/clan-cue-rack-c.webp": {
+    "w": 0.896,
+    "mid": 0.524,
+    "pad": 0.021
+  },
+  "icons/Items/clan-cue-rack-d.webp": {
+    "w": 0.896,
+    "mid": 0.524,
+    "pad": 0.019
+  },
+  "icons/Items/clan-darts-board-a.webp": {
+    "w": 0.955,
+    "mid": 0.49,
+    "pad": 0.032
+  },
+  "icons/Items/clan-darts-board-b.webp": {
+    "w": 0.822,
+    "mid": 0.576,
+    "pad": 0.028
+  },
+  "icons/Items/clan-darts-board-c.webp": {
+    "w": 0.842,
+    "mid": 0.565,
+    "pad": 0.034
+  },
+  "icons/Items/clan-darts-board-d.webp": {
+    "w": 0.893,
+    "mid": 0.528,
+    "pad": 0.028
+  },
+  "icons/Items/clan-decanters-a.webp": {
+    "w": 0.978,
+    "mid": 0.5,
+    "pad": 0.033
+  },
+  "icons/Items/clan-decanters-b.webp": {
+    "w": 0.965,
+    "mid": 0.499,
+    "pad": 0.036
+  },
+  "icons/Items/clan-decanters-c.webp": {
+    "w": 0.96,
+    "mid": 0.501,
+    "pad": 0.041
+  },
+  "icons/Items/clan-decanters-d.webp": {
+    "w": 0.965,
+    "mid": 0.499,
+    "pad": 0.038
+  },
+  "icons/Items/clan-espresso-machine-vintage-a.webp": {
+    "w": 0.835,
+    "mid": 0.574,
+    "pad": 0.012
+  },
+  "icons/Items/clan-espresso-machine-vintage-b.webp": {
+    "w": 0.816,
+    "mid": 0.583,
+    "pad": 0.015
+  },
+  "icons/Items/clan-espresso-machine-vintage-c.webp": {
+    "w": 0.849,
+    "mid": 0.568,
+    "pad": 0.011
+  },
+  "icons/Items/clan-espresso-machine-vintage-d.webp": {
+    "w": 0.837,
+    "mid": 0.572,
+    "pad": 0.014
+  },
+  "icons/Items/clan-fireplace-a.webp": {
+    "w": 0.871,
+    "mid": 0.555,
+    "pad": 0.089
+  },
+  "icons/Items/clan-fireplace-b.webp": {
+    "w": 0.887,
+    "mid": 0.545,
+    "pad": 0.076
+  },
+  "icons/Items/clan-fireplace-c.webp": {
+    "w": 0.894,
+    "mid": 0.543,
+    "pad": 0.06
+  },
+  "icons/Items/clan-fireplace-d.webp": {
+    "w": 0.826,
+    "mid": 0.576,
+    "pad": 0.061
+  },
+  "icons/Items/clan-floor-lamp-a.webp": {
+    "w": 0.96,
+    "mid": 0.502,
+    "pad": 0.026
+  },
+  "icons/Items/clan-floor-lamp-b.webp": {
+    "w": 0.956,
+    "mid": 0.5,
+    "pad": 0.028
+  },
+  "icons/Items/clan-floor-lamp-c.webp": {
+    "w": 0.96,
+    "mid": 0.502,
+    "pad": 0.028
+  },
+  "icons/Items/clan-floor-lamp-d.webp": {
+    "w": 0.964,
+    "mid": 0.5,
+    "pad": 0.028
+  },
+  "icons/Items/clan-globe-bar-a.webp": {
+    "w": 0.785,
+    "mid": 0.596,
+    "pad": 0.011
+  },
+  "icons/Items/clan-globe-bar-b.webp": {
+    "w": 0.785,
+    "mid": 0.596,
+    "pad": 0.01
+  },
+  "icons/Items/clan-globe-bar-c.webp": {
+    "w": 0.804,
+    "mid": 0.586,
+    "pad": 0.015
+  },
+  "icons/Items/clan-globe-bar-d.webp": {
+    "w": 0.805,
+    "mid": 0.585,
+    "pad": 0.015
+  },
+  "icons/Items/clan-gramophone-a.webp": {
+    "w": 0.971,
+    "mid": 0.5,
+    "pad": 0.019
+  },
+  "icons/Items/clan-gramophone-b.webp": {
+    "w": 0.971,
+    "mid": 0.5,
+    "pad": 0.017
+  },
+  "icons/Items/clan-gramophone-c.webp": {
+    "w": 0.97,
+    "mid": 0.5,
+    "pad": 0.018
+  },
+  "icons/Items/clan-gramophone-d.webp": {
+    "w": 0.971,
+    "mid": 0.5,
+    "pad": 0.022
+  },
+  "icons/Items/clan-grandfather-clock-a.webp": {
+    "w": 0.908,
+    "mid": 0.505,
+    "pad": 0.022
+  },
+  "icons/Items/clan-grandfather-clock-b.webp": {
+    "w": 0.917,
+    "mid": 0.503,
+    "pad": 0.024
+  },
+  "icons/Items/clan-grandfather-clock-c.webp": {
+    "w": 0.884,
+    "mid": 0.508,
+    "pad": 0.024
+  },
+  "icons/Items/clan-grandfather-clock-d.webp": {
+    "w": 0.884,
+    "mid": 0.492,
+    "pad": 0.025
+  },
+  "icons/Items/clan-high-table-a.webp": {
+    "w": 0.971,
+    "mid": 0.499,
+    "pad": 0.062
+  },
+  "icons/Items/clan-high-table-b.webp": {
+    "w": 0.968,
+    "mid": 0.5,
+    "pad": 0.059
+  },
+  "icons/Items/clan-high-table-c.webp": {
+    "w": 0.971,
+    "mid": 0.501,
+    "pad": 0.058
+  },
+  "icons/Items/clan-high-table-d.webp": {
+    "w": 0.971,
+    "mid": 0.499,
+    "pad": 0.061
+  },
+  "icons/Items/clan-jukebox-a.webp": {
+    "w": 0.97,
+    "mid": 0.503,
+    "pad": 0.018
+  },
+  "icons/Items/clan-jukebox-b.webp": {
+    "w": 0.94,
+    "mid": 0.518,
+    "pad": 0.015
+  },
+  "icons/Items/clan-jukebox-c.webp": {
+    "w": 0.881,
+    "mid": 0.547,
+    "pad": 0.021
+  },
+  "icons/Items/clan-jukebox-d.webp": {
+    "w": 0.886,
+    "mid": 0.544,
+    "pad": 0.021
+  },
+  "icons/Items/clan-leather-bench-a.webp": {
+    "w": 0.907,
+    "mid": 0.537,
+    "pad": 0.016
+  },
+  "icons/Items/clan-leather-bench-b.webp": {
+    "w": 0.91,
+    "mid": 0.537,
+    "pad": 0.014
+  },
+  "icons/Items/clan-leather-bench-c.webp": {
+    "w": 0.908,
+    "mid": 0.538,
+    "pad": 0.011
+  },
+  "icons/Items/clan-leather-bench-d.webp": {
+    "w": 0.911,
+    "mid": 0.536,
+    "pad": 0.011
+  },
+  "icons/Items/clan-ottoman-a.webp": {
+    "w": 0.87,
+    "mid": 0.553,
+    "pad": 0.109
+  },
+  "icons/Items/clan-ottoman-b.webp": {
+    "w": 0.87,
+    "mid": 0.554,
+    "pad": 0.11
+  },
+  "icons/Items/clan-ottoman-c.webp": {
+    "w": 0.855,
+    "mid": 0.562,
+    "pad": 0.079
+  },
+  "icons/Items/clan-ottoman-d.webp": {
+    "w": 0.861,
+    "mid": 0.559,
+    "pad": 0.084
+  },
+  "icons/Items/clan-penny-farthing-a.webp": {
+    "w": 0.903,
+    "mid": 0.527,
+    "pad": 0.019
+  },
+  "icons/Items/clan-penny-farthing-b.webp": {
+    "w": 0.91,
+    "mid": 0.511,
+    "pad": 0.021
+  },
+  "icons/Items/clan-penny-farthing-c.webp": {
+    "w": 0.908,
+    "mid": 0.516,
+    "pad": 0.019
+  },
+  "icons/Items/clan-penny-farthing-d.webp": {
+    "w": 0.923,
+    "mid": 0.51,
+    "pad": 0.019
+  },
+  "icons/Items/clan-persian-rug-a.webp": {
+    "w": 0.967,
+    "mid": 0.508,
+    "pad": 0.052
+  },
+  "icons/Items/clan-persian-rug-b.webp": {
+    "w": 0.974,
+    "mid": 0.495,
+    "pad": 0.05
+  },
+  "icons/Items/clan-persian-rug-c.webp": {
+    "w": 0.961,
+    "mid": 0.511,
+    "pad": 0.031
+  },
+  "icons/Items/clan-persian-rug-d.webp": {
+    "w": 0.975,
+    "mid": 0.506,
+    "pad": 0.028
+  },
+  "icons/Items/clan-phone-box-a.webp": {
+    "w": 0.814,
+    "mid": 0.579,
+    "pad": 0.067
+  },
+  "icons/Items/clan-phone-box-b.webp": {
+    "w": 0.812,
+    "mid": 0.578,
+    "pad": 0.078
+  },
+  "icons/Items/clan-phone-box-c.webp": {
+    "w": 0.854,
+    "mid": 0.559,
+    "pad": 0.081
+  },
+  "icons/Items/clan-phone-box-d.webp": {
+    "w": 0.848,
+    "mid": 0.561,
+    "pad": 0.069
+  },
+  "icons/Items/clan-pinball-machine-a.webp": {
+    "w": 0.961,
+    "mid": 0.508,
+    "pad": 0.024
+  },
+  "icons/Items/clan-pinball-machine-b.webp": {
+    "w": 0.957,
+    "mid": 0.508,
+    "pad": 0.021
+  },
+  "icons/Items/clan-pinball-machine-c.webp": {
+    "w": 0.964,
+    "mid": 0.496,
+    "pad": 0.018
+  },
+  "icons/Items/clan-pinball-machine-d.webp": {
+    "w": 0.962,
+    "mid": 0.495,
+    "pad": 0.021
+  },
+  "icons/Items/clan-pool-table-a.webp": {
+    "w": 0.912,
+    "mid": 0.535,
+    "pad": 0.034
+  },
+  "icons/Items/clan-pool-table-b.webp": {
+    "w": 0.91,
+    "mid": 0.537,
+    "pad": 0.012
+  },
+  "icons/Items/clan-pool-table-c.webp": {
+    "w": 0.879,
+    "mid": 0.551,
+    "pad": 0.032
+  },
+  "icons/Items/clan-pool-table-d.webp": {
+    "w": 0.91,
+    "mid": 0.537,
+    "pad": 0.015
+  },
+  "icons/Items/clan-potted-palm-a.webp": {
+    "w": 0.866,
+    "mid": 0.556,
+    "pad": 0.018
+  },
+  "icons/Items/clan-potted-palm-b.webp": {
+    "w": 0.865,
+    "mid": 0.556,
+    "pad": 0.018
+  },
+  "icons/Items/clan-potted-palm-c.webp": {
+    "w": 0.887,
+    "mid": 0.546,
+    "pad": 0.026
+  },
+  "icons/Items/clan-potted-palm-d.webp": {
+    "w": 0.861,
+    "mid": 0.558,
+    "pad": 0.017
+  },
+  "icons/Items/clan-shuffleboard-a.webp": {
+    "w": 0.982,
+    "mid": 0.501,
+    "pad": 0.032
+  },
+  "icons/Items/clan-shuffleboard-b.webp": {
+    "w": 0.982,
+    "mid": 0.499,
+    "pad": 0.032
+  },
+  "icons/Items/clan-shuffleboard-c.webp": {
+    "w": 0.979,
+    "mid": 0.501,
+    "pad": 0.036
+  },
+  "icons/Items/clan-shuffleboard-d.webp": {
+    "w": 0.981,
+    "mid": 0.5,
+    "pad": 0.036
+  },
+  "icons/Items/clan-side-table-a.webp": {
+    "w": 0.962,
+    "mid": 0.5,
+    "pad": 0.056
+  },
+  "icons/Items/clan-side-table-b.webp": {
+    "w": 0.959,
+    "mid": 0.501,
+    "pad": 0.055
+  },
+  "icons/Items/clan-side-table-c.webp": {
+    "w": 0.957,
+    "mid": 0.5,
+    "pad": 0.052
+  },
+  "icons/Items/clan-side-table-d.webp": {
+    "w": 0.957,
+    "mid": 0.5,
+    "pad": 0.053
+  },
+  "icons/Items/clan-table-football-a.webp": {
+    "w": 0.883,
+    "mid": 0.547,
+    "pad": 0.116
+  },
+  "icons/Items/clan-table-football-b.webp": {
+    "w": 0.867,
+    "mid": 0.556,
+    "pad": 0.095
+  },
+  "icons/Items/clan-table-football-c.webp": {
+    "w": 0.885,
+    "mid": 0.547,
+    "pad": 0.04
+  },
+  "icons/Items/clan-table-football-d.webp": {
+    "w": 0.869,
+    "mid": 0.554,
+    "pad": 0.028
+  },
+  "icons/Items/clan-tartan-rug-a.webp": {
+    "w": 0.99,
+    "mid": 0.505,
+    "pad": 0.035
+  },
+  "icons/Items/clan-tartan-rug-b.webp": {
+    "w": 0.992,
+    "mid": 0.496,
+    "pad": 0.033
+  },
+  "icons/Items/clan-tartan-rug-c.webp": {
+    "w": 0.978,
+    "mid": 0.504,
+    "pad": 0.028
+  },
+  "icons/Items/clan-tartan-rug-d.webp": {
+    "w": 0.965,
+    "mid": 0.505,
+    "pad": 0.03
+  },
+  "icons/Items/clan-trophy-cabinet-a.webp": {
+    "w": 0.862,
+    "mid": 0.555,
+    "pad": 0.01
+  },
+  "icons/Items/clan-trophy-cabinet-b.webp": {
+    "w": 0.829,
+    "mid": 0.575,
+    "pad": 0.008
+  },
+  "icons/Items/clan-trophy-cabinet-c.webp": {
+    "w": 0.874,
+    "mid": 0.551,
+    "pad": 0.008
+  },
+  "icons/Items/clan-trophy-cabinet-d.webp": {
+    "w": 0.87,
+    "mid": 0.553,
+    "pad": 0.01
+  },
+  "icons/Items/clan-upright-piano-a.webp": {
+    "w": 0.908,
+    "mid": 0.534,
+    "pad": 0.021
+  },
+  "icons/Items/clan-upright-piano-b.webp": {
+    "w": 0.872,
+    "mid": 0.553,
+    "pad": 0.018
+  },
+  "icons/Items/clan-upright-piano-c.webp": {
+    "w": 0.846,
+    "mid": 0.566,
+    "pad": 0.012
+  },
+  "icons/Items/clan-upright-piano-d.webp": {
+    "w": 0.845,
+    "mid": 0.567,
+    "pad": 0.012
+  },
+  "icons/Items/clan-wingback-chair-a.webp": {
+    "w": 0.836,
+    "mid": 0.568,
+    "pad": 0.076
+  },
+  "icons/Items/clan-wingback-chair-b.webp": {
+    "w": 0.869,
+    "mid": 0.553,
+    "pad": 0.068
+  },
+  "icons/Items/clan-wingback-chair-c.webp": {
+    "w": 0.888,
+    "mid": 0.543,
+    "pad": 0.065
+  },
+  "icons/Items/clan-wingback-chair-d.webp": {
+    "w": 0.84,
+    "mid": 0.565,
+    "pad": 0.062
+  },
   "icons/Items/coffee-machine-t1-a.webp": {
     "w": 0.994,
     "mid": 0.499,
@@ -313,6 +1193,26 @@ export const ITEM_FIT = {
     "w": 0.922,
     "mid": 0.538,
     "pad": 0.003
+  },
+  "icons/Items/room-pantry-a.webp": {
+    "w": 0.828,
+    "mid": 0.525,
+    "pad": 0.067
+  },
+  "icons/Items/room-pantry-b.webp": {
+    "w": 0.844,
+    "mid": 0.536,
+    "pad": 0.064
+  },
+  "icons/Items/room-smoothie-bar-a.webp": {
+    "w": 0.872,
+    "mid": 0.532,
+    "pad": 0.093
+  },
+  "icons/Items/room-smoothie-bar-b.webp": {
+    "w": 0.886,
+    "mid": 0.539,
+    "pad": 0.11
   },
   "icons/Items/rowing-machine-a.webp": {
     "w": 0.942,

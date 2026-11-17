@@ -121,6 +121,15 @@ test('facings: turning an item turns its footprint, and a saved facing is kept',
   assert.deepEqual([orient(tm).face, orient(tm).w, orient(tm).h], ['a', 3, 4], 'the treadmill stands long along v at first');
   assert.deepEqual([orient(tm, 'b').w, orient(tm, 'b').h], [4, 3]);
   assert.equal(turned('a'), 'b'); assert.equal(turned('b'), 'a');
+  // four-sided items (the club's): a, b, c, d round; c stands as a, d as b; one-sided never turns
+  const sofa = placeableById('clan-chesterfield-sofa');
+  assert.equal(sofa.sides, 4);
+  assert.deepEqual(['a', 'b', 'c', 'd'].map((f) => turned(f, 4)), ['b', 'c', 'd', 'a']);
+  assert.deepEqual([orient(sofa, 'c').w, orient(sofa, 'c').h], [orient(sofa, 'a').w, orient(sofa, 'a').h]);
+  assert.deepEqual([orient(sofa, 'd').w, orient(sofa, 'd').h], [orient(sofa, 'b').w, orient(sofa, 'b').h]);
+  assert.equal(orient(tm, 'c').face, 'a', 'a two-sided item has no back facing');
+  assert.equal(turned('a', 1), 'a');
+  assert.match(sofa.art({ face: 'd' }), /clan-chesterfield-sofa-d\.webp$/);
   assert.equal(orient(placeableById('smart-trainer'), 'b').w, 3, 'one facing: as it is');
   assert.equal(tierFor(1, [4, 7]), 1); assert.equal(tierFor(4, [4, 7]), 2); assert.equal(tierFor(9, [4, 7]), 3);
   assert.match(tm.art({ face: 'a', levels: { run: 6 } }), /treadmill-t2-a\.webp$/);

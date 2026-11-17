@@ -114,7 +114,7 @@ def main():
             print(name, {k: v for k, v in data['pieces'][name].items() if k != 'src'})
     elif sys.argv[1] == 'despill':
         # the pieces cut before cut-island.py's despill(): clean them in place
-        srcs = [p['src'] for p in data['pieces'].values()] + ['icons/Island/storey.webp']
+        srcs = [p['src'] for p in data['pieces'].values()] + [s['src'] for s in data.get('storeys', [])]
         for src in srcs:
             path = os.path.join(REPO, src)
             cut.despill(Image.open(path).convert('RGBA')).save(path, quality=82, alpha_quality=88, method=6)

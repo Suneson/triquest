@@ -38,3 +38,9 @@ ARGS="tools/render-items/rig.py|<decoded glb dir>|<out dir>" \
   - Facing `a` and `b` are as in batch 3; `c` is the back of `a`, `d` the back of `b`. Renders already in the out folder are kept, so batch 3's `a` and `b` can be dropped in.
   - `GPU=1` renders on the graphics card (OptiX), about 10 s a view instead of 30 s.
   - `sheets4.py <renders> <sheets>` puts the four on one 2048 × 2048 sheet, two by two (a b / c d), at one scale, with a `.json` of where each view sits for cutting the repaint back apart. The repaint prompt is `PromptQueue Prompts/repaint-club-4-sides.csv`, with each item's concept art.
+- **`cutout-club4.py`:** cuts the repainted four-side sheets (`MOSKE APP/Characters/Photos/Robots/Robots/Repaint/club-4`) into `icons/Items/<item>-a.webp` .. `-d.webp`.
+  - Where an item was repainted more than once (`_v2`, `_v3`), the latest is used.
+  - The club items have `sides: 4` in `js/core/placement.js`: rotate goes a, b, c, d. Set an item's `sides` to 2 or 1 if its back views are wrong.
+- **`render-grounds.py`:** the club grounds' models (`Items/z_GLB MODELS/map assets` and `crates`): the club house, kiosk, boat, motorbike, pantry, smoothie bar and the seven crates.
+  - `YAWS=1` renders every model at four turns, to find its front.
+  - `tools/cut-grounds.py cut <map> <renders>` puts the club house, kiosk and boat on the map; `renders-to-webp.py <renders>` makes the rest into pictures (`icons/Items`, `icons/Crates`, `icons/Island`), not repainted yet.

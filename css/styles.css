@@ -2479,7 +2479,7 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
   overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none; }
 .dg-viewport:focus-visible { box-shadow: inset 0 0 0 3px #fff; }
 /* the city's sky, under the world (the city picture's sky is transparent) */
-.dg-viewport { background: linear-gradient(#96CBF3, #B2DAF6); }
+.dg-viewport { background: #243043; }
 .dg-3d { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
 /* the world's front layer: it moves with the world (the same transform) */
 .dg-front { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; transform-origin: 0 0; pointer-events: none; }
@@ -2494,7 +2494,6 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-sign-panel small { font-size: 8.6px; font-weight: 800; }
 .dg-sign-panel b { margin-top: 4px; font-size: 21px; font-weight: 900; }
 .dg-truck { position: absolute; left: 0; top: 0; z-index: 6; max-width: none; pointer-events: none; -webkit-user-drag: none; }
-.dg-truck.is-driving { z-index: 5; }
 .dg-truck[hidden] { display: none; }
 .dg-sign-hit { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .dg-sign-hit:focus-visible { outline: 3px solid #fff; outline-offset: 2px; border-radius: 12px; }
@@ -2652,34 +2651,50 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-side { position: absolute; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 92px); z-index: 4; display: grid; gap: 18px; justify-items: center; }
 .dg-side.is-left { left: 12px; } .dg-side.is-right { right: 12px; }
 .dg-side .dg-orb { --o: 56px; }
-/* the rooms: an elevator's buttons (diorama-view.js liftPanel), the pool at the top. Each is a
-   baby-blue ring with a light face and its icon inside; the floor you're on turns blue, a size
-   bigger. The city fills the whole screen, down behind the dock. */
+/* the rooms: the lift (diorama-view.js liftPanel and wireDiorama), the pool at the top. The floor
+   you're on is a big button: a baby-blue ring, its face blue, the sport's icon inside. The other
+   floors are small dots on a thin shaft above and below it, each still a 28 px button. Press and
+   drag along it to change floors; it takes the drag itself (no page pan). The city fills the whole
+   screen, down behind the dock. */
 .dg-screen { --dg-nav-h: 0px; }
-.dg-lift { display: grid; gap: 12px; justify-items: center; }
-.dg-lift-btn { position: relative; width: 56px; height: 56px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
-  --face: #FFFFFF, #ECE6D8 60%, #CDC3AA;
+.dg-lift { position: relative; display: grid; gap: 6px; justify-items: center; padding: 6px 4px; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* the shaft the dots sit on */
+.dg-lift::before { content: ''; position: absolute; left: 50%; top: 18px; bottom: 18px; width: 4px; margin-left: -2px; border-radius: 2px; pointer-events: none;
+  background: rgba(12, 22, 48, .55); box-shadow: 0 0 0 1px rgba(160, 215, 255, .35); transition: box-shadow 150ms ease; }
+.dg-lift.is-dragging::before { box-shadow: 0 0 0 1px rgba(160, 215, 255, .9), 0 0 12px rgba(120, 190, 255, .8); }
+.dg-lift-btn { position: relative; width: 28px; height: 28px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  background: none; -webkit-tap-highlight-color: transparent; }
+.dg-lift-btn img { display: none; position: relative; width: 44px; height: 44px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
+/* a floor you're not on: a dot */
+.dg-lift-dot { width: 12px; height: 12px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 40% 35%, #FFFFFF, #CDEBFF 45%, #6FB4EE); box-shadow: 0 0 0 2px #16264D, 0 2px 0 2px rgba(0, 0, 0, .35); }
+/* the floor you're on: the big button, its icon popping in as it arrives */
+.dg-lift-btn.is-on { z-index: 1; width: 62px; height: 62px;
+  --face: #CDEBFF, #4FA8F0 58%, #1F6FC2;
   background: url("../icons/UI/side/ring-sky.webp") center / 100% 100% no-repeat,
     radial-gradient(circle closest-side at 50% 50%, var(--face) 94%, transparent 96%) center / 86% 86% no-repeat;
-  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4));
-  transition: transform 180ms cubic-bezier(.3, 1.4, .5, 1), filter 180ms ease; -webkit-tap-highlight-color: transparent; }
-/* the face's highlight, up and to the middle, under the icon */
-.dg-lift-btn::before { content: ''; position: absolute; left: 22%; right: 22%; top: 13%; height: 34%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, .6), rgba(255, 255, 255, 0) 70%); }
-.dg-lift-btn img { position: relative; width: 38px; height: 38px; object-fit: contain; pointer-events: none; -webkit-user-drag: none; filter: drop-shadow(0 2px 1px rgba(0, 0, 0, .35)); }
-.dg-lift-btn.is-on { z-index: 1; transform: scale(1.16);
-  --face: #CDEBFF, #4FA8F0 58%, #1F6FC2;
   filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .4)) drop-shadow(0 0 10px rgba(120, 190, 255, .9)); }
-.dg-lift-btn:active { transform: scale(.94); }
-.dg-lift-btn.is-on:active { transform: scale(1.12); }
+.dg-lift-btn.is-on::before { content: ''; position: absolute; left: 22%; right: 22%; top: 13%; height: 34%; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, .6), rgba(255, 255, 255, 0) 70%); }
+.dg-lift-btn.is-on img { display: block; animation: lift-pop 220ms cubic-bezier(.3, 1.5, .5, 1) both; }
+.dg-lift-btn.is-on .dg-lift-dot { display: none; }
+@keyframes lift-pop { from { scale: .55; } to { scale: 1; } }
+.dg-lift-btn:not(.is-on):active .dg-lift-dot { scale: 1.3; }
+.dg-lift-btn.is-on:active { transform: scale(.95); }
 .dg-lift-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+/* while the lift moves: the room is away (it drops in when you let go), the storeys click down onto the base */
+.dg-world.is-lifting > :is(.dg-room-art, .dg-shadows, .dg-items, .dg-rail), .is-lifting.dg-front, .dg-front.is-lifting { opacity: 0; }
+.dg-tower img.is-new { animation: storey-in 170ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes storey-in { from { translate: 0 -46px; opacity: .2; } to { translate: 0 0; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .dg-item.bounce, .dg-item.landed, .dg-arrow, .dg-gauge.is-stamina .dg-fill::after { animation: none; }
   .dg-item.spring, .dg-world.is-easing, .dg-fill, .dg-orb, .dg-orb-ico > img, .dg-lift-btn { transition: none; }
+  .dg-lift-btn.is-on img, .dg-tower img.is-new { animation: none; }
   .dg-item.is-lift { transform: translate(-50%, var(--ty)); }
 }
 body.rm .dg-item.bounce, body.rm .dg-item.landed, body.rm .dg-arrow, body.rm .dg-gauge.is-stamina .dg-fill::after { animation: none; }
 body.rm .dg-item.spring, body.rm .dg-world.is-easing, body.rm .dg-orb, body.rm .dg-orb-ico > img, body.rm .dg-lift-btn { transition: none; }
+body.rm .dg-lift-btn.is-on img, body.rm .dg-tower img.is-new { animation: none; }
 
 /* ---- weekly missions, seasons and the stall (docs/LOOP.md §5) ---------------------------- */
 /* on the stage: the board's weekly count, and the way into a picked-up board */
@@ -2893,13 +2908,9 @@ body.rm .cl-route-on { transition: none; }
 .dg-turn b { min-width: 44px; text-align: center; color: #F2F5FC; font: 14px/1 var(--font-display); }
 
 /* the cloud bank that sweeps through a move between floors of the tower (diorama-view.js cloudMove) */
-.dg-clouds { position: fixed; inset: 0; z-index: 8; pointer-events: none; overflow: hidden; }
-.dg-clouds > div { position: absolute; left: -15%; width: 130%; top: 0; will-change: transform; }
-.dg-clouds img { position: absolute; left: 0; top: 0; width: 100%; height: auto; }
-.dg-clouds img + img { transform: scaleX(-1); }
-/* on the base iPhone paints the strip under the page in the page's colour: there, the asphalt of
-   the city's roads, so the street seems to carry on under the dock */
-html.city-mode, html.city-mode body { background: #877688; }
+/* on the base iPhone paints the strip under the page in the page's colour: there, the sea at the
+   foot of the club grounds, so the water seems to carry on under the dock */
+html.city-mode, html.city-mode body { background: #243043; }
 /* on the base the city runs down behind the dock, so the dock's band is see-through there */
 body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 
@@ -2929,8 +2940,8 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .dg-world img.is-culled { display: none; }
 .dg-plots { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
 .dg-plots img { position: absolute; max-width: none; -webkit-user-drag: none; transform-origin: 50% 75%; }
-/* what stands in front of the base's collectors covers them; the collectors' layer is z-index 4 */
-.dg-plots [data-plot="pool"], .dg-plots [data-plot="mall"], .dg-plots [data-plot="market"], .dg-plots .dg-stand { z-index: 5; }
+/* the forecourt's buildings stand in front of the base and what's round it (the collectors' layer is z-index 4) */
+.dg-plots [data-plot="stadium"], .dg-plots [data-plot="club"], .dg-plots [data-plot="market"] { z-index: 5; }
 .dg-plots img.is-tap { animation: dg-isl-tap 240ms ease-out; }
 /* their shadow is drawn into the picture (tools/bake-market-shadows.py): no filter to redraw on every zoom */
 .dg-plots .dg-shop { z-index: 5; }
@@ -2948,6 +2959,11 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
   border-radius: 16px; background: linear-gradient(#2a3e6e, #16264D); color: #fff; box-shadow: 0 0 0 3px #0B1222, 0 6px 12px rgba(0, 0, 0, .4);
   translate: -50% -100%; scale: var(--inv, 1); transform-origin: 50% 100%; }
 .dg-isl-timer[hidden] { display: none; }
+/* a name over each of the forecourt's buildings: it keeps its size on screen */
+.dg-isl-tag { position: absolute; padding: 5px 12px 6px; border-radius: 9999px; background: linear-gradient(#2a3e6e, #16264D); color: #F2C14E;
+  font-size: 13px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; box-shadow: 0 0 0 2px #0B1222, 0 4px 8px rgba(0, 0, 0, .35);
+  translate: -50% -100%; scale: var(--inv, 1); transform-origin: 50% 100%; }
+.dg-isl-tag[hidden] { display: none; }
 .dg-isl-ico { width: 30px; height: 30px; color: #F2C14E; }
 .dg-isl-ico svg { width: 100%; height: 100%; }
 .dg-isl-timer b { font-size: 17px; font-weight: 900; white-space: nowrap; }

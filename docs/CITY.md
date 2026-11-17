@@ -7,7 +7,32 @@
 - The rooms are an elevator's buttons on the right, the pool at the top and the locker room at the bottom: baby-blue rings with light faces. The floor you're on turns blue and a size bigger (docs/JOURNAL.md).
 - In a row under the name: what's next and the room's trophies. Down the left: the shop and the inventory. Nothing here is wired into the app yet. House style: docs/ART-DIRECTION.md.
 
-## The island (read this first: it replaces the city below)
+## The club grounds (read this first: it replaces the island below)
+
+The map is one estate, not nine plots. The base stands in the middle and fills most of the screen; everything else on the map is small and stands round it.
+
+- **The world** is 5120 × 6400 px with the base's plot in the middle, 45% of the way down. On a phone, zoomed all the way out, the base's plot is about three quarters of the screen's width.
+- **The ground** is one Gemini picture (3712 × 4608, 4:5 at 4K), painted over a layout guide that has the base's own picture already in place, so the base lines up without any fitting. It shows a lawn, a two-lane running track round it, a hedge, a cream forecourt in front, a drive from the forecourt to the garage door and a causeway off the bottom left. It's cut into 4 × 5 tiles; the top row is open sea and is stored at half size.
+- **The forecourt's buildings** are the club house, the stadium and the market kiosk, cut from one sheet on green. Each is a picture and a button (`js/app/island-view.js`), with a name tag over it:
+  - the club house opens the club screen;
+  - the stadium opens the PVE race;
+  - the kiosk opens the markets' screen.
+- **Ruins:** the club house and the kiosk still start in ruins and are rebuilt for coins (`js/core/island.js`, unchanged, so the server's rules still match). There is no ruin art yet: the ruin is the same picture, grey and dark. While one is being rebuilt the MOSKE box stands on it at the building's size.
+- **The markets:** the six spots are on the lawn, three down each of the base's front sides, at 0.6 of their old size. Their places are `shops` in `js/core/island-art.js`.
+- **Gone from the map:** the park, the arena, the hall, the pool and the Mall. The gear shop is still on the gold button and the dock. The pool's rebuild is still in the rules and on the server, but nothing on the map starts it.
+- **The van** comes in over the causeway, across the forecourt's left end and up the drive (`ROUTE_IN` in `js/app/city2d.js`), and leaves the same way. It has a picture facing up the screen to the right for that (`truck-up.webp`, from `tools/bake-street.js`).
+- **Making it again:**
+
+```
+python tools/cut-grounds.py guide <guide.png>                 # the layout guide
+# paint it with Gemini (4:5, 4K), and a sheet of the three buildings on #00FF00 (16:9, 2K)
+python tools/cut-grounds.py cut <ground picture> <buildings sheet>
+python tools/cut-grounds.py preview <preview.jpg>             # everything put together, to look at
+```
+
+The plan (`TRACK`, `DRIVE`, `COURT`), where each building's front corner stands (`BUILDINGS`) and the market spots (`SHOPS`) are at the top of `tools/cut-grounds.py`, in ground units from the base's middle. `tools/cut-island.py` made the nine-plot island and is only kept for its keying.
+
+## The island (replaced by the club grounds above)
 
 The base now stands in the middle of an island of nine 2 x 2 plots.
 

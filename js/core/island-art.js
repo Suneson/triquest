@@ -1,217 +1,344 @@
-// island-art.js: where the island's pictures stand, in world px. Written by tools/cut-island.py.
+// island-art.js: where the club grounds' pictures stand, in world px. Written by tools/cut-grounds.py.
 export const ISLAND_ART = {
  "world": {
-  "w": 12963,
-  "h": 7235
+  "w": 7625,
+  "h": 7469
  },
  "tiles": [
   {
    "src": "icons/Island/ground-0-0.webp",
-   "x": 0,
-   "y": 0,
-   "w": 3242,
-   "h": 2413
+   "x": 0.0,
+   "y": 0.0,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-0-1.webp",
-   "x": 3241,
-   "y": 0,
-   "w": 3242,
-   "h": 2413
+   "x": 1270.8,
+   "y": 0.0,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-0-2.webp",
-   "x": 6482,
-   "y": 0,
-   "w": 3242,
-   "h": 2413
+   "x": 2541.5,
+   "y": 0.0,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-0-3.webp",
-   "x": 9723,
-   "y": 0,
-   "w": 3241,
-   "h": 2413
+   "x": 3812.3,
+   "y": 0.0,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-0-4.webp",
+   "x": 5083.0,
+   "y": 0.0,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-0-5.webp",
+   "x": 6353.8,
+   "y": 0.0,
+   "w": 1270.8,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-1-0.webp",
-   "x": 0,
-   "y": 2412,
-   "w": 3242,
-   "h": 2413
+   "x": 0.0,
+   "y": 1244.8,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-1-1.webp",
-   "x": 3241,
-   "y": 2412,
-   "w": 3242,
-   "h": 2413
+   "x": 1270.8,
+   "y": 1244.8,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-1-2.webp",
-   "x": 6482,
-   "y": 2412,
-   "w": 3242,
-   "h": 2413
+   "x": 2541.5,
+   "y": 1244.8,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-1-3.webp",
-   "x": 9723,
-   "y": 2412,
-   "w": 3241,
-   "h": 2413
+   "x": 3812.3,
+   "y": 1244.8,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-1-4.webp",
+   "x": 5083.0,
+   "y": 1244.8,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-1-5.webp",
+   "x": 6353.8,
+   "y": 1244.8,
+   "w": 1270.8,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-2-0.webp",
-   "x": 0,
-   "y": 4824,
-   "w": 3242,
-   "h": 2412
+   "x": 0.0,
+   "y": 2489.6,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-2-1.webp",
-   "x": 3241,
-   "y": 4824,
-   "w": 3242,
-   "h": 2412
+   "x": 1270.8,
+   "y": 2489.6,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-2-2.webp",
-   "x": 6482,
-   "y": 4824,
-   "w": 3242,
-   "h": 2412
+   "x": 2541.5,
+   "y": 2489.6,
+   "w": 1279.1,
+   "h": 1253.1
   },
   {
    "src": "icons/Island/ground-2-3.webp",
-   "x": 9723,
-   "y": 4824,
-   "w": 3241,
-   "h": 2412
+   "x": 3812.3,
+   "y": 2489.6,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-2-4.webp",
+   "x": 5083.0,
+   "y": 2489.6,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-2-5.webp",
+   "x": 6353.8,
+   "y": 2489.6,
+   "w": 1270.8,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-3-0.webp",
+   "x": 0.0,
+   "y": 3734.4,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-3-1.webp",
+   "x": 1270.8,
+   "y": 3734.4,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-3-2.webp",
+   "x": 2541.5,
+   "y": 3734.4,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-3-3.webp",
+   "x": 3812.3,
+   "y": 3734.4,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-3-4.webp",
+   "x": 5083.0,
+   "y": 3734.4,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-3-5.webp",
+   "x": 6353.8,
+   "y": 3734.4,
+   "w": 1270.8,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-4-0.webp",
+   "x": 0.0,
+   "y": 4979.2,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-4-1.webp",
+   "x": 1270.8,
+   "y": 4979.2,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-4-2.webp",
+   "x": 2541.5,
+   "y": 4979.2,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-4-3.webp",
+   "x": 3812.3,
+   "y": 4979.2,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-4-4.webp",
+   "x": 5083.0,
+   "y": 4979.2,
+   "w": 1279.1,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-4-5.webp",
+   "x": 6353.8,
+   "y": 4979.2,
+   "w": 1270.8,
+   "h": 1253.1
+  },
+  {
+   "src": "icons/Island/ground-5-0.webp",
+   "x": 0.0,
+   "y": 6224.0,
+   "w": 1279.1,
+   "h": 1244.8
+  },
+  {
+   "src": "icons/Island/ground-5-1.webp",
+   "x": 1270.8,
+   "y": 6224.0,
+   "w": 1279.1,
+   "h": 1244.8
+  },
+  {
+   "src": "icons/Island/ground-5-2.webp",
+   "x": 2541.5,
+   "y": 6224.0,
+   "w": 1279.1,
+   "h": 1244.8
+  },
+  {
+   "src": "icons/Island/ground-5-3.webp",
+   "x": 3812.3,
+   "y": 6224.0,
+   "w": 1279.1,
+   "h": 1244.8
+  },
+  {
+   "src": "icons/Island/ground-5-4.webp",
+   "x": 5083.0,
+   "y": 6224.0,
+   "w": 1279.1,
+   "h": 1244.8
+  },
+  {
+   "src": "icons/Island/ground-5-5.webp",
+   "x": 6353.8,
+   "y": 6224.0,
+   "w": 1270.8,
+   "h": 1244.8
   }
  ],
  "plots": {
-  "park": [
-   6481.7,
-   2219.8
-  ],
-  "stadium": [
-   7872.5,
-   2899.9
+  "base": [
+   3824.2,
+   3966.1
   ],
   "club": [
-   5090.9,
-   2899.9
-  ],
-  "base": [
-   6481.7,
-   3580.0
-  ],
-  "pool": [
-   5090.9,
-   4260.1
-  ],
-  "mall": [
-   7872.5,
-   4260.1
-  ],
-  "arena": [
-   9263.3,
-   3580.0
-  ],
-  "hall": [
-   3700.0,
-   3580.0
+   2128.3,
+   6138.3
   ],
   "market": [
-   6481.7,
-   4940.2
+   3945.2,
+   5358.3
+  ],
+  "stadium": [
+   5964.5,
+   2927.7
   ]
  },
  "pieces": {
-  "park": {
-   "src": "icons/Island/park.webp",
-   "x": 5405.9,
-   "y": 1679.3,
-   "w": 2151.7,
-   "h": 1089.6
-  },
-  "arena": {
-   "src": "icons/Island/arena.webp",
-   "x": 8187.4,
-   "y": 2808.2,
-   "w": 2151.9,
-   "h": 1320.5
-  },
-  "hall": {
-   "src": "icons/Island/hall.webp",
-   "x": 2624.1,
-   "y": 2698.4,
-   "w": 2151.9,
-   "h": 1430.2
-  },
-  "mall": {
-   "src": "icons/Island/mall.webp",
-   "x": 6796.6,
-   "y": 3356.0,
-   "w": 2151.9,
-   "h": 1452.8
-  },
   "base": {
    "src": "icons/Island/base.webp",
-   "x": 5405.7,
-   "y": 2932.6,
-   "w": 2151.9,
-   "h": 1196.0
-  },
-  "club-ruin": {
-   "src": "icons/Island/club-ruin.webp",
-   "x": 4014.9,
-   "y": 1974.9,
-   "w": 2151.9,
-   "h": 1473.7
+   "x": 2746.6,
+   "y": 3092.6,
+   "w": 2164.0,
+   "h": 1405.6
   },
   "club": {
    "src": "icons/Island/club.webp",
-   "x": 4014.9,
-   "y": 1971.6,
-   "w": 2151.9,
-   "h": 1477.0
+   "x": 1537.8,
+   "y": 5263.8,
+   "w": 1016.6,
+   "h": 963.7
   },
-  "pool-ruin": {
-   "src": "icons/Island/pool-ruin.webp",
-   "x": 4014.9,
-   "y": 3501.1,
-   "w": 2151.9,
-   "h": 1307.7
-  },
-  "pool": {
-   "src": "icons/Island/pool.webp",
-   "x": 4014.9,
-   "y": 3501.8,
-   "w": 2151.9,
-   "h": 1306.9
-  },
-  "market-ruin": {
-   "src": "icons/Island/market-ruin.webp",
-   "x": 5405.7,
-   "y": 4132.3,
-   "w": 2151.9,
-   "h": 1356.6
+  "club-ruin": {
+   "src": "icons/Island/club-ruin.webp",
+   "x": 1537.8,
+   "y": 5263.8,
+   "w": 1016.6,
+   "h": 963.7
   },
   "market": {
    "src": "icons/Island/market.webp",
-   "x": 5405.7,
-   "y": 4132.5,
-   "w": 2151.9,
-   "h": 1356.3
+   "x": 3638.7,
+   "y": 4869.1,
+   "w": 470.1,
+   "h": 539.5
+  },
+  "market-ruin": {
+   "src": "icons/Island/market-ruin.webp",
+   "x": 3638.7,
+   "y": 4869.1,
+   "w": 470.1,
+   "h": 539.5
+  },
+  "boat": {
+   "src": "icons/Island/boat.webp",
+   "w": 912.9,
+   "h": 627.6,
+   "ax": 456.2,
+   "ay": 313.6
+  },
+  "bike-in": {
+   "src": "icons/Island/bike-in.webp",
+   "w": 360.0,
+   "h": 404.2,
+   "ax": 121.5,
+   "ay": 365.5
+  },
+  "bike-out": {
+   "src": "icons/Island/bike-out.webp",
+   "w": 365.0,
+   "h": 425.7,
+   "ax": 85.0,
+   "ay": 386.0
   },
   "stadium": {
-   "src": "icons/Island/stadium.webp",
-   "x": 6795.0,
-   "y": 2319.5,
-   "w": 2155.1,
-   "h": 1122.4
+   "src": null,
+   "x": 4921.1,
+   "y": 1401.6,
+   "w": 2086.8,
+   "h": 1526.1
   },
   "box": {
    "src": "icons/Island/box.webp",
@@ -221,18 +348,114 @@ export const ISLAND_ART = {
    "h": 1470.4
   }
  },
- "storey": {
-  "src": "icons/Island/storey.webp",
-  "w": 1679.3,
-  "h": 1093.6,
-  "wall": 270.4,
-  "pad": 1.9
+ "routes": {
+  "boat": {
+   "path": [
+    [
+     4132.0,
+     7724.2
+    ],
+    [
+     5824.3,
+     6841.7
+    ],
+    [
+     8077.2,
+     5668.6
+    ]
+   ],
+   "stop": 1
+  },
+  "bike": {
+   "path": [
+    [
+     -207.6,
+     6898.8
+    ],
+    [
+     1609.2,
+     6234.4
+    ],
+    [
+     1671.5,
+     6177.3
+    ]
+   ],
+   "stop": 2
+  }
  },
+ "shops": [
+  {
+   "spot": 1,
+   "a": -0.8,
+   "b": 1.24
+  },
+  {
+   "spot": 2,
+   "a": -0.2,
+   "b": 1.24
+  },
+  {
+   "spot": 3,
+   "a": 0.4,
+   "b": 1.24
+  },
+  {
+   "spot": 4,
+   "a": 1.24,
+   "b": -0.75
+  },
+  {
+   "spot": 5,
+   "a": 1.24,
+   "b": -0.15
+  },
+  {
+   "spot": 6,
+   "a": 1.24,
+   "b": 0.45
+  }
+ ],
+ "shopScale": 0.6,
  "unit": 537,
  "slope": 0.489,
  "foot": [
   -0.86,
   0.7
  ],
- "groundFloor": 190.4
+ "groundFloor": 435.8,
+ "storeys": [
+  {
+   "src": "icons/Island/storey-1.webp",
+   "w": 1740.0,
+   "h": 1551.0,
+   "ax": 864.7,
+   "ay": 1543.6,
+   "wall": 712.3
+  },
+  {
+   "src": "icons/Island/storey-2.webp",
+   "w": 1713.0,
+   "h": 1122.0,
+   "ax": 859.7,
+   "ay": 1115.5,
+   "wall": 290.2
+  },
+  {
+   "src": "icons/Island/storey-3.webp",
+   "w": 1753.0,
+   "h": 1338.0,
+   "ax": 875.7,
+   "ay": 1325.0,
+   "wall": 491.7
+  },
+  {
+   "src": "icons/Island/storey-4.webp",
+   "w": 1718.0,
+   "h": 1119.0,
+   "ax": 863.7,
+   "ay": 1107.7,
+   "wall": 278.4
+  }
+ ]
 };

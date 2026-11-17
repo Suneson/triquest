@@ -1,17 +1,19 @@
-// island-view.js: the island's nine plots (docs/CITY.md).
+// island-view.js: the club grounds round the base (docs/CITY.md, "The club grounds").
 //
-// Every building is a picture standing on its plot. The club base, the pool and the market start
-// in ruins: tap one to pay for its rebuild, and a giant MOSKE box covers it, with a timer floating
-// over it, until the mechanic is done.
-// Then the club base opens the club screen and the mall opens the shop. The rebuilt market plot is a
-// bare plaza with six spots, two rows of three, each holding one of your markets (shop-view.js).
-// Each spot is its own button, opening the markets' screen on that market (or on building one
-// there); the plaza round them isn't one. Over each market:
+// The base stands in the middle of one estate. On the forecourt in front of it stand three small
+// buildings, each a picture and a button: the club house, the stadium and the market kiosk. The
+// club house and the kiosk start in ruins (the same picture, grey, until there is ruin art): tap
+// one to pay for its rebuild, and a MOSKE box covers it, with a timer floating over it, until the
+// mechanic is done.
+// Then the club house opens the club screen and the kiosk opens the markets' screen. Your six
+// markets (shop-view.js) stand like kennels on the lawn round the base, three down each front
+// side. Each spot is its own button, opening the markets' screen on that market (or on building
+// one there). Over each market:
 //   - a coin bubble while it has coins waiting: tapping any one collects every market, one after
 //     another, and each one's coins fly up to the coin gauge;
 //   - a crate when its shelves run low (under RESTOCK_BELOW of their room), or a red one when every
 //     shelf is empty (icons/Market/stock/, tools/cut-stock-icons.py): tapping it opens that market.
-// The stadium opens its PVE race (stadium-view.js).
+// The stadium opens its PVE race (stadium-view.js). A name tag floats over each of the three.
 
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
@@ -29,17 +31,19 @@ import { toast, prefersReducedMotion } from './effects.js';
 
 const COIN = 'icons/Pixelart/GEAR/coin.png';
 const { pieces: ART, plots: PLOT, unit: U, slope: S } = ISLAND_ART;
-const REBUILT = ['club', 'pool', 'market'];
-// furthest back first, so nearer buildings stand in front
-const ORDER = ['park', 'club', 'stadium', 'hall', 'base', 'arena', 'pool', 'mall', 'market'];
-const HALF_H = 2 * S * U; const HALF_W = 2 * U; const RISE = 360;
+const REBUILT = ['club', 'market'];
+// the buttons on the forecourt, and every picture, furthest back first, so nearer ones stand in front
+const BUILDINGS = ['stadium', 'club', 'market'].sort((x, y) => PLOT[x][1] - PLOT[y][1]);
+const ORDER = ['base', ...BUILDINGS];
 
-// the six market spots on the plaza, two rows of three: a is across it, b down it. Each market's
-// picture stands with its pad's front corner (0.617 across the picture) on the spot's front corner.
-const SHOP_FOOT = 0.617; const SHOP_SCALE = 0.86;
-const SHOP_SPOTS = Array.from({ length: SHOP_RULES.spots }, (_, i) => ({ spot: i + 1, a: [-0.5, 0.42][Math.floor(i / 3)], b: [-0.64, -0.04, 0.56][i % 3] }));
-const onPlaza = (a, b) => [PLOT.market[0] + (a - b) * U, PLOT.market[1] + (a + b) * S * U];
-const DA = 0.88; const DB = 0.53;
+// the six market spots on the lawn (tools/cut-grounds.py): a runs down-right from the base's
+// middle, b down-left. Each market's picture stands with its pad's front corner (0.617 across the
+// picture) on the spot's front corner. They're drawn smaller than they were painted for the old
+// plaza (0.86 was full size there), and their pads shrink with them.
+const SHOP_FOOT = 0.617; const SHOP_SCALE = ISLAND_ART.shopScale;
+const SHOP_SPOTS = ISLAND_ART.shops.slice(0, SHOP_RULES.spots);
+const onPlaza = (a, b) => [PLOT.base[0] + (a - b) * U, PLOT.base[1] + (a + b) * S * U];
+const DA = (0.88 * SHOP_SCALE) / 0.86; const DB = (0.53 * SHOP_SCALE) / 0.86;
 function shopBox(spot, ratio) {
   const s = SHOP_SPOTS[spot - 1];
   const w = (DA + DB) * U * SHOP_SCALE;
@@ -54,14 +58,20 @@ const RATIO = 578 / 720;
 const SHADOW_PAD = { l: 16, t: 16, r: 16, b: 32 };
 const islandMarket = (level) => marketPicture(level).replace('icons/Market/', 'icons/Market/island/');
 
-/** The construction box on a plot: one picture for all of them. */
-const boxOn = (plot) => ({ ...ART.box, x: PLOT[plot][0] + ART.box.dx, y: PLOT[plot][1] + ART.box.dy });
+/**
+ * The construction box on a building: one picture for all of them, as wide as the building, its
+ * front corner (the middle of its bottom edge) on the building's.
+ */
+function boxOn(plot) {
+  const w = ART[plot].w * 1.05; const h = w * (ART.box.h / ART.box.w);
+  return { src: ART.box.src, x: PLOT[plot][0] - w / 2, y: PLOT[plot][1] - h * 0.985, w, h };
+}
 
 /** The picture a plot shows now: what's rebuilt shows its ruin, the box, or itself. */
 function pictureOf(plot) {
   if (!REBUILT.includes(plot)) return ART[plot];
   const { state } = pieceState(myIsland(), plot, serverNow());
-  if (state === 'built') return plot === 'market' ? { ...ART.market, src: 'icons/Island/market-empty.webp' } : ART[plot];
+  if (state === 'built') return ART[plot];
   return state === 'building' ? boxOn(plot) : ART[`${plot}-ruin`];
 }
 
@@ -82,14 +92,13 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
     layer.innerHTML = ORDER.map((p) => `<img data-plot="${p}" alt="" draggable="false" decoding="async">`).join('')
       + [...SHOP_SPOTS].sort((x, y) => x.a + x.b - (y.a + y.b)).map((x) => `<img class="dg-shop" data-shop="${x.spot}" alt="" draggable="false" decoding="async" hidden>`).join('');
     worldEl.querySelector('.dg-tower').before(layer);
-    for (const p of [...REBUILT, 'mall', 'stadium'].sort((x, y) => ORDER.indexOf(x) - ORDER.indexOf(y))) {
-      const [x, y] = PLOT[p];
+    for (const p of BUILDINGS) {
+      const a = ART[p];
       const hit = document.createElement('button');
       hit.className = 'dg-isl-hit'; hit.dataset.isl = p;
       hit.setAttribute('aria-label', name(p));
-      Object.assign(hit.style, { left: `${x - HALF_W}px`, top: `${y - HALF_H - RISE}px`, width: `${HALF_W * 2}px`, height: `${HALF_H * 2 + RISE}px` });
-      if (p === 'mall') hit.dataset.action = 'open-gear';
-      else if (p === 'stadium') hit.addEventListener('click', (e) => { e.stopPropagation(); haptic('tick'); import('./stadium-view.js').then((m) => m.openStadium()); });
+      Object.assign(hit.style, { left: `${a.x}px`, top: `${a.y}px`, width: `${a.w}px`, height: `${a.h}px` });
+      if (p === 'stadium') hit.addEventListener('click', (e) => { e.stopPropagation(); pulse(p); haptic('tick'); import('./stadium-view.js').then((m) => m.openStadium()); });
       else hit.addEventListener('click', (e) => { e.stopPropagation(); tap(p); });
       worldEl.querySelector('.dg-items').before(hit);
     }
@@ -112,6 +121,14 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
     warn.addEventListener('click', (e) => { e.stopPropagation(); openShops(x.spot); });
     front.append(coin, warn);
   }
+  for (const p of BUILDINGS) {
+    if (front.querySelector(`.dg-isl-tag[data-isl="${p}"]`)) continue;
+    const el = document.createElement('div');
+    el.className = 'dg-isl-tag'; el.dataset.isl = p; el.setAttribute('aria-hidden', 'true');
+    el.textContent = name(p);
+    Object.assign(el.style, { left: `${ART[p].x + ART[p].w * 0.46}px`, top: `${ART[p].y + ART[p].h * 0.04}px` });
+    front.append(el);
+  }
   for (const p of REBUILT) {
     if (front.querySelector(`.dg-isl-timer[data-isl="${p}"]`)) continue;
     const el = document.createElement('div');
@@ -130,6 +147,8 @@ function paint() {
   for (const p of ORDER) {
     const el = w.querySelector(`.dg-plots [data-plot="${p}"]`);
     const a = pictureOf(p);
+    el.hidden = !a.src;                       // the coliseum is painted on the ground: only its button
+    if (!a.src) continue;
     if (el.getAttribute('src') !== a.src) el.src = a.src;
     Object.assign(el.style, { left: `${a.x}px`, top: `${a.y}px`, width: `${a.w}px`, height: `${a.h}px` });
   }
@@ -145,9 +164,6 @@ function paintShops() {
   const w = ctx.world;
   const built = pieceState(myIsland(), 'market', serverNow()).state === 'built';
   const shops = myShop().shops;
-  // the plaza itself isn't a button once it's built: its six spots are
-  const plotHit = w.querySelector('.dg-isl-hit[data-isl="market"]');
-  if (plotHit) plotHit.hidden = built;
   for (const x of SHOP_SPOTS) {
     const img = w.querySelector(`.dg-shop[data-shop="${x.spot}"]`);
     const hit = w.querySelector(`.dg-shop-hit[data-shop="${x.spot}"]`);
@@ -263,9 +279,12 @@ export function tickIsland() {
     const was = !el.hidden;
     el.hidden = s.state !== 'building';
     if (was && el.hidden) done = true;
+    // the name tag gives way to the timer
+    const tag = ctx.front.querySelector(`.dg-isl-tag[data-isl="${p}"]`);
+    if (tag) tag.hidden = !el.hidden;
     if (el.hidden) return;
     const pic = pictureOf(p);
-    el.style.left = `${PLOT[p][0]}px`; el.style.top = `${pic.y + 40}px`;
+    el.style.left = `${pic.x + pic.w / 2}px`; el.style.top = `${pic.y + 20}px`;
     el.querySelector('b').textContent = clock(s.left);
     el.querySelector('i').style.setProperty('--f', s.frac.toFixed(4));
     el.setAttribute('aria-label', t('island.buildingAria', { name: name(p), left: clock(s.left) }));
@@ -293,8 +312,7 @@ function tap(plot) {
     document.dispatchEvent(new CustomEvent('moske:open-chat', { detail: null }));
     return;
   }
-  if (state === 'built' && plot === 'pool') { closeBar(); return; }
-  if (state === 'built' && plot === 'market') return;   // its six spots are the buttons
+  if (state === 'built' && plot === 'market') { openShops(0); return; }   // the kiosk: all your markets
   if (barPlot === plot && bar?.isConnected) { closeBar(); return; }
   openBar(plot);
 }

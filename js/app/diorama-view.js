@@ -22,7 +22,7 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf } from '../core/diorama.js';
 import { expandedSize, EXPANDED_ART, bigArt, midArt, needsFull, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
@@ -54,8 +54,8 @@ import { mountBaseGL } from './base-gl.js';
 import { isChestAdmin } from './chests-state.js';
 import { isDemo } from './demo.js';
 import { roomCopy } from '../core/room-art.js';
-import { mountCity, unmountCity, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, TRUCK_STOP } from './city2d.js';
-import { parcels, openParcel, parcelOpen } from './delivery-view.js';
+import { mountCity, unmountCity, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, VEHICLES } from './city2d.js';
+import { parcels, openParcel, parcelOpen, kindOf } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 import { showCoins, closeBar } from './market-view.js';
 import { mountIsland, tickIsland, closeBar as closeIslandBar } from './island-view.js';
@@ -186,7 +186,7 @@ const LIFT = ['pool', 'run', 'bike', 'gym', 'locker'];
 
 function liftPanel(active) {
   const btn = (room) => `<button class="dg-lift-btn${room === active ? ' is-on' : ''}" data-room-go="${room}" aria-pressed="${room === active}"
-      aria-label="${esc(t(`cp.nav.${room}`))}" title="${esc(t(`cp.nav.${room}`))}"><img src="${btnArt(room)}" width="128" height="128" alt="" draggable="false"></button>`;
+      aria-label="${esc(t(`cp.nav.${room}`))}" title="${esc(t(`cp.nav.${room}`))}"><img src="${btnArt(room)}" width="128" height="128" alt="" draggable="false"><i class="dg-lift-dot" aria-hidden="true"></i></button>`;
   return `<nav class="dg-lift" aria-label="${esc(t('cp.roomsAria'))}">${LIFT.map(btn).join('')}</nav>`;
 }
 
@@ -410,56 +410,19 @@ function drawTape(artEl, geom, rw, rh) {
   artEl.querySelector('.dg-floor').before(el);
 }
 
-// ---- moving between floors of the tower: a cloud bank sweeps through (docs/CITY.md) -----------
+// ---- moving between floors of the tower: the lift (docs/CITY.md) --------------------------------
 
-const CLOUDS = 'icons/City/app/clouds.webp';
 // the rooms from the street up (the pool is the top floor)
-const HEIGHT = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
 let preloaded = false;
 function preloadFloors() {
   if (preloaded) return;
   preloaded = true;
-  const go = () => [CLOUDS, ...new Set(Object.keys(FLOOR_OF).flatMap((r) => (envFor(r).tower || []).map((p) => p.src)))].forEach((src) => { const i = new Image(); i.src = src; });
+  const go = () => [...new Set(Object.keys(FLOOR_OF).flatMap((r) => (envFor(r).tower || []).map((p) => p.src)))].forEach((src) => { const i = new Image(); i.src = src; });
   (window.requestIdleCallback || ((f) => setTimeout(f, 800)))(go);
 }
-const decoded = (src) => { const i = new Image(); i.src = src; return (i.decode ? i.decode() : Promise.resolve()).catch(() => {}); };
-
-/**
- * Go up or down the tower: the floor drops away (or rises) and blurs, a cloud bank taller than
- * the screen sweeps through it (top to bottom going up), `swap` changes the room under its cover,
- * and the new floor settles in from the other side.
- */
-async function cloudMove(from, to, swap, art = '') {
-  stage.moving = true;
-  const up = HEIGHT[to] > HEIGHT[from];
-  // everything the new floor shows is fetched and decoded before the clouds roll, so the room is
-  // there when they part; on a slow line the move starts anyway after a moment
-  await Promise.race([
-    Promise.all([decoded(CLOUDS), ...(art ? [decoded(art)] : []), ...(envFor(to).tower || []).map((p) => decoded(p.src))]),
-    new Promise((r) => setTimeout(r, 1500)),
-  ]);
-  const H = innerHeight; const W = innerWidth;
-  const cloudH = W * 1.3 * (1376 / 768);
-  const band = cloudH * 1.55;
-  const sky = document.createElement('div');
-  sky.className = 'dg-clouds'; sky.setAttribute('aria-hidden', 'true');
-  sky.innerHTML = `<div><img src="${CLOUDS}" alt=""><img src="${CLOUDS}" alt="" style="top:${(cloudH * 0.55).toFixed(0)}px"></div>`;
-  document.body.append(sky);
-  const bank = sky.firstElementChild;
-  bank.style.height = `${band}px`;
-  const T = 1000; const ease = 'cubic-bezier(.45, 0, .55, 1)';
-  const [y0, y1] = up ? [-band, H] : [H, -band];
-  bank.animate([{ transform: `translateY(${y0}px)` }, { transform: `translateY(${y1}px)` }], { duration: T, easing: ease, fill: 'forwards' });
-  const drop = (up ? 1 : -1) * H * 0.35;
-  const vp = () => document.querySelector('[data-dg-vp]');
-  vp()?.animate([{ transform: 'none', filter: 'none' }, { transform: `translateY(${drop}px)`, filter: 'blur(6px)' }], { duration: T / 2, easing: 'ease-in', fill: 'forwards' });
-  await new Promise((r) => setTimeout(r, T / 2));
-  swap();
-  vp()?.animate([{ transform: `translateY(${-drop}px)`, filter: 'blur(6px)' }, { transform: 'none', filter: 'none' }], { duration: T / 2, easing: 'ease-out' });
-  await new Promise((r) => setTimeout(r, T / 2 + 40));
-  sky.remove();
-  stage.moving = false;
-}
+const LIFT_STEP = 34;        // px of drag per floor
+const LIFT_CLIMB = 70;       // ms per floor when a tap climbs several
+const ENTER = 'cubic-bezier(0.16, 1, 0.3, 1)';   // js/core/spring.js: things arriving
 
 /** Wire the stage in `root` (the view). */
 export function wireDiorama(root, ctx) {
@@ -559,29 +522,39 @@ export function wireDiorama(root, ctx) {
     signHit.setAttribute('aria-label', t('city.sign.aria'));
     Object.assign(signHit.style, { left: `${SIGN_AT[0] - 55}px`, top: `${SIGN_AT[1] - SIGN_HEIGHT - 10}px`, width: '110px', height: `${SIGN_HEIGHT + 20}px` });
   } else signHit?.remove();
-  // the parcel the truck brought: a bubble over the garage door until it's opened, over the 3D
-  // layer too (so it shows over the sign). Its layer has no size of its own, so it costs only the
-  // bubble: one the size of the city over the 3D canvas was more than an iPhone could keep.
+  // the parcels the bike and the boat brought: a bubble over each while its parcel waits (over the
+  // bike's head at the club house, over the boat at the dock), over the 3D layer too. Its layer
+  // has no size of its own, so it costs only the bubbles: one the size of the city over the 3D
+  // canvas was more than an iPhone could keep.
   let front = stage.front;
   if (!front) { front = stage.front = document.createElement('div'); front.className = 'dg-front'; }
   vp.append(front);
-  let bubble = front.querySelector('.dg-parcel');
-  if (env.floor != null) {
-    if (!bubble) {
-      bubble = document.createElement('button');
-      bubble.className = 'dg-parcel';
-      bubble.innerHTML = '<img src="icons/City/parcel/parcel-shut.webp" alt="" draggable="false"><b class="data-num"></b>';
-      bubble.addEventListener('click', (e) => { e.stopPropagation(); openParcel(parcels(), () => showParcel()); });
-      front.append(bubble);
-    }
-    Object.assign(bubble.style, { left: `${TRUCK_STOP[0]}px`, top: `${TRUCK_STOP[1] - 300}px` });
-  } else bubble?.remove();
+  const bubbles = {};
+  for (const kind of ['bike', 'boat']) {
+    let bubble = front.querySelector(`.dg-parcel[data-kind="${kind}"]`);
+    if (env.floor != null) {
+      if (!bubble) {
+        bubble = document.createElement('button');
+        bubble.className = 'dg-parcel'; bubble.dataset.kind = kind;
+        bubble.innerHTML = '<img src="icons/City/parcel/parcel-shut.webp" alt="" draggable="false"><b class="data-num"></b>';
+        bubble.addEventListener('click', (e) => { e.stopPropagation(); openParcel(parcels(kind), () => showParcel(), kind); });
+        front.append(bubble);
+      }
+      // over the bike rider's head, or over the boat's crate
+      const [x, y] = VEHICLES[kind].stop;
+      Object.assign(bubble.style, { left: `${x}px`, top: `${y - (kind === 'bike' ? 420 : 330)}px` });
+      bubbles[kind] = bubble;
+    } else bubble?.remove();
+  }
+  front.querySelectorAll('.dg-parcel:not([data-kind])').forEach((el) => el.remove());
   function showParcel() {
-    if (!bubble?.isConnected) return;
-    const n = parcels().length;
-    bubble.hidden = !n;
-    bubble.querySelector('b').textContent = n > 1 ? String(n) : '';
-    bubble.setAttribute('aria-label', t('city.parcel.aria', { n }));
+    for (const [kind, bubble] of Object.entries(bubbles)) {
+      if (!bubble.isConnected) continue;
+      const n = parcels(kind).length;
+      bubble.hidden = !n;
+      bubble.querySelector('b').textContent = n > 1 ? String(n) : '';
+      bubble.setAttribute('aria-label', t('city.parcel.aria', { n }));
+    }
   }
   showParcel();
   stage.showParcel = showParcel;
@@ -794,11 +767,11 @@ export function wireDiorama(root, ctx) {
     mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
     // the delivery sign and the truck, pictures among the island's (city2d.js)
     mountCity(worldEl, {
-      deliveries: () => deliveryEnds(gearState().jobs, serverNow(), TRUCK_AFTER * 1000 + 60e3),
+      deliveries: (kind) => deliveryEnds((gearState().jobs || []).filter((j) => !kind || kindOf(j) === kind), serverNow(), TRUCK_AFTER * 1000 + 60e3),
       now: serverNow,
       label: { title: t('city.sign.title'), clock: clockLeft },
-      // the truck waits while a parcel is at the door or being opened
-      parked: () => parcels().length > 0 || parcelOpen(),
+      // each waits while its parcel is there or being opened
+      parked: (kind) => parcels(kind).length > 0 || parcelOpen(),
       reduced,
     });
   } else {
@@ -1109,7 +1082,7 @@ export function wireDiorama(root, ctx) {
   if (rotBtn) rotBtn.onclick = (e) => {
     e.stopPropagation();
     const id = view.sel; const p = placements[id]; if (!id || !p) return;
-    const next = orient(placeableById(id), turned(itemAt(id).face));
+    const next = orient(placeableById(id), turned(itemAt(id).face, itemAt(id).sides));
     const c = canPlace(geom, room, next, p.u, p.v, placements);
     if (!c.ok) { refuse(c.reason); return; }
     place(id, { room, u: p.u, v: p.v, face: next.face });
@@ -1135,25 +1108,112 @@ export function wireDiorama(root, ctx) {
     view.travel = null;
     root.querySelectorAll('[data-room-go]').forEach((x) => { const on = x.dataset.roomGo === to; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
     const go = () => { setActiveRoom(to); view.sel = id; view.focus = id; document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true })); };
-    if (reduced()) go(); else cloudMove(room, to, go, roomSrc(to));
+    view.landing = true; go();
   } else if (view.focus) {
     const id = view.focus; view.focus = null; view.travel = null;
     // after the first frame, so the room is laid out and the move eases from where it is
     requestAnimationFrame(() => requestAnimationFrame(() => { if (worldEl.isConnected) focusOn(id); }));
   }
 
-  // the rooms
-  root.querySelectorAll('[data-room-go]').forEach((b) => {
-    b.onclick = () => {
-      const to = b.dataset.roomGo; const from = activeRoom();
-      if (to === from || stage.moving) return;
-      haptic('tick');
-      // the new floor's button lights up straight away, the room follows under the clouds
-      root.querySelectorAll('[data-room-go]').forEach((x) => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on)); });
-      const go = () => { setActiveRoom(to); document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true })); };
-      if (reduced()) go(); else cloudMove(from, to, go, roomSrc(to));
+  // a floor just switched to: its room drops onto the slab (the stage outlives the render, so the
+  // lift's hiding class comes off here)
+  worldEl.classList.remove('is-lifting'); stage.front?.classList.remove('is-lifting');
+  if (view.landing) {
+    view.landing = false;
+    if (!reduced()) {
+      [worldEl.querySelector('.dg-room-art'), worldEl.querySelector('.dg-shadows'), worldEl.querySelector('.dg-items')]
+        .forEach((el) => el?.animate([{ translate: '0 -70px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 260, easing: ENTER }));
+    }
+  }
+
+  // the rooms: the lift on the right. The floor you're on is a big button, the others are dots
+  // above and below it (pool at the top, the locker room at the street). Tap a dot to go there,
+  // or press and drag up or down: each floor you pass clicks in with a haptic tick and the base
+  // gains or loses a storey on the spot; let go and that floor's room drops in. The arrow keys
+  // step it too.
+  const lift = root.querySelector('.dg-lift');
+  if (lift) {
+    const order = [...lift.querySelectorAll('[data-room-go]')].map((x) => x.dataset.roomGo).reverse();   // street first
+    let shown = room; let drag = null; let climbing = null;
+    const mark = (r) => lift.querySelectorAll('[data-room-go]').forEach((x) => {
+      const on = x.dataset.roomGo === r; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on));
+    });
+    // the base as tall as floor r, at once, the new storeys clicking down onto it; the room is
+    // hidden until it lands, and the camera rises with the roof so it stays where it was
+    const stack = (r) => {
+      const towerEl = worldEl.querySelector('.dg-tower');
+      const was = FLOOR_OF[shown]; const n = FLOOR_OF[r];
+      if (towerEl) {
+        towerEl.dataset.key = '';          // the next draw puts the room's own tower back
+        towerEl.innerHTML = towerPieces(n).map((q, i) => `<img src="${q.src}" width="${q.w}" height="${q.h}" alt="" draggable="false"${i >= was && !reduced() ? ' class="is-new"' : ''}
+          style="left:${q.x.toFixed(1)}px;top:${q.y.toFixed(1)}px;width:${q.w}px;height:${q.h}px">`).join('');
+      }
+      worldEl.classList.add('is-lifting'); stage.front?.classList.add('is-lifting');
+      if (view.v) { view.v = { ...view.v, ty: view.v.ty + (slabOf(was).top[1] - slabOf(n).top[1]) * view.v.s }; apply(); }
     };
-  });
+    const show = (r) => {
+      if (r === shown) return;
+      stack(r); shown = r; mark(r); haptic('tick');
+    };
+    const land = (to) => {
+      clearTimeout(climbing); climbing = null;
+      if (to === activeRoom() && !worldEl.classList.contains('is-lifting')) return;   // a tap on the floor you're on
+      // (back where it started after a drag: the same room drops back in)
+      view.landing = true;
+      // the camera stays where the drag took it (it rose with the roof), not the room's home view
+      const keep = view.v;
+      setActiveRoom(to); view.v = keep;
+      document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true }));
+    };
+    // a tap climbs floor by floor (each one clicks in), then lands
+    const climb = (to) => {
+      clearTimeout(climbing);
+      if (reduced()) { show(to); land(to); return; }
+      const step = () => {
+        const i = order.indexOf(shown); const j = order.indexOf(to);
+        if (i === j) { land(to); return; }
+        show(order[i + Math.sign(j - i)]);
+        climbing = setTimeout(step, LIFT_CLIMB);
+      };
+      step();
+    };
+    lift.addEventListener('pointerdown', (e) => {
+      if (e.button > 0) return;
+      e.stopPropagation();
+      clearTimeout(climbing); climbing = null;
+      drag = { y: e.clientY, from: order.indexOf(shown), moved: false, id: e.pointerId, btn: e.target.closest('[data-room-go]') };
+      try { lift.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+    });
+    lift.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dy = drag.y - e.clientY;
+      if (!drag.moved && Math.abs(dy) < 8) return;
+      if (!drag.moved) { drag.moved = true; lift.classList.add('is-dragging'); }
+      const i = Math.max(0, Math.min(order.length - 1, drag.from + Math.round(dy / LIFT_STEP)));
+      show(order[i]);
+    });
+    const end = (e, cancelled) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const d = drag; drag = null; lift.classList.remove('is-dragging');
+      if (d.moved || cancelled) land(shown);
+      else if (d.btn) climb(d.btn.dataset.roomGo);
+    };
+    lift.addEventListener('pointerup', (e) => end(e, false));
+    lift.addEventListener('pointercancel', (e) => end(e, true));
+    lift.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // a click with no pointer (Enter or Space on a focused button)
+      const b = e.target.closest('[data-room-go]');
+      if (b && e.detail === 0) climb(b.dataset.roomGo);
+    });
+    lift.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const i = Math.max(0, Math.min(order.length - 1, order.indexOf(shown) + (e.key === 'ArrowUp' ? 1 : -1)));
+      climb(order[i]);
+      requestAnimationFrame(() => lift.querySelector(`[data-room-go="${order[i]}"]`)?.focus());
+    });
+  }
 
   // stamina fills and the workshop counts down by the second
   clearInterval(view.tick);

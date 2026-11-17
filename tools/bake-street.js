@@ -3,7 +3,9 @@
 //
 // Run it in the browser's console on the app (node tools/serve.mjs, then open localhost:8744),
 // with a small server on port 8745 that saves what's POSTed to it (?name=file). It saves sign.png,
-// truck-in.png (facing up the screen), truck-out.png (facing down it) at 2 px per px of the city,
+// truck-up.png (facing up the screen to the right, the way in over the causeway), truck-in.png
+// (facing up it to the left, the old island's way in) and truck-out.png (facing down it to the
+// left) at 2 px per px of the city,
 // and meta.json: each picture's size, where its foot on the ground is, and the sign's panel corners.
 // Then trim each to its pixels, save as webp in icons/City/street/, and copy the sizes, feet (less
 // the trim) and panel into SIGN_PIC, PANEL and TRUCK_PIC in city2d.js.
@@ -61,10 +63,10 @@ const sign = await load('sign');
     .map(([x, y]) => new THREE.Vector3(x, s.y * 0.37 + y, s.z / 2 + 0.012).applyMatrix4(sign.matrixWorld));
   out.sign = await shoot(sign, 'sign', corners);
 }
-// the truck, facing up the screen (along −e1) and down it (along −e2); the model faces −X
+// the truck, facing up the screen (to the right, then to the left) and down it; the model faces −X
 const truck = await load('truck');
 const ts = size(truck); const tk = TRUCK_LEN / ts.x; truck.scale.setScalar(tk);
-for (const [name, dir] of [['truck-in', [-1, -SLOPE]], ['truck-out', [-1, SLOPE]]]) {
+for (const [name, dir] of [['truck-up', [1, -SLOPE]], ['truck-in', [-1, -SLOPE]], ['truck-out', [-1, SLOPE]]]) {
   const t = truck.clone(true);
   const d = ground(dir); t.rotation.y = Math.atan2(d.z, -d.x); t.position.set(0, (ts.y / 2) * tk, 0);
   out[name] = await shoot(t, name);

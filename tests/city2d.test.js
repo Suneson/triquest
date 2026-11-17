@@ -1,18 +1,30 @@
-// The delivery truck's timing (js/app/city2d.js truckAt).
+// The delivery bike's and boat's timing (js/app/city2d.js truckAt).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { truckAt, TRUCK_AFTER } from '../js/app/city2d.js';
+import { truckAt, TRUCK_AFTER, VEHICLES } from '../js/app/city2d.js';
 import { deliveryEnds, deliveriesComing } from '../js/core/deliveries.js';
 
-test('the truck drives in before a delivery ends, waits at the door, then leaves', () => {
-  assert.equal(truckAt(-600), null, 'not on screen long before');
-  const arriving = truckAt(-2);
-  assert.ok(arriving && arriving.moving, 'driving in just before the end');
-  const parked = truckAt(1);
-  assert.ok(parked && !parked.moving, 'waiting at the door just after');
-  assert.deepEqual(truckAt(0).p, truckAt(3).p, 'it stops where it arrives');
-  assert.ok(truckAt(TRUCK_AFTER - 0.5)?.moving, 'driving off at the end');
-  assert.equal(truckAt(TRUCK_AFTER + 1), null, 'gone after');
+for (const kind of ['bike', 'boat']) {
+  test(`the ${kind} comes in before a delivery ends, waits at its stop, then leaves`, () => {
+    const after = 8 + VEHICLES[kind].outS;
+    assert.equal(truckAt(-600, kind), null, 'not on screen long before');
+    const arriving = truckAt(-2, kind);
+    assert.ok(arriving && arriving.moving && !arriving.out, 'coming in just before the end');
+    const parked = truckAt(1, kind);
+    assert.ok(parked && !parked.moving, 'waiting just after');
+    assert.deepEqual(truckAt(0, kind).p, VEHICLES[kind].stop, 'it stops at its stop');
+    assert.deepEqual(truckAt(0, kind).p, truckAt(3, kind).p, 'and stays there');
+    assert.ok(truckAt(after - 0.5, kind)?.out, 'leaving at the end');
+    assert.equal(truckAt(after + 1, kind), null, 'gone after');
+    assert.ok(after <= TRUCK_AFTER);
+  });
+}
+
+test('the bike goes back the way it came; the boat carries on', () => {
+  const { bike, boat } = VEHICLES;
+  assert.deepEqual(bike.routeOut.at(-1), bike.routeIn[0]);
+  assert.notDeepEqual(boat.routeOut.at(-1), boat.routeIn[0]);
+  assert.deepEqual(boat.routeOut[0], boat.stop);
 });
 
 test('deliveries: the ones coming are listed soonest first; ends include ones just come', () => {

@@ -29,7 +29,7 @@ export const BOSSES = [
     /** What he does on the start line during the warm-up, in turn. */
     warmup: ['stretch', 'laugh', 'dance', 'stretch', 'dance2'],
     /** His pose for each line of his talk (stadium.intro.<i>). */
-    poses: ['wave', 'laugh', 'stretch', 'dance', 'victory'],
+    poses: ['stretch', 'laugh', 'stretch', 'laugh', 'dance'],
   },
 ];
 

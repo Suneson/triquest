@@ -17,28 +17,31 @@ export const ENV = {
   plot: { top: [426, 510], right: [810, 730], bottom: [430, 950], left: [36, 740] },
   roomWidth: 0.86, // the room's art width, as a share of the terrain's
 };
-// The island (docs/CITY.md): one picture of the ground in tiles, nine plots on it (island-view.js),
-// and the main base on the middle plot. A room stands on its floor of the base: the locker on the
-// ground floor's roof, every other room on as many upper floors as it needs. js/core/island-art.js
-// says where each picture goes (written by tools/cut-island.py).
+// The club grounds (docs/CITY.md): one picture of the ground in tiles, with the main base in the
+// middle and three small buildings on its forecourt (island-view.js). A room stands on its floor
+// of the base: the locker on the ground floor's roof, every other room on as many upper floors as
+// it needs. js/core/island-art.js says where each picture goes (written by tools/cut-grounds.py).
 export const FLOOR_OF = { locker: 0, gym: 1, bike: 2, run: 3, pool: 4 };
-const { world: WORLD, plots: PLOTS, unit: UNIT, slope: SLOPE, foot: [A0, A1], groundFloor: GROUND_FLOOR, storey: STOREY } = ISLAND_ART;
-export const CITY = { x0: 0, y0: 0, w: WORLD.w, h: WORLD.h, step: STOREY.wall };
+const { world: WORLD, plots: PLOTS, unit: UNIT, slope: SLOPE, foot: [A0, A1], groundFloor: GROUND_FLOOR, storeys: STOREYS } = ISLAND_ART;
+export const CITY = { x0: 0, y0: 0, w: WORLD.w, h: WORLD.h };
+// each storey has its own picture and height (tools/fit-building.py); floor n stands on n of them
+const upTo = (n) => GROUND_FLOOR + STOREYS.slice(0, Math.max(0, n)).reduce((h, s) => h + s.wall, 0);
 const onBase = (a, b, up) => [PLOTS.base[0] + (a - b) * UNIT, PLOTS.base[1] + (a + b) * SLOPE * UNIT - up];
 
 /** The base's upper floors under floor n, bottom first, each { src, x, y, w, h } in world px. */
 export function towerPieces(n) {
   const out = [];
   for (let i = 0; i < n; i++) {
-    const [x, y] = onBase(A1, A1, GROUND_FLOOR + i * CITY.step);
-    out.push({ src: STOREY.src, x: x - STOREY.w / 2, y: y - STOREY.h + STOREY.pad + 2, w: STOREY.w, h: STOREY.h });
+    const s = STOREYS[Math.min(i, STOREYS.length - 1)];
+    const [x, y] = onBase(A1, A1, upTo(i));
+    out.push({ src: s.src, x: x - s.ax, y: y - s.ay, w: s.w, h: s.h });
   }
   return out;
 }
 
 /** Floor n's roof, the slab its room stands on, in world px. */
 export function slabOf(n) {
-  const up = GROUND_FLOOR + Math.max(0, n) * CITY.step;
+  const up = upTo(n);
   return { top: onBase(A0, A0, up), right: onBase(A1, A0, up), bottom: onBase(A1, A1, up), left: onBase(A0, A1, up) };
 }
 

@@ -172,6 +172,28 @@ const stashed = (id, home, w, h, fit, extra = {}) => ({
  */
 export const GROW = 1;
 
+/**
+ * The club room's 44 pieces: [id, w, h, tags] with w x h its footprint facing a (from
+ * PromptQueue Prompts/clan-items-list.csv, turned to match each a picture). Tags: 'flat' lies on
+ * the floor under everything, 'top' was made to stand on a bar counter.
+ */
+const CLUB_ITEMS = [
+  ['clan-bar-counter-long', 4, 1], ['clan-bar-counter-corner', 2, 2], ['clan-back-bar-shelves', 3, 1],
+  ['clan-beer-tap', 1, 1, 'top'], ['clan-espresso-machine-vintage', 1, 1, 'top'],
+  ['clan-decanters', 1, 1, 'top'], ['clan-brass-till', 1, 1, 'top'], ['clan-champagne-bucket', 1, 1, 'top'],
+  ['clan-cake-stand', 1, 1, 'top'], ['clan-cocktail-station', 1, 1, 'top'], ['clan-coffee-cart', 1, 2],
+  ['clan-chesterfield-sofa', 3, 1], ['clan-chesterfield-armchair', 1, 1], ['clan-wingback-chair', 1, 1],
+  ['clan-corner-sofa', 3, 3], ['clan-ottoman', 1, 1], ['clan-bar-stool', 1, 1], ['clan-leather-bench', 2, 1],
+  ['clan-coffee-table', 2, 1], ['clan-side-table', 1, 1], ['clan-high-table', 1, 1],
+  ['clan-card-table', 2, 2], ['clan-chess-table', 1, 1], ['clan-pool-table', 2, 3], ['clan-cue-rack', 1, 1],
+  ['clan-darts-board', 1, 1], ['clan-arcade-cabinet', 1, 1], ['clan-pinball-machine', 2, 1],
+  ['clan-table-football', 2, 1], ['clan-shuffleboard', 1, 3], ['clan-jukebox', 1, 1],
+  ['clan-fireplace', 2, 1], ['clan-grandfather-clock', 1, 1], ['clan-globe-bar', 1, 1],
+  ['clan-bookcase', 2, 1], ['clan-upright-piano', 1, 2], ['clan-gramophone', 1, 1], ['clan-phone-box', 2, 1],
+  ['clan-floor-lamp', 1, 1], ['clan-trophy-cabinet', 2, 1], ['clan-penny-farthing', 2, 1],
+  ['clan-potted-palm', 1, 1], ['clan-persian-rug', 3, 2, 'flat'], ['clan-tartan-rug', 2, 2, 'flat'],
+];
+
 const ITEMS = [
   // the coffee machine: tier 1 to 3 with the locker room's level (4 and 7 step it up)
   { id: 'coffee-machine', w: 2, h: 2, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
@@ -227,21 +249,40 @@ const ITEMS = [
     id: s.id, w: s.w, h: s.h, home: s.home, fit: s.fit, flat: !!s.flat, art: () => s.art,
     owned: (inv) => (inv || []).some((r) => r.item_id === s.id),
   })),
+  // the kitchen's first two (Items/z_GLB MODELS/map assets, tools/render-items/render-grounds.py)
+  stashed('room-pantry', 'locker', 1, 2, 0.8),
+  stashed('room-smoothie-bar', 'locker', 2, 2, 0.9),
+  // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py).
+  // Until the club room is built they stand in the locker room. Bar-top pieces stand on the floor
+  // for now (the game can't stack items yet).
+  ...CLUB_ITEMS.map(([id, w, h, tags = '']) => stashed(id, 'locker', w, h, 0.88, {
+    sides: 4, club: true, ...(tags.includes('flat') ? { flat: true } : {}), ...(tags.includes('top') ? { barTop: true } : {}),
+  })),
 ];
 export const PLACEABLES = ITEMS.map((p) => ({ ...p, w: p.w + GROW, h: p.h + GROW }));
 export const placeableById = (id) => PLACEABLES.find((p) => p.id === id) || null;
 
 /**
  * An item as it stands in one of its facings: facing b is the item turned 90 degrees, so its
- * footprint is turned too (w and h swap). Items with one facing are as they are.
+ * footprint is turned too (w and h swap). Items painted from all four sides (`sides: 4`) also have
+ * c, the back of a (its footprint as a's), and d, the back of b (as b's). Items with one facing are
+ * as they are.
  */
+export const FACES = ['a', 'b', 'c', 'd'];
 export function orient(item, face) {
   if (!item?.faces) return item;
-  const f = face === 'a' || face === 'b' ? face : (item.face || 'a');
-  return f === 'b' ? { ...item, face: f, w: item.h, h: item.w } : { ...item, face: f };
+  const n = item.sides || 2;
+  const f = FACES.slice(0, n).includes(face) ? face : (item.face || 'a');
+  return f === 'b' || f === 'd' ? { ...item, face: f, w: item.h, h: item.w } : { ...item, face: f };
 }
-/** The other facing. */
-export const turned = (face) => (face === 'b' ? 'a' : 'b');
+/**
+ * The next facing, a quarter turn on: a, b, c, d round for four-sided items, a and b for the rest.
+ * `sides: 1` never turns (an item whose other sides were painted wrong can be kept to one).
+ */
+export const turned = (face, sides = 2) => {
+  const n = Math.max(1, Math.min(4, sides));
+  return FACES[(Math.max(0, FACES.indexOf(face)) + 1) % n];
+};
 
 /** The items this athlete has to place: gifts, and anything their inventory gives (in rooms they have). */
 export const placeablesFor = (inventory, rooms = null) => PLACEABLES.filter((p) => (p.gift || p.owned?.(inventory))

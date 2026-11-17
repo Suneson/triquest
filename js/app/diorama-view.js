@@ -342,8 +342,11 @@ const OWN_ROOM = new Set(['run']);
  * False when it doesn't fit.
  */
 export function takeFromStash(id) {
-  const here = activeRoom();
+  let here = activeRoom();
   const base = placeableById(id);
+  // a club item goes to the club room (its screen opens); anything else back to the tower
+  const club = base?.home === 'club';
+  if (club !== (here === 'club')) { inClub = club; view.v = null; here = activeRoom(); }
   const room = base && OWN_ROOM.has(base.home) && geomOf(base.home) ? base.home : here;
   const geom = geomOf(room);
   const saved = savedPlacements();

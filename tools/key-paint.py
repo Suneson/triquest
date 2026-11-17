@@ -53,6 +53,49 @@ def main(src, out):
     print(out, big.shape[1], big.shape[0])
 
 
+def base_lines(solid):
+    """A building's base, from its outline's bottom: the line along its left face and along its right
+    face (y = m x + c each, px of `solid`), fitted where no pot or bush stands in front of the wall
+    (by the door, on the left face), points well below the line (a pot) left out."""
+    cols = np.where(solid.any(0))[0]
+    x0, x1 = cols[0], cols[-1]; W = x1 - x0
+    bot = np.full(solid.shape[1], -1.0)
+    bot[cols] = [np.where(solid[:, c])[0].max() for c in cols]
+
+    def fit(spans):
+        xs = np.concatenate([np.arange(int(x0 + a * W), int(x0 + b * W)) for a, b in spans])
+        ys = bot[xs]; keep = ys >= 0
+        for _ in range(4):
+            m, c = np.polyfit(xs[keep], ys[keep], 1)
+            r = ys - (m * xs + c); keep = keep & (r < max(4, 2 * np.median(np.abs(r[keep]))))
+        return m, c
+    left = fit([(0.12, 0.24), (0.42, 0.52)])
+    right = fit([(0.66, 0.95)])
+    xf = (right[1] - left[1]) / (left[0] - right[0])
+    return x0, xf, x1, left, right
+
+
+def fit_base(img, solid, target):
+    """`img` (and its outline `solid`) moved column by column so its base lies on `target`'s: the
+    left edge, front corner and right edge matched (a stretch each side of the front corner) and
+    each column shifted up or down so the base lines meet. Walls stay upright."""
+    px0, pxf, px1, pl, pr = base_lines(solid)
+    tx0, txf, tx1, tl, tr = base_lines(target)
+    H, W = solid.shape
+    X = np.arange(W, dtype=np.float64)
+    sx = np.interp(X, [tx0, txf, tx1], [px0, pxf, px1])            # the painting's column for each
+    base = lambda x, l, r, f: np.where(x <= f, l[0] * x + l[1], r[0] * x + r[1])
+    dy = base(sx, pl, pr, pxf) - base(X, tl, tr, txf)                 # painting row - target row
+    sxi = np.clip(np.rint(sx).astype(int), 0, W - 1)
+    rows = np.arange(H)[:, None] + np.rint(dy).astype(int)[None, :]
+    ok = (rows >= 0) & (rows < H)
+    rows = np.clip(rows, 0, H - 1)
+    outimg = img[rows, sxi[None, :]]
+    outimg[~ok] = 0
+    print('base fit: front corner %.0f -> %.0f, shift %.0f..%.0f px' % (pxf, txf, dy.min(), dy.max()))
+    return outimg
+
+
 def on_render(src, out, render):
     a = keyed(src)
     solid = a[..., 3] > 200
@@ -63,6 +106,9 @@ def on_render(src, out, render):
     box, size = (px0, py0, px1, py1), (rx1 - rx0, ry1 - ry0)
     p = np.asarray(Image.fromarray(a, 'RGBA').crop(box).resize(size, Image.LANCZOS))
     raw = np.asarray(Image.open(src).convert('RGB').crop(box).resize(size, Image.LANCZOS))
+    # the painting's base onto the render's, so the building stands square on the map's paving
+    both = fit_base(np.dstack([p, raw]), p[..., 3] > 200, rs[ry0:ry1, rx0:rx1])
+    p, raw = np.ascontiguousarray(both[..., :4]), np.ascontiguousarray(both[..., 4:])
     ps = p[..., 3] > 200
     res = np.zeros_like(r)
     res[..., 3] = np.where(rs, 0, r[..., 3])            # the render's shadow, black
@@ -72,12 +118,29 @@ def on_render(src, out, render):
     rr, gg, bb = (raw[..., i].astype(np.int32) for i in range(3))
     # the green backdrop and its darker green shadow, not a bush (which has some red and blue in it)
     screen = ((gg > 150) & (gg > 1.5 * np.maximum(rr, bb))) | ((gg > 50) & (np.maximum(rr, bb) < 45) & (gg > 2 * np.maximum(rr, bb)))
-    model = rs[ry0:ry1, rx0:rx1] & ~ps & ~screen
+    # only a bush or a pot's dark navy: anything pale there is the painting's ground, not the model
+    # (it showed as a light halo by the pots)
+    # (a bush is a big blob of green; a thin green strip along the base is the screen's shadow)
+    bush = ndi.binary_opening((gg > rr + 6) & (gg > bb + 6) & ~screen, iterations=6)
+    lab, n = ndi.label(bush)
+    for i, sl in enumerate(ndi.find_objects(lab), 1):   # a bush is round; a wide flat strip is not
+        if (sl[0].stop - sl[0].start) < 0.5 * (sl[1].stop - sl[1].start): bush[lab == i] = False
+    plant = bush | ((bb >= gg) & (np.maximum(np.maximum(rr, gg), bb) < 140))
+    model = rs[ry0:ry1, rx0:rx1] & ~ps & ~screen & plant
     sub[model, :3] = raw[model]; sub[model, 3] = 255
     # where the render's model stood but the painting has none, the shadow carries on under it
-    ring = ndi.binary_dilation(rs, iterations=6) & ~rs
+    # (only near the ground: higher up, where the render's roof stands past the painting's, it's air),
+    # as dark as the shadow just round it
     gap = rs[ry0:ry1, rx0:rx1] & ~ps & ~model
-    sub[gap, :3] = 0; sub[gap, 3] = int(np.median(r[ring, 3]))
+    rc = rs[ry0:ry1, rx0:rx1]
+    yy = np.arange(rc.shape[0])[:, None]
+    top = np.where(rc.any(0), rc.argmax(0), rc.shape[0])
+    low = np.where(rc.any(0), rc.shape[0] - 1 - rc[::-1].argmax(0), 0)
+    gap &= yy >= (top + low)[None, :] / 2
+    _, (iy, ix) = ndi.distance_transform_edt(rs, return_indices=True)   # the nearest shadow pixel
+    shade = ndi.gaussian_filter(r[..., 3][iy, ix].astype(np.float32), 12)[ry0:ry1, rx0:rx1] * 0.7
+    shade = shade.astype(np.uint8)
+    sub[gap, :3] = 0; sub[gap, 3] = shade[gap]
     sub[ps] = p[ps]
     sub[ps, 3] = 255
     Image.fromarray(res, 'RGBA').save(out)

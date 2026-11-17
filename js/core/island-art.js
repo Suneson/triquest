@@ -465,18 +465,18 @@ export const ISLAND_ART = {
    "h": 1402.0
   },
   "club": {
-   "src": "icons/Island/club.webp",
-   "x": 1463.8,
+   "src": "icons/Island/club-v2.webp",
+   "x": 1503.9,
    "y": 5937.6,
-   "w": 1015.8,
-   "h": 962.9
+   "w": 1015.1,
+   "h": 963.9
   },
   "club-ruin": {
-   "src": "icons/Island/club-ruin.webp",
-   "x": 1463.8,
+   "src": "icons/Island/club-ruin-v2.webp",
+   "x": 1503.9,
    "y": 5937.6,
-   "w": 1015.8,
-   "h": 962.9
+   "w": 1015.1,
+   "h": 963.9
   },
   "market": {
    "src": "icons/Island/market.webp",
@@ -599,40 +599,40 @@ export const ISLAND_ART = {
  "shopScale": 0.6,
  "storeys": [
   {
-   "src": "icons/Island/storey-1.webp",
+   "src": "icons/Island/storey-1-v3.webp",
    "w": 1696.0,
    "h": 1215.0,
    "ax": 848.7,
    "ay": 1212.3,
    "wall": 380.0,
-   "parapet": "icons/Island/parapet-1.webp"
+   "parapet": "icons/Island/parapet-1-v3.webp"
   },
   {
-   "src": "icons/Island/storey-2.webp",
+   "src": "icons/Island/storey-2-v3.webp",
    "w": 1714.0,
    "h": 1122.0,
    "ax": 852.7,
    "ay": 1115.5,
    "wall": 290.2,
-   "parapet": "icons/Island/parapet-2.webp"
+   "parapet": "icons/Island/parapet-2-v3.webp"
   },
   {
-   "src": "icons/Island/storey-3.webp",
+   "src": "icons/Island/storey-3-v3.webp",
    "w": 1754.0,
    "h": 1224.0,
    "ax": 876.7,
    "ay": 1213.3,
    "wall": 380.0,
-   "parapet": "icons/Island/parapet-3.webp"
+   "parapet": "icons/Island/parapet-3-v3.webp"
   },
   {
-   "src": "icons/Island/storey-4.webp",
+   "src": "icons/Island/storey-4-v3.webp",
    "w": 1717.0,
    "h": 1119.0,
    "ax": 853.7,
    "ay": 1107.7,
    "wall": 278.4,
-   "parapet": "icons/Island/parapet-4.webp"
+   "parapet": "icons/Island/parapet-4-v3.webp"
   }
  ],
  "unit": 537,

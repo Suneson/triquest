@@ -22,6 +22,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, 'icons', 'Island')
 ART_JS = os.path.join(REPO, 'js', 'core', 'island-art.js')
 PAD = 60
+V = 'v3'          # the pictures' version, in their names
 
 spec = importlib.util.spec_from_file_location('key_paint', os.path.join(REPO, 'tools', 'key-paint.py'))
 kp = importlib.util.module_from_spec(spec); spec.loader.exec_module(kp)
@@ -30,8 +31,10 @@ kp = importlib.util.module_from_spec(spec); spec.loader.exec_module(kp)
 def back_to_frame(path, fitted, size):
     """The repaint keyed and put back in the storey picture's frame."""
     a = Image.fromarray(kp.keyed(path), 'RGBA')
-    a = a.resize(fitted.size, Image.LANCZOS)
-    return a.crop((PAD, PAD, PAD + size[0], PAD + size[1]))
+    a = np.asarray(a.resize(fitted.size, Image.LANCZOS)).copy()
+    # nothing on the building is green: any left on an edge is the screen's
+    a[..., 1] = np.minimum(a[..., 1], np.maximum(a[..., 0], a[..., 2]).astype(np.int16) + 8).astype(np.uint8)
+    return Image.fromarray(a, 'RGBA').crop((PAD, PAD, PAD + size[0], PAD + size[1]))
 
 
 def front_only(im):
@@ -57,6 +60,17 @@ def front_only(im):
     return Image.fromarray(a, 'RGBA')
 
 
+def solid_rail(im):
+    """The railing as a solid wall: the gaps between its balusters filled with its own stone in shade,
+    so the room behind doesn't show through (its floor doesn't line up with the storey's roof)."""
+    a = np.asarray(im).copy()
+    on = a[..., 3] > 40
+    holes = ndi.binary_fill_holes(on) & ~on
+    shade = (np.median(a[on][:, :3], axis=0) * 0.58).astype(np.uint8)
+    a[holes, :3] = shade; a[holes, 3] = 255
+    return Image.fromarray(a, 'RGBA')
+
+
 def main(rep, green):
     with open(ART_JS, encoding='utf-8') as f:
         t = f.read()
@@ -65,10 +79,13 @@ def main(rep, green):
         fitted = Image.open(os.path.join(green, f'storey-{i}-fitted.png'))
         cur = Image.open(os.path.join(REPO, st['src']))
         im = back_to_frame(os.path.join(rep, f'building-storey-{i}-v3.jpg'), fitted, cur.size)
-        im.save(os.path.join(OUT, f'storey-{i}.webp'), quality=84, alpha_quality=90, method=6)
-        rail = front_only(back_to_frame(os.path.join(rep, f'building-parapet-{i}.jpg'), fitted, cur.size))
-        rail.save(os.path.join(OUT, f'parapet-{i}.webp'), quality=84, alpha_quality=90, method=6)
-        st['parapet'] = f'icons/Island/parapet-{i}.webp'
+        # new names each time they change: a phone keeps pictures across versions (sw.js), and an old
+        # storey under a new railing doesn't line up
+        im.save(os.path.join(OUT, f'storey-{i}-{V}.webp'), quality=84, alpha_quality=90, method=6)
+        st['src'] = f'icons/Island/storey-{i}-{V}.webp'
+        rail = solid_rail(front_only(back_to_frame(os.path.join(rep, f'building-parapet-{i}.jpg'), fitted, cur.size)))
+        rail.save(os.path.join(OUT, f'parapet-{i}-{V}.webp'), quality=84, alpha_quality=90, method=6)
+        st['parapet'] = f'icons/Island/parapet-{i}-{V}.webp'
         print(i, im.size)
     with open(ART_JS, 'w', encoding='utf-8', newline='\n') as f:
         f.write(head + json.dumps(data, indent=1) + tail)

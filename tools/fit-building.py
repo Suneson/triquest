@@ -10,6 +10,9 @@ the walls may be any height. Each face (the roof, the two walls, and the ground 
 is moved separately from points measured on the repaint (POINTS, px of the repaint) onto where it
 must be, keeping each floor's own wall height in proportion to its roof's width.
 
+A storey remade from storey 2 (building-storey-N-v2.jpg, PromptQueue Prompts/repaint-building-v2.csv)
+is used instead of the first one when it's there, measured as storey 2 unless POINTS has its own.
+
 Writes icons/Island/base.webp (the ground floor on its plinth) and storey-1..4.webp, and in
 js/core/island-art.js the base's piece, groundFloor (the ground floor's wall height, world px)
 and storeys: [{ src, w, h, ax, ay, wall }] (ax, ay: where the storey's front bottom corner is in
@@ -24,7 +27,7 @@ from scipy import ndimage as ndi
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, 'icons', 'Island')
 ART_JS = os.path.join(REPO, 'js', 'core', 'island-art.js')
-STORE = {'ground': 1.25, 'storey': 1.0}      # stored px per world px
+STORE = {'ground': 1.0, 'storey': 1.0}       # stored px per world px
 MARGIN = 40                                   # world px each face reaches past its corners (cornices, rails)
 
 # measured on each repaint: the roof's corners (T top, L left, R right, F front) and the wall's
@@ -138,7 +141,12 @@ def main():
     storeys = []
     for i in range(1, 5):
         name = f'building-storey-{i}'
-        p = dict(POINTS[name]); p.setdefault('T', tuple(np.add(p['L'], p['R']) - np.array(p['F'])))
+        # a remake painted over storey 2 (repaint-building-v2.csv) has storey 2's shape
+        if os.path.exists(os.path.join(rep, name + '-v2.jpg')):
+            p = dict(POINTS.get(name + '-v2', POINTS['building-storey-2'])); name += '-v2'
+        else:
+            p = dict(POINTS[name])
+        p.setdefault('T', tuple(np.add(p['L'], p['R']) - np.array(p['F'])))
         wall = wall_of(p)
         k = STORE['storey']
         # world, with the storey's foot at up 0

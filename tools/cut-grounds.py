@@ -4,8 +4,8 @@
                                      the app's pictures, and js/core/island-art.js
     python tools/cut-grounds.py preview <out.jpg> [scale]
 
-The ground is one painted map (MOSKE APP/Characters/Photos/Robots/Robots/World map/Map1-upscale-1.5x.png,
-7344 x 7194, from screens/club-grounds-mock/map5-expanded.psd): the base on its lawn inside the track,
+The ground is one painted map (MOSKE APP/Characters/Photos/Robots/Robots/World map/Map1_v2-upscale-1.5x.png,
+7344 x 10570: Map1-upscale-1.5x.png (7344 x 7194) with sea added 778 px above and 2598 below, from screens/club-grounds-mock/map5-expanded.psd): the base on its lawn inside the track,
 the forecourt with the club house's lower terrace down its left and the dock's stairs on its right,
 the coliseum up on the right. The world is that picture at MAP_K, the scale at which its painted gym
 lies exactly under the base's own picture (icons/Island/base.webp), so the base's plot, its upper
@@ -22,9 +22,11 @@ OUT = os.path.join(REPO, 'icons', 'Island')
 ART_JS = os.path.join(REPO, 'js', 'core', 'island-art.js')
 SLOPE, UNIT = 0.489, 537
 MAP_K = 1.0382                          # world px per px of the map: its gym's plinth is 2069 px across, the base's 2148
-MAP_BASE = (3683.5, 3825.0)             # in px of the map: the plinth's left and right corners, halfway between
+# Every spot below is in px of the first map (Map1-upscale-1.5x.png); the v2 map has it MAP_DY lower.
+MAP_DY = 778
+MAP_BASE = (3683.5, 3825.0 + MAP_DY)    # in px of the map: the plinth's left and right corners, halfway between
 BASE = (round(MAP_BASE[0] * MAP_K, 1), round(MAP_BASE[1] * MAP_K - 5, 1))   # the middle of the base's plot
-GRID = 6                                # the map in 6 x 6 tiles
+GRID = 6                                # the map in 6 tiles across (and as many down as keeps them square)
 LAND_K, SEA_K = 0.75, 0.375             # stored px per px of the map: land tiles, and tiles of open sea
 PAD = 8                                 # px of the map each tile overlaps its neighbours by
 
@@ -49,7 +51,7 @@ VEHICLES = {
 }
 # their roads, in px of the map; `stop` is the point it waits at
 ROUTES = {
-    'boat': {'path': [(3980, 7440), (5610, 6590), (7780, 5460)], 'stop': 1},
+    'boat': {'path': [(-260, 9650), (5610, 6590), (7780, 5460)], 'stop': 1},
     'bike': {'path': [(-200, 6645), (1550, 6005), (1610, 5950)], 'stop': 2},
 }
 STORE_K = 0.75                           # stored px per world px
@@ -66,7 +68,7 @@ def pt(a, b, k=1.0):
 
 
 def world(x, y):
-    return (round(x * MAP_K, 1), round(y * MAP_K, 1))
+    return (round(x * MAP_K, 1), round((y + MAP_DY) * MAP_K, 1))
 
 
 def read_art():
@@ -79,15 +81,16 @@ def save(im, name, quality=82):
 
 
 def ground(src):
-    """The map in GRID x GRID tiles: land at LAND_K, open sea at SEA_K."""
+    """The map in GRID tiles across, square-ish: land at LAND_K, open sea at SEA_K."""
     im = Image.open(src).convert('RGB')
     a = np.asarray(im.resize((im.width // 8, im.height // 8)), dtype=np.int16)
     # land: anything that isn't the sea's dark blue
     land = ~((a[..., 2] > a[..., 0] + 10) & (a[..., 0] + a[..., 1] + a[..., 2] < 330))
     xs = [round(im.width * i / GRID) for i in range(GRID + 1)]
-    ys = [round(im.height * i / GRID) for i in range(GRID + 1)]
+    rows = round(GRID * im.height / im.width)
+    ys = [round(im.height * i / rows) for i in range(rows + 1)]
     tiles = []
-    for r in range(GRID):
+    for r in range(rows):
         for c in range(GRID):
             # each tile runs PAD px of the map on under its right and lower neighbours, so no seam shows
             box = (xs[c], ys[r], min(im.width, xs[c + 1] + PAD), min(im.height, ys[r + 1] + PAD))
@@ -186,7 +189,7 @@ def cut(ground_src, renders):
         f.write('export const ISLAND_ART = ' + json.dumps(data, indent=1) + ';\n')
     for f in os.listdir(OUT):                       # tiles of the older 5 x 4 grid the new one doesn't overwrite
         m = re.fullmatch(r'ground-(\d+)-(\d+)\.webp', f)
-        if m and max(int(m[1]), int(m[2])) >= GRID:
+        if m and (int(m[2]) >= GRID or not any(t['src'].endswith(f) for t in tiles)):
             os.remove(os.path.join(OUT, f))
     for n, p in pieces.items():
         print(n, p)

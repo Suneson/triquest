@@ -100,14 +100,16 @@ const rooms32Preview = () => {
     return localStorage.getItem(ROOMS32_KEY) === '1';
   } catch { return false; }
 };
-// ?three=1: what stands in the room is drawn by three.js (base-gl.js), on this device; ?three=0 turns it off
+// the base is drawn by three.js (base-gl.js), the default since 2026-11-17: one canvas instead of
+// hundreds of big pictures the phone has to keep composited while you pan (an iPhone ran out of
+// memory and closed the app). ?three=0 turns it off on this device, ?three=1 back on.
 const THREE_KEY = 'moske-three';
 const threeTest = () => {
   try {
     const q = new URLSearchParams(location.search).get('three');
-    if (q != null) localStorage.setItem(THREE_KEY, q === '1' ? '1' : '0');
-    return localStorage.getItem(THREE_KEY) === '1';
-  } catch { return false; }
+    if (q != null) localStorage.setItem(THREE_KEY, q === '0' ? '0' : '1');
+    return localStorage.getItem(THREE_KEY) !== '0';
+  } catch { return true; }
 };
 const bigRoom = (room) => (rooms32Preview() ? ROOM32[room] : null);
 const geomOf = (room) => (bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
@@ -1120,7 +1122,8 @@ export function wireDiorama(root, ctx) {
   worldEl.classList.remove('is-lifting'); stage.front?.classList.remove('is-lifting');
   if (view.landing) {
     view.landing = false;
-    if (!reduced()) {
+    // (with three.js the items layer carries the canvas that draws the whole city: it stays put)
+    if (!reduced() && !worldEl.classList.contains('is-gl')) {
       [worldEl.querySelector('.dg-room-art'), worldEl.querySelector('.dg-shadows'), worldEl.querySelector('.dg-items')]
         .forEach((el) => el?.animate([{ translate: '0 -70px', opacity: 0 }, { translate: '0 0', opacity: 1 }], { duration: 260, easing: ENTER }));
     }

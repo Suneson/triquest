@@ -776,8 +776,14 @@ function build(L, canvas, layer, reduced) {
   function render() {
     if (!G || !V || !W) return;
     renderer.clear();
+    // the lift going between floors (diorama-view.js): only the city and the tower show, the
+    // room, its floor and what stands in it come back when it lands
+    const lifting = world.classList.contains('is-lifting');
+    const hide = lifting ? floorRoot.children.filter((ch) => ch !== cityUnder && ch.visible) : [];
+    for (const ch of hide) ch.visible = false;
     renderer.render(floorScene, camera);
-    renderer.render(scene, camera);
+    for (const ch of hide) ch.visible = true;
+    if (!lifting) renderer.render(scene, camera);
     renderer.render(overScene, camera);
     dirty = false;
   }

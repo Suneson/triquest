@@ -4,8 +4,8 @@ The base is moving from web page pictures to a game renderer (docs/PERFORMANCE.m
 
 ## The switch
 
-- Open the app with `?three=1` once. It stays on for that device; `?three=0` turns it off.
-- With it off, the base is exactly as before.
+- On by default since 2026-11-17 (the painted club grounds map crashed an iPhone when panned as web page pictures).
+- `?three=0` turns it off on that device, `?three=1` back on. With it off, the base is drawn as web page pictures, as before.
 
 ## Stage 1 (done): the items and the athlete
 

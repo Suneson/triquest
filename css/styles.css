@@ -2683,7 +2683,9 @@ h1, h2, h3, h4, .btn, .tab, .sh-title-text, .gw-row-h, .lvl-chip, .data-num, .dg
 .dg-lift-btn.is-on:active { transform: scale(.95); }
 .dg-lift-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 /* while the lift moves: the room is away (it drops in when you let go), the storeys click down onto the base */
-.dg-world.is-lifting > :is(.dg-room-art, .dg-shadows, .dg-items, .dg-rail), .is-lifting.dg-front, .dg-front.is-lifting { opacity: 0; }
+/* (with three.js the items layer holds its canvas, which draws the city too: only the buttons go) */
+.dg-world.is-lifting > :is(.dg-room-art, .dg-shadows, .dg-rail), .dg-world.is-lifting:not(.is-gl) > .dg-items,
+.dg-world.is-gl.is-lifting > .dg-items > :not(canvas), .dg-front.is-lifting { opacity: 0; }
 .dg-tower img.is-new { animation: storey-in 170ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 @keyframes storey-in { from { translate: 0 -46px; opacity: .2; } to { translate: 0 0; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {

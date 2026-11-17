@@ -38,7 +38,7 @@ PAD = 8                                 # px of the map each tile overlaps its n
 #   market: the kiosk, tucked in on the forecourt just right of the upper stairs
 # The coliseum is painted on the map, so it only has a button.
 BUILDINGS = {
-    'club':   {'render': 'clubhouse-L4-bridge', 'mid': (2600, 5431), 'side': 0.84},   # its back to the terrace's wall
+    'club':   {'render': 'clubhouse-L4-bridge', 'mid': (2012, 5571), 'side': 0.84},   # in the middle of the terrace's gold square
     'market': {'render': 'shop-kiosk-L1-a', 'mid': (3800, 5060), 'side': 0.4},
 }
 # what brings the deliveries (js/app/city2d.js): pictures that move along a road, each anchored at
@@ -53,7 +53,7 @@ VEHICLES = {
 # their roads, in px of the map; `stop` is the point it waits at
 ROUTES = {
     'boat': {'path': [(-260, 9650), (5610, 6590), (7780, 5460)], 'stop': 1},
-    'bike': {'path': [(-200, 6645), (1550, 6005), (2040, 5740)], 'stop': 2},
+    'bike': {'path': [(-200, 6645), (1452, 5880), (1630, 5712)], 'stop': 2},
 }
 STORE_K = 0.75                           # stored px per world px
 STADIUM = (4740, 1350, 6750, 2820)       # the coliseum's button: left, top, right, bottom

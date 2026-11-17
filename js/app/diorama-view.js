@@ -803,9 +803,15 @@ export function wireDiorama(root, ctx) {
   // 4-15 MB). A margin of half a screen each side is kept drawn, so panning finds them ready,
   // and the check runs only when the view has moved a seventh of a screen or zoomed a tenth.
   let culledAt = null;
+  // when the view last moved, and a re-check waiting for it to settle (see the tiles below)
+  let movedAt = 0; let lastV = null; let settle = 0;
   const cull = () => {
     const r = box(); const v = view.v;
     if (!r.width || !v) return;
+    const now = performance.now();
+    if (!lastV || v.s !== lastV.s || v.tx !== lastV.tx || v.ty !== lastV.ty) movedAt = now;
+    lastV = { ...v };
+    const still = now - movedAt > 250;
     if (culledAt && Math.abs(v.tx - culledAt.tx) < r.width * 0.15 && Math.abs(v.ty - culledAt.ty) < r.height * 0.15
       && Math.abs(v.s - culledAt.s) < culledAt.s * 0.1) return;
     culledAt = { ...v };
@@ -827,7 +833,14 @@ export function wireDiorama(root, ctx) {
       // full tiles (some 150 MB decoded) were more than an iPhone lets a page keep.
       if (el.dataset.full) {
         const seen = !(l > x1 - mx || l + w < x0 + mx || tp > y1 - my || tp + h < y0 + my);   // on the screen itself
-        const want = seen && sharp ? el.dataset.full : el.dataset.small;
+        let want = seen && sharp ? el.dataset.full : el.dataset.small;
+        // a full tile waits till the camera has stood still a moment: a quick zoom out and swipe
+        // otherwise starts a dozen big decodes at once, and that burst is what an iPhone can't take
+        if (want !== el.dataset.small && el.getAttribute('src') !== want && !still) {
+          want = el.getAttribute('src');
+          clearTimeout(settle);
+          settle = setTimeout(() => { culledAt = null; cull(); }, 300);
+        }
         if (el.getAttribute('src') !== want) el.setAttribute('src', want);
       }
     }

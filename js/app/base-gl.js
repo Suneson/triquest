@@ -484,9 +484,10 @@ function build(L, canvas, layer, reduced) {
   const dropCity = (src, now = false) => {
     const t = cityTex.get(src);
     if (!t || --t.n > 0) return;
-    // kept a moment: a picture that's just gone off the screen often comes back
+    // kept a moment (not long: memory is what an iPhone runs out of): a picture that's just gone
+    // off the screen often comes back
     const go = () => { if (cityTex.get(src) === t && t.n <= 0) { t.tex?.source?.data?.close?.(); t.tex?.dispose(); cityTex.delete(src); } };
-    if (now) go(); else t.drop = setTimeout(go, 4000);
+    if (now) go(); else t.drop = setTimeout(go, 1500);
   };
   // the stacking level the page paints a picture at: its own z-index, or its nearest layer's
   const zOf = (el) => { for (let e = el; e && e !== world; e = e.parentElement) { const z = getComputedStyle(e).zIndex; if (z !== 'auto') return Number(z) || 0; } return 0; };

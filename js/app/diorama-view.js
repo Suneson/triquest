@@ -65,19 +65,31 @@ const ROOM_KEY = 'moske-room';
 const roomName = (room) => t(`cp.room.${room}`);
 const itemName = (id) => t(`cp.item.${id}`);
 
+// the rooms you can be in: the tower's floors, and the club room (in the club house: tap it)
+const ALL_ROOMS = [...STAGE_ROOMS, 'club'];
+// a building that has a room (island-view.js: the club house) asks for it
+document.addEventListener('dg-enter-room', (e) => {
+  const to = e.detail?.room;
+  if (!ALL_ROOMS.includes(to) || to === activeRoom()) return;
+  setActiveRoom(to); view.landing = true;
+  document.dispatchEvent(new CustomEvent('dg-room', { bubbles: true }));
+});
 /** The room on the stage (remembered on the device). */
 export function activeRoom() {
-  try { const r = localStorage.getItem(ROOM_KEY); if (STAGE_ROOMS.includes(r)) return r; } catch { /* private mode */ }
+  try { const r = localStorage.getItem(ROOM_KEY); if (ALL_ROOMS.includes(r)) return r; } catch { /* private mode */ }
   return 'bike';
 }
 export function setActiveRoom(room) {
-  if (!STAGE_ROOMS.includes(room)) return;
+  if (!ALL_ROOMS.includes(room)) return;
   try { localStorage.setItem(ROOM_KEY, room); } catch { /* private mode */ }
   view.sel = null;
   view.v = null; // a new room opens at its home view
 }
 
+// the club room's level goes with the club house's (level 4 now, the repaint; its upgrades come later)
+const CLUB_LEVEL = 4;
 function levelOf(room, ctx) {
+  if (room === 'club') return CLUB_LEVEL;
   if (room === 'locker') return Math.max(1, Math.min(10, ctx.acct?.level || 1));
   const sport = SPORT_OF[room];
   return Math.min(10, sportLevelOf(sport, ctx.boost?.sportXp?.[sport] || 0).artLevel);
@@ -112,9 +124,9 @@ const threeTest = () => {
   } catch { return true; }
 };
 const bigRoom = (room) => (rooms32Preview() ? ROOM32[room] : null);
-const geomOf = (room) => (bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
+const geomOf = (room) => (room === 'club' ? 'club-32' : bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
 // every room, for working out where items stand
-const stageLayout = () => ({ rows: [STAGE_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
+const stageLayout = () => ({ rows: [ALL_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
 // stamina lives in drill-view.js: it refills on its own, drills spend it, recovery gives it back
 
@@ -149,6 +161,9 @@ function roomPill(room, ctx) {
   const lvl = levelOf(room, ctx);
   if (room === 'locker') {
     return `<div class="dg-pill"><button class="dg-pill-name" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}"><b>${esc(roomName('locker'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></button></div>`;
+  }
+  if (room === 'club') {
+    return `<div class="dg-pill"><span class="dg-pill-name" aria-label="${esc(t('cp.roomAlt', { room: roomName('club'), n: lvl }))}"><b>${esc(roomName('club'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></span></div>`;
   }
   const s = gearState();
   const sport = SPORT_OF[room];
@@ -303,7 +318,7 @@ const walk = { w: null, room: null, going: null, grid: null, redraw: null };
 // the room's level per room, as the stage last worked it out (the stash's pictures use it)
 let lastLevels = {};
 export const itemLevels = () => lastLevels;
-const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], STAGE_ROOMS);
+const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], ALL_ROOMS);
 
 /** Rooms whose items only ever stand there: taken from the stash anywhere, they go to that room. */
 const OWN_ROOM = new Set(['run']);
@@ -767,7 +782,7 @@ export function wireDiorama(root, ctx) {
   // the island's plots; the markets live on its market plot now (island-view.js, shop-view.js),
   // so the old markets round the lobby (market-view.js) are no longer put in the city
   if (env.floor != null) {
-    mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
+    mountIsland(worldEl, stage.front, { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen'), inside: room === 'club' ? 'club' : null });
     // the delivery sign and the truck, pictures among the island's (city2d.js)
     mountCity(worldEl, {
       deliveries: (kind) => deliveryEnds((gearState().jobs || []).filter((j) => !kind || kindOf(j) === kind), serverNow(), TRUCK_AFTER * 1000 + 60e3),
@@ -1196,7 +1211,8 @@ export function wireDiorama(root, ctx) {
   const lift = root.querySelector('.dg-lift');
   if (lift) {
     const order = [...lift.querySelectorAll('[data-room-go]')].map((x) => x.dataset.roomGo).reverse();   // street first
-    let shown = room; let drag = null; let climbing = null;
+    // (in the club room no floor is lit: the lift starts from the street)
+    let shown = room in FLOOR_OF ? room : 'locker'; let drag = null; let climbing = null;
     const mark = (r) => lift.querySelectorAll('[data-room-go]').forEach((x) => {
       const on = x.dataset.roomGo === r; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', String(on));
     });

@@ -111,5 +111,26 @@ export const ROOM32 = {
         29
       ]
     ]
+  },
+  "club": {
+    "src": "icons/Pixelart/NEW/CLUB/big-10.webp",
+    "size": [
+      3400,
+      2292
+    ],
+    "back": [
+      49.43,
+      30.22
+    ],
+    "right": [
+      99.62,
+      64.02
+    ],
+    "left": [
+      0.43,
+      63.4
+    ],
+    "share": 0.9225,
+    "blocked": []
   }
 };

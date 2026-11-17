@@ -2780,7 +2780,7 @@ en.cp = {
   "staminaAria": "Stamina {n} of {max}. It refills by itself, empty to full in 30 hours",
   "roomsAria": "Rooms",
   "nav": { "bike": "Cycling", "pool": "Swim", "run": "Run", "gym": "Gym", "locker": "Locker Room & Recovery" },
-  "room": { "gym": "Gym", "pool": "Pool", "bike": "Bike room", "run": "Run room", "locker": "Locker room" },
+  "room": { "gym": "Gym", "pool": "Pool", "bike": "Bike room", "run": "Run room", "locker": "Locker room", "club": "Club room" },
   "item": { "coffee-machine": "Coffee machine", "smart-bike": "Your bike", "smart-trainer": "Smart trainer", "treadmill": "Treadmill", "road-bike-stand": "Bike on a stand", "trophy-gold-mountain": "Gold mountain trophy" },
   "rotate": "Turn it to face the other way",
   "roledesc": "base editor",

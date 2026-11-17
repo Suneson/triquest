@@ -2780,7 +2780,7 @@ es.cp = {
   "staminaAria": "Energía {n} de {max}. Se recarga sola, de vacío a lleno en 30 horas",
   "roomsAria": "Salas",
   "nav": { "bike": "Ciclismo", "pool": "Natación", "run": "Carrera", "gym": "Gimnasio", "locker": "Vestuario y recuperación" },
-  "room": { "gym": "Gimnasio", "pool": "Piscina", "bike": "Sala de bici", "run": "Sala de carrera", "locker": "Vestuario" },
+  "room": { "gym": "Gimnasio", "pool": "Piscina", "bike": "Sala de bici", "run": "Sala de carrera", "locker": "Vestuario", "club": "Sala del club" },
   "item": { "coffee-machine": "Cafetera", "smart-bike": "Tu bici", "smart-trainer": "Rodillo inteligente", "treadmill": "Cinta de correr", "road-bike-stand": "Bici en su pedestal", "trophy-gold-mountain": "Trofeo de la montaña de oro" },
   "rotate": "Gíralo para que mire al otro lado",
   "roledesc": "editor de la base",

@@ -26,6 +26,7 @@ FLOORS = {  # back, right, left
     'bike': ((1002, 328), (1930, 762), (68, 762)),
     'run': ((996, 333), (1932, 781), (68, 776)),   # on the floor, not the skirting's top (2026-11-13)
     'pool': ((1005, 326), (1945, 772), (60, 770)),
+    'club': ((989, 424), (1954, 862), (47, 854)),   # the club room (Robots/CLUB), its levels 1-9 not upscaled: x2 by Lanczos
 }
 WATER = {'pool': ((1552, 688), (1768, 795), (1062, 1150), (838, 1046))}   # back, right, front, left
 

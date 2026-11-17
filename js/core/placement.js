@@ -252,10 +252,10 @@ const ITEMS = [
   // the kitchen's first two (Items/z_GLB MODELS/map assets, tools/render-items/render-grounds.py)
   stashed('room-pantry', 'locker', 1, 2, 0.8),
   stashed('room-smoothie-bar', 'locker', 2, 2, 0.9),
-  // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py).
-  // Until the club room is built they stand in the locker room. Bar-top pieces stand on the floor
-  // for now (the game can't stack items yet).
-  ...CLUB_ITEMS.map(([id, w, h, tags = '']) => stashed(id, 'locker', w, h, 0.88, {
+  // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py): they
+  // belong in the club room (in the club house). Bar-top pieces stand on the floor for now (the game
+  // can't stack items yet).
+  ...CLUB_ITEMS.map(([id, w, h, tags = '']) => stashed(id, 'club', w, h, 0.88, {
     sides: 4, club: true, ...(tags.includes('flat') ? { flat: true } : {}), ...(tags.includes('top') ? { barTop: true } : {}),
   })),
 ];

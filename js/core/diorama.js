@@ -39,6 +39,16 @@ export function towerPieces(n) {
   return out;
 }
 
+/** The railing along the front of floor n's slab (its storey's parapet), drawn over the room standing
+ *  on it, in the storey's own box. Floor 0 stands on the ground floor's roof, which has none. */
+export function parapetOf(n) {
+  if (n < 1) return null;
+  const s = STOREYS[Math.min(n - 1, STOREYS.length - 1)];
+  if (!s.parapet) return null;
+  const [x, y] = onBase(A1, A1, upTo(n - 1));
+  return { src: s.parapet, x: +(x - s.ax).toFixed(1), y: +(y - s.ay).toFixed(1), w: s.w, h: s.h };
+}
+
 /** Floor n's roof, the slab its room stands on, in world px. */
 export function slabOf(n) {
   const up = upTo(n);
@@ -52,10 +62,25 @@ export const CITY_TILES = [...ISLAND_ART.tiles]
 // how far in you can zoom: until one tile of the room is this many px across on the screen
 const TILE_ZOOM = 68;
 const cityEnv = (n, geom) => ({ src: CITY_TILES[0].src, tiles: CITY_TILES, x0: CITY.x0, y0: CITY.y0, w: CITY.w, h: CITY.h,
-  maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (slabOf(n).right[0] - slabOf(n).left[0])) / ROOM_GEOMETRY[geom].cols), plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n) });
+  maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (slabOf(n).right[0] - slabOf(n).left[0])) / ROOM_GEOMETRY[geom].cols), plot: slabOf(n), floorShare: 0.5, floor: n, slabView: 1.15, tower: towerPieces(n), rail: parapetOf(n) ? { front: parapetOf(n) } : null });
 
 /** The world a room stands in: its floor of the city, or the terrain for a room with no floor yet. */
-export const envFor = (room, geom = stageGeom(room)) => (room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
+// The club room stands on the club house's own plot, on the ground (the club house is drawn away
+// while you're in it): a slab the club house's size (cut-grounds.py BUILDINGS.club side), the whole
+// base beside it at its full height.
+export const CLUB_SIDE = 0.84;
+function clubSlab() {
+  const [x, y] = PLOTS.club;
+  const hw = CLUB_SIDE * UNIT; const hh = CLUB_SIDE * SLOPE * UNIT;
+  return { top: [x, y - 2 * hh], right: [x + hw, y - hh], bottom: [x, y], left: [x - hw, y - hh] };
+}
+const clubEnv = (geom) => {
+  const plot = clubSlab();
+  return { src: CITY_TILES[0].src, tiles: CITY_TILES, x0: CITY.x0, y0: CITY.y0, w: CITY.w, h: CITY.h,
+    maxS: TILE_ZOOM / (((ROOM_GEOMETRY[geom].share ?? 0.5) * (plot.right[0] - plot.left[0])) / ROOM_GEOMETRY[geom].cols),
+    plot, floorShare: 0.5, floor: 0, club: true, slabView: 1.15, tower: towerPieces(STOREYS.length), rail: null };
+};
+export const envFor = (room, geom = stageGeom(room)) => (room === 'club' ? clubEnv(geom) : room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
 
 export const MAX_ZOOM = 2.5; // × the smallest zoom, in a world with no zoom of its own (the terrain)
 
@@ -68,6 +93,7 @@ export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
  * to the back 8 × 8.
  */
 export const stageGeom = (room, size = false, taped = false) => {
+  if (room === 'club') return 'club-32';   // the club room is always its whole 32 x 32 room
   if (taped) return `${room}-16-tape`;
   if (size) return size === 32 ? `${room}-32` : `${room}-16`;
   return room === 'locker' ? 'locker-square' : room;

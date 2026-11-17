@@ -40,12 +40,12 @@ export function towerPieces(n) {
 }
 
 /** The railing along the front of floor n's slab (its storey's parapet), drawn over the room standing
- *  on it, in the storey's own box. Floor 0 stands on the ground floor's roof, which has none. */
+ *  on it, in the storey's own box. Floor 0, on the ground floor's roof (same footprint), has the first
+ *  storey's railing, set as if that storey stood under it. */
 export function parapetOf(n) {
-  if (n < 1) return null;
-  const s = STOREYS[Math.min(n - 1, STOREYS.length - 1)];
-  if (!s.parapet) return null;
-  const [x, y] = onBase(A1, A1, upTo(n - 1));
+  const s = STOREYS[Math.min(Math.max(n, 1) - 1, STOREYS.length - 1)];
+  if (!s?.parapet) return null;
+  const [x, y] = onBase(A1, A1, upTo(n) - s.wall);
   return { src: s.parapet, x: +(x - s.ax).toFixed(1), y: +(y - s.ay).toFixed(1), w: s.w, h: s.h };
 }
 

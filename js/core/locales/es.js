@@ -3087,7 +3087,7 @@ es.cp.stashed = "{name} está en tu almacén";
 es.cp.display = {"title": "Vitrina de trofeos", "about": "Elige los {n} trofeos que verá la gente cuando visite tu base.", "shelfAria": "{n} de {slots} trofeos expuestos", "yours": "Tus trofeos", "none": "Primero gana un trofeo: te esperará aquí.", "full": "La vitrina está llena: caben {n}. Quita uno primero.", "remove": "Quita {name} de la vitrina"};
 Object.assign(es.cp.expand, {"tapeOn": "Admin: ver el 8 × 8 con cinta", "tapeOff": "Admin: quitar la vista con cinta"});
 es.gear.tab["stash"] = "Almacén";
-Object.assign(es.gear, {"place": "Colocar", "placeAria": "Coloca {name} en esta sala", "invNoStash": "No hay nada guardado. Toca un objeto de tu base y pulsa Guardar.", "noRoomForIt": "Aquí no cabe. Prueba otra sala o guarda algo."});
+Object.assign(es.gear, {"place": "Colocar", "placeAria": "Coloca {name} en esta sala", "invNoStash": "No hay nada guardado. Toca un objeto de tu base y pulsa Guardar.", "noRoomForIt": "Aquí no cabe. Prueba otra sala o guarda algo.", "clubInventory": "Objetos del club", "invNoClubStash": "Todos tus objetos del club están en la sala del club. Toca uno y pulsa Guardar para traerlo aquí."});
 
 es.wardrobe = {
   "title": "Vestuario",

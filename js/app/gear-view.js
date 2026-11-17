@@ -741,17 +741,19 @@ function stashCard(it) {
  * Open the inventory: what you hold, on the shop's cards (docs/SHOP.md,
  * phase 5). Fuel to use, clothes to wear, gear fitted, base items stashed, one tab each.
  */
-export function openInventory({ tab = 'fuel' } = {}) {
+export function openInventory({ tab = 'fuel', club = false } = {}) {
   let off = null;
   const root = openLayer('inventory', { className: 'gear-layer', sheet: true, onClose: () => off?.() });
-  let view = INV_TABS.includes(tab) ? tab : 'fuel';
+  // the club room has its own: only the club's items, which go nowhere else
+  let view = club ? 'stash' : INV_TABS.includes(tab) ? tab : 'fuel';
+  const title = club ? t('gear.clubInventory') : t('gear.inventory');
   const draw = () => {
     const workouts = store.getWorkouts();
-    if (!gearEnabled()) { shell(root, { title: t('gear.inventory'), icon: 'backpack', id: 'inv-title', body: signInBody(), workouts }); return; }
+    if (!gearEnabled()) { shell(root, { title, icon: 'backpack', id: 'inv-title', body: signInBody(), workouts }); return; }
     const s = gearState();
     const w = walletNow(workouts);
     const empty = (txt, to) => `<div class="sc-empty"><p>${txt}</p>${tapButton(actionButton(t('gear.toShop'), `data-inv-shop="${to}"`, { icon: 'stall', variant: 'gold' }))}</div>`;
-    const tabs = `<div class="gw-tabs sh-tabs is-four" role="tablist" aria-label="${t('gear.inventory')}">${INV_TABS.map((v) =>
+    const tabs = club ? '' : `<div class="gw-tabs sh-tabs is-four" role="tablist" aria-label="${t('gear.inventory')}">${INV_TABS.map((v) =>
       `<button class="gw-tab sh-tab game-tab${v === view ? ' active' : ''}" role="tab" id="inv-tab-${v}" aria-selected="${v === view}" aria-controls="inv-panel" data-inv-tab="${v}"${v === view ? '' : ' tabindex="-1"'}>
         <img src="${TAB_ART(v)}" width="128" height="128" alt="" draggable="false"><span>${t(`gear.tab.${v}`)}</span></button>`).join('')}</div>`;
     let panel;
@@ -772,8 +774,9 @@ export function openInventory({ tab = 'fuel' } = {}) {
       panel = cards.length ? `<div class="sc-grid">${cards.join('')}</div>` : empty(t('gear.invNoClothes'), 'clothes');
     } else if (view === 'stash') {
       const saved = savedPlacements();
-      const held = stashedItems(placeablesFor([...s.inventory, ...baseItemRows()]), saved).map((it) => orient(it, saved[it.id]?.face));
-      panel = held.length ? `<div class="sc-grid">${held.map(stashCard).join('')}</div>` : `<div class="sc-empty"><p>${esc(t('gear.invNoStash'))}</p></div>`;
+      const held = stashedItems(placeablesFor([...s.inventory, ...baseItemRows()]), saved)
+        .filter((it) => (it.home === 'club') === club).map((it) => orient(it, saved[it.id]?.face));
+      panel = held.length ? `<div class="sc-grid">${held.map(stashCard).join('')}</div>` : `<div class="sc-empty"><p>${esc(t(club ? 'gear.invNoClubStash' : 'gear.invNoStash'))}</p></div>`;
     } else {
       const groups = SPORTS.map((sport) => {
         const slots = SLOTS[sport].map((slot) => ({ slot, tier: ownedTier(s.inventory, sport, slot) })).filter((r) => r.tier > 0);
@@ -786,7 +789,7 @@ export function openInventory({ tab = 'fuel' } = {}) {
     }
     const cur = view === 'fuel' ? 'carbs' : 'coins';
     shell(root, {
-      title: t('gear.inventory'), icon: 'backpack', id: 'inv-title', workouts, cls: 'is-shop is-inv', bars: false,
+      title, icon: 'backpack', id: 'inv-title', workouts, cls: 'is-shop is-inv', bars: false,
       foot: walletBar(cur, w[cur], w.cap),
       body: `${tabs}<div id="inv-panel" role="tabpanel" aria-labelledby="inv-tab-${view}">${panel}</div>`,
     });

@@ -458,7 +458,7 @@ export const ISLAND_ART = {
  },
  "pieces": {
   "base": {
-   "src": "icons/Island/base.webp",
+   "src": "icons/Island/base-v2.webp",
    "x": 2746.2,
    "y": 3904.3,
    "w": 2164.0,
@@ -605,7 +605,7 @@ export const ISLAND_ART = {
    "ax": 848.7,
    "ay": 1212.3,
    "wall": 380.0,
-   "parapet": "icons/Island/parapet-1-v3.webp"
+   "parapet": "icons/Island/parapet-1-v4.webp"
   },
   {
    "src": "icons/Island/storey-2-v3.webp",
@@ -614,7 +614,7 @@ export const ISLAND_ART = {
    "ax": 852.7,
    "ay": 1115.5,
    "wall": 290.2,
-   "parapet": "icons/Island/parapet-2-v3.webp"
+   "parapet": "icons/Island/parapet-2-v4.webp"
   },
   {
    "src": "icons/Island/storey-3-v3.webp",
@@ -623,7 +623,7 @@ export const ISLAND_ART = {
    "ax": 876.7,
    "ay": 1213.3,
    "wall": 380.0,
-   "parapet": "icons/Island/parapet-3-v3.webp"
+   "parapet": "icons/Island/parapet-3-v4.webp"
   },
   {
    "src": "icons/Island/storey-4-v3.webp",
@@ -632,7 +632,7 @@ export const ISLAND_ART = {
    "ax": 853.7,
    "ay": 1107.7,
    "wall": 278.4,
-   "parapet": "icons/Island/parapet-4-v3.webp"
+   "parapet": "icons/Island/parapet-4-v4.webp"
   }
  ],
  "unit": 537,

@@ -505,6 +505,7 @@ function onClick(e) {
     case 'open-missions': openMissionBoard(buildCtx()); break;
     case 'pg-base': leaveScene(); break;
     case 'open-inventory': openInventory(); break;
+    case 'open-club-inventory': openInventory({ club: true }); break;
     case 'close-club-room': closeClubRoom(); break;
     case 'open-wardrobe': openWardrobe(); break;
     case 'open-chests': openChestQueue(); break;
@@ -1023,7 +1024,7 @@ function renderSyncBanner() {
 function onAuthChange(user, opts = {}) {
   if (!opts.remote) { appState.lastLevel = null; appState.seen = null; } // no level-up or XP pops on a data swap
   if (user && !opts.remote) { autoStravaSync(); syncQuestClaims({ force: true }); }
-  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); refreshClub(); refreshChests(); } else { stopSocial(); stopRoom(); stopChallenges(); stopClub(); }
+  if (user) { startSocial(); startRoom(); refreshGear(); refreshFeats(); refreshChallenges(); refreshClub(); refreshChests(); refreshPlacements(); } else { stopSocial(); stopRoom(); stopChallenges(); stopClub(); }
   paintBell();
   render();
   if (topLayerName() === 'settings') openSettings();

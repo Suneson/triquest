@@ -3087,7 +3087,7 @@ en.cp.stashed = "{name} is in your stash";
 en.cp.display = {"title": "Trophy cabinet", "about": "Pick the {n} trophies people see when they visit your base.", "shelfAria": "{n} of {slots} trophies on show", "yours": "Your trophies", "none": "Win a trophy first: it will wait for you here.", "full": "The cabinet is full: it holds {n}. Take one off first.", "remove": "Take {name} off the shelf"};
 Object.assign(en.cp.expand, {"tapeOn": "Admin: preview the taped 8 × 8", "tapeOff": "Admin: stop the tape preview"});
 en.gear.tab["stash"] = "Stash";
-Object.assign(en.gear, {"place": "Place", "placeAria": "Place {name} in this room", "invNoStash": "Nothing stashed. Tap an item in your base and press Stash.", "noRoomForIt": "No room for it here. Try another room, or stash something."});
+Object.assign(en.gear, {"place": "Place", "placeAria": "Place {name} in this room", "invNoStash": "Nothing stashed. Tap an item in your base and press Stash.", "noRoomForIt": "No room for it here. Try another room, or stash something.", "clubInventory": "Club items", "invNoClubStash": "All your club items are out in the club room. Tap one and press Stash to put it back here."});
 
 en.wardrobe = {
   "title": "Wardrobe",

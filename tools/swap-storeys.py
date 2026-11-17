@@ -22,7 +22,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, 'icons', 'Island')
 ART_JS = os.path.join(REPO, 'js', 'core', 'island-art.js')
 PAD = 60
-V = 'v3'          # the pictures' version, in their names
+V = 'v4'          # the pictures' version, in their names
 
 spec = importlib.util.spec_from_file_location('key_paint', os.path.join(REPO, 'tools', 'key-paint.py'))
 kp = importlib.util.module_from_spec(spec); spec.loader.exec_module(kp)
@@ -60,6 +60,22 @@ def front_only(im):
     return Image.fromarray(a, 'RGBA')
 
 
+RAIL_DROP = 31   # px the railing's foot stands below the roof's front corner (as on the bike floor, which looks right)
+
+
+def align_rail(im, st):
+    """The railing moved so its front foot stands on the storey's roof edge (the repaint drew some at
+    the cornice, a storey's band lower: they hung under the room's floor)."""
+    a = np.asarray(im)
+    on = a[..., 3] > 128
+    ys, xs = np.where(on)
+    fy = ys.max(); fx = xs[ys >= fy - 2].mean()
+    dx, dy = round(st['ax'] - fx), round(st['ay'] - st['wall'] + RAIL_DROP - fy)
+    out = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    out.paste(im, (dx, dy))
+    return out
+
+
 def solid_rail(im):
     """The railing as a solid wall: the gaps between its balusters filled with its own stone in shade,
     so the room behind doesn't show through (its floor doesn't line up with the storey's roof)."""
@@ -83,7 +99,7 @@ def main(rep, green):
         # storey under a new railing doesn't line up
         im.save(os.path.join(OUT, f'storey-{i}-{V}.webp'), quality=84, alpha_quality=90, method=6)
         st['src'] = f'icons/Island/storey-{i}-{V}.webp'
-        rail = solid_rail(front_only(back_to_frame(os.path.join(rep, f'building-parapet-{i}.jpg'), fitted, cur.size)))
+        rail = align_rail(solid_rail(front_only(back_to_frame(os.path.join(rep, f'building-parapet-{i}.jpg'), fitted, cur.size))), st)
         rail.save(os.path.join(OUT, f'parapet-{i}-{V}.webp'), quality=84, alpha_quality=90, method=6)
         st['parapet'] = f'icons/Island/parapet-{i}-{V}.webp'
         print(i, im.size)

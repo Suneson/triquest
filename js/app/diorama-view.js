@@ -968,7 +968,33 @@ export function wireDiorama(root, ctx) {
     const id = stage.gl.pick(p.x, p.y, (e.pointerType === 'mouse' ? 2 : 8) / view.v.s);
     return id ? worldEl.querySelector(`[data-item="${CSS.escape(id)}"]`) : null;
   };
+  // A fling: let go of a pan while moving and the camera glides on, slowing like a native scroll
+  // view (its speed falls by FRICTION each millisecond), till it stops or meets the world's edge.
+  // Any new touch catches it.
+  const FRICTION = 0.9965;
+  let glide = 0;
+  const stopGlide = () => { if (glide) cancelAnimationFrame(glide); glide = 0; };
+  const fling = (vx, vy) => {
+    stopGlide();
+    if (reduced() || Math.hypot(vx, vy) < 0.25) return;
+    let last = performance.now();
+    const step = (now) => {
+      if (!vp.isConnected) { glide = 0; return; }
+      const dt = Math.min(40, now - last); last = now;
+      const k = FRICTION ** dt;
+      vx *= k; vy *= k;
+      const want = { ...view.v, tx: view.v.tx + vx * dt, ty: view.v.ty + vy * dt };
+      view.v = want; apply();
+      // held at an edge: that way stops
+      const r = box(); const c = clampView(want, r.width, r.height, env);
+      if (Math.abs(c.tx - want.tx) > 0.5) vx = 0;
+      if (Math.abs(c.ty - want.ty) > 0.5) vy = 0;
+      glide = Math.hypot(vx, vy) > 0.02 ? requestAnimationFrame(step) : 0;
+    };
+    glide = requestAnimationFrame(step);
+  };
   vp.onpointerdown = (e) => {
+    stopGlide();
     panned = false; swallow = false;
     if (e.button !== undefined && e.button > 0) return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1010,6 +1036,9 @@ export function wireDiorama(root, ctx) {
     }
     if (g.mode === 'pan' && g.moved) {
       view.v = { ...g.from, tx: g.from.tx + dx, ty: g.from.ty + dy }; apply();
+      // the finger's last 80 ms, for the fling's speed
+      (g.trail ||= []).push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+      while (g.trail.length > 2 && e.timeStamp - g.trail[0].t > 80) g.trail.shift();
     } else if (g.mode === 'drag' && g.moved) {
       g.cx = e.clientX; g.cy = e.clientY;
       if (!g.edgeLoop) g.edgeLoop = requestAnimationFrame(edgePan);
@@ -1061,6 +1090,12 @@ export function wireDiorama(root, ctx) {
       return;
     }
     if (done.mode === 'pan' && !done.moved) { if (done.item) select(done.item); else deselect(); }
+    if (done.mode === 'pan' && done.moved && done.trail?.length > 1 && pts.size === 0) {
+      const a = done.trail[0]; const b = done.trail[done.trail.length - 1];
+      const dt = b.t - a.t;
+      // a finger that stopped before letting go doesn't fling
+      if (dt > 8 && e.timeStamp - b.t < 60) fling((b.x - a.x) / dt, (b.y - a.y) / dt);
+    }
   };
   vp.onpointerup = end;
   vp.onpointercancel = (e) => { if (g?.mode === 'drag') cancelDrag(); pts.delete(e.pointerId); g = null; };

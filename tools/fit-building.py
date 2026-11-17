@@ -30,6 +30,7 @@ ART_JS = os.path.join(REPO, 'js', 'core', 'island-art.js')
 STORE = {'ground': 1.0, 'storey': 1.0}       # stored px per world px
 # no storey's walls taller than this (world px): a taller repaint is squashed to it, so the floors
 # stay much of a height (storey 2 and 4 are 280-290)
+FLIP = os.environ.get('FIT_FLIP', '1') == '1'   # mirror the storeys (see the loop)
 MAX_WALL = float(os.environ.get('FIT_MAX_WALL', 380))
 MARGIN = 40                                   # world px each face reaches past its corners (cornices, rails)
 
@@ -169,7 +170,15 @@ def main():
         HULL = {'T', 'L', 'R', 'BL', 'BF', 'BR'}; MARGIN_PX = MARGIN * k
         c = tuple(np.mean([d[n] for n in HULL], axis=0))
         faces = [[('L', 'F', 'BF'), ('L', 'BF', 'BL')], [('F', 'R', 'BR'), ('F', 'BR', 'BF')], [('T', 'L', 'F'), ('T', 'F', 'R')]]
-        im = fit(keyed(os.path.join(rep, name + '.jpg')), p, d, faces, size, c, roof_fill=('T', 'L', 'F', 'R'))
+        src = keyed(os.path.join(rep, name + '.jpg'))
+        if FLIP:
+            # the storeys were painted lit from the right; the ground floor and the map from the left.
+            # Mirrored, the sunny face is the left one (the facades are symmetric enough not to show it)
+            W = src.shape[1]
+            src = np.ascontiguousarray(src[:, ::-1])
+            m = {n: (W - 1 - q[0], q[1]) for n, q in p.items()}
+            p = {**m, 'L': m['R'], 'R': m['L'], 'BL': m['BR'], 'BR': m['BL']}
+        im = fit(src, p, d, faces, size, c, roof_fill=('T', 'L', 'F', 'R'))
         bb = im.getchannel('A').point(lambda v: 255 if v > 3 else 0).getbbox()
         im = im.crop(bb)
         out = f'storey-{i}'

@@ -44,6 +44,7 @@ import { syncQuestClaims } from './quest-sync.js';
 import { openMissionBoard, maybeShowRecap, BOARD_ART } from './missions-view.js';
 import { withTabTransition, rollNum, animateIn, busy } from './motion.js';
 import { wireTabSwipe } from './tab-swipe.js';
+import { maybeFpsMeter } from './fps-meter.js';
 import { openSeasonPath } from './game.js';
 import { openLayer, closeLayer, closeAllLayers, hasLayers, topLayerName, openRoute, leaveRoute } from './nav.js';
 import { haptic } from './haptics.js';
@@ -1079,6 +1080,7 @@ function maybeOnboard() {
 // ---- boot -------------------------------------------------------------------
 
 async function boot() {
+  maybeFpsMeter();   // ?fps=1: a frame meter, for testing on a phone
   // ?demo=1 only: a hook so screenshots and clips can show moments on demand
   if (new URLSearchParams(location.search).has('demo')) window.moskeDemo = { levelUp: (sport = 'run', level = 3) => openLevelUp(sport, level) };
   await store.init();
@@ -1164,11 +1166,12 @@ async function boot() {
 
   // gear and gels: re-render when the server copy changes; a gel running out redraws too
   onGear(() => render());
-  // swipe between the dock's tabs (not over HOME's stage, nor while anything is open)
+  // swipe between the dock's tabs (never from Home, whose base takes every drag: the camera, the
+  // floor picker; nor while anything is open)
   wireTabSwipe(document.getElementById('view'), {
     current: () => appState.tab,
     go: goTab,
-    blocked: () => hasLayers() || (appState.tab === 'progress' && appState.pgView === 'scene'),
+    blocked: () => hasLayers() || appState.tab === 'progress',
     label: (key) => t(key),
   });
   // the stage's room buttons switch the room on the Profile tab

@@ -38,7 +38,7 @@ PAD = 8                                 # px of the map each tile overlaps its n
 #   market: the kiosk, tucked in on the forecourt just right of the upper stairs
 # The coliseum is painted on the map, so it only has a button.
 BUILDINGS = {
-    'club':   {'render': 'clubhouse-L4-paint', 'mid': (2480, 5490), 'side': 0.84},   # the repaint (tools/key-paint.py), its back to the terrace's wall
+    'club':   {'render': 'clubhouse-L4-bridge', 'mid': (2600, 5431), 'side': 0.84},   # its back to the terrace's wall
     'market': {'render': 'shop-kiosk-L1-a', 'mid': (3800, 5060), 'side': 0.4},
 }
 # what brings the deliveries (js/app/city2d.js): pictures that move along a road, each anchored at

@@ -486,7 +486,8 @@ export function wireDiorama(root, ctx) {
   const envKey = parts.map((p) => p.src).join('|');
   if (envImg.dataset.key !== envKey) {
     envImg.dataset.key = envKey;
-    envImg.innerHTML = parts.map((p) => `<img src="${p.src}" alt="" draggable="false" decoding="async"
+    // each tile starts as its small copy; cull() swaps in the full one once zoomed in on it
+    envImg.innerHTML = parts.map((p) => `<img src="${p.small || p.src}" data-full="${p.src}" data-small="${p.small || p.src}" alt="" draggable="false" decoding="async"
       style="left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px">`).join('');
   }
   // the tower's storeys and its roof slab, stacked on the street floor for this room's floor
@@ -811,6 +812,8 @@ export function wireDiorama(root, ctx) {
     const mx = (r.width / v.s) * 0.5; const my = (r.height / v.s) * 0.5;
     const x0 = -v.tx / v.s - mx; const x1 = (r.width - v.tx) / v.s + mx;
     const y0 = -v.ty / v.s - my; const y1 = (r.height - v.ty) / v.s + my;
+    // the small tiles hold 0.22 px per px of the world: enough till the screen shows more than that
+    const sharp = v.s * (window.devicePixelRatio || 1) > 0.26;
     for (const el of worldEl.querySelectorAll(CULLED)) {
       const st = el.style;
       const l = parseFloat(st.left); const tp = parseFloat(st.top); const w = parseFloat(st.width);
@@ -819,6 +822,14 @@ export function wireDiorama(root, ctx) {
       const h = parseFloat(st.height) || (el.naturalWidth ? (w * el.naturalHeight) / el.naturalWidth : w);
       const off = l > x1 || l + w < x0 || tp > y1 || tp + h < y0;
       if (el.classList.contains('is-culled') !== off) el.classList.toggle('is-culled', off);
+      // a map tile: its full picture only on the screen and zoomed in enough to need it, else its
+      // small copy (a tenth of the memory). Zoomed out the whole map is on the screen, and its 54
+      // full tiles (some 150 MB decoded) were more than an iPhone lets a page keep.
+      if (el.dataset.full) {
+        const seen = !(l > x1 - mx || l + w < x0 + mx || tp > y1 - my || tp + h < y0 + my);   // on the screen itself
+        const want = seen && sharp ? el.dataset.full : el.dataset.small;
+        if (el.getAttribute('src') !== want) el.setAttribute('src', want);
+      }
     }
   };
   const apply = () => {

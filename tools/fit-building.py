@@ -28,6 +28,9 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(REPO, 'icons', 'Island')
 ART_JS = os.path.join(REPO, 'js', 'core', 'island-art.js')
 STORE = {'ground': 1.0, 'storey': 1.0}       # stored px per world px
+# no storey's walls taller than this (world px): a taller repaint is squashed to it, so the floors
+# stay much of a height (storey 2 and 4 are 280-290)
+MAX_WALL = float(os.environ.get('FIT_MAX_WALL', 380))
 MARGIN = 40                                   # world px each face reaches past its corners (cornices, rails)
 
 # measured on each repaint: the roof's corners (T top, L left, R right, F front) and the wall's
@@ -43,6 +46,12 @@ POINTS = {
                           'BL': (88, 1050), 'BF': (1250, 1625), 'BR': (2420, 1025)},
     'building-storey-3': {'T': (1200, 88), 'L': (180, 583), 'R': (2220, 583), 'F': (1200, 1063),
                           'BL': (125, 1150), 'BF': (1200, 1725), 'BR': (2280, 1150)},
+    # the v2 remakes (repaint-building-v2.csv): storey 1 on storey 2's frame but its walls twice as
+    # tall; storey 3 back on its old frame
+    'building-storey-1-v2': {'T': (1262, 75), 'L': (90, 395), 'R': (2430, 395), 'F': (1258, 745),
+                             'BL': (105, 1088), 'BF': (1258, 1625), 'BR': (2405, 1090)},
+    'building-storey-3-v2': {'T': (1200, 88), 'L': (180, 583), 'R': (2220, 583), 'F': (1200, 1063),
+                             'BL': (125, 1150), 'BF': (1200, 1725), 'BR': (2280, 1150)},
     'building-storey-4': {'T': (1250, 100), 'L': (113, 663), 'R': (2420, 655), 'F': (1263, 1195),
                           'BL': (88, 1025), 'BF': (1263, 1613), 'BR': (2430, 1025)},
 }
@@ -147,7 +156,7 @@ def main():
         else:
             p = dict(POINTS[name])
         p.setdefault('T', tuple(np.add(p['L'], p['R']) - np.array(p['F'])))
-        wall = wall_of(p)
+        wall = min(wall_of(p), MAX_WALL)
         k = STORE['storey']
         # world, with the storey's foot at up 0
         w = {'T': on(A0, A0, wall), 'L': on(A0, A1, wall), 'R': on(A1, A0, wall), 'F': on(A1, A1, wall),

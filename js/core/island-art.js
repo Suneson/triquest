@@ -7,6 +7,7 @@ export const ISLAND_ART = {
  "tiles": [
   {
    "src": "icons/Island/ground-0-0.webp",
+   "small": "icons/Island/ground-0-0-s.webp",
    "x": 0.0,
    "y": 0.0,
    "w": 1279.1,
@@ -14,6 +15,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-0-1.webp",
+   "small": "icons/Island/ground-0-1-s.webp",
    "x": 1270.8,
    "y": 0.0,
    "w": 1279.1,
@@ -21,6 +23,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-0-2.webp",
+   "small": "icons/Island/ground-0-2-s.webp",
    "x": 2541.5,
    "y": 0.0,
    "w": 1279.1,
@@ -28,6 +31,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-0-3.webp",
+   "small": "icons/Island/ground-0-3-s.webp",
    "x": 3812.3,
    "y": 0.0,
    "w": 1279.1,
@@ -35,6 +39,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-0-4.webp",
+   "small": "icons/Island/ground-0-4-s.webp",
    "x": 5083.0,
    "y": 0.0,
    "w": 1279.1,
@@ -42,6 +47,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-0-5.webp",
+   "small": "icons/Island/ground-0-5-s.webp",
    "x": 6353.8,
    "y": 0.0,
    "w": 1270.8,
@@ -49,6 +55,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-1-0.webp",
+   "small": "icons/Island/ground-1-0-s.webp",
    "x": 0.0,
    "y": 1218.8,
    "w": 1279.1,
@@ -56,6 +63,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-1-1.webp",
+   "small": "icons/Island/ground-1-1-s.webp",
    "x": 1270.8,
    "y": 1218.8,
    "w": 1279.1,
@@ -63,6 +71,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-1-2.webp",
+   "small": "icons/Island/ground-1-2-s.webp",
    "x": 2541.5,
    "y": 1218.8,
    "w": 1279.1,
@@ -70,6 +79,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-1-3.webp",
+   "small": "icons/Island/ground-1-3-s.webp",
    "x": 3812.3,
    "y": 1218.8,
    "w": 1279.1,
@@ -77,6 +87,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-1-4.webp",
+   "small": "icons/Island/ground-1-4-s.webp",
    "x": 5083.0,
    "y": 1218.8,
    "w": 1279.1,
@@ -84,6 +95,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-1-5.webp",
+   "small": "icons/Island/ground-1-5-s.webp",
    "x": 6353.8,
    "y": 1218.8,
    "w": 1270.8,
@@ -91,6 +103,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-2-0.webp",
+   "small": "icons/Island/ground-2-0-s.webp",
    "x": 0.0,
    "y": 2438.7,
    "w": 1279.1,
@@ -98,6 +111,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-2-1.webp",
+   "small": "icons/Island/ground-2-1-s.webp",
    "x": 1270.8,
    "y": 2438.7,
    "w": 1279.1,
@@ -105,6 +119,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-2-2.webp",
+   "small": "icons/Island/ground-2-2-s.webp",
    "x": 2541.5,
    "y": 2438.7,
    "w": 1279.1,
@@ -112,6 +127,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-2-3.webp",
+   "small": "icons/Island/ground-2-3-s.webp",
    "x": 3812.3,
    "y": 2438.7,
    "w": 1279.1,
@@ -119,6 +135,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-2-4.webp",
+   "small": "icons/Island/ground-2-4-s.webp",
    "x": 5083.0,
    "y": 2438.7,
    "w": 1279.1,
@@ -126,6 +143,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-2-5.webp",
+   "small": "icons/Island/ground-2-5-s.webp",
    "x": 6353.8,
    "y": 2438.7,
    "w": 1270.8,
@@ -133,6 +151,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-3-0.webp",
+   "small": "icons/Island/ground-3-0-s.webp",
    "x": 0.0,
    "y": 3657.6,
    "w": 1279.1,
@@ -140,6 +159,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-3-1.webp",
+   "small": "icons/Island/ground-3-1-s.webp",
    "x": 1270.8,
    "y": 3657.6,
    "w": 1279.1,
@@ -147,6 +167,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-3-2.webp",
+   "small": "icons/Island/ground-3-2-s.webp",
    "x": 2541.5,
    "y": 3657.6,
    "w": 1279.1,
@@ -154,6 +175,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-3-3.webp",
+   "small": "icons/Island/ground-3-3-s.webp",
    "x": 3812.3,
    "y": 3657.6,
    "w": 1279.1,
@@ -161,6 +183,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-3-4.webp",
+   "small": "icons/Island/ground-3-4-s.webp",
    "x": 5083.0,
    "y": 3657.6,
    "w": 1279.1,
@@ -168,6 +191,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-3-5.webp",
+   "small": "icons/Island/ground-3-5-s.webp",
    "x": 6353.8,
    "y": 3657.6,
    "w": 1270.8,
@@ -175,6 +199,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-4-0.webp",
+   "small": "icons/Island/ground-4-0-s.webp",
    "x": 0.0,
    "y": 4877.5,
    "w": 1279.1,
@@ -182,6 +207,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-4-1.webp",
+   "small": "icons/Island/ground-4-1-s.webp",
    "x": 1270.8,
    "y": 4877.5,
    "w": 1279.1,
@@ -189,6 +215,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-4-2.webp",
+   "small": "icons/Island/ground-4-2-s.webp",
    "x": 2541.5,
    "y": 4877.5,
    "w": 1279.1,
@@ -196,6 +223,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-4-3.webp",
+   "small": "icons/Island/ground-4-3-s.webp",
    "x": 3812.3,
    "y": 4877.5,
    "w": 1279.1,
@@ -203,6 +231,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-4-4.webp",
+   "small": "icons/Island/ground-4-4-s.webp",
    "x": 5083.0,
    "y": 4877.5,
    "w": 1279.1,
@@ -210,6 +239,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-4-5.webp",
+   "small": "icons/Island/ground-4-5-s.webp",
    "x": 6353.8,
    "y": 4877.5,
    "w": 1270.8,
@@ -217,6 +247,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-5-0.webp",
+   "small": "icons/Island/ground-5-0-s.webp",
    "x": 0.0,
    "y": 6096.3,
    "w": 1279.1,
@@ -224,6 +255,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-5-1.webp",
+   "small": "icons/Island/ground-5-1-s.webp",
    "x": 1270.8,
    "y": 6096.3,
    "w": 1279.1,
@@ -231,6 +263,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-5-2.webp",
+   "small": "icons/Island/ground-5-2-s.webp",
    "x": 2541.5,
    "y": 6096.3,
    "w": 1279.1,
@@ -238,6 +271,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-5-3.webp",
+   "small": "icons/Island/ground-5-3-s.webp",
    "x": 3812.3,
    "y": 6096.3,
    "w": 1279.1,
@@ -245,6 +279,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-5-4.webp",
+   "small": "icons/Island/ground-5-4-s.webp",
    "x": 5083.0,
    "y": 6096.3,
    "w": 1279.1,
@@ -252,6 +287,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-5-5.webp",
+   "small": "icons/Island/ground-5-5-s.webp",
    "x": 6353.8,
    "y": 6096.3,
    "w": 1270.8,
@@ -259,6 +295,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-6-0.webp",
+   "small": "icons/Island/ground-6-0-s.webp",
    "x": 0.0,
    "y": 7316.2,
    "w": 1279.1,
@@ -266,6 +303,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-6-1.webp",
+   "small": "icons/Island/ground-6-1-s.webp",
    "x": 1270.8,
    "y": 7316.2,
    "w": 1279.1,
@@ -273,6 +311,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-6-2.webp",
+   "small": "icons/Island/ground-6-2-s.webp",
    "x": 2541.5,
    "y": 7316.2,
    "w": 1279.1,
@@ -280,6 +319,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-6-3.webp",
+   "small": "icons/Island/ground-6-3-s.webp",
    "x": 3812.3,
    "y": 7316.2,
    "w": 1279.1,
@@ -287,6 +327,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-6-4.webp",
+   "small": "icons/Island/ground-6-4-s.webp",
    "x": 5083.0,
    "y": 7316.2,
    "w": 1279.1,
@@ -294,6 +335,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-6-5.webp",
+   "small": "icons/Island/ground-6-5-s.webp",
    "x": 6353.8,
    "y": 7316.2,
    "w": 1270.8,
@@ -301,6 +343,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-7-0.webp",
+   "small": "icons/Island/ground-7-0-s.webp",
    "x": 0.0,
    "y": 8535.0,
    "w": 1279.1,
@@ -308,6 +351,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-7-1.webp",
+   "small": "icons/Island/ground-7-1-s.webp",
    "x": 1270.8,
    "y": 8535.0,
    "w": 1279.1,
@@ -315,6 +359,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-7-2.webp",
+   "small": "icons/Island/ground-7-2-s.webp",
    "x": 2541.5,
    "y": 8535.0,
    "w": 1279.1,
@@ -322,6 +367,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-7-3.webp",
+   "small": "icons/Island/ground-7-3-s.webp",
    "x": 3812.3,
    "y": 8535.0,
    "w": 1279.1,
@@ -329,6 +375,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-7-4.webp",
+   "small": "icons/Island/ground-7-4-s.webp",
    "x": 5083.0,
    "y": 8535.0,
    "w": 1279.1,
@@ -336,6 +383,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-7-5.webp",
+   "small": "icons/Island/ground-7-5-s.webp",
    "x": 6353.8,
    "y": 8535.0,
    "w": 1270.8,
@@ -343,6 +391,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-8-0.webp",
+   "small": "icons/Island/ground-8-0-s.webp",
    "x": 0.0,
    "y": 9754.9,
    "w": 1279.1,
@@ -350,6 +399,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-8-1.webp",
+   "small": "icons/Island/ground-8-1-s.webp",
    "x": 1270.8,
    "y": 9754.9,
    "w": 1279.1,
@@ -357,6 +407,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-8-2.webp",
+   "small": "icons/Island/ground-8-2-s.webp",
    "x": 2541.5,
    "y": 9754.9,
    "w": 1279.1,
@@ -364,6 +415,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-8-3.webp",
+   "small": "icons/Island/ground-8-3-s.webp",
    "x": 3812.3,
    "y": 9754.9,
    "w": 1279.1,
@@ -371,6 +423,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-8-4.webp",
+   "small": "icons/Island/ground-8-4-s.webp",
    "x": 5083.0,
    "y": 9754.9,
    "w": 1279.1,
@@ -378,6 +431,7 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/ground-8-5.webp",
+   "small": "icons/Island/ground-8-5-s.webp",
    "x": 6353.8,
    "y": 9754.9,
    "w": 1270.8,
@@ -390,8 +444,8 @@ export const ISLAND_ART = {
    4773.8
   ],
   "club": [
-   2128.3,
-   6946.1
+   2574.7,
+   6728.0
   ],
   "market": [
    3945.2,
@@ -412,17 +466,17 @@ export const ISLAND_ART = {
   },
   "club": {
    "src": "icons/Island/club.webp",
-   "x": 1537.8,
-   "y": 6071.6,
-   "w": 1016.6,
-   "h": 963.7
+   "x": 1986.1,
+   "y": 5803.6,
+   "w": 965.4,
+   "h": 961.4
   },
   "club-ruin": {
    "src": "icons/Island/club-ruin.webp",
-   "x": 1537.8,
-   "y": 6071.6,
-   "w": 1016.6,
-   "h": 963.7
+   "x": 1986.1,
+   "y": 5803.6,
+   "w": 965.4,
+   "h": 961.4
   },
   "market": {
    "src": "icons/Island/market.webp",
@@ -503,8 +557,8 @@ export const ISLAND_ART = {
      7042.1
     ],
     [
-     1671.5,
-     6985.0
+     2117.9,
+     6767.0
     ]
    ],
    "stop": 2
@@ -546,11 +600,11 @@ export const ISLAND_ART = {
  "storeys": [
   {
    "src": "icons/Island/storey-1.webp",
-   "w": 1740.0,
-   "h": 1551.0,
-   "ax": 864.7,
-   "ay": 1543.6,
-   "wall": 712.3
+   "w": 1696.0,
+   "h": 1215.0,
+   "ax": 846.7,
+   "ay": 1212.3,
+   "wall": 380.0
   },
   {
    "src": "icons/Island/storey-2.webp",
@@ -562,11 +616,11 @@ export const ISLAND_ART = {
   },
   {
    "src": "icons/Island/storey-3.webp",
-   "w": 1753.0,
-   "h": 1338.0,
-   "ax": 875.7,
-   "ay": 1325.0,
-   "wall": 491.7
+   "w": 1754.0,
+   "h": 1224.0,
+   "ax": 876.7,
+   "ay": 1213.3,
+   "wall": 380.0
   },
   {
    "src": "icons/Island/storey-4.webp",

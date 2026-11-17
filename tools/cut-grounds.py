@@ -28,6 +28,7 @@ MAP_BASE = (3683.5, 3825.0 + MAP_DY)    # in px of the map: the plinth's left an
 BASE = (round(MAP_BASE[0] * MAP_K, 1), round(MAP_BASE[1] * MAP_K - 5, 1))   # the middle of the base's plot
 GRID = 6                                # the map in 6 tiles across (and as many down as keeps them square)
 LAND_K, SEA_K = 0.75, 0.375             # stored px per px of the map: land tiles, and tiles of open sea
+SMALL = 0.3                             # each tile's small copy, for a zoomed-out view: this much of its size
 PAD = 8                                 # px of the map each tile overlaps its neighbours by
 
 # the buildings on the map, rendered from their Tripo models (tools/render-items/render-grounds.py).
@@ -37,7 +38,7 @@ PAD = 8                                 # px of the map each tile overlaps its n
 #   market: the kiosk, tucked in on the forecourt just right of the upper stairs
 # The coliseum is painted on the map, so it only has a button.
 BUILDINGS = {
-    'club':   {'render': 'clubhouse-L4-bridge', 'mid': (2050, 5700), 'side': 0.84},
+    'club':   {'render': 'clubhouse-L4-paint', 'mid': (2480, 5490), 'side': 0.84},   # the repaint (tools/key-paint.py), its back to the terrace's wall
     'market': {'render': 'shop-kiosk-L1-a', 'mid': (3800, 5060), 'side': 0.4},
 }
 # what brings the deliveries (js/app/city2d.js): pictures that move along a road, each anchored at
@@ -52,7 +53,7 @@ VEHICLES = {
 # their roads, in px of the map; `stop` is the point it waits at
 ROUTES = {
     'boat': {'path': [(-260, 9650), (5610, 6590), (7780, 5460)], 'stop': 1},
-    'bike': {'path': [(-200, 6645), (1550, 6005), (1610, 5950)], 'stop': 2},
+    'bike': {'path': [(-200, 6645), (1550, 6005), (2040, 5740)], 'stop': 2},
 }
 STORE_K = 0.75                           # stored px per world px
 STADIUM = (4740, 1350, 6750, 2820)       # the coliseum's button: left, top, right, bottom
@@ -97,7 +98,8 @@ def ground(src):
             k = LAND_K if land[box[1] // 8:box[3] // 8, box[0] // 8:box[2] // 8].mean() > 0.04 else SEA_K
             t = im.crop(box)
             save(t.resize((round(t.width * k), round(t.height * k)), Image.LANCZOS), f'ground-{r}-{c}', 84)
-            tiles.append({'src': f'icons/Island/ground-{r}-{c}.webp', 'x': round(box[0] * MAP_K, 1), 'y': round(box[1] * MAP_K, 1),
+            save(t.resize((round(t.width * k * SMALL), round(t.height * k * SMALL)), Image.LANCZOS), f'ground-{r}-{c}-s', 80)
+            tiles.append({'src': f'icons/Island/ground-{r}-{c}.webp', 'small': f'icons/Island/ground-{r}-{c}-s.webp', 'x': round(box[0] * MAP_K, 1), 'y': round(box[1] * MAP_K, 1),
                           'w': round(t.width * MAP_K, 1), 'h': round(t.height * MAP_K, 1)})
     return tiles, (round(im.width * MAP_K), round(im.height * MAP_K))
 
@@ -188,8 +190,8 @@ def cut(ground_src, renders):
         f.write("// island-art.js: where the club grounds' pictures stand, in world px. Written by tools/cut-grounds.py.\n")
         f.write('export const ISLAND_ART = ' + json.dumps(data, indent=1) + ';\n')
     for f in os.listdir(OUT):                       # tiles of the older 5 x 4 grid the new one doesn't overwrite
-        m = re.fullmatch(r'ground-(\d+)-(\d+)\.webp', f)
-        if m and (int(m[2]) >= GRID or not any(t['src'].endswith(f) for t in tiles)):
+        m = re.fullmatch(r'ground-(\d+)-(\d+)(-s)?\.webp', f)
+        if m and (int(m[2]) >= GRID or not any(t['src'].endswith(f) or t['small'].endswith(f) for t in tiles)):
             os.remove(os.path.join(OUT, f))
     for n, p in pieces.items():
         print(n, p)

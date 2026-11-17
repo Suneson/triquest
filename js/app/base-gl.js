@@ -469,6 +469,8 @@ function build(L, canvas, layer, reduced) {
     const done = (tx) => {
       if (cityTex.get(src) !== t) { tx.dispose(); return; }
       tx.colorSpace = THREE.SRGBColorSpace; tx.flipY = false; tx.needsUpdate = true;
+      // once on the GPU the decoded copy in the page's memory isn't needed: let it go at once
+      tx.onUpdate = () => { tx.source?.data?.close?.(); tx.onUpdate = null; };
       t.tex = tx;
       for (const p of pics.values()) if (p.src === src) { p.mesh.material.map = tx; p.mesh.material.needsUpdate = true; p.mesh.visible = !p.off; p.img.classList.add('gl-on'); }
       dirty = true; wake();
@@ -513,7 +515,8 @@ function build(L, canvas, layer, reduced) {
       p.mesh.position.set(x + w / 2, y + h * 0.75, FAR_Z);
       p.mesh.scale.set(w * k, h * k, 1);
     }
-    p.mesh.visible = !p.off && !!cityTex.get(p.src)?.tex;
+    // a picture swapping to another copy (a map tile's small or full one) keeps the old till the new is in
+    p.mesh.visible = !p.off && !!(cityTex.get(p.src)?.tex || p.mesh.material.map);
   }
   const picGeo = new THREE.BufferGeometry();
   picGeo.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, -0.75, 0, 0.5, -0.75, 0, 0.5, 0.25, 0, -0.5, 0.25, 0], 3));

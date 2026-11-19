@@ -3,7 +3,8 @@ keyed and fitted back onto their Blender renders, so tools/cut-plot.py can place
 
     python tools/render-items/cut-base-repaints.py <repaint dir> <renders dir> <out dir>
 
-<repaint dir>  Base/repaint: <name>.jpg (a newer <name>_v2.jpg wins)
+<repaint dir>  Base/repaint: <name>.jpg (a newer <name>_v2.jpg wins), or Base/repaint2: tries <name>-<k>.png
+[picks]        name-k,name-k: the try to use (default: the one whose shape is closest to the render)
 <renders dir>  render-base-assets.py's <name>-<a|b>.png + .json
 <out dir>      gets <name>-<a|b>.png (the repaint, in the render's frame) + a copy of its json
 
@@ -46,18 +47,44 @@ def warp_onto(im, ren):
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
 
 
+def faces(f):
+    rgb = np.asarray(Image.open(f).convert('RGB'))
+    obj, core, dark = cg.key(rgb)
+    x = cg.split_at(core)
+    return {face: cg.one(rgb[:, sl], obj[:, sl], core[:, sl], dark[:, sl]) for face, sl in (('a', slice(0, x)), ('b', slice(x, None)))}
+
+
+def shape_error(n, ims, renders):
+    """How far a try's height/width is from the render's, worst facing (0.05 = 5%)."""
+    worst = 0
+    for face, im in ims.items():
+        rb, pb = solid_box(Image.open(os.path.join(renders, f'{n}-{face}.png')).convert('RGBA')), solid_box(im)
+        r = ((pb[3] - pb[1]) / (pb[2] - pb[0])) / ((rb[3] - rb[1]) / (rb[2] - rb[0]))
+        worst = max(worst, abs(r - 1))
+    return worst
+
+
 def main():
     src, renders, out = sys.argv[1:4]
+    picks = dict(p.rsplit('-', 1) for p in sys.argv[4].split(',')) if len(sys.argv) > 4 else {}
     os.makedirs(out, exist_ok=True)
-    names = sorted({os.path.basename(f)[:-4].replace('_v2', '') for f in glob.glob(os.path.join(src, '*.jpg'))})
-    for n in names:
-        f = os.path.join(src, f'{n}_v2.jpg')
-        f = f if os.path.exists(f) else os.path.join(src, f'{n}.jpg')
-        rgb = np.asarray(Image.open(f).convert('RGB'))
-        obj, core, dark = cg.key(rgb)
-        x = cg.split_at(core)
-        for face, sl in (('a', slice(0, x)), ('b', slice(x, None))):
-            fit(n, f, face, cg.one(rgb[:, sl], obj[:, sl], core[:, sl], dark[:, sl]), renders, out)
+    files = glob.glob(os.path.join(src, '*.jpg')) + glob.glob(os.path.join(src, '*.png'))
+    tries = {}
+    for f in files:
+        b = os.path.basename(f)[:-4].replace('_v2', '')
+        n, k = (b.rsplit('-', 1) if b.rsplit('-', 1)[-1].isdigit() else (b, ''))
+        tries.setdefault(n, []).append((k, f))
+    for n in sorted(tries):
+        cands = []
+        for k, f in sorted(tries[n]):
+            ims = faces(f); e = shape_error(n, ims, renders)
+            cands.append((e, k, f, ims))
+            print(f'  {n} try {k or "-"}: shape off {e * 100:.1f}%')
+        best = min(cands, key=lambda c: c[0])
+        if n in picks: best = next(c for c in cands if c[1] == picks[n])
+        if best[0] > 0.04: print(f'  ! {n}: the chosen try is {best[0] * 100:.1f}% off the render')
+        for face, im in best[3].items():
+            fit(n, best[2], face, im, renders, out)
 
 
 def fit(n, f, face, im, renders, out):

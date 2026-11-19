@@ -32,12 +32,13 @@ FLOOR = 24        # the platform's floor, tiles each way (32 was far too big nex
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r2'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r4'    # in the pads' and huts' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
-BUILDERS = [('blue', 5, 4.4), ('red', 5, 4.4), ('green', 5, 4.4), ('gold', 4.5, 3.6)]
+BUILDERS = [('blue', 4.5, 3.6), ('red', 4.5, 3.6), ('green', 4.5, 3.6), ('gold', 4, 3.0)]
+FACE = 'b'        # pads and huts: doors and steps towards the lawn (front right)
 PAD_STEP = 7      # tiles from one pad to the next
 # the club's buildings on the paving behind the lawn, out of the platform walls' way (tiles past the lawn's edges:
 # u < 0 is behind its back-left side, v < 0 behind its back-right), each facing the lawn:
@@ -127,23 +128,19 @@ def platform(path, world):
     s = (tgt(P + FLOOR, P)[0] - tgt(P, P + FLOOR)[0]) / (right[0] - left[0])
     lift = s * (foot - edge)
     rim = s * (edge - bot[1]) / ((tgt(1, 1)[1] - tgt(0, 0)[1]))    # tiles round the guide line, in the plan
-    # the repaint isn't an exact 2:1 view (Gemini skews it a little), so the guide line's four corners are pulled
-    # onto the floor's four raised grid corners with a perspective warp: the floor then fits the grid exactly
-    src = np.float32([top, right, bot, left])
-    dst = np.float32([np.array(tgt(u, v)) - [0, lift] for u, v in ((P, P), (P + FLOOR, P), (P + FLOOR, P + FLOOR), (P, P + FLOOR))])
-    H = cv2.getPerspectiveTransform(src, dst)
-    box = cv2.perspectiveTransform(np.float32([[[0, 0]], [[w, 0]], [[w, h]], [[0, h]]]), H).reshape(-1, 2)
-    x0, y0 = box.min(0); x1, y1 = box.max(0)
-    to = np.array([[STORE_K, 0, -x0 * STORE_K], [0, STORE_K, -y0 * STORE_K], [0, 0, 1]]) @ H
-    ow, oh = math.ceil((x1 - x0) * STORE_K), math.ceil((y1 - y0) * STORE_K)
-    # premultiplied, so the keyed edge doesn't pick up the green
-    pm = rgba.astype(np.float32); pm[..., :3] *= pm[..., 3:4] / 255
-    out = cv2.warpPerspective(pm, to, (ow, oh), flags=cv2.INTER_CUBIC, borderValue=(0, 0, 0, 0))
-    a = np.clip(out[..., 3:4], 0, 255)
-    out[..., :3] = np.where(a > 0.5, out[..., :3] * 255 / np.maximum(a, 1e-3), 0)
-    Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA').save(os.path.join(OUT, f'platform-{FLOOR}-w.webp'), quality=88, method=6)
+    # the floor's four corners fitted onto the raised grid's with a plain scale and shift (least squares, x and y
+    # apart): no warp, so the walls stay upright; the leftover is the repaint's own skew (regenerate it if big)
+    src = np.float64([top, right, bot, left])
+    dst = np.float64([np.array(tgt(u, v)) - [0, lift] for u, v in ((P, P), (P + FLOOR, P), (P + FLOOR, P + FLOOR), (P, P + FLOOR))])
+    sx, tx = np.polyfit(src[:, 0], dst[:, 0], 1); sy, ty = np.polyfit(src[:, 1], dst[:, 1], 1)
+    fitted = np.c_[src[:, 0] * sx + tx, src[:, 1] * sy + ty]
+    off = np.abs(fitted - dst).max() / TILE_W
+    x0, y0, x1, y1 = tx, ty, tx + w * sx, ty + h * sy
+    im = Image.fromarray(rgba, 'RGBA').resize((math.ceil(w * sx * STORE_K), math.ceil(h * sy * STORE_K)), Image.LANCZOS)
+    im.save(os.path.join(OUT, f'platform-{FLOOR}-{ART_TAG}.webp'), quality=88, method=6)
+    print('platform fit x', round(sx, 4), 'y', round(sy, 4), 'worst corner', round(off, 2), 'tiles off')
     print('platform scale', round(s, 4), 'lift', round(lift, 1), 'rim tiles', round(rim, 2))
-    return {'src': f'icons/Plot/platform-{FLOOR}-w.webp', 'x': round(float(x0), 1), 'y': round(float(y0), 1), 'w': round(float(x1 - x0), 1),
+    return {'src': f'icons/Plot/platform-{FLOOR}-{ART_TAG}.webp', 'x': round(float(x0), 1), 'y': round(float(y0), 1), 'w': round(float(x1 - x0), 1),
             'h': round(float(y1 - y0), 1), 'at': P, 'size': FLOOR, 'lift': round(lift, 1), 'rim': round(rim, 2)}
 
 
@@ -190,8 +187,8 @@ def main():
         v = P + 1 + i * PAD_STEP
         c = world(u0 + size / 2, v + size / 2)
         pads.append({'who': who, 'u': u0, 'v': v, 'size': size,
-                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size),
-                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut)})
+                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size, FACE),
+                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut, FACE)})
         blocked.append([u0, v, u0 + size, v + size])
     club = [{'who': who, 'u': u, 'v': v, 'size': size, 'pic': piece(renders, name, world(u, v), f'club-{who}-{ART_TAG}', size, face)}
             for who, name, face, u, v, size in CLUB]

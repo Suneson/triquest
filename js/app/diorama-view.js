@@ -87,17 +87,10 @@ const towerRoom = () => {
   return 'bike';
 };
 /** The room on the stage: the club room while it's open, else the tower floor remembered on the device. */
-// the single-plot base (docs/PLOT.md): ?plot=1 turns it on for this device, ?plot=0 off. The locker room is
-// then the only room, and it is the whole plot: the map's lawn with the platform on it.
-const PLOT_KEY = 'moske-plot';
-const plotPreview = () => {
-  try {
-    const q = new URLSearchParams(location.search).get('plot');
-    if (q != null) localStorage.setItem(PLOT_KEY, q === '1' ? '1' : '0');
-    return localStorage.getItem(PLOT_KEY) === '1';
-  } catch { return false; }
-};
-setPlotMode(plotPreview());
+// the single-plot base (docs/PLOT.md) is the base for everyone now: the locker room is the only room, and it
+// is the whole plot, the map's lawn with the platform on it. (The old tower of rooms is no longer shown.)
+try { localStorage.removeItem('moske-plot'); } catch { /* private mode */ }
+setPlotMode(true);
 const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 export function activeRoom() { return inClub ? 'club' : plotMode() ? 'locker' : towerRoom(); }
 export function setActiveRoom(room) {

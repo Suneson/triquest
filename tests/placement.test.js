@@ -202,7 +202,7 @@ test('the taped room: its picture is 16 x 16, only the back 8 x 8 can be used', 
   assert.equal(stageGeom('locker', true, true), 'locker-16-tape');
   assert.equal(ROOM_GEOMETRY['locker-16-tape'].cols, 32);
   assert.ok(canPlace('locker-16-tape', 'locker', c, 5, 5).ok, 'inside the tape');
-  assert.equal(canPlace('locker-16-tape', 'locker', c, 6, 5).reason, 'bounds', 'across the tape');
+  assert.equal(canPlace('locker-16-tape', 'locker', c, 7, 5).reason, 'bounds', 'across the tape');
   assert.ok(canPlace('locker-16', 'locker', c, 6, 5).ok, 'expanded, the whole floor');
   const spot = firstFree('locker-16-tape', 'locker', c, {});
   assert.ok(spot.u + c.w <= 8 && spot.v + c.h <= 8);

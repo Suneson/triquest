@@ -32,8 +32,9 @@ FLOOR = 16        # the platform's floor, tiles each way: its body reaches the c
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r6'    # in the platform's and club buildings' names: change it whenever they're repainted
+ART_TAG = 'r7'    # in the platform's and club buildings' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
+RIM_SHARE = 0.0359   # the rim under the floor's guide line, as a share of the floor's width (see platform())
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
@@ -91,14 +92,20 @@ def cut_tiles(path):
 
 
 def key_green(rgb):
-    """RGBA from a repaint on flat green: green out, its spill pulled back to grey."""
+    """RGBA from a repaint on flat green: green out, its spill pulled back to grey. A shadow painted as darker
+    green on the ground is kept, as soft black (how much darker than the background it is)."""
     a = rgb.astype(float)
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     green = g - np.maximum(r, b)
     alpha = np.clip(1 - (green - 40) / 60, 0, 1)
     alpha = nd.gaussian_filter(alpha, 0.7)
     g2 = np.minimum(g, np.maximum(r, b) + 6)
-    out = np.dstack([r, g2, b, alpha * 255]).clip(0, 255).astype(np.uint8)
+    bg = np.median(g[green > 120]) if (green > 120).any() else 255
+    shade = np.clip((bg - g) / bg * 1.3, 0, 0.75) * (1 - alpha)     # only where it's background
+    shade = nd.gaussian_filter(shade, 2)
+    a_out = alpha + shade * (1 - alpha)
+    k = np.where(a_out > 1e-3, alpha / np.maximum(a_out, 1e-3), 1)    # the object's share of the colour
+    out = np.dstack([r * k, g2 * k, b * k, a_out * 255]).clip(0, 255).astype(np.uint8)
     return out
 
 
@@ -115,14 +122,12 @@ def platform(path, world):
     ys, xs = np.nonzero(m)
     top = (xs[np.argmin(ys)], ys.min()); bot = (xs[np.argmax(ys)], ys.max())
     left = (xs.min(), ys[np.argmin(xs)]); right = (xs.max(), ys[np.argmax(xs)])
-    # the floor's height: down the front corner's column, from the top's front edge (the first dark px past
-    # the pale rim under the guide line) to the platform's foot (its last opaque px)
-    col = int(bot[0]); y = int(bot[1]) + 4
-    while y < h - 1 and lum[y, col] > 120: y += 1        # the guide line, then the pale rim
-    while y < h - 1 and lum[y, col] < 120 and y < bot[1] + 40: y += 1
-    while y < h - 1 and lum[y, col] > 120: y += 1        # the rim
-    edge = y
-    foot = max(np.nonzero(rgba[:, col, 3] > 128)[0])
+    # the floor's height: down the front corner's column, from the top's front edge to the platform's foot (its
+    # last solid px). The front edge is the rim's: RIM_SHARE of the floor's width under the guide line's corner
+    # (measured on platform-navy-redo-11, which still had its navy band under the rim to find it by)
+    col = int(bot[0])
+    edge = bot[1] + RIM_SHARE * (right[0] - left[0])
+    foot = max(np.nonzero(rgba[:, col, 3] > 200)[0])
     tgt = lambda u, v: world(u, v)
     s = (tgt(P + FLOOR, P)[0] - tgt(P, P + FLOOR)[0]) / (right[0] - left[0])
     lift = s * (foot - edge)

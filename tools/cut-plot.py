@@ -32,7 +32,7 @@ FLOOR = 16        # the platform's floor, tiles each way: its body reaches the c
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r7'    # in the platform's and club buildings' names: change it whenever they're repainted
+ART_TAG = 'r8'    # in the platform's and club buildings' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RIM_SHARE = 0.0359   # the rim under the floor's guide line, as a share of the floor's width (see platform())
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
@@ -42,8 +42,9 @@ RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's p
 # tools/render-items/make-builders.py)
 # the club's buildings on the paving behind the lawn, out of the platform walls' way (tiles past the lawn's edges:
 # u < 0 is behind its back-left side, v < 0 behind its back-right), each facing the lawn:
-# (who, render, facing, centre u, centre v, longest footprint side in tiles)
-CLUB = [('stadium', 'stadium-club', 'b', -21, 28, 16), ('clubhouse', 'clubhouse-modern', 'a', 28, -21, 13)]
+# (who, render, facing, centre u, centre v, longest footprint side in tiles; the centre is its plaza's, measured on
+# map-navy-navy-upscale-3x_v2: the paved rectangle's four corners, its entry notch left out)
+CLUB = [('stadium', 'stadium-club', 'b', -22.2, 22.4, 16), ('clubhouse', 'clubhouse-modern', 'a', 22.5, -22.5, 13)]
 
 
 def lawn_corners(path):

@@ -973,7 +973,14 @@ export function wireDiorama(root, ctx) {
     const p = toWorld(cx, cy);
     const q = worldToRoomPct(geom, p.x, p.y, env);
     const f = pctToTile(geom, q.x, q.y);
-    return { u: Math.round(f.u - it.w / 2), v: Math.round(f.v - it.h / 2) };
+    const at = { u: Math.round(f.u - it.w / 2), v: Math.round(f.v - it.h / 2) };
+    // a finger on the platform (its rim and walls too) keeps the item on its floor, pushed in from the edge
+    const floor = f.raised && ROOM_GEOMETRY[geom].raised?.box;
+    if (floor) {
+      at.u = Math.min(floor[2] - it.w, Math.max(floor[0], at.u));
+      at.v = Math.min(floor[3] - it.h, Math.max(floor[1], at.v));
+    }
+    return at;
   };
   const showCells = (it, u, v, ok) => {
     const g = worldEl.querySelector('.dg-cells');

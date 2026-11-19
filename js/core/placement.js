@@ -17,6 +17,7 @@
 import { STALL_ITEMS } from './stall.js';
 
 import { ROOM32 } from './room32-art.js';
+import { PLOT_ART } from './plot-art.js';
 
 const ART = 'icons/Pixelart/NEW';
 
@@ -63,6 +64,22 @@ for (const [room, r] of Object.entries(ROOM32)) {
   Object.assign(ROOM_SIZE, { [`${room}-32`]: r.size, [`${room}-16`]: r.size, [`${room}-16-tape`]: r.size });
 }
 
+// the single-plot base (?plot=1, docs/PLOT.md): the Navy Club map's 48 x 48 lawn is the locker room's floor.
+// Its picture is the map itself (in tiles, diorama.js plotEnv), so the floor is measured in % of the whole
+// map. The platform's 32 x 32 floor is part of the same grid, raised by `raised.lift` (% of the map's
+// height): a point on it is drawn that much higher. The platform's body round it, and the builders' pads,
+// are blocked (tools/cut-plot.py).
+{
+  const { world, lawn, grid, platform: pl, blocked } = PLOT_ART;
+  const pct = ([x, y]) => [(x / world.w) * 100, (y / world.h) * 100];
+  ROOM_GEOMETRY['plot-48'] = {
+    ...floor(pct(lawn.back), pct(lawn.right), pct(lawn.left), grid, grid, blocked),
+    share: 1,
+    raised: { box: [pl.at, pl.at, pl.at + pl.size, pl.at + pl.size], lift: (pl.lift / world.h) * 100 },
+  };
+  ROOM_SIZE['plot-48'] = [world.w, world.h];
+}
+
 /**
  * A room's picture at a level (1–10), small enough for a list or a card: the half-size copy of its
  * 32 × 32 room (tools/room-mids.py). The old painted 8 × 8 rooms are gone; every room is this one.
@@ -103,18 +120,37 @@ export const roomsOf = (layout) => layout.rows.flatMap((row, r) => row.map((cell
 // ---- the floor grid ------------------------------------------------------------------
 
 /** A point on the floor (fractional tiles) as % of the room's art: { x, y }. */
-export function tileToPct(geomKey, u, v) {
+export function tileToPct(geomKey, u, v, ref = null) {
   const g = ROOM_GEOMETRY[geomKey];
   const [bx, by] = g.back; const [rx, ry] = g.right; const [lx, ly] = g.left;
   return {
     x: bx + (rx - bx) * (u / g.cols) + (lx - bx) * (v / g.rows),
-    y: by + (ry - by) * (u / g.cols) + (ly - by) * (v / g.rows),
+    y: by + (ry - by) * (u / g.cols) + (ly - by) * (v / g.rows) - liftAt(g, ...(ref || [u, v])),
   };
+}
+
+/** How much higher a point of the floor is drawn (% of the art): a raised part's lift, else 0. `u, v` may be
+ *  the middle of the box the point belongs to, so a corner on the raised part's edge goes with its box. */
+function liftAt(g, u, v) {
+  const r = g.raised;
+  if (!r) return 0;
+  const [u0, v0, u1, v1] = r.box;
+  return u >= u0 && u <= u1 && v >= v0 && v <= v1 ? r.lift : 0;
 }
 
 /** % of the room's art back to fractional tiles: { u, v } (may fall outside the floor). */
 export function pctToTile(geomKey, x, y) {
   const g = ROOM_GEOMETRY[geomKey];
+  // a raised part first: the point, lowered by its lift, on that part's floor
+  if (g.raised) {
+    const t = flatToTile(g, x, y + g.raised.lift);
+    const [u0, v0, u1, v1] = g.raised.box;
+    if (t.u >= u0 && t.u <= u1 && t.v >= v0 && t.v <= v1) return t;
+  }
+  return flatToTile(g, x, y);
+}
+
+function flatToTile(g, x, y) {
   const [bx, by] = g.back;
   const ux = (g.right[0] - bx) / g.cols; const uy = (g.right[1] - by) / g.cols;
   const vx = (g.left[0] - bx) / g.rows; const vy = (g.left[1] - by) / g.rows;
@@ -125,7 +161,8 @@ export function pctToTile(geomKey, x, y) {
 
 /** The four corners of a box of tiles (back, right, front, left) in % of the art. */
 export function boxCorners(geomKey, u, v, w = 1, h = 1) {
-  return [tileToPct(geomKey, u, v), tileToPct(geomKey, u + w, v), tileToPct(geomKey, u + w, v + h), tileToPct(geomKey, u, v + h)];
+  const mid = [u + w / 2, v + h / 2];
+  return [tileToPct(geomKey, u, v, mid), tileToPct(geomKey, u + w, v, mid), tileToPct(geomKey, u + w, v + h, mid), tileToPct(geomKey, u, v + h, mid)];
 }
 
 // ---- items ----------------------------------------------------------------------------

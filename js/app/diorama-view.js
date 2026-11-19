@@ -22,7 +22,7 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf, setPlotMode, plotMode } from '../core/diorama.js';
 import { expandedSize, EXPANDED_ART, bigArt, midArt, needsFull, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
@@ -87,7 +87,19 @@ const towerRoom = () => {
   return 'bike';
 };
 /** The room on the stage: the club room while it's open, else the tower floor remembered on the device. */
-export function activeRoom() { return inClub ? 'club' : towerRoom(); }
+// the single-plot base (docs/PLOT.md): ?plot=1 turns it on for this device, ?plot=0 off. The locker room is
+// then the only room, and it is the whole plot: the map's lawn with the platform on it.
+const PLOT_KEY = 'moske-plot';
+const plotPreview = () => {
+  try {
+    const q = new URLSearchParams(location.search).get('plot');
+    if (q != null) localStorage.setItem(PLOT_KEY, q === '1' ? '1' : '0');
+    return localStorage.getItem(PLOT_KEY) === '1';
+  } catch { return false; }
+};
+setPlotMode(plotPreview());
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+export function activeRoom() { return inClub ? 'club' : plotMode() ? 'locker' : towerRoom(); }
 export function setActiveRoom(room) {
   if (!STAGE_ROOMS.includes(room)) return;
   inClub = false;
@@ -134,7 +146,7 @@ const threeTest = () => {
   } catch { return true; }
 };
 const bigRoom = (room) => (rooms32Preview() ? ROOM32[room] : null);
-const geomOf = (room) => (room === 'club' ? 'club-32' : bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
+const geomOf = (room) => (room === 'club' ? 'club-32' : plotMode() && room === 'locker' ? 'plot-48' : bigRoom(room) ? `${room}-big` : stageGeom(room, expanded(room) && expansionSize(room), taped(room)));
 // every room, for working out where items stand
 const stageLayout = () => ({ rows: [ALL_ROOMS.map((room, i) => ({ room, geom: geomOf(room), col: i, span: 1, landscape: false }))] });
 
@@ -222,7 +234,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
   const room = activeRoom();
   const ready = unseenFinished().length;
   const club = room === 'club';
-  return `<section class="dg-screen${club ? ' is-club' : ''}" data-dg>
+  return `<section class="dg-screen${club ? ' is-club' : ''}${plotMode() && !club ? ' is-plot' : ''}" data-dg>
     <div class="dg-viewport" data-dg-vp tabindex="0" role="application" aria-roledescription="${esc(t('cp.roledesc'))}" aria-label="${esc(t('cp.vpAria'))}">
       <div class="dg-world" data-dg-world style="width:${envFor(room).w}px;height:${envFor(room).h}px"></div>
     </div>
@@ -250,7 +262,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
       ${club ? orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-club-inventory" aria-label="${esc(t('gear.clubInventory'))}"`)
     : orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
-    ${club ? '' : `<div class="dg-side is-right">${liftPanel(room)}</div>`}
+    ${club || plotMode() ? '' : `<div class="dg-side is-right">${liftPanel(room)}</div>`}
   </section>`;
 }
 
@@ -888,8 +900,9 @@ export function wireDiorama(root, ctx) {
   const roomImg = artEl.querySelector('img');
   // a big room's picture comes at half size first; its full size only once you've zoomed in far
   // enough to see the difference (and from then on, for this room)
-  const isBig = (r) => !!(bigRoom(r) || expanded(r) || taped(r));
-  const fullOf = (r) => (isBig(r) ? bigArt(r, levelOf(r, ctx)) : roomArt(r, levelOf(r, ctx)));
+  const onPlot = (r) => plotMode() && r === 'locker';   // the plot's floor is the map: no room picture
+  const isBig = (r) => !onPlot(r) && !!(bigRoom(r) || expanded(r) || taped(r));
+  const fullOf = (r) => (onPlot(r) ? BLANK : isBig(r) ? bigArt(r, levelOf(r, ctx)) : roomArt(r, levelOf(r, ctx)));
   const roomSrc = (r) => (isBig(r) && !stage.sharp?.[fullOf(r)] ? midArt(r, levelOf(r, ctx)) : fullOf(r));
   const full = fullOf(room);
   const src = roomSrc(room);

@@ -9,6 +9,7 @@
 
 import { ROOM_GEOMETRY, ROOM_SIZE } from './placement.js';
 import { ISLAND_ART } from './island-art.js';
+import { PLOT_ART } from './plot-art.js';
 
 export const ENV = {
   src: 'icons/Pixelart/NEW/env-ground-sky.webp',
@@ -79,7 +80,25 @@ const clubEnv = (geom) => {
   return { src: '', tiles: [], w: W, h: H, plot, floorShare: 0.5, club: true, slabView: plotW / (w * 1.04),
     maxS: TILE_ZOOM / (floorW / g.cols), tower: [], rail: null };
 };
-export const envFor = (room, geom = stageGeom(room)) => (room === 'club' ? clubEnv(geom) : room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
+// The single-plot base (?plot=1, docs/PLOT.md): the Navy Club map in tiles, its lawn the locker room's 48 x 48
+// floor (placement.js 'plot-48'), the platform and the builders' pads and huts standing on it as pictures
+// under the items. The opening view shows the lawn's width; the smallest zoom shows all of it on a phone
+// held upright, even where that's past the map's top and bottom (the paving's colour shows there).
+let plotOn = false;
+export const setPlotMode = (on) => { plotOn = !!on; };
+export const plotMode = () => plotOn;
+const PLOT_TILES = [...PLOT_ART.tiles].sort((p, q) => {
+  const [cx, cy] = PLOT_ART.lawn.front;
+  return Math.hypot(p.x + p.w / 2 - cx, p.y + p.h / 2 - cy) - Math.hypot(q.x + q.w / 2 - cx, q.y + q.h / 2 - cy);
+});
+const plotEnv = () => {
+  const { world, lawn, platform, pads, tileW } = PLOT_ART;
+  const pieces = [platform, ...pads.map((p) => p.pad), ...pads.map((p) => p.hut)];
+  return { src: PLOT_TILES[0].src, tiles: PLOT_TILES, w: world.w, h: world.h,
+    plot: { top: lawn.back, right: lawn.right, bottom: lawn.front, left: lawn.left }, floorShare: 1, slabView: 1.02,
+    fitW: (lawn.right[0] - lawn.left[0]) * 1.12, maxS: TILE_ZOOM / tileW, tower: pieces, rail: null, plotBase: true };
+};
+export const envFor = (room, geom = stageGeom(room)) => (geom === 'plot-48' ? plotEnv() : room === 'club' ? clubEnv(geom) : room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
 
 export const MAX_ZOOM = 2.5; // × the smallest zoom, in a world with no zoom of its own (the terrain)
 
@@ -93,6 +112,7 @@ export const STAGE_ROOMS = ['bike', 'pool', 'run', 'gym', 'locker'];
  */
 export const stageGeom = (room, size = false, taped = false) => {
   if (room === 'club') return 'club-32';   // the club room is always its whole 32 x 32 room
+  if (plotOn && room === 'locker') return 'plot-48';
   if (taped) return `${room}-16-tape`;
   if (size) return size === 32 ? `${room}-32` : `${room}-16`;
   return room === 'locker' ? 'locker-square' : room;
@@ -137,7 +157,7 @@ export function worldToRoomPct(geom, x, y, env = ENV) {
 }
 
 /** The smallest zoom: the world covers the viewport. */
-export const minZoom = (vw, vh, env = ENV) => Math.max(vw / env.w, vh / env.h);
+export const minZoom = (vw, vh, env = ENV) => (env.fitW ? Math.min(Math.max(vw / env.w, vh / env.h), vw / env.fitW) : Math.max(vw / env.w, vh / env.h));
 /** The largest zoom: the room's own (a tile a good size on the screen), or MAX_ZOOM × the smallest. */
 export const maxZoom = (vw, vh, env = ENV) => { const lo = minZoom(vw, vh, env); return env.maxS ? Math.max(lo, env.maxS) : lo * MAX_ZOOM; };
 
@@ -150,11 +170,9 @@ export function clampView(v, vw, vh, env = ENV) {
   const s = Math.min(maxZoom(vw, vh, env), Math.max(lo, v.s));
   const x0 = (env.x0 || 0) * s; const y0 = (env.y0 || 0) * s;   // the world's top-left corner
   const w = env.w * s; const h = env.h * s;
-  return {
-    s,
-    tx: Math.min(-x0, Math.max(vw - w - x0, v.tx)),
-    ty: Math.min(-y0, Math.max(vh - h - y0, v.ty)),
-  };
+  // a world smaller than the screen one way (the plot zoomed out on a phone held upright) is centred that way
+  const fit = (t, size, view, o) => (size <= view ? (view - size) / 2 - o : Math.min(-o, Math.max(view - size - o, t)));
+  return { s, tx: fit(v.tx, w, vw, x0), ty: fit(v.ty, h, vh, y0) };
 }
 
 /** The opening view: the smallest zoom (on a slab, enough to fill the screen with it), centred on the plot. */

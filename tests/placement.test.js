@@ -207,3 +207,25 @@ test('the taped room: its picture is 16 x 16, only the back 8 x 8 can be used', 
   const spot = firstFree('locker-16-tape', 'locker', c, {});
   assert.ok(spot.u + c.w <= 8 && spot.v + c.h <= 8);
 });
+
+test('a finger past the platform floor\'s edge still means the floor, never the lawn drawn behind or under it', () => {
+  const g = ROOM_GEOMETRY['plot-48'];
+  const [u0, v0, u1, v1] = g.raised.top;
+  const near = (a, b) => Math.abs(a - b) < 1e-6;
+  // on the floor: back where it was drawn, raised
+  const mid = tileToPct('plot-48', 10, 10);
+  const back = pctToTile('plot-48', mid.x, mid.y);
+  assert.ok(back.raised && near(back.u, 10) && near(back.v, 10));
+  // over the back walls (a tile behind the floor's back edge, drawn raised): its back edge
+  const wall = tileToPct('plot-48', u0 - 1, 10, [10, 10]);
+  const w = pctToTile('plot-48', wall.x, wall.y);
+  assert.ok(w.raised && near(w.u, u0) && near(w.v, 10));
+  // on the front wall's face (the ground there is under the platform): the floor's front edge
+  const face = tileToPct('plot-48', 12, v1 - 0.5);
+  const f = pctToTile('plot-48', face.x, face.y);
+  assert.ok(f.raised && f.v <= v1 && f.v >= v0);
+  // the lawn out in front stays the lawn
+  const lawn = tileToPct('plot-48', 30, 30);
+  const l = pctToTile('plot-48', lawn.x, lawn.y);
+  assert.ok(!l.raised && near(l.u, 30) && near(l.v, 30));
+});

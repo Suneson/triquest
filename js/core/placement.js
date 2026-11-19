@@ -151,13 +151,22 @@ function liftAt(g, u, v) {
 export function pctToTile(geomKey, x, y) {
   const g = ROOM_GEOMETRY[geomKey];
   // a raised part first: the point, lowered by its lift, on that part's floor
+  // (its top, rim included). A point over its back walls goes to the floor's back edge, and one on its front
+  // walls (the ground there is under the platform) to its front edge: a finger that reaches past the floor's
+  // edge still means the floor, never the lawn drawn behind or under it
   if (g.raised) {
-    const t = flatToTile(g, x, y + g.raised.lift);
-    const [u0, v0, u1, v1] = g.raised.box;
-    if (t.u >= u0 && t.u <= u1 && t.v >= v0 && t.v <= v1) return t;
+    const r = g.raised;
+    const [u0, v0, u1, v1] = r.top || r.box;
+    const t = flatToTile(g, x, y + r.lift);
+    const f = flatToTile(g, x, y);
+    const onTop = t.u >= u0 - BACK_REACH && t.u <= u1 && t.v >= v0 - BACK_REACH && t.v <= v1;
+    const onWall = f.u >= u0 && f.u <= u1 && f.v >= v0 && f.v <= v1;
+    if (onTop || onWall) return { u: Math.min(u1, Math.max(u0, t.u)), v: Math.min(v1, Math.max(v0, t.v)), raised: true };
   }
   return flatToTile(g, x, y);
 }
+
+const BACK_REACH = 3;   // tiles past the raised floor's back edges still taken as its edge (its back walls)
 
 function flatToTile(g, x, y) {
   const [bx, by] = g.back;

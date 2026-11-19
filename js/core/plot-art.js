@@ -460,14 +460,14 @@ export const PLOT_ART = {
  },
  "tileW": 102.206,
  "platform": {
-  "src": "icons/Plot/platform-16-r7.webp",
-  "x": 4023.3,
-  "y": 1591.7,
-  "w": 2312.6,
-  "h": 1960.7,
+  "src": "icons/Plot/platform-16-r8.webp",
+  "x": 4022.9,
+  "y": 1631.3,
+  "w": 2325.6,
+  "h": 1911.1,
   "at": 3,
   "size": 16,
-  "lift": 52.7,
+  "lift": 154.3,
   "rim": 1.15,
   "top": [
    3,
@@ -525,26 +525,26 @@ export const PLOT_ART = {
  "club": [
   {
    "who": "stadium",
-   "u": -21,
-   "v": 28,
+   "u": -22.2,
+   "v": 22.4,
    "size": 16,
    "pic": {
-    "src": "icons/Plot/club-stadium-r7.webp",
-    "x": 1855.8,
-    "y": 1761.3,
+    "src": "icons/Plot/club-stadium-r8.webp",
+    "x": 2079.4,
+    "y": 1587.7,
     "w": 1557.6,
     "h": 1097.9
    }
   },
   {
    "who": "clubhouse",
-   "u": 28,
-   "v": -21,
+   "u": 22.5,
+   "v": -22.5,
    "size": 13,
    "pic": {
-    "src": "icons/Plot/club-clubhouse-r7.webp",
-    "x": 7029.0,
-    "y": 1840.8,
+    "src": "icons/Plot/club-clubhouse-r8.webp",
+    "x": 6823.3,
+    "y": 1661.8,
     "w": 1355.6,
     "h": 961.7
    }

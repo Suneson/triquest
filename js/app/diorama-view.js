@@ -19,7 +19,7 @@ import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
 import {
-  roomArt, ROOM_SIZE, SPORT_OF, tileToPct, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
+  roomArt, ROOM_SIZE, SPORT_OF, tileToPct, liftPctAt, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
 import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf, setPlotMode, plotMode } from '../core/diorama.js';
@@ -520,7 +520,9 @@ export function wireDiorama(root, ctx) {
     });
   }
   const glOn = () => !!stage.gl?.on();
-  stage.gl?.setRoom(`${geom}|${M.join(',')}`, (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))), ROOM_GEOMETRY[geom].cols, ROOM_GEOMETRY[geom].rows);
+  stage.gl?.setRoom(`${geom}|${M.join(',')}`, (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))), ROOM_GEOMETRY[geom].cols, ROOM_GEOMETRY[geom].rows,
+    // the ground's height at a tile, in world px (the plot's raised platform), for the 3D athlete
+    ROOM_GEOMETRY[geom].raised ? (u, v) => toWorld_(geom, 0, liftPctAt(geom, u, v))[1] - toWorld_(geom, 0, 0)[1] : null);
   // the world this room stands in (a floor of the city tower, or the terrain)
   worldEl.style.width = `${env.w}px`; worldEl.style.height = `${env.h}px`;
   const envImg = worldEl.querySelector('.dg-env');

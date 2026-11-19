@@ -107,7 +107,9 @@ function build(L, canvas, layer, reduced) {
   let G = null;   // camera frame (x, y) → world px: [g11, g12, g13, g21, g22, g23]
   let roomKey = '';
   const viewOf = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse);
-  function setRoom(keyNow, tileToWorld, cols, rows) {
+  let riseAt = null;   // (u, v) → world px the ground is raised there (the plot's platform), or null
+  function setRoom(keyNow, tileToWorld, cols, rows, rise = null) {
+    riseAt = rise;
     if (keyNow === roomKey) return;
     roomKey = keyNow;
     const w0 = tileToWorld(0, 0), wu = tileToWorld(cols, 0), wv = tileToWorld(0, rows);
@@ -737,10 +739,11 @@ function build(L, canvas, layer, reduced) {
   function putAthlete() {
     rig.visible = !!mode && !!figure;
     shadow.visible = rig.visible;
-    rig.position.set(want.u, want.y, want.v);
+    const up = riseAt && G ? riseAt(want.u, want.v) / pxPerUp() : 0;   // standing on the raised platform
+    rig.position.set(want.u, want.y + up, want.v);
     rig.rotation.y = want.yaw;
     rig.scale.setScalar(want.scale / CHAR_HEIGHT);
-    shadow.position.set(want.u, 0.01, want.v);
+    shadow.position.set(want.u, 0.01 + up, want.v);
     const r = mode === 'machine' ? 1.2 : 1.8;
     shadow.scale.set(r, 1, r);
     dirty = true; wake();

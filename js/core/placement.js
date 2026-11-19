@@ -131,6 +131,9 @@ export function tileToPct(geomKey, u, v, ref = null) {
 
 /** How much higher a point of the floor is drawn (% of the art): a raised part's lift, else 0. `u, v` may be
  *  the middle of the box the point belongs to, so a corner on the raised part's edge goes with its box. */
+/** How far the ground at tile (u, v) is raised, in % of the map's height (0 off the platform). */
+export const liftPctAt = (geomKey, u, v) => liftAt(ROOM_GEOMETRY[geomKey], u, v);
+
 function liftAt(g, u, v) {
   const r = g.raised;
   if (!r) return 0;

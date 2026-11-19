@@ -28,11 +28,11 @@ OUT = os.path.join(REPO, 'icons', 'Plot')
 ART_JS = os.path.join(REPO, 'js', 'core', 'plot-art.js')
 N = 48            # the lawn, tiles each way
 P = 3             # the platform's floor starts this many tiles in from the lawn's back corner
-FLOOR = 24        # the platform's floor, tiles each way (32 was far too big next to the huts and the lawn)
+FLOOR = 10        # the platform's floor, tiles each way (32, then 24, were far too big next to the huts and the lawn)
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r4'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r5'    # in the pads' and huts' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles

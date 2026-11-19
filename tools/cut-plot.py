@@ -3,7 +3,7 @@ locker room stands on, and the builders' pads and huts.
 
     python tools/cut-plot.py <map 3x png> <platform repaint> <renders dir>
 
-  <map 3x png>        MOSKE APP/Characters/Photos/Robots/Robots/World map/map-navy-navy-upscale-3x.png
+  <map 3x png>        MOSKE APP/Characters/Photos/Robots/Robots/World map/map-navy-navy-upscale-3x_v2.png (no flags)
   <platform repaint>  MOSKE APP/Characters/Photos/Robots/Robots/Base/final/platform-navy.jpg (on green)
   <renders dir>       tools/render-items/render-base-assets.py's renders: <name>-a.png + <name>-a.json
 
@@ -30,6 +30,7 @@ FLOOR = 32        # the platform's floor, tiles each way
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
+MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
@@ -75,7 +76,7 @@ def cut_tiles(path):
             w, h = min(TILE, W - tx), min(TILE, H - ty)
             t = im.crop((tx, ty, tx + w, ty + h))
             sw, sh = round(w * STORE_K), round(h * STORE_K)
-            name = f'ground-{ty // TILE}-{tx // TILE}'
+            name = f'ground-{MAP_TAG}-{ty // TILE}-{tx // TILE}'
             t.resize((sw, sh), Image.LANCZOS).save(os.path.join(OUT, f'{name}.webp'), quality=82, method=6)
             t.resize((max(1, round(sw * SMALL)), max(1, round(sh * SMALL))), Image.LANCZOS).save(os.path.join(OUT, f'{name}-s.webp'), quality=78, method=6)
             tiles.append({'src': f'icons/Plot/{name}.webp', 'small': f'icons/Plot/{name}-s.webp', 'x': tx, 'y': ty, 'w': w, 'h': h})
@@ -146,6 +147,8 @@ def main():
     global TILE_W
     mp, rep, renders = sys.argv[1:4]
     os.makedirs(OUT, exist_ok=True)
+    for f in os.listdir(OUT):
+        if f.startswith('ground-'): os.remove(os.path.join(OUT, f))
     lawn = lawn_corners(mp)
     print('lawn', lawn)
     B, Rr, L = np.array(lawn['back']), np.array(lawn['right']), np.array(lawn['left'])

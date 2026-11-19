@@ -553,18 +553,18 @@ export const PLOT_ART = {
    "v": 4,
    "size": 5,
    "pad": {
-    "src": "icons/Plot/pad-blue.webp",
-    "x": 6304.0,
-    "y": 3139.4,
-    "w": 544.7,
-    "h": 343.3
+    "src": "icons/Plot/pad-blue-r1.webp",
+    "x": 6330.2,
+    "y": 3176.4,
+    "w": 485.1,
+    "h": 260.2
    },
    "hut": {
-    "src": "icons/Plot/hut-blue.webp",
+    "src": "icons/Plot/hut-blue-r1.webp",
     "x": 6351.9,
-    "y": 2807.0,
-    "w": 448.0,
-    "h": 641.6
+    "y": 2933.3,
+    "w": 351.7,
+    "h": 455.5
    }
   },
   {
@@ -573,18 +573,18 @@ export const PLOT_ART = {
    "v": 11,
    "size": 5,
    "pad": {
-    "src": "icons/Plot/pad-red.webp",
-    "x": 5938.5,
-    "y": 3293.8,
-    "w": 561.9,
-    "h": 372.2
+    "src": "icons/Plot/pad-red-r1.webp",
+    "x": 5986.4,
+    "y": 3298.3,
+    "w": 487.8,
+    "h": 316.2
    },
    "hut": {
-    "src": "icons/Plot/hut-red.webp",
+    "src": "icons/Plot/hut-red-r1.webp",
     "x": 5995.4,
-    "y": 3032.4,
-    "w": 448.0,
-    "h": 593.9
+    "y": 3138.1,
+    "w": 359.1,
+    "h": 444.3
    }
   },
   {
@@ -593,18 +593,18 @@ export const PLOT_ART = {
    "v": 18,
    "size": 5,
    "pad": {
-    "src": "icons/Plot/pad-green.webp",
-    "x": 5591.5,
-    "y": 3493.6,
-    "w": 542.9,
-    "h": 346.0
+    "src": "icons/Plot/pad-green-r1.webp",
+    "x": 5636.7,
+    "y": 3491.8,
+    "w": 479.7,
+    "h": 299.9
    },
    "hut": {
-    "src": "icons/Plot/hut-green.webp",
+    "src": "icons/Plot/hut-green-r1.webp",
     "x": 5611.0,
-    "y": 3023.0,
-    "w": 504.1,
-    "h": 801.5
+    "y": 3149.2,
+    "w": 433.0,
+    "h": 619.1
    }
   },
   {
@@ -613,18 +613,18 @@ export const PLOT_ART = {
    "v": 25,
    "size": 4.5,
    "pad": {
-    "src": "icons/Plot/pad-gold.webp",
-    "x": 5263.5,
-    "y": 3673.3,
-    "w": 486.9,
-    "h": 316.6
+    "src": "icons/Plot/pad-gold-r1.webp",
+    "x": 5267.4,
+    "y": 3702.0,
+    "w": 454.3,
+    "h": 250.6
    },
    "hut": {
-    "src": "icons/Plot/hut-gold.webp",
+    "src": "icons/Plot/hut-gold-r1.webp",
     "x": 5310.5,
-    "y": 3504.3,
-    "w": 390.3,
-    "h": 448.6
+    "y": 3600.3,
+    "w": 325.7,
+    "h": 303.2
    }
   }
  ]

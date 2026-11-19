@@ -5,7 +5,8 @@ locker room stands on, and the builders' pads and huts.
 
   <map 3x png>        MOSKE APP/Characters/Photos/Robots/Robots/World map/map-navy-navy-upscale-3x_v2.png (no flags)
   <platform repaint>  MOSKE APP/Characters/Photos/Robots/Robots/Base/final/platform-navy.jpg (on green)
-  <renders dir>       tools/render-items/render-base-assets.py's renders: <name>-a.png + <name>-a.json
+  <renders dir>       <name>-a.png + <name>-a.json: Base/repaint/cut (tools/render-items/cut-base-repaints.py),
+                      or render-base-assets.py's plain renders
 
 Writes icons/Plot/ (the map in tiles, each with a small copy; the platform; the pads and huts) and
 js/core/plot-art.js. World px are the 3x map's own px: one lawn tile is 102 px across, as in the 32 x 32 rooms.
@@ -30,6 +31,7 @@ FLOOR = 24        # the platform's floor, tiles each way (32 was far too big nex
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
+ART_TAG = 'r1'    # in the pads' and huts' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
@@ -148,7 +150,7 @@ def main():
     mp, rep, renders = sys.argv[1:4]
     os.makedirs(OUT, exist_ok=True)
     for f in os.listdir(OUT):
-        if f.startswith('ground-'): os.remove(os.path.join(OUT, f))
+        if f.startswith(('ground-', 'pad-', 'hut-')): os.remove(os.path.join(OUT, f))
     lawn = lawn_corners(mp)
     print('lawn', lawn)
     B, Rr, L = np.array(lawn['back']), np.array(lawn['right']), np.array(lawn['left'])
@@ -173,8 +175,8 @@ def main():
         v = P + 1 + i * PAD_STEP
         c = world(u0 + size / 2, v + size / 2)
         pads.append({'who': who, 'u': u0, 'v': v, 'size': size,
-                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}', size),
-                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}', hut)})
+                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size),
+                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut)})
         blocked.append([u0, v, u0 + size, v + size])
     art = {'world': {'w': W, 'h': H}, 'tiles': tiles, 'grid': N, 'lawn': lawn, 'tileW': round(TILE_W, 3),
            'platform': plat, 'blocked': blocked, 'walk': walk, 'pads': pads}

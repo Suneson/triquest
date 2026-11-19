@@ -32,7 +32,7 @@ FLOOR = 24        # the platform's floor, tiles each way (32 was far too big nex
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r3'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r4'    # in the pads' and huts' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
@@ -137,10 +137,10 @@ def platform(path, world):
     off = np.abs(fitted - dst).max() / TILE_W
     x0, y0, x1, y1 = tx, ty, tx + w * sx, ty + h * sy
     im = Image.fromarray(rgba, 'RGBA').resize((math.ceil(w * sx * STORE_K), math.ceil(h * sy * STORE_K)), Image.LANCZOS)
-    im.save(os.path.join(OUT, f'platform-{FLOOR}-f.webp'), quality=88, method=6)
+    im.save(os.path.join(OUT, f'platform-{FLOOR}-{ART_TAG}.webp'), quality=88, method=6)
     print('platform fit x', round(sx, 4), 'y', round(sy, 4), 'worst corner', round(off, 2), 'tiles off')
     print('platform scale', round(s, 4), 'lift', round(lift, 1), 'rim tiles', round(rim, 2))
-    return {'src': f'icons/Plot/platform-{FLOOR}-f.webp', 'x': round(float(x0), 1), 'y': round(float(y0), 1), 'w': round(float(x1 - x0), 1),
+    return {'src': f'icons/Plot/platform-{FLOOR}-{ART_TAG}.webp', 'x': round(float(x0), 1), 'y': round(float(y0), 1), 'w': round(float(x1 - x0), 1),
             'h': round(float(y1 - y0), 1), 'at': P, 'size': FLOOR, 'lift': round(lift, 1), 'rim': round(rim, 2)}
 
 

@@ -21,8 +21,8 @@ for t in A['tiles']:
     img.paste(im, (round(t['x'] * K), round(t['y'] * K)))
 for c in A.get('club', []): put(c['pic'])
 put(A['platform'])
-for p in A['pads']: put(p['pad'])
-for p in A['pads']: put(p['hut'])
+for p in A.get('pads', []): put(p['pad'])
+for p in A.get('pads', []): put(p['hut'])
 d = ImageDraw.Draw(img, 'RGBA')
 L = A['lawn']; N = A['grid']; pl = A['platform']
 def w(u, v, up=0):

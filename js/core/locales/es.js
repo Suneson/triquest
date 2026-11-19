@@ -3489,4 +3489,8 @@ es.gear.err["nothing_to_sell"] = "No hay nada en las estanterías para vender.";
 es.gear.err["no_crate"] = "No te quedan cajas. Abre cofres para conseguir más.";
 es.gear.err["no_brick"] = "El VIP solo viene en un día de brick.";
 
+// los constructores de la base de una parcela (builders.js)
+Object.assign(es.cp.item, { "builder-blue": "Caseta del constructor azul", "builder-red": "Caseta del constructor rojo", "builder-green": "Caseta del constructor verde", "builder-gold": "Caseta del constructor dorado" });
+es.builder = {"title": "Constructores", "about": "Tus constructores hacen las obras de tu base. Empiezas con uno: contrata más aquí y pon sus casetas donde quieras en el césped, giradas como quieras.", "name": {"blue": "Constructor azul", "red": "Constructor rojo", "green": "Constructor verde", "gold": "Constructor dorado"}, "hired": "Contratado", "soon": "Pronto", "buyAria": "Contratar al {name} por {cost} monedas", "hiredToast": "ya trabaja para ti. Su caseta está en el césped: tócala para moverla o girarla."};
+
 export default es;

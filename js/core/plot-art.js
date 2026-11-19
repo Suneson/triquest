@@ -512,30 +512,6 @@ export const PLOT_ART = {
    21,
    13,
    24
-  ],
-  [
-   22,
-   4.0,
-   26.5,
-   8.5
-  ],
-  [
-   22,
-   12.0,
-   26.5,
-   16.5
-  ],
-  [
-   2.5,
-   22,
-   7.0,
-   26.5
-  ],
-  [
-   16,
-   22,
-   20,
-   26
   ]
  ],
  "walk": [
@@ -545,88 +521,6 @@ export const PLOT_ART = {
    13,
    24
   ]
- ],
- "pads": [
-  {
-   "who": "blue",
-   "u": 22,
-   "v": 4.0,
-   "size": 4.5,
-   "pad": {
-    "src": "icons/Plot/pad-blue-r6.webp",
-    "x": 5919.9,
-    "y": 2973.6,
-    "w": 431.7,
-    "h": 234.2
-   },
-   "hut": {
-    "src": "icons/Plot/hut-blue-r6.webp",
-    "x": 5982.2,
-    "y": 2795.2,
-    "w": 317.6,
-    "h": 381.1
-   }
-  },
-  {
-   "who": "red",
-   "u": 22,
-   "v": 12.0,
-   "size": 4.5,
-   "pad": {
-    "src": "icons/Plot/pad-red-r6.webp",
-    "x": 5510.2,
-    "y": 3164.1,
-    "w": 431.7,
-    "h": 251.2
-   },
-   "hut": {
-    "src": "icons/Plot/hut-red-r6.webp",
-    "x": 5574.9,
-    "y": 3035.4,
-    "w": 319.9,
-    "h": 345.1
-   }
-  },
-  {
-   "who": "green",
-   "u": 2.5,
-   "v": 22,
-   "size": 4.5,
-   "pad": {
-    "src": "icons/Plot/pad-green-r6.webp",
-    "x": 4036.2,
-    "y": 2928.8,
-    "w": 425.2,
-    "h": 244.7
-   },
-   "hut": {
-    "src": "icons/Plot/hut-green-r6.webp",
-    "x": 4042.6,
-    "y": 2630.8,
-    "w": 354.3,
-    "h": 506.6
-   }
-  },
-  {
-   "who": "gold",
-   "u": 16,
-   "v": 22,
-   "size": 4,
-   "pad": {
-    "src": "icons/Plot/pad-gold-r6.webp",
-    "x": 4730.3,
-    "y": 3276.5,
-    "w": 401.3,
-    "h": 216.8
-   },
-   "hut": {
-    "src": "icons/Plot/hut-gold-r6.webp",
-    "x": 4777.8,
-    "y": 3193.1,
-    "w": 271.4,
-    "h": 252.7
-   }
-  }
  ],
  "club": [
   {

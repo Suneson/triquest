@@ -343,7 +343,7 @@ const walk = { w: null, room: null, going: null, grid: null, redraw: null };
 // the room's level per room, as the stage last worked it out (the stash's pictures use it)
 let lastLevels = {};
 export const itemLevels = () => lastLevels;
-const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], ALL_ROOMS);
+const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], ALL_ROOMS, { plot: plotMode() });
 
 /** Rooms whose items only ever stand there: taken from the stash anywhere, they go to that room. */
 const OWN_ROOM = new Set(['run']);

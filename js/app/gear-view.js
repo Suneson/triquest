@@ -24,9 +24,11 @@ import { featById } from '../core/feats.js';
 import { placeablesFor, stashedItems, orient } from '../core/placement.js';
 import { savedPlacements, baseItemRows } from './placement-state.js';
 import { takeFromStash, itemLevels } from './diorama-view.js';
+import { plotMode } from '../core/diorama.js';
 import { featItems } from './feats-state.js';
 import { gearBoost, canUseFuel } from '../core/boosts.js';
-import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen, buildBlueprint, buyStall } from './gear-state.js';
+import { gearState, gearEnabled, refreshGear, buyItem, useFuel, gearError, walletNow, onGear, serverNow, cancelJob, skipJob, markWorkshopSeen, buildBlueprint, buyStall, buyBuilder, buildersOpen } from './gear-state.js';
+import { BUILDERS, builderId, hasBuilder } from '../core/builders.js';
 import { stallFor, stallAhead, stallDay, msToNextStall } from '../core/stall.js';
 import { SEASON_KITS, SEASON_RULES, seasonInfo } from '../core/seasons.js';
 import { todayISO } from '../core/dates.js';
@@ -500,6 +502,23 @@ function seasonKitInfo(k, owned, worn, redraw) {
   });
 }
 
+/** The builders to hire, on the single-plot base: the first is everyone's, the others cost coins. */
+function builderCards(s, w) {
+  const cards = BUILDERS.map((b) => {
+    const id = builderId(b.who); const name = t(`builder.name.${b.who}`);
+    const owned = hasBuilder(b, s.inventory);
+    const st = cardState({ cost: b.cost, balance: w.coins, owned });
+    const button = owned || buildersOpen()
+      ? cardButton({ id, cost: b.cost }, 'coins', st, { buyAttr: 'data-builder-buy', owned: t('builder.hired'), label: t('builder.buyAria', { name, cost: b.cost }) })
+      : actionButton(t('builder.soon'), '', { variant: 'locked' });
+    return shopCard({ id, kind: 'builder', title: name, art: `icons/Items/${id}-a.webp`, st, button, info: false });
+  });
+  return `<section class="bp-row" aria-labelledby="bld-h">
+    <h3 id="bld-h" class="sc-row-h">${svg('wrench')} ${t('builder.title')}</h3>
+    <p class="gw-note">${t('builder.about')}</p>
+    <div class="sc-grid">${cards.join('')}</div></section>`;
+}
+
 /** The day's stall item. */
 function stallShopCard(it, s, w) {
   const owned = s.inventory.some((r) => r.item_id === it.id);
@@ -603,7 +622,7 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
           : SLOTS[current].map((slot) => gearShopCard(current, slot, s, w, fresh === slot)).join('')}</div>`;
     } else if (view === 'base') {
       const bp = blueprintState(s.quests, s.blueprints, store.getSettings().bpTarget || null);
-      panel = `${sportTabs(current)}${quadHead(current, s.inventory)}
+      panel = `${plotMode() ? builderCards(s, w) : ''}${sportTabs(current)}${quadHead(current, s.inventory)}
         <div class="sc-grid">${propsFor(current).map((p) => propShopCard(p, s, w)).join('')}</div>
         ${collectionRow(current, s.inventory)}
         <section class="bp-row" id="bp-row" aria-labelledby="bp-h">
@@ -679,6 +698,20 @@ export function openShop(ctx, { tab = 'gear', sport = 'bike', focus = '' } = {})
           playAccept();
           haptic('record');
           toast(`<b>${esc(t(`cp.item.${id}`))}</b><br>${t('stall.boughtToast')}`, { icon: svg('stall') });
+        } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
+      });
+      draw();
+      return;
+    }
+    const bb = e.target.closest('[data-builder-buy]');
+    if (bb) {
+      const id = bb.dataset.builderBuy;
+      await busy(bb, async () => {
+        try {
+          await buyBuilder(id);
+          playAccept();
+          haptic('record');
+          toast(`<b>${esc(t(`builder.name.${id.replace('builder-', '')}`))}</b> ${t('builder.hiredToast')}`, { icon: svg('wrench') });
         } catch (err) { toast(gearError(err), { icon: svg('warn') }); }
       });
       draw();
@@ -774,7 +807,7 @@ export function openInventory({ tab = 'fuel', club = false } = {}) {
       panel = cards.length ? `<div class="sc-grid">${cards.join('')}</div>` : empty(t('gear.invNoClothes'), 'clothes');
     } else if (view === 'stash') {
       const saved = savedPlacements();
-      const held = stashedItems(placeablesFor([...s.inventory, ...baseItemRows()]), saved)
+      const held = stashedItems(placeablesFor([...s.inventory, ...baseItemRows()], null, { plot: plotMode() }), saved)
         .filter((it) => (it.home === 'club') === club).map((it) => orient(it, saved[it.id]?.face));
       panel = held.length ? `<div class="sc-grid">${held.map(stashCard).join('')}</div>` : `<div class="sc-empty"><p>${esc(t(club ? 'gear.invNoClubStash' : 'gear.invNoStash'))}</p></div>`;
     } else {

@@ -1,5 +1,5 @@
 """cut-plot.py: the single-plot base (docs/PLOT.md): the Navy Club map, its 48 x 48 lawn, the platform the
-locker room stands on, and the builders' pads and huts.
+locker room stands on, the platform and the club's buildings (the builders' huts are items).
 
     python tools/cut-plot.py <map 3x png> <platform repaint> <renders dir>
 
@@ -8,7 +8,7 @@ locker room stands on, and the builders' pads and huts.
   <renders dir>       <name>-a.png + <name>-a.json: Base/repaint/cut (tools/render-items/cut-base-repaints.py),
                       or render-base-assets.py's plain renders
 
-Writes icons/Plot/ (the map in tiles, each with a small copy; the platform; the pads and huts) and
+Writes icons/Plot/ (the map in tiles, each with a small copy; the platform; the club's buildings) and
 js/core/plot-art.js. World px are the 3x map's own px: one lawn tile is 102 px across, as in the 32 x 32 rooms.
 
 The lawn: its four straight edges are fitted (its painted corners are rounded by the track) and met, which
@@ -32,16 +32,13 @@ FLOOR = 16        # the platform's floor, tiles each way: its body reaches the c
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r6'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r6'    # in the platform's and club buildings' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
-# where each builder's pad stands, round the platform: (who, pad tiles, hut tiles, side, place, facing). side 'stairs'
-# is the front-left side, either side of the stairs, facing down-left ('a'); side 'right' is the front-right side,
-# facing down-right ('b'); place is 0 or 1 along that side
-BUILDERS = [('blue', 4.5, 3.6, 'right', 0, 'b'), ('red', 4.5, 3.6, 'right', 1, 'b'),
-            ('green', 4.5, 3.6, 'stairs', 0, 'a'), ('gold', 4, 3.0, 'stairs', 1, 'a')]
+# (the builders' huts on their pads are items now, set down and moved by the player: js/core/builders.js,
+# tools/render-items/make-builders.py)
 # the club's buildings on the paving behind the lawn, out of the platform walls' way (tiles past the lawn's edges:
 # u < 0 is behind its back-left side, v < 0 behind its back-right), each facing the lawn:
 # (who, render, facing, centre u, centre v, longest footprint side in tiles)
@@ -184,22 +181,10 @@ def main():
     walk = [[mid - 1, P + FLOOR, mid + 2, stairs[3]]]
     plat['top'] = [P, P, body, body]
     plat['ramp'] = stairs
-    pads = []
-    for who, size, hut, side, place, face in BUILDERS:
-        if side == 'right':      # two pads spread along the front-right side, a tile out
-            u, v = body + 1, P + 1 + place * (FLOOR / 2)
-        else:                    # either side of the stairs' foot, a tile out from the front-left side
-            # (the right one further out: a hut there stands in front of the stairs and would hide them)
-            u, v = (stairs[0] - 2 - size if place == 0 else stairs[2] + 3), body + 1
-        c = world(u + size / 2, v + size / 2)
-        pads.append({'who': who, 'u': u, 'v': v, 'size': size,
-                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size, face),
-                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut, face)})
-        blocked.append([u, v, u + size, v + size])
     club = [{'who': who, 'u': u, 'v': v, 'size': size, 'pic': piece(renders, name, world(u, v), f'club-{who}-{ART_TAG}', size, face)}
             for who, name, face, u, v, size in CLUB]
     art = {'world': {'w': W, 'h': H}, 'tiles': tiles, 'grid': N, 'lawn': lawn, 'tileW': round(TILE_W, 3),
-           'platform': plat, 'blocked': blocked, 'walk': walk, 'pads': pads, 'club': club}
+           'platform': plat, 'blocked': blocked, 'walk': walk, 'club': club}
     with open(ART_JS, 'w', encoding='utf-8') as f:
         f.write('// plot-art.js: the single-plot base\'s pictures and where they stand, in world px (the 3x map\'s px).\n'
                 '// Written by tools/cut-plot.py. Don\'t edit by hand.\n')

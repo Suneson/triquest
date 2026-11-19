@@ -14,6 +14,7 @@ import { propById } from '../core/scenes.js';
 import { canUseFuel, starRow } from '../core/boosts.js';
 import { collectionAwards, sportLevel } from '../core/collections.js';
 import { seasonKitsWon } from '../core/seasons.js';
+import { builderById, hasBuilder } from '../core/builders.js';
 import { stallItemById, stallFor, stallDay } from '../core/stall.js';
 import { weekOf, missionsToClaim, MISSION_RULES } from '../core/missions.js';
 import { addDays, todayISO } from '../core/dates.js';
@@ -361,6 +362,16 @@ function demoCall(fn, args) {
     listeners.forEach((f) => f(s));
     return { coins: 0 };
   }
+  if (fn === 'buy_builder') {
+    const b = builderById(args.p_item);
+    if (!b || b.cost === 0) throw new Error('gear:unknown_item');
+    if (hasBuilder(b, s.inventory)) throw new Error('gear:owned');
+    if (s.wallet.coins < b.cost) throw new Error('gear:insufficient');
+    s.inventory.push({ item_id: args.p_item, acquired_at: new Date().toISOString() });
+    s.wallet = { ...s.wallet, coins: s.wallet.coins - b.cost };
+    listeners.forEach((f) => f(s));
+    return s;
+  }
   if (fn === 'buy_stall') {
     const it = stallItemById(args.p_item);
     if (!it) throw new Error('gear:unknown_item');
@@ -536,6 +547,10 @@ export const cancelJob = (id) => call('workshop_cancel', { p_job: id });
 export const skipJob = (id, kind) => call('workshop_skip', { p_job: id, p_kind: kind });
 /** Build a rare prop from blueprint fragments (docs/LOOP.md §4.2). */
 export const buildBlueprint = (id) => call('build_blueprint', { p_item: id });
+/** Can builders be hired here? Demo only until the server sells them (a migration still to write). */
+export const buildersOpen = () => isDemo();
+/** Hire a builder (builders.js). Throws with a `gear:` code. */
+export const buyBuilder = (id) => call('buy_builder', { p_item: id });
 /** Buy today's item from the stall (docs/LOOP.md §5.3). */
 export const buyStall = (id) => call('buy_stall', { p_item: id });
 

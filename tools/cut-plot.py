@@ -1,5 +1,5 @@
 """cut-plot.py: the single-plot base (docs/PLOT.md): the Navy Club map, its 48 x 48 lawn, the platform the
-locker room stands on, and the builders' pads and huts.
+locker room stands on, the platform and the club's buildings (the builders' huts are items).
 
     python tools/cut-plot.py <map 3x png> <platform repaint> <renders dir>
 
@@ -8,7 +8,7 @@ locker room stands on, and the builders' pads and huts.
   <renders dir>       <name>-a.png + <name>-a.json: Base/repaint/cut (tools/render-items/cut-base-repaints.py),
                       or render-base-assets.py's plain renders
 
-Writes icons/Plot/ (the map in tiles, each with a small copy; the platform; the pads and huts) and
+Writes icons/Plot/ (the map in tiles, each with a small copy; the platform; the club's buildings) and
 js/core/plot-art.js. World px are the 3x map's own px: one lawn tile is 102 px across, as in the 32 x 32 rooms.
 
 The lawn: its four straight edges are fitted (its painted corners are rounded by the track) and met, which
@@ -28,18 +28,17 @@ OUT = os.path.join(REPO, 'icons', 'Plot')
 ART_JS = os.path.join(REPO, 'js', 'core', 'plot-art.js')
 N = 48            # the lawn, tiles each way
 P = 3             # the platform's floor starts this many tiles in from the lawn's back corner
-FLOOR = 24        # the platform's floor, tiles each way (32 was far too big next to the huts and the lawn)
+FLOOR = 16        # the platform's floor, tiles each way: its body reaches the club's two exits in the fence
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r4'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r6'    # in the platform's and club buildings' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
-BUILDERS = [('blue', 4.5, 3.6), ('red', 4.5, 3.6), ('green', 4.5, 3.6), ('gold', 4, 3.0)]
-FACE = 'b'        # pads and huts: doors and steps towards the lawn (front right)
-PAD_STEP = 7      # tiles from one pad to the next
+# (the builders' huts on their pads are items now, set down and moved by the player: js/core/builders.js,
+# tools/render-items/make-builders.py)
 # the club's buildings on the paving behind the lawn, out of the platform walls' way (tiles past the lawn's edges:
 # u < 0 is behind its back-left side, v < 0 behind its back-right), each facing the lawn:
 # (who, render, facing, centre u, centre v, longest footprint side in tiles)
@@ -171,10 +170,10 @@ def main():
     (W, H), tiles = cut_tiles(mp)
     plat = platform(rep, world)
     body = math.ceil(P + FLOOR + plat['rim'])         # the platform's body reaches this far, from the back
-    # the stairs come down the front-left side, their foot from 10/24 to 16/24 of the way along it from its
-    # left end, 4 tiles out from the platform (measured on the preview at FLOOR 24)
-    k = FLOOR / 24
-    stairs = [round(P + 10 * k), body, round(P + 16 * k), body + round(4 * k)]
+    # the stairs come down the front-left side, their foot from 6/16 to 10/16 of the way along the floor from its
+    # left end, a sixth of the floor out from the platform (measured on platform-navy-redo-11 at FLOOR 16)
+    k = FLOOR / 16
+    stairs = [round(P + 6 * k), body, round(P + 10 * k), body + round(FLOOR / 6)]
     blocked = [[0, 0, body, P], [0, P, P, body], [P + FLOOR, P, body, body], [P, P + FLOOR, P + FLOOR, body], stairs]
     # the way up: the stairs' middle 3 tiles and the rim above them can be walked on (never built on); the
     # ground rises up the stairs from the lawn (v = stairs' foot) to the platform's top (v = body)
@@ -182,18 +181,10 @@ def main():
     walk = [[mid - 1, P + FLOOR, mid + 2, stairs[3]]]
     plat['top'] = [P, P, body, body]
     plat['ramp'] = stairs
-    pads, u0 = [], body + 1
-    for i, (who, size, hut) in enumerate(BUILDERS):
-        v = P + 1 + i * PAD_STEP
-        c = world(u0 + size / 2, v + size / 2)
-        pads.append({'who': who, 'u': u0, 'v': v, 'size': size,
-                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size, FACE),
-                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut, FACE)})
-        blocked.append([u0, v, u0 + size, v + size])
     club = [{'who': who, 'u': u, 'v': v, 'size': size, 'pic': piece(renders, name, world(u, v), f'club-{who}-{ART_TAG}', size, face)}
             for who, name, face, u, v, size in CLUB]
     art = {'world': {'w': W, 'h': H}, 'tiles': tiles, 'grid': N, 'lawn': lawn, 'tileW': round(TILE_W, 3),
-           'platform': plat, 'blocked': blocked, 'walk': walk, 'pads': pads, 'club': club}
+           'platform': plat, 'blocked': blocked, 'walk': walk, 'club': club}
     with open(ART_JS, 'w', encoding='utf-8') as f:
         f.write('// plot-art.js: the single-plot base\'s pictures and where they stand, in world px (the 3x map\'s px).\n'
                 '// Written by tools/cut-plot.py. Don\'t edit by hand.\n')

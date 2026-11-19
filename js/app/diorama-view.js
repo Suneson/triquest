@@ -343,7 +343,7 @@ const walk = { w: null, room: null, going: null, grid: null, redraw: null };
 // the room's level per room, as the stage last worked it out (the stash's pictures use it)
 let lastLevels = {};
 export const itemLevels = () => lastLevels;
-const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], ALL_ROOMS);
+const itemsOwned = () => placeablesFor([...gearState().inventory, ...baseItemRows()], ALL_ROOMS, { plot: plotMode() });
 
 /** Rooms whose items only ever stand there: taken from the stash anywhere, they go to that room. */
 const OWN_ROOM = new Set(['run']);
@@ -386,14 +386,15 @@ const poly = (corners, cls, extra = '') => `<polygon class="${cls}" points="${co
  * out from each side, pointing away along the floor's axes (NE, SE, SW, NW).
  */
 function arrows(geom, it, p) {
-  const { u, v } = p; const w = it.w; const h = it.h;
+  const { u, v } = p; const w = it.w; const h = it.h; const ref = [u + w / 2, v + h / 2];
   // an arrow in floor units along axis a (the other axis b), from `from` outwards by `dir`
   const arrow = (axis, dir, mid) => {
     const base = dir > 0 ? (axis === 'u' ? u + w : v + h) + 0.2 : (axis === 'u' ? u : v) - 0.2;
     const shape = [[0, -0.18], [0.45, -0.18], [0.45, -0.42], [0.95, 0], [0.45, 0.42], [0.45, 0.18], [0, 0.18]];
     return shape.map(([a, b]) => {
       const along = base + a * dir;
-      return axis === 'u' ? tileToPct(geom, along, mid + b) : tileToPct(geom, mid + b, along);
+      // drawn at the item's height (on the raised platform an arrow past the floor's edge would drop to the lawn)
+      return axis === 'u' ? tileToPct(geom, along, mid + b, ref) : tileToPct(geom, mid + b, along, ref);
     });
   };
   const set = [['+u', arrow('u', 1, v + h / 2)], ['-u', arrow('u', -1, v + h / 2)], ['+v', arrow('v', 1, u + w / 2)], ['-v', arrow('v', -1, u + w / 2)]];

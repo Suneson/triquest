@@ -460,173 +460,67 @@ export const PLOT_ART = {
  },
  "tileW": 102.206,
  "platform": {
-  "src": "icons/Plot/platform-24-r4.webp",
-  "x": 3404.8,
-  "y": 1150.6,
-  "w": 3494.8,
-  "h": 2945.9,
+  "src": "icons/Plot/platform-16-r6.webp",
+  "x": 4016.9,
+  "y": 1596.3,
+  "w": 2329.9,
+  "h": 1963.9,
   "at": 3,
-  "size": 24,
-  "lift": 229.1,
-  "rim": 1.72,
+  "size": 16,
+  "lift": 152.7,
+  "rim": 1.15,
   "top": [
    3,
    3,
-   29,
-   29
+   21,
+   21
   ],
   "ramp": [
+   9,
+   21,
    13,
-   29,
-   19,
-   33
+   24
   ]
  },
  "blocked": [
   [
    0,
    0,
-   29,
+   21,
    3
   ],
   [
    0,
    3,
    3,
-   29
+   21
   ],
   [
-   27,
-   3,
-   29,
-   29
-  ],
-  [
-   3,
-   27,
-   27,
-   29
-  ],
-  [
-   13,
-   29,
    19,
-   33
+   3,
+   21,
+   21
   ],
   [
-   30,
-   4,
-   34.5,
-   8.5
+   3,
+   19,
+   19,
+   21
   ],
   [
-   30,
-   11,
-   34.5,
-   15.5
-  ],
-  [
-   30,
-   18,
-   34.5,
-   22.5
-  ],
-  [
-   30,
-   25,
-   34,
-   29
+   9,
+   21,
+   13,
+   24
   ]
  ],
  "walk": [
   [
-   15,
-   27,
-   18,
-   33
+   10,
+   19,
+   13,
+   24
   ]
- ],
- "pads": [
-  {
-   "who": "blue",
-   "u": 30,
-   "v": 4,
-   "size": 4.5,
-   "pad": {
-    "src": "icons/Plot/pad-blue-r4.webp",
-    "x": 6330.2,
-    "y": 3178.4,
-    "w": 431.7,
-    "h": 234.2
-   },
-   "hut": {
-    "src": "icons/Plot/hut-blue-r4.webp",
-    "x": 6392.5,
-    "y": 2999.9,
-    "w": 317.6,
-    "h": 381.1
-   }
-  },
-  {
-   "who": "red",
-   "u": 30,
-   "v": 11,
-   "size": 4.5,
-   "pad": {
-    "src": "icons/Plot/pad-red-r4.webp",
-    "x": 5971.4,
-    "y": 3343.3,
-    "w": 431.7,
-    "h": 251.2
-   },
-   "hut": {
-    "src": "icons/Plot/hut-red-r4.webp",
-    "x": 6036.1,
-    "y": 3214.5,
-    "w": 319.9,
-    "h": 345.1
-   }
-  },
-  {
-   "who": "green",
-   "u": 30,
-   "v": 18,
-   "size": 4.5,
-   "pad": {
-    "src": "icons/Plot/pad-green-r4.webp",
-    "x": 5620.2,
-    "y": 3530.4,
-    "w": 425.2,
-    "h": 245.5
-   },
-   "hut": {
-    "src": "icons/Plot/hut-green-r4.webp",
-    "x": 5656.7,
-    "y": 3255.3,
-    "w": 352.8,
-    "h": 494.3
-   }
-  },
-  {
-   "who": "gold",
-   "u": 30,
-   "v": 25,
-   "size": 4,
-   "pad": {
-    "src": "icons/Plot/pad-gold-r4.webp",
-    "x": 5289.6,
-    "y": 3710.5,
-    "w": 380.9,
-    "h": 218.5
-   },
-   "hut": {
-    "src": "icons/Plot/hut-gold-r4.webp",
-    "x": 5343.0,
-    "y": 3634.7,
-    "w": 278.1,
-    "h": 260.9
-   }
-  }
  ],
  "club": [
   {
@@ -635,7 +529,7 @@ export const PLOT_ART = {
    "v": 28,
    "size": 16,
    "pic": {
-    "src": "icons/Plot/club-stadium-r4.webp",
+    "src": "icons/Plot/club-stadium-r6.webp",
     "x": 1855.8,
     "y": 1761.3,
     "w": 1557.6,
@@ -648,7 +542,7 @@ export const PLOT_ART = {
    "v": -21,
    "size": 13,
    "pic": {
-    "src": "icons/Plot/club-clubhouse-r4.webp",
+    "src": "icons/Plot/club-clubhouse-r6.webp",
     "x": 7029.0,
     "y": 1840.8,
     "w": 1355.6,

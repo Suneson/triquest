@@ -44,7 +44,7 @@ test('the floor maps both ways', () => {
     assert.ok(ROOM_SIZE[key], key);
     // on the plot, a tile hidden behind the raised platform is tapped as the platform's floor in front of it:
     // check tiles you can see (on the platform, and the lawn in front)
-    const tiles = ROOM_GEOMETRY[key].raised ? [[10, 10], [20.5, 6.25], [40, 44], [30.5, 40.25]] : [[0, 0], [1.5, 2.25], [3, 7]];
+    const tiles = ROOM_GEOMETRY[key].raised ? [[10, 10], [16.5, 6.25], [40, 44], [30.5, 40.25]] : [[0, 0], [1.5, 2.25], [3, 7]];
     for (const [u, v] of tiles) {
       const p = tileToPct(key, u, v);
       const back = pctToTile(key, p.x, p.y);

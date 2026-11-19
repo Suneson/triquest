@@ -3489,4 +3489,8 @@ en.gear.err["nothing_to_sell"] = "There’s nothing on the shelves to sell.";
 en.gear.err["no_crate"] = "No wholesale crates left. Open chests to get more.";
 en.gear.err["no_brick"] = "The VIP only comes on a brick day.";
 
+// the builders on the single-plot base (builders.js)
+Object.assign(en.cp.item, { "builder-blue": "Blue builder's hut", "builder-red": "Red builder's hut", "builder-green": "Green builder's hut", "builder-gold": "Gold builder's hut" });
+en.builder = {"title": "Builders", "about": "Your builders do the work round your base. You start with one: hire more here, then put their huts anywhere on the lawn and turn them as you like.", "name": {"blue": "Blue builder", "red": "Red builder", "green": "Green builder", "gold": "Gold builder"}, "hired": "Hired", "soon": "Soon", "buyAria": "Hire the {name} for {cost} coins", "hiredToast": "is hired. Their hut is on the lawn: tap it to move or turn it."};
+
 export default en;

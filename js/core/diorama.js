@@ -93,9 +93,10 @@ const PLOT_TILES = [...PLOT_ART.tiles].sort((p, q) => {
   return Math.hypot(p.x + p.w / 2 - cx, p.y + p.h / 2 - cy) - Math.hypot(q.x + q.w / 2 - cx, q.y + q.h / 2 - cy);
 });
 const plotEnv = () => {
-  const { world, lawn, platform, pads, club = [], tileW } = PLOT_ART;
+  const { world, lawn, platform, club = [], tileW } = PLOT_ART;
   // the club's buildings stand behind the lawn, so they go first: the platform's walls are drawn over them
-  const pieces = [...club.map((c) => c.pic), platform, ...pads.map((p) => p.pad), ...pads.map((p) => p.hut)];
+  // (the builders' huts are items now: builders.js, placement.js)
+  const pieces = [...club.map((c) => c.pic), platform];
   return { src: PLOT_TILES[0].src, tiles: PLOT_TILES, w: world.w, h: world.h,
     plot: { top: lawn.back, right: lawn.right, bottom: lawn.front, left: lawn.left }, floorShare: 1, slabView: 1.02,
     fitW: (lawn.right[0] - lawn.left[0]) * 1.12, maxS: TILE_ZOOM / tileW, tower: pieces, rail: null, plotBase: true };

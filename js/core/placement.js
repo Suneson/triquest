@@ -14,6 +14,7 @@
 //
 // Nothing here touches the DOM; diorama-view.js draws it.
 
+import { BUILDERS, builderId, hasBuilder } from './builders.js';
 import { STALL_ITEMS } from './stall.js';
 
 import { ROOM32 } from './room32-art.js';
@@ -297,6 +298,12 @@ const ITEMS = [
   // the kitchen's first two (Items/z_GLB MODELS/map assets, tools/render-items/render-grounds.py)
   stashed('room-pantry', 'locker', 1, 2, 0.8),
   stashed('room-smoothie-bar', 'locker', 2, 2, 0.9),
+  // the builders' huts on their pads (builders.js): only on the single-plot base, where they stand on the
+  // lawn. The first is everyone's; the others are yours once bought. Moved and turned like any item.
+  ...BUILDERS.map((b) => ({
+    id: builderId(b.who), w: 3, h: 3, home: 'locker', plot: true, fit: 0.96, faces: true, face: b.face, spot: b.spot,
+    gift: b.cost === 0, owned: (inv) => hasBuilder(b, inv), art: (o) => `${ITEM3D}/builder-${b.who}-${o?.face || b.face}.webp`,
+  })),
   // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py): they
   // belong in the club room (in the club house). Bar-top pieces stand on the floor for now (the game
   // can't stack items yet).
@@ -329,9 +336,10 @@ export const turned = (face, sides = 2) => {
   return FACES[(Math.max(0, FACES.indexOf(face)) + 1) % n];
 };
 
-/** The items this athlete has to place: gifts, and anything their inventory gives (in rooms they have). */
-export const placeablesFor = (inventory, rooms = null) => PLACEABLES.filter((p) => (p.gift || p.owned?.(inventory))
-  && (!p.needsRoom || !rooms || rooms.includes(p.needsRoom)));
+/** The items this athlete has to place: gifts, and anything their inventory gives (in rooms they have). The
+ *  builders' huts (`plot`) only on the single-plot base. */
+export const placeablesFor = (inventory, rooms = null, { plot = false } = {}) => PLACEABLES.filter((p) => (p.gift || p.owned?.(inventory))
+  && (!p.needsRoom || !rooms || rooms.includes(p.needsRoom)) && (!p.plot || plot));
 
 /** Is this item in the stash? Saved there, or never set down and made to start there. */
 export const isStashed = (item, saved) => {

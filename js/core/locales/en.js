@@ -2794,7 +2794,7 @@ en.cp = {
   "placed": "{name} moved to the {room}",
   "why": {
     "bounds": "It can’t go through a wall.",
-    "blocked": "Not there: that’s the water.",
+    "blocked": "Not there: nothing can stand on that spot.",
     "occupied": "Something’s already standing there."
   },
   "nudge": { "+u": "Move one tile right", "-u": "Move one tile left", "+v": "Move one tile forward", "-v": "Move one tile back" },

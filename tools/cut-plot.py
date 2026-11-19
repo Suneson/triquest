@@ -17,6 +17,7 @@ down-left, 0 to 48. The platform's floor (inside its painted guide line) is the 
 raised by `lift` world px (all scaled with FLOOR); the platform's body round it is blocked to anything on the lawn.
 """
 import json, math, os, sys
+import cv2
 import numpy as np
 from PIL import Image
 from scipy import ndimage as nd
@@ -31,13 +32,17 @@ FLOOR = 24        # the platform's floor, tiles each way (32 was far too big nex
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r1'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r2'    # in the pads' and huts' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
 BUILDERS = [('blue', 5, 4.4), ('red', 5, 4.4), ('green', 5, 4.4), ('gold', 4.5, 3.6)]
 PAD_STEP = 7      # tiles from one pad to the next
+# the club's buildings on the paving behind the lawn, out of the platform walls' way (tiles past the lawn's edges:
+# u < 0 is behind its back-left side, v < 0 behind its back-right), each facing the lawn:
+# (who, render, facing, centre u, centre v, longest footprint side in tiles)
+CLUB = [('stadium', 'stadium-club', 'b', -21, 28, 16), ('clubhouse', 'clubhouse-modern', 'a', 28, -21, 13)]
 
 
 def lawn_corners(path):
@@ -122,21 +127,31 @@ def platform(path, world):
     s = (tgt(P + FLOOR, P)[0] - tgt(P, P + FLOOR)[0]) / (right[0] - left[0])
     lift = s * (foot - edge)
     rim = s * (edge - bot[1]) / ((tgt(1, 1)[1] - tgt(0, 0)[1]))    # tiles round the guide line, in the plan
-    bx, by = tgt(P, P)
-    x0 = bx - s * top[0]; y0 = by - lift - s * top[1]
-    im = Image.fromarray(rgba)
-    ow, oh = round(w * s * STORE_K), round(h * s * STORE_K)
-    im.resize((ow, oh), Image.LANCZOS).save(os.path.join(OUT, f'platform-{FLOOR}.webp'), quality=88, method=6)
+    # the repaint isn't an exact 2:1 view (Gemini skews it a little), so the guide line's four corners are pulled
+    # onto the floor's four raised grid corners with a perspective warp: the floor then fits the grid exactly
+    src = np.float32([top, right, bot, left])
+    dst = np.float32([np.array(tgt(u, v)) - [0, lift] for u, v in ((P, P), (P + FLOOR, P), (P + FLOOR, P + FLOOR), (P, P + FLOOR))])
+    H = cv2.getPerspectiveTransform(src, dst)
+    box = cv2.perspectiveTransform(np.float32([[[0, 0]], [[w, 0]], [[w, h]], [[0, h]]]), H).reshape(-1, 2)
+    x0, y0 = box.min(0); x1, y1 = box.max(0)
+    to = np.array([[STORE_K, 0, -x0 * STORE_K], [0, STORE_K, -y0 * STORE_K], [0, 0, 1]]) @ H
+    ow, oh = math.ceil((x1 - x0) * STORE_K), math.ceil((y1 - y0) * STORE_K)
+    # premultiplied, so the keyed edge doesn't pick up the green
+    pm = rgba.astype(np.float32); pm[..., :3] *= pm[..., 3:4] / 255
+    out = cv2.warpPerspective(pm, to, (ow, oh), flags=cv2.INTER_CUBIC, borderValue=(0, 0, 0, 0))
+    a = np.clip(out[..., 3:4], 0, 255)
+    out[..., :3] = np.where(a > 0.5, out[..., :3] * 255 / np.maximum(a, 1e-3), 0)
+    Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA').save(os.path.join(OUT, f'platform-{FLOOR}-w.webp'), quality=88, method=6)
     print('platform scale', round(s, 4), 'lift', round(lift, 1), 'rim tiles', round(rim, 2))
-    return {'src': f'icons/Plot/platform-{FLOOR}.webp', 'x': round(x0, 1), 'y': round(y0, 1), 'w': round(w * s, 1), 'h': round(h * s, 1),
-            'at': P, 'size': FLOOR, 'lift': round(lift, 1), 'rim': round(rim, 2)}
+    return {'src': f'icons/Plot/platform-{FLOOR}-w.webp', 'x': round(float(x0), 1), 'y': round(float(y0), 1), 'w': round(float(x1 - x0), 1),
+            'h': round(float(y1 - y0), 1), 'at': P, 'size': FLOOR, 'lift': round(lift, 1), 'rim': round(rim, 2)}
 
 
-def piece(renders, name, centre, store, tiles):
+def piece(renders, name, centre, store, tiles, face='a'):
     """A render placed with its footprint's middle (the json's origin) on `centre` (world px), its footprint's
     longest side `tiles` tiles."""
-    meta = json.load(open(os.path.join(renders, f'{name}-a.json')))
-    im = Image.open(os.path.join(renders, f'{name}-a.png')).convert('RGBA')
+    meta = json.load(open(os.path.join(renders, f'{name}-{face}.json')))
+    im = Image.open(os.path.join(renders, f'{name}-{face}.png')).convert('RGBA')
     s = TILE_W / RENDER_TILE * tiles / meta['tiles']
     bb = im.getchannel('A').point(lambda v: 255 if v > 3 else 0).getbbox()
     im = im.crop(bb); ox, oy = meta['ox'] - bb[0], meta['oy'] - bb[1]
@@ -150,7 +165,7 @@ def main():
     mp, rep, renders = sys.argv[1:4]
     os.makedirs(OUT, exist_ok=True)
     for f in os.listdir(OUT):
-        if f.startswith(('ground-', 'pad-', 'hut-')): os.remove(os.path.join(OUT, f))
+        if f.startswith(('ground-', 'pad-', 'hut-', 'platform-', 'club-')): os.remove(os.path.join(OUT, f))
     lawn = lawn_corners(mp)
     print('lawn', lawn)
     B, Rr, L = np.array(lawn['back']), np.array(lawn['right']), np.array(lawn['left'])
@@ -178,8 +193,10 @@ def main():
                      'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size),
                      'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut)})
         blocked.append([u0, v, u0 + size, v + size])
+    club = [{'who': who, 'u': u, 'v': v, 'size': size, 'pic': piece(renders, name, world(u, v), f'club-{who}-{ART_TAG}', size, face)}
+            for who, name, face, u, v, size in CLUB]
     art = {'world': {'w': W, 'h': H}, 'tiles': tiles, 'grid': N, 'lawn': lawn, 'tileW': round(TILE_W, 3),
-           'platform': plat, 'blocked': blocked, 'walk': walk, 'pads': pads}
+           'platform': plat, 'blocked': blocked, 'walk': walk, 'pads': pads, 'club': club}
     with open(ART_JS, 'w', encoding='utf-8') as f:
         f.write('// plot-art.js: the single-plot base\'s pictures and where they stand, in world px (the 3x map\'s px).\n'
                 '// Written by tools/cut-plot.py. Don\'t edit by hand.\n')

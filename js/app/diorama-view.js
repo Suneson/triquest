@@ -58,7 +58,8 @@ import { mountCity, unmountCity, TRUCK_AFTER, SIGN_AT, SIGN_HEIGHT, VEHICLES } f
 import { parcels, openParcel, parcelOpen, kindOf } from './delivery-view.js';
 import { deliveryEnds } from '../core/deliveries.js';
 import { showCoins, closeBar } from './market-view.js';
-import { mountIsland, tickIsland, closeBar as closeIslandBar } from './island-view.js';
+import { PLOT_ART } from '../core/plot-art.js';
+import { mountIsland, mountPlotClub, tickIsland, closeBar as closeIslandBar } from './island-view.js';
 const TAP_TARGETS = '.dg-isl-hit, .dg-isl-spot, .dg-shop-hit, .dg-mk-hit, .dg-mk-coin, .dg-shop-warn, .dg-sign-hit';
 
 const ROOM_KEY = 'moske-room';
@@ -819,9 +820,13 @@ export function wireDiorama(root, ctx) {
       parked: (kind) => parcels(kind).length > 0 || parcelOpen(),
       reduced,
     });
+  } else if (env.plotBase) {
+    // the plot's stadium and club house, behind the lawn (island-view.js)
+    unmountCity(worldEl);
+    mountPlotClub(worldEl, stage.front, PLOT_ART.club || [], { workouts: () => ctx.workouts, screen: vp.closest('.dg-screen') });
   } else {
     unmountCity(worldEl);
-    closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks').forEach((el) => el.remove()); closeBar(); }
+    closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks, .dg-isl-hit.is-plot').forEach((el) => el.remove()); closeBar(); }
   // The view changes at once; the screen follows once a frame, however many touch or wheel
   // events come in between (a phone sends 120 a second).
   let frameAsked = 0; let invAt = 0;

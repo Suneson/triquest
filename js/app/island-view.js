@@ -140,6 +140,40 @@ export function mountIsland(worldEl, front, { workouts, screen }) {
   if (!mountIsland.watching) { mountIsland.watching = true; onGear(() => { paint(); refreshBar(); }); }
 }
 
+/**
+ * The single-plot base's club buildings (plot-art.js): the stadium and the club house stand behind the lawn as
+ * pictures of the map (diorama.js plotEnv). Each gets a button over its picture and a name tag, and they work
+ * as on the old forecourt: the stadium opens its race, the club house the club room (once it's rebuilt; till
+ * then a tap offers the rebuild). `club` is PLOT_ART.club.
+ */
+export function mountPlotClub(worldEl, front, club, { workouts, screen }) {
+  ctx = { workouts: workouts || (() => []), screen, world: worldEl, front };
+  const PLOT_OF = { stadium: 'stadium', clubhouse: 'club' };
+  for (const c of club) {
+    const p = PLOT_OF[c.who]; const a = c.pic;
+    if (!p) continue;
+    if (!front.querySelector(`.dg-isl-tag[data-isl="${p}"]`)) {
+      const tag = document.createElement('div');
+      tag.className = 'dg-isl-tag'; tag.dataset.isl = p; tag.setAttribute('aria-hidden', 'true');
+      tag.textContent = name(p);
+      Object.assign(tag.style, { left: `${a.x + a.w / 2}px`, top: `${a.y + a.h * 0.08}px` });
+      front.append(tag);
+    }
+    if (worldEl.querySelector(`.dg-isl-hit[data-isl="${p}"]`)) continue;
+    const hit = document.createElement('button');
+    hit.className = 'dg-isl-hit is-plot'; hit.dataset.isl = p;
+    hit.setAttribute('aria-label', name(p));
+    Object.assign(hit.style, { left: `${a.x}px`, top: `${a.y}px`, width: `${a.w}px`, height: `${a.h}px` });
+    hit.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (p === 'stadium') { haptic('tick'); import('./stadium-view.js').then((m) => m.openStadium()); } else tap(p);
+    });
+    worldEl.querySelector('.dg-items').before(hit);
+  }
+  import('./stadium-view.js').then((m) => m.warmupNotice()).catch(() => {});
+  if (!mountPlotClub.watching) { mountPlotClub.watching = true; onGear(() => refreshBar()); }
+}
+
 function paint() {
   const w = ctx.world;
   if (!w?.querySelector('.dg-plots')) return;

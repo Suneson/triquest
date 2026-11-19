@@ -180,8 +180,8 @@ export const ITEM_FIT = {
     "pad": 0.006
   },
   "icons/Items/builder-blue-2-b.webp": {
-    "w": 0.883,
-    "mid": 0.512,
+    "w": 0.922,
+    "mid": 0.535,
     "pad": 0.006
   },
   "icons/Items/builder-gold-2-a.webp": {
@@ -190,8 +190,8 @@ export const ITEM_FIT = {
     "pad": 0.017
   },
   "icons/Items/builder-gold-2-b.webp": {
-    "w": 0.852,
-    "mid": 0.494,
+    "w": 0.922,
+    "mid": 0.534,
     "pad": 0.019
   },
   "icons/Items/builder-green-2-a.webp": {
@@ -200,8 +200,8 @@ export const ITEM_FIT = {
     "pad": 0.014
   },
   "icons/Items/builder-green-2-b.webp": {
-    "w": 0.846,
-    "mid": 0.486,
+    "w": 0.929,
+    "mid": 0.536,
     "pad": 0.015
   },
   "icons/Items/builder-red-2-a.webp": {
@@ -210,9 +210,9 @@ export const ITEM_FIT = {
     "pad": 0.008
   },
   "icons/Items/builder-red-2-b.webp": {
-    "w": 0.873,
-    "mid": 0.511,
-    "pad": 0.015
+    "w": 0.919,
+    "mid": 0.537,
+    "pad": 0.017
   },
   "icons/Items/clan-arcade-cabinet-a.webp": {
     "w": 0.926,

@@ -6,10 +6,8 @@
 <cut dir>  Base/repaint/cut: pad-navy-<who>-<a|b>.png/.json and hut-navy-<who>-<a|b>.png/.json
            (cut-base-repaints.py; the renders' frames, PPU 100, the json's ox/oy the footprint's middle)
 
-The hut nearly fills its pad (HUT of the pad's side), its middle on the pad's, its door over the pad's stairs:
-on face a both are on the front-left side, near its middle. Face b's own hut renders have their door a tile
-off the middle of the front-right side, away from the pad's stairs, so face b stands the a hut mirrored on
-the b pad (its door then over the stairs too). The item's footprint is the pad's.
+The hut nearly fills its pad (HUT of the pad's side, a thin edge of the pad showing all round), its middle on
+the pad's middle. The item's footprint is the pad's.
 """
 import json, os, sys
 from PIL import Image
@@ -25,11 +23,9 @@ def main():
     for who, k in HUT.items():
         for face in 'ab':
             pm = json.load(open(os.path.join(cut, f'pad-navy-{who}-{face}.json')))
-            hm = dict(json.load(open(os.path.join(cut, f'hut-navy-{who}-a.json'))))
+            hm = json.load(open(os.path.join(cut, f'hut-navy-{who}-{face}.json')))
             pad = Image.open(os.path.join(cut, f'pad-navy-{who}-{face}.png')).convert('RGBA')
-            hut = Image.open(os.path.join(cut, f'hut-navy-{who}-a.png')).convert('RGBA')
-            if face == 'b':
-                hut = hut.transpose(Image.FLIP_LEFT_RIGHT); hm['ox'] = hut.width - hm['ox']
+            hut = Image.open(os.path.join(cut, f'hut-navy-{who}-{face}.png')).convert('RGBA')
             s = k * pm['tiles'] / hm['tiles']
             hut = hut.resize((round(hut.width * s), round(hut.height * s)), Image.LANCZOS)
             hx, hy = pm['ox'] - hm['ox'] * s, pm['oy'] - LIFT - hm['oy'] * s

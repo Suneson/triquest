@@ -547,8 +547,8 @@ export const cancelJob = (id) => call('workshop_cancel', { p_job: id });
 export const skipJob = (id, kind) => call('workshop_skip', { p_job: id, p_kind: kind });
 /** Build a rare prop from blueprint fragments (docs/LOOP.md §4.2). */
 export const buildBlueprint = (id) => call('build_blueprint', { p_item: id });
-/** Can builders be hired here? Demo only until the server sells them (a migration still to write). */
-export const buildersOpen = () => isDemo();
+/** Can builders be hired here? (Demo, or signed in: 0038_builders.sql's buy_builder.) */
+export const buildersOpen = () => isDemo() || gearEnabled();
 /** Hire a builder (builders.js). Throws with a `gear:` code. */
 export const buyBuilder = (id) => call('buy_builder', { p_item: id });
 /** Buy today's item from the stall (docs/LOOP.md §5.3). */

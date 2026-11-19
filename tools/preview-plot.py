@@ -19,6 +19,7 @@ def put(p):
 for t in A['tiles']:
     im = Image.open(os.path.join(REPO, t['src'])).convert('RGB').resize((round(t['w'] * K) + 1, round(t['h'] * K) + 1), Image.LANCZOS)
     img.paste(im, (round(t['x'] * K), round(t['y'] * K)))
+for c in A.get('club', []): put(c['pic'])
 put(A['platform'])
 for p in A['pads']: put(p['pad'])
 for p in A['pads']: put(p['hut'])

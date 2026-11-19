@@ -2794,7 +2794,7 @@ es.cp = {
   "placed": "{name} movido a {room}",
   "why": {
     "bounds": "No puede atravesar una pared.",
-    "blocked": "Ahí no: es agua.",
+    "blocked": "Ahí no: ahí no se puede poner nada.",
     "occupied": "Ya hay algo ahí."
   },
   "nudge": { "+u": "Mover una casilla a la derecha", "-u": "Mover una casilla a la izquierda", "+v": "Mover una casilla hacia delante", "-v": "Mover una casilla hacia atrás" },

@@ -28,18 +28,20 @@ OUT = os.path.join(REPO, 'icons', 'Plot')
 ART_JS = os.path.join(REPO, 'js', 'core', 'plot-art.js')
 N = 48            # the lawn, tiles each way
 P = 3             # the platform's floor starts this many tiles in from the lawn's back corner
-FLOOR = 10        # the platform's floor, tiles each way (32, then 24, were far too big next to the huts and the lawn)
+FLOOR = 16        # the platform's floor, tiles each way: its body reaches the club's two exits in the fence
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r5'    # in the pads' and huts' names: change it whenever they're repainted
+ART_TAG = 'r6'    # in the pads' and huts' names: change it whenever they're repainted
 MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
-BUILDERS = [('blue', 4.5, 3.6), ('red', 4.5, 3.6), ('green', 4.5, 3.6), ('gold', 4, 3.0)]
-FACE = 'b'        # pads and huts: doors and steps towards the lawn (front right)
-PAD_STEP = 7      # tiles from one pad to the next
+# where each builder's pad stands, round the platform: (who, pad tiles, hut tiles, side, place, facing). side 'stairs'
+# is the front-left side, either side of the stairs, facing down-left ('a'); side 'right' is the front-right side,
+# facing down-right ('b'); place is 0 or 1 along that side
+BUILDERS = [('blue', 4.5, 3.6, 'right', 0, 'b'), ('red', 4.5, 3.6, 'right', 1, 'b'),
+            ('green', 4.5, 3.6, 'stairs', 0, 'a'), ('gold', 4, 3.0, 'stairs', 1, 'a')]
 # the club's buildings on the paving behind the lawn, out of the platform walls' way (tiles past the lawn's edges:
 # u < 0 is behind its back-left side, v < 0 behind its back-right), each facing the lawn:
 # (who, render, facing, centre u, centre v, longest footprint side in tiles)
@@ -171,10 +173,10 @@ def main():
     (W, H), tiles = cut_tiles(mp)
     plat = platform(rep, world)
     body = math.ceil(P + FLOOR + plat['rim'])         # the platform's body reaches this far, from the back
-    # the stairs come down the front-left side, their foot from 10/24 to 16/24 of the way along it from its
-    # left end, 4 tiles out from the platform (measured on the preview at FLOOR 24)
-    k = FLOOR / 24
-    stairs = [round(P + 10 * k), body, round(P + 16 * k), body + round(4 * k)]
+    # the stairs come down the front-left side, their foot from 6/16 to 10/16 of the way along the floor from its
+    # left end, a sixth of the floor out from the platform (measured on platform-navy-redo-11 at FLOOR 16)
+    k = FLOOR / 16
+    stairs = [round(P + 6 * k), body, round(P + 10 * k), body + round(FLOOR / 6)]
     blocked = [[0, 0, body, P], [0, P, P, body], [P + FLOOR, P, body, body], [P, P + FLOOR, P + FLOOR, body], stairs]
     # the way up: the stairs' middle 3 tiles and the rim above them can be walked on (never built on); the
     # ground rises up the stairs from the lawn (v = stairs' foot) to the platform's top (v = body)
@@ -182,14 +184,18 @@ def main():
     walk = [[mid - 1, P + FLOOR, mid + 2, stairs[3]]]
     plat['top'] = [P, P, body, body]
     plat['ramp'] = stairs
-    pads, u0 = [], body + 1
-    for i, (who, size, hut) in enumerate(BUILDERS):
-        v = P + 1 + i * PAD_STEP
-        c = world(u0 + size / 2, v + size / 2)
-        pads.append({'who': who, 'u': u0, 'v': v, 'size': size,
-                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size, FACE),
-                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut, FACE)})
-        blocked.append([u0, v, u0 + size, v + size])
+    pads = []
+    for who, size, hut, side, place, face in BUILDERS:
+        if side == 'right':      # two pads spread along the front-right side, a tile out
+            u, v = body + 1, P + 1 + place * (FLOOR / 2)
+        else:                    # either side of the stairs' foot, a tile out from the front-left side
+            # (the right one further out: a hut there stands in front of the stairs and would hide them)
+            u, v = (stairs[0] - 2 - size if place == 0 else stairs[2] + 3), body + 1
+        c = world(u + size / 2, v + size / 2)
+        pads.append({'who': who, 'u': u, 'v': v, 'size': size,
+                     'pad': piece(renders, f'pad-navy-{who}', c, f'pad-{who}-{ART_TAG}', size, face),
+                     'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}-{ART_TAG}', hut, face)})
+        blocked.append([u, v, u + size, v + size])
     club = [{'who': who, 'u': u, 'v': v, 'size': size, 'pic': piece(renders, name, world(u, v), f'club-{who}-{ART_TAG}', size, face)}
             for who, name, face, u, v, size in CLUB]
     art = {'world': {'w': W, 'h': H}, 'tiles': tiles, 'grid': N, 'lawn': lawn, 'tileW': round(TILE_W, 3),

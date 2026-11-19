@@ -35,6 +35,8 @@ for i in range(s + 1):
     d.line([w(a + i, a, up), w(a + i, a + s, up)], fill=(255, 60, 60, 110)); d.line([w(a, a + i, up), w(a + s, a + i, up)], fill=(255, 60, 60, 110))
 for u0, v0, u1, v1 in A['blocked']:
     d.polygon([w(u0, v0), w(u1, v0), w(u1, v1), w(u0, v1)], outline=(255, 200, 0, 200))
+for u0, v0, u1, v1 in A.get('walk', []):
+    d.polygon([w(u0, v0), w(u1, v0), w(u1, v1), w(u0, v1)], outline=(0, 230, 255, 255))
 if crop: img = img.crop([round(c * K) for c in crop])
 img.convert('RGB').save(out, quality=88)
 print(img.size)

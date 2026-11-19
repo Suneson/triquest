@@ -157,11 +157,17 @@ def main():
     (W, H), tiles = cut_tiles(mp)
     plat = platform(rep, world)
     body = math.ceil(P + FLOOR + plat['rim'])         # the platform's body reaches this far, from the back
-    # the stairs come down the front-left side, near its left end (measured on the repaint at 32: v 13 to 21,
-    # 5 tiles deep), scaled with the floor
-    k = FLOOR / 32
-    stairs = [math.floor(P + 10 * k), body, math.ceil(P + 18 * k), body + math.ceil(5 * k)]
+    # the stairs come down the front-left side, their foot from 10/24 to 16/24 of the way along it from its
+    # left end, 4 tiles out from the platform (measured on the preview at FLOOR 24)
+    k = FLOOR / 24
+    stairs = [round(P + 10 * k), body, round(P + 16 * k), body + round(4 * k)]
     blocked = [[0, 0, body, P], [0, P, P, body], [P + FLOOR, P, body, body], [P, P + FLOOR, P + FLOOR, body], stairs]
+    # the way up: the stairs' middle 3 tiles and the rim above them can be walked on (never built on); the
+    # ground rises up the stairs from the lawn (v = stairs' foot) to the platform's top (v = body)
+    mid = (stairs[0] + stairs[2]) // 2
+    walk = [[mid - 1, P + FLOOR, mid + 2, stairs[3]]]
+    plat['top'] = [P, P, body, body]
+    plat['ramp'] = stairs
     pads, u0 = [], body + 1
     for i, (who, size, hut) in enumerate(BUILDERS):
         v = P + 1 + i * PAD_STEP
@@ -171,7 +177,7 @@ def main():
                      'hut': piece(renders, f'hut-navy-{who}', (c[0], c[1] - 0.12 * TILE_W), f'hut-{who}', hut)})
         blocked.append([u0, v, u0 + size, v + size])
     art = {'world': {'w': W, 'h': H}, 'tiles': tiles, 'grid': N, 'lawn': lawn, 'tileW': round(TILE_W, 3),
-           'platform': plat, 'blocked': blocked, 'pads': pads}
+           'platform': plat, 'blocked': blocked, 'walk': walk, 'pads': pads}
     with open(ART_JS, 'w', encoding='utf-8') as f:
         f.write('// plot-art.js: the single-plot base\'s pictures and where they stand, in world px (the 3x map\'s px).\n'
                 '// Written by tools/cut-plot.py. Don\'t edit by hand.\n')

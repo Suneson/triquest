@@ -70,12 +70,15 @@ for (const [room, r] of Object.entries(ROOM32)) {
 // height): a point on it is drawn that much higher. The platform's body round it, and the builders' pads,
 // are blocked (tools/cut-plot.py).
 {
-  const { world, lawn, grid, platform: pl, blocked } = PLOT_ART;
+  const { world, lawn, grid, platform: pl, blocked, walk = [] } = PLOT_ART;
   const pct = ([x, y]) => [(x / world.w) * 100, (y / world.h) * 100];
   ROOM_GEOMETRY['plot-48'] = {
     ...floor(pct(lawn.back), pct(lawn.right), pct(lawn.left), grid, grid, blocked),
     share: 1,
-    raised: { box: [pl.at, pl.at, pl.at + pl.size, pl.at + pl.size], lift: (pl.lift / world.h) * 100 },
+    walk,   // blocked tiles you can still walk on (the way up the stairs)
+    // box: the floor you build on; top: all of the platform's top (the floor and its rim); ramp: the stairs,
+    // rising from their foot (high v) to the top
+    raised: { box: [pl.at, pl.at, pl.at + pl.size, pl.at + pl.size], top: pl.top, ramp: pl.ramp, lift: (pl.lift / world.h) * 100 },
   };
   ROOM_SIZE['plot-48'] = [world.w, world.h];
 }
@@ -137,8 +140,10 @@ export const liftPctAt = (geomKey, u, v) => liftAt(ROOM_GEOMETRY[geomKey], u, v)
 function liftAt(g, u, v) {
   const r = g.raised;
   if (!r) return 0;
-  const [u0, v0, u1, v1] = r.box;
-  return u >= u0 && u <= u1 && v >= v0 && v <= v1 ? r.lift : 0;
+  const inside = ([u0, v0, u1, v1]) => u >= u0 && u <= u1 && v >= v0 && v <= v1;
+  if (inside(r.top || r.box)) return r.lift;
+  if (r.ramp && inside(r.ramp)) return r.lift * Math.max(0, Math.min(1, (r.ramp[3] - v) / (r.ramp[3] - r.ramp[1])));
+  return 0;
 }
 
 /** % of the room's art back to fractional tiles: { u, v } (may fall outside the floor). */

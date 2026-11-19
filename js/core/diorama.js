@@ -171,7 +171,7 @@ export function clampView(v, vw, vh, env = ENV) {
   const x0 = (env.x0 || 0) * s; const y0 = (env.y0 || 0) * s;   // the world's top-left corner
   const w = env.w * s; const h = env.h * s;
   // a world smaller than the screen one way (the plot zoomed out on a phone held upright) is centred that way
-  const fit = (t, size, view, o) => (size <= view ? (view - size) / 2 - o : Math.min(-o, Math.max(view - size - o, t)));
+  const fit = (t, size, view, o) => (size < view - 1e-6 ? (view - size) / 2 - o : Math.min(-o, Math.max(view - size - o, t)));
   return { s, tx: fit(v.tx, w, vw, x0), ty: fit(v.ty, h, vh, y0) };
 }
 

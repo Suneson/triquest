@@ -23,7 +23,7 @@ export function floorGrid(geomKey, room, placements = {}) {
     if (it && !it.flat) footprint(it, p.u, p.v).forEach(([a, b]) => taken.add(`${a},${b}`));
   }
   const free = (u, v) => Number.isInteger(u) && Number.isInteger(v) && u >= 0 && v >= 0 && u < cols && v < rows
-    && !taken.has(`${u},${v}`) && !g.blocked.some((box) => inBox([u, v], box));
+    && !taken.has(`${u},${v}`) && (!g.blocked.some((box) => inBox([u, v], box)) || !!g.walk?.some((box) => inBox([u, v], box)));
   return { cols, rows, free };
 }
 

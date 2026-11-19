@@ -42,7 +42,10 @@ test('room art: the landscape locker clamps to level 4; the missing gym level fa
 test('the floor maps both ways', () => {
   for (const key of Object.keys(ROOM_GEOMETRY)) {
     assert.ok(ROOM_SIZE[key], key);
-    for (const [u, v] of [[0, 0], [1.5, 2.25], [3, 7]]) {
+    // on the plot, a tile hidden behind the raised platform is tapped as the platform's floor in front of it:
+    // check tiles you can see (on the platform, and the lawn in front)
+    const tiles = ROOM_GEOMETRY[key].raised ? [[10, 10], [20.5, 6.25], [40, 44], [30.5, 40.25]] : [[0, 0], [1.5, 2.25], [3, 7]];
+    for (const [u, v] of tiles) {
       const p = tileToPct(key, u, v);
       const back = pctToTile(key, p.x, p.y);
       assert.ok(Math.abs(back.u - u) < 1e-9 && Math.abs(back.v - v) < 1e-9, `${key} ${u},${v}`);

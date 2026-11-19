@@ -12,8 +12,8 @@ js/core/plot-art.js. World px are the 3x map's own px: one lawn tile is 102 px a
 
 The lawn: its four straight edges are fitted (its painted corners are rounded by the track) and met, which
 gives the grid's back, right, front and left corners. Tiles (u, v) run from the back corner, u down-right, v
-down-left, 0 to 48. The platform's floor (inside its painted guide line) is the tiles [P, P + 32) each way,
-raised by `lift` world px; the platform's body round it is blocked to anything on the lawn.
+down-left, 0 to 48. The platform's floor (inside its painted guide line) is the tiles [P, P + FLOOR) each way,
+raised by `lift` world px (all scaled with FLOOR); the platform's body round it is blocked to anything on the lawn.
 """
 import json, math, os, sys
 import numpy as np
@@ -26,7 +26,7 @@ OUT = os.path.join(REPO, 'icons', 'Plot')
 ART_JS = os.path.join(REPO, 'js', 'core', 'plot-art.js')
 N = 48            # the lawn, tiles each way
 P = 3             # the platform's floor starts this many tiles in from the lawn's back corner
-FLOOR = 32        # the platform's floor, tiles each way
+FLOOR = 24        # the platform's floor, tiles each way (32 was far too big next to the huts and the lawn)
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
@@ -124,9 +124,9 @@ def platform(path, world):
     x0 = bx - s * top[0]; y0 = by - lift - s * top[1]
     im = Image.fromarray(rgba)
     ow, oh = round(w * s * STORE_K), round(h * s * STORE_K)
-    im.resize((ow, oh), Image.LANCZOS).save(os.path.join(OUT, 'platform.webp'), quality=88, method=6)
+    im.resize((ow, oh), Image.LANCZOS).save(os.path.join(OUT, f'platform-{FLOOR}.webp'), quality=88, method=6)
     print('platform scale', round(s, 4), 'lift', round(lift, 1), 'rim tiles', round(rim, 2))
-    return {'src': 'icons/Plot/platform.webp', 'x': round(x0, 1), 'y': round(y0, 1), 'w': round(w * s, 1), 'h': round(h * s, 1),
+    return {'src': f'icons/Plot/platform-{FLOOR}.webp', 'x': round(x0, 1), 'y': round(y0, 1), 'w': round(w * s, 1), 'h': round(h * s, 1),
             'at': P, 'size': FLOOR, 'lift': round(lift, 1), 'rim': round(rim, 2)}
 
 
@@ -157,8 +157,10 @@ def main():
     (W, H), tiles = cut_tiles(mp)
     plat = platform(rep, world)
     body = math.ceil(P + FLOOR + plat['rim'])         # the platform's body reaches this far, from the back
-    # the stairs come down the front-left side, near its left end (measured on the repaint)
-    stairs = [13, body, 21, body + 5]
+    # the stairs come down the front-left side, near its left end (measured on the repaint at 32: v 13 to 21,
+    # 5 tiles deep), scaled with the floor
+    k = FLOOR / 32
+    stairs = [math.floor(P + 10 * k), body, math.ceil(P + 18 * k), body + math.ceil(5 * k)]
     blocked = [[0, 0, body, P], [0, P, P, body], [P + FLOOR, P, body, body], [P, P + FLOOR, P + FLOOR, body], stairs]
     pads, u0 = [], body + 1
     for i, (who, size, hut) in enumerate(BUILDERS):

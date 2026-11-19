@@ -242,7 +242,7 @@ const CLUB_ITEMS = [
 
 const ITEMS = [
   // the coffee machine: tier 1 to 3 with the locker room's level (4 and 7 step it up)
-  { id: 'coffee-machine', w: 2, h: 2, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
+  { id: 'coffee-machine', w: 2, h: 2, grow: 0, gift: true, home: 'locker', fit: 0.82, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/coffee-machine-t${tierFor(o?.levels?.locker, [4, 7])}-${o?.face || 'a'}.webp` },
   // the road bike on balance rollers: long along v when facing a
   { id: 'smart-bike', w: 2, h: 3, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.78, faces: true, face: 'a',
@@ -256,7 +256,7 @@ const ITEMS = [
   // two showpieces, gifts while the base items are being tried out
   { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/road-bike-stand-${o?.face || 'a'}.webp` },
-  { id: 'trophy-gold-mountain', w: 1, h: 1, gift: true, home: 'locker', fit: 0.8, faces: true, face: 'a',
+  { id: 'trophy-gold-mountain', w: 1, h: 1, grow: 0, gift: true, home: 'locker', fit: 0.8, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/trophy-gold-mountain-${o?.face || 'a'}.webp` },
   {
     id: 'smart-trainer', w: 2, h: 1, home: 'bike', fit: 0.7, art: () => 'icons/Pixelart/GEAR/bike-power-t3.png',
@@ -289,7 +289,7 @@ const ITEMS = [
   stashed('start-block', 'pool', 2, 2, 0.76),
   // each tier of the items that step up with a room's level, to own and place on its own
   ...[1, 2, 3, 4].map((n) => stashed(`treadmill-t${n}`, 'run', 2, 3, 0.92, { runner3d: true, runner: RUNNER, opens: 'drill' })),
-  ...[1, 2, 3].map((n) => stashed(`coffee-machine-t${n}`, 'locker', 2, 2, 0.82)),
+  ...[1, 2, 3].map((n) => stashed(`coffee-machine-t${n}`, 'locker', 2, 2, 0.82, { grow: 0 })),
   // what the daily stall sells (stall.js): yours once bought
   ...STALL_ITEMS.map((s) => ({
     id: s.id, w: s.w, h: s.h, home: s.home, fit: s.fit, flat: !!s.flat, art: () => s.art,
@@ -311,7 +311,8 @@ const ITEMS = [
     sides: 4, club: true, ...(tags.includes('flat') ? { flat: true } : {}), ...(tags.includes('top') ? { barTop: true } : {}),
   })),
 ];
-export const PLACEABLES = ITEMS.map((p) => ({ ...p, w: p.w + GROW, h: p.h + GROW }));
+// (`grow: 0`: an item that looked too big grown, the coffee machine and the trophy, keeps its drawn size)
+export const PLACEABLES = ITEMS.map((p) => ({ ...p, w: p.w + (p.grow ?? GROW), h: p.h + (p.grow ?? GROW) }));
 export const placeableById = (id) => PLACEABLES.find((p) => p.id === id) || null;
 
 /**

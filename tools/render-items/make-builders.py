@@ -1,19 +1,21 @@
 """make-builders.py: each builder's hut standing on its pad, as one item picture per facing
-(icons/Items/builder-<who>-<a|b>.webp), so the plot base can place, move and turn them like any item.
+(icons/Items/builder-<who>-2-<a|b>.webp; the 2 changes whenever they're redone), so the plot base can place, move and turn them like any item.
 
     python tools/render-items/make-builders.py <cut dir>
 
 <cut dir>  Base/repaint/cut: pad-navy-<who>-<a|b>.png/.json and hut-navy-<who>-<a|b>.png/.json
            (cut-base-repaints.py; the renders' frames, PPU 100, the json's ox/oy the footprint's middle)
 
-The hut is drawn smaller than its pad (HUT of the pad's side) with its middle on the pad's, so the pad
-shows all round it; the item's footprint is the pad's.
+The hut nearly fills its pad (HUT of the pad's side), its middle on the pad's, its door over the pad's stairs:
+on face a both are on the front-left side, near its middle. Face b's own hut renders have their door a tile
+off the middle of the front-right side, away from the pad's stairs, so face b stands the a hut mirrored on
+the b pad (its door then over the stairs too). The item's footprint is the pad's.
 """
 import json, os, sys
 from PIL import Image
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'icons', 'Items')
-HUT = {'blue': 0.6, 'red': 0.6, 'green': 0.6, 'gold': 0.55}   # the hut's longest side, as a share of the pad's
+HUT = {'blue': 0.9, 'red': 0.9, 'green': 0.9, 'gold': 0.9}   # the hut's longest side, as a share of the pad's
 LIFT = 15        # px of the pad's render: the hut stands on the pad's top, not the ground under it
 HEIGHT = 720     # the stored picture's height, as the other items
 
@@ -23,9 +25,11 @@ def main():
     for who, k in HUT.items():
         for face in 'ab':
             pm = json.load(open(os.path.join(cut, f'pad-navy-{who}-{face}.json')))
-            hm = json.load(open(os.path.join(cut, f'hut-navy-{who}-{face}.json')))
+            hm = dict(json.load(open(os.path.join(cut, f'hut-navy-{who}-a.json'))))
             pad = Image.open(os.path.join(cut, f'pad-navy-{who}-{face}.png')).convert('RGBA')
-            hut = Image.open(os.path.join(cut, f'hut-navy-{who}-{face}.png')).convert('RGBA')
+            hut = Image.open(os.path.join(cut, f'hut-navy-{who}-a.png')).convert('RGBA')
+            if face == 'b':
+                hut = hut.transpose(Image.FLIP_LEFT_RIGHT); hm['ox'] = hut.width - hm['ox']
             s = k * pm['tiles'] / hm['tiles']
             hut = hut.resize((round(hut.width * s), round(hut.height * s)), Image.LANCZOS)
             hx, hy = pm['ox'] - hm['ox'] * s, pm['oy'] - LIFT - hm['oy'] * s
@@ -36,8 +40,8 @@ def main():
             c.alpha_composite(hut, (round(hx - x0), round(hy - y0)))
             c = c.crop(c.getchannel('A').point(lambda v: 255 if v > 3 else 0).getbbox())
             c = c.resize((round(c.width * HEIGHT / c.height), HEIGHT), Image.LANCZOS)
-            c.save(os.path.join(OUT, f'builder-{who}-{face}.webp'), quality=88, method=6)
-            print(f'builder-{who}-{face}', c.size)
+            c.save(os.path.join(OUT, f'builder-{who}-2-{face}.webp'), quality=88, method=6)
+            print(f'builder-{who}-2-{face}', c.size)
 
 
 if __name__ == '__main__':

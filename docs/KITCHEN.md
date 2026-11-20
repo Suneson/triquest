@@ -149,7 +149,9 @@ whisk, dropper, scissors, and a scoop for show); the tray unit painted into the 
 fructose (sky blue), salt (pink), the caffeine vials, an orange electrolyte (for gels still to come), the box of
 empty pouches, and a stone pad. A tray place that runs out shows its empty picture. The buttons (Start, Back to
 the gels, Make another) float over the bottom of the tray only when there's one to press; none while making. The
-marble carries on below the scene on tall phones. Everything is dragged, and letting go ends a step (judged
+marble carries on below the scene on tall phones. The wall screen shows the recipe as a row of little pictures (a drop for a liquid, a pile for a powder, the
+tool for an action; `gel-stand-screen.csv`, cut with `tools/cut-gels.py --screen` into `icons/Gels/scr-*.webp`):
+done ones ticked, the one now ringed, and the one now big beside its instruction. Everything is dragged, and letting go ends a step (judged
 "Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
 - **Liquids:** hold the measuring glass under the jar's tap (it fills by the time held) up to its red line, with a
   green band either side; drag it over the jug and it pours in. Too much? Drag it over the bin to tip it out and

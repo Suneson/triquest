@@ -91,18 +91,27 @@
 /* the wall screen: the recipe, written in navy */
 .gs-screen {
   position: absolute; left: 14%; right: 14%; top: 6%; height: 15.4%; display: flex; flex-direction: column; justify-content: center;
-  gap: 1cqw; padding: 0 2cqw; color: var(--navy); text-align: center;
+  gap: .6cqw; padding: 0 2cqw; color: var(--navy); text-align: center;
 }
 .gs-screen-top { display: flex; align-items: center; justify-content: center; gap: 2cqw; }
-.gs-screen-art { height: 10cqw; width: auto; }
-.gs-screen h3 { margin: 0; font-size: 4.8cqw; font-weight: 900; text-shadow: none; -webkit-text-stroke: 0; }
+.gs-screen-art { height: 8cqw; width: auto; }
+.gs-screen h3 { margin: 0; font-size: 4.5cqw; font-weight: 900; text-shadow: none; -webkit-text-stroke: 0; }
 .gs-screen .gs-boost { font-size: 4cqw; }
 .gs-step { margin: 0; font-size: 3.7cqw; font-weight: 900; }
 .gs-hint { margin: 0; font-size: 3cqw; font-weight: 700; line-height: 1.25; color: #3E4A6B; }
-.gs-dots { display: flex; justify-content: center; gap: 1.6cqw; }
-.gs-dots i { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; background: rgba(22,38,77,.18); transition: background .2s, transform .2s; }
-.gs-dots i.is-done { background: var(--good); }
-.gs-dots i.is-now { background: var(--sky); transform: scale(1.4); }
+/* the recipe as a row of pictures: done ones faded with a tick, the one now lifted on a sky ring */
+.gs-recipe { display: flex; justify-content: center; gap: .7cqw; }
+.gs-recipe i { position: relative; display: grid; place-items: center; width: 6cqw; height: 6cqw; border-radius: 1.6cqw; transition: opacity .2s, transform .2s, background .2s; }
+.gs-recipe img { max-width: 88%; max-height: 88%; object-fit: contain; }
+.gs-recipe b { position: absolute; right: -.4cqw; bottom: -.4cqw; min-width: 2.8cqw; padding: 0 .4cqw; border-radius: 1.4cqw; background: var(--navy); color: #fff; font-size: 2.1cqw; line-height: 2.8cqw; font-weight: 900; }
+.gs-recipe i.is-done { opacity: .35; }
+.gs-recipe i.is-done::after { content: '✓'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--good); font-size: 4cqw; font-weight: 900; }
+.gs-recipe i.is-now { background: rgba(91,180,229,.22); box-shadow: 0 0 0 .5cqw var(--sky); transform: scale(1.12); }
+/* what to add now: its picture big beside the step */
+.gs-now { display: flex; align-items: center; justify-content: center; gap: 2cqw; }
+.gs-now-art { flex: none; height: 11cqw; width: auto; max-width: 15cqw; object-fit: contain; animation: gs-drop-in .35s cubic-bezier(.3,1.5,.5,1); }
+.gs-now .gs-step { text-align: left; font-size: 4.2cqw; line-height: 1.15; }
+.gs-inline-art { height: 4.4cqw; width: auto; vertical-align: -1cqw; }
 .gs-screen .gs-stars { justify-content: center; }
 .gs-screen .gs-stars i { width: 8.5cqw; height: 8.5cqw; }
 

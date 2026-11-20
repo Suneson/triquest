@@ -63,7 +63,7 @@ Nothing here is built yet. The art is queued in `MOSKE APP/PromptQueue Prompts/k
 ### 4. Stars
 
 Each thing made by hand gets 1-3 stars from how well its steps went. The boost is multiplied by
-**×0.7 / ×1.0 / ×1.15** for 1 / 2 / 3 stars.
+**×0.6 / ×1.0 / ×1.4** for 1 / 2 / 3 stars.
 
 ### 5. Recipes (first list; boosts at 2 stars)
 
@@ -139,7 +139,22 @@ server: the wallet's coins, the build as a builder's job (coffee cuts it), and a
 The art is cut from the CSV's sheets by `tools/cut-gels.py` into `icons/Gels/` (gels, ingredients, tools, pouch,
 interface, effects, the prep view's background) and `icons/Items/gel-stand-t<n>-<a|b>.webp` (the stand).
 
-**The screens:**
+**The prep view, made for one thumb** (since the redesign; art in `MOSKE APP/PromptQueue Prompts/gel-stand-v2.csv`
+and `gel-stand-bg.csv`, the background is `screen-b`, widened in Photoshop): the recipe and what to do now on a white
+wall screen; the jug and the pouch on the counter, the sink on its left; this gel's ingredients on a tray below
+(a stock bar each, four to a refill; tap a dimmed one to restock it with carbs); the buttons at the very bottom.
+Everything is dragged, and letting go ends a step (it's judged, "Exact!" / "Good" / "Over-poured!" / "Too
+little", and the next starts):
+- **Liquids** (honey, water, maple, beet): drag over the jug and hold; it tips and pours by the time held. A
+  meter beside the jug shows the level and its green sweet spot.
+- **Powders** (maltodextrin, fructose, salt): drag over the jug and shake side to side; shaking puts it in.
+- **Caffeine:** drag the dropper over the jug; a drop every 0.4 s while it's there.
+- **Stir:** round the jug, a ring fills. **Fill:** drag the jug over the pouch and hold, let go at the red line.
+  **Seal:** swipe across the sealer.
+- **The sink:** drag the jug to it to pour it away and start again (the ingredients are lost).
+- **Stars** multiply the boost by ×0.6 / ×1.0 / ×1.4 (a honey gel: +15% / +25% / +35% XP). XP only, as all gels.
+
+**The screens (first version):**
 
 1. **Menu:** every gel as a card (picture, name, boost, what its ingredients cost). Locked ones show the level
    that opens them. Pick one.

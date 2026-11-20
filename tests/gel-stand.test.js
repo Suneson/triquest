@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GELS, SHELF, INGREDIENTS, menu, gelById, gelCost, readyMadeCost, normalise, missing, missingCost, buy, start,
-  scorePour, scoreDial, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged, UPGRADES, nextUpgrade, levelOf, MAX_LEVEL, startUpgrade, settleBuild, buildLeft, buildOf,
+  scorePour, scoreDial, scoreSalt, sweetSpot, verdict, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged, UPGRADES, nextUpgrade, levelOf, MAX_LEVEL, startUpgrade, settleBuild, buildLeft, buildOf,
 } from '../js/core/gel-stand.js';
 
 test('eight ingredients on the shelf, water free', () => {
@@ -80,7 +80,8 @@ test('stars and boosts', () => {
   assert.equal(stars([1, 0.5, 0.7]), 2);
   assert.equal(stars([0.2, 0.5]), 1);
   const g = gelById('classic');
-  assert.deepEqual([1, 2, 3].map((s) => boostOf(g, s)), [2100, 3000, 3450]);
+  assert.deepEqual([1, 2, 3].map((s) => boostOf(g, s)), [1800, 3000, 4200]);
+  assert.deepEqual([1, 2, 3].map((s) => boostOf(gelById('honey'), s)), [1500, 2500, 3500]);
   const beet = gelById('beet');
   assert.equal(boostOf(beet, 2, 'run'), 5500);
   assert.equal(boostOf(beet, 2, 'bike'), 4000);
@@ -109,4 +110,18 @@ test('upgrading: coins at once, then the build hours, then the level', () => {
   assert.equal(buildOf(done), null);
   // a build that doesn't match the level is junk
   assert.equal(buildOf({ level: 3, build: r.build }), null);
+});
+
+test('salt is shaken in; sweet spots hold the scores of 0.8 and up; verdicts', () => {
+  for (const g of GELS) for (const st of g.steps) if (st.ing === 'salt') assert.equal(st.kind, 'salt', g.id);
+  assert.equal(scoreSalt(0.45, 0.45), 1);
+  const s = { kind: 'salt', to: 0.45 };
+  const [lo, hi] = sweetSpot(s);
+  assert.ok(scoreSalt(lo + 1e-6, 0.45) >= 0.8 && scoreSalt(hi - 1e-6, 0.45) >= 0.8);
+  assert.ok(scoreSalt(hi + 0.02, 0.45) < 0.8);
+  const p = { kind: 'pour', to: 0.54 };
+  const [plo, phi] = sweetSpot(p, 0.3);
+  assert.ok(scorePour(plo + 1e-6, 0.54, 0.3) >= 0.8 && scorePour(phi - 1e-6, 0.54, 0.3) >= 0.8);
+  assert.ok(scorePour(phi + 0.02, 0.54, 0.3) < 0.8);
+  assert.deepEqual([verdict(1), verdict(0.7), verdict(0.2, 0.9, 0.5), verdict(0.2, 0.1, 0.5)], ['exact', 'good', 'over', 'under']);
 });

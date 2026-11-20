@@ -1,6 +1,6 @@
 /* gels.css — the gel stand (js/app/gel-stand-view.js). Navy and white stone; no gold but the stars.
    The prep view is one 9:16 scene on icons/Gels/prep-bg.webp: everything in it is placed in % of the scene
-   (and sized in cqw of it), so the ingredients stand on the painted shelves on any phone. */
+   (and sized in cqw of it), so it lines up with the painted counter and tray on any phone. */
 
 .gs-layer { background: #16264D; }
 .gs {
@@ -72,142 +72,168 @@
 .gs-lock b { padding: 3px 8px; border-radius: 8px; background: var(--navy); color: #fff; font-size: 11px; font-weight: 900; white-space: nowrap; }
 .gs-note { margin: 4px 16px 14px; font-size: 11px; font-weight: 700; text-align: center; color: #7A8199; }
 
-/* ---- the prep view: one 9:16 scene ---- */
-.gs-body { flex: 1; min-height: 0; container-type: size; display: flex; justify-content: center; }
+/* ---- the prep view: one 9:16 scene, made for one thumb ----
+   prep-bg.webp's painted places, in % of the scene: the wall screen 13.3-86.7% across and 16.1-36.8% down;
+   the counter top 48-60% (the sink its left 23%); the tray's floor 72-81%; the button panel 87-99%.
+   The picture is painted wider and longer than that (prep-bg.webp: the 1536 x 2752 scene with 192 px more
+   each side and 240 px below), so the scene can fill a tall phone: it's as tall as the screen allows with
+   its extra strip below, its sides run off the screen's edges (the painted counter and tray carry on), and
+   the navy carries on above it. */
+.gs-body { flex: 1; min-height: 0; container-type: size; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; background: #1F2A48; }
 .gs-scene {
-  position: relative; flex: none; width: min(100cqw, 100cqh * 9 / 16); aspect-ratio: 9 / 16; container-type: inline-size;
-  background: url(../icons/Gels/prep-bg.webp) 0 0 / 100% 100% no-repeat, #F4F2EC;
+  /* as tall as fits with the strip below (8.72% of it), but never so wide that more than 6% of a side is cut */
+  --hs: min(100cqh / 1.0872, 100cqw * 1.12 * 16 / 9);
+  position: relative; flex: none; height: var(--hs); width: calc(var(--hs) * 9 / 16); margin-bottom: calc(var(--hs) * .0872);
+  container-type: inline-size; touch-action: none;
 }
+.gs-scene::before { content: ''; position: absolute; left: -12.5%; right: -12.5%; top: 0; bottom: -8.72%;
+  background: url(../icons/Gels/prep-bg.webp) 0 0 / 100% 100% no-repeat, #1F2A48; pointer-events: none; }
 
-/* the recipe card, on the wall */
-.gs-recipe {
-  position: absolute; left: 3%; right: 3%; top: 1.2%; height: 10.6%; display: flex; align-items: center; gap: 3cqw;
-  padding: 1.2cqw 3cqw; border-radius: 4cqw; background: #fff; box-shadow: 0 1cqw 0 rgba(22,38,77,.18), 0 0 0 .5cqw var(--line);
+/* the wall screen: the recipe, written in navy */
+.gs-screen {
+  position: absolute; left: 14.6%; right: 14.6%; top: 16.9%; height: 19%; display: flex; flex-direction: column; justify-content: center;
+  gap: 1.1cqw; padding: 0 2.4cqw; color: var(--navy); text-align: center;
 }
-.gs-recipe-art { height: 92%; width: auto; }
-.gs-recipe > div { min-width: 0; flex: 1; }
-.gs-recipe h3 { margin: 0; font-size: 4.4cqw; font-weight: 900; text-shadow: none; -webkit-text-stroke: 0; }
-.gs-recipe h3 .gs-boost { font-size: 3.6cqw; margin-left: 1.5cqw; }
-.gs-recipe p { margin: .6cqw 0 1.2cqw; font-size: 3.4cqw; font-weight: 800; color: #3E4A6B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-dots { display: flex; gap: 1.4cqw; }
-.gs-dots i { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
+.gs-screen-top { display: flex; align-items: center; justify-content: center; gap: 2cqw; }
+.gs-screen-art { height: 11cqw; width: auto; }
+.gs-screen h3 { margin: 0; font-size: 5cqw; font-weight: 900; text-shadow: none; -webkit-text-stroke: 0; }
+.gs-screen .gs-boost { font-size: 4.2cqw; }
+.gs-step { margin: 0; font-size: 3.8cqw; font-weight: 900; }
+.gs-hint { margin: 0; font-size: 3.1cqw; font-weight: 700; color: #3E4A6B; }
+.gs-dots { display: flex; justify-content: center; gap: 1.6cqw; }
+.gs-dots i { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; background: rgba(22,38,77,.18); transition: background .2s, transform .2s; }
 .gs-dots i.is-done { background: var(--good); }
 .gs-dots i.is-now { background: var(--sky); transform: scale(1.4); }
+.gs-screen .gs-stars { justify-content: center; }
+.gs-screen .gs-stars i { width: 9cqw; height: 9cqw; }
 
-/* the ingredients, standing on the two painted shelves (their tops at 21.7% and 33.6%) */
-.gs-bin { position: absolute; left: calc(3.5% + var(--c) * 23.6%); top: calc(12.4% + var(--r) * 11.9%); width: 19%; height: 9.6%;
-  transition: transform .2s cubic-bezier(.3,1.4,.5,1), opacity .2s; }
-.gs-ing { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; width: 100%; object-fit: contain; object-position: 50% 100%;
-  filter: drop-shadow(0 .8cqw .6cqw rgba(22,38,77,.3)); }
-.gs-bin small { position: absolute; left: -10%; right: -10%; bottom: -27%; font-size: 2.3cqw; font-weight: 900; text-align: center; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-stock { position: absolute; right: -2%; top: 4%; min-width: 6cqw; padding: .3cqw 1.2cqw; border-radius: 3cqw; background: var(--navy); color: #fff; font-size: 2.8cqw; font-weight: 900; text-align: center; }
-.gs-plus { position: absolute; left: -6%; top: 34%; width: 6.6cqw; height: 6.6cqw; border: 0; padding: 0; background: none; }
-.gs-plus img { width: 100%; height: 100%; }
-.gs-plus::after { content: ''; position: absolute; inset: -3cqw; } /* about 44px to tap */
-.gs-plus:active { transform: scale(.9); }
-.gs-bin:not(.is-used) { opacity: .5; }
-.gs-bin.is-short .gs-stock { background: var(--bad); }
-.gs-bin.is-now { transform: translateY(-1.5cqw) scale(1.1); z-index: 2; }
-.gs-bin.is-now .gs-ing { filter: drop-shadow(0 0 1.6cqw #fff) drop-shadow(0 0 .6cqw var(--sky)); }
-.gs-bin.is-bought { animation: gs-squish .35s cubic-bezier(.3,1.5,.5,1); }
+/* the counter: everything here is placed in % of the scene */
+.gs-counter { position: absolute; inset: 0; pointer-events: none; }
+.gs-counter > * { pointer-events: auto; }
+.gs-sink { position: absolute; left: 0; width: 23%; top: 49.8%; height: 8.3%; border-radius: 0 2cqw 2cqw 0; opacity: 0; transition: opacity .15s;
+  box-shadow: inset 0 0 0 .8cqw var(--sky), 0 0 4cqw rgba(91,180,229,.6); pointer-events: none; }
+.gs-scene.is-over-sink .gs-sink { opacity: 1; }
+.gs-drain { position: absolute; left: 9.7%; top: 55.4%; width: 13cqw; height: auto; transform: translate(-50%, -70%) scale(.4); opacity: 0; pointer-events: none; }
+.gs-drain.is-on { animation: gs-drain .9s ease-out; }
 
-/* the worktop: 48% to 85.5% of the scene */
-.gs-stage { position: absolute; left: 0; right: 0; top: 48%; height: 37.5%; touch-action: none; cursor: pointer; }
-.gs-jug { position: absolute; left: 24%; bottom: 3%; width: 40%; aspect-ratio: 307 / 320; }
+.gs-jug {
+  position: absolute; left: 35%; top: 43.8%; width: 25%; aspect-ratio: 307 / 320; z-index: 4; touch-action: none; cursor: grab;
+  transform: translate(var(--tx, 0), var(--ty, 0)) rotate(var(--rot, 0deg)); transition: transform .35s cubic-bezier(.3,1.4,.5,1);
+}
+.gs-jug.is-held { transition: transform .06s linear; z-index: 9; cursor: grabbing; }
 .gs-jug > img:first-child { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1.2cqw 1cqw rgba(22,38,77,.25)); }
 /* the liquid, over the jug's picture: its inside is 15-72% across, 9-95% down, narrowing a little to the foot */
 .gs-liquid { position: absolute; left: 15.5%; right: 28%; top: 9%; bottom: 5%; display: flex; flex-direction: column-reverse;
-  clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%); border-radius: 0 0 6cqw 6cqw; mix-blend-mode: multiply; }
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%); border-radius: 0 0 6cqw 6cqw; mix-blend-mode: multiply; pointer-events: none; }
 .gs-liquid > i { flex: none; height: calc(var(--h) * 100%); background: var(--c); }
 .gs-liquid > em { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--total) * 100%); background: var(--gel); opacity: var(--mix); }
-.gs-line { position: absolute; left: 8%; right: 22%; bottom: calc(5% + var(--to) * 86%); border-top: .9cqw dashed var(--bad); z-index: 3; }
-.gs-line::after { content: ''; position: absolute; left: -2.6cqw; top: -2.2cqw; border: 1.6cqw solid transparent; border-left-color: var(--bad); }
 .gs-ring { position: absolute; left: -4%; top: 6%; width: 86%; height: 86%; transform: rotate(-90deg); z-index: 3; pointer-events: none; }
 .gs-ring circle { fill: none; stroke: var(--sky); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: calc(1 - var(--p)); transition: stroke-dashoffset .08s linear; }
-.gs-splash { position: absolute; left: 18%; width: 52%; bottom: 45%; opacity: 0; z-index: 2; }
+.gs-splash { position: absolute; left: 18%; width: 52%; bottom: 45%; opacity: 0; z-index: 2; pointer-events: none; }
 .gs-splash.is-on { animation: gs-splash .55s ease-out; }
 
-/* the pouch: clear, filled to its line, sealed with a swipe; then it's the finished gel */
-.gs-pouch { position: absolute; right: 7%; bottom: 3%; width: 17%; aspect-ratio: 152 / 320; }
+/* the meter beside the jug: what's gone in, the green sweet spot, the mark */
+.gs-meter { position: absolute; left: 61.5%; top: 44.6%; width: 3.4%; height: 13.2%; border-radius: 2cqw; background: rgba(255,255,255,.85);
+  box-shadow: 0 0 0 .5cqw var(--navy); overflow: hidden; pointer-events: none; }
+.gs-meter b { position: absolute; left: 0; right: 0; bottom: calc(var(--lo) * 100%); height: calc((var(--hi) - var(--lo)) * 100%); background: rgba(47,138,62,.35); }
+.gs-meter i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--v) * 100%); background: var(--sky); transition: height .05s linear; }
+.gs-meter em { position: absolute; left: -10%; right: -10%; bottom: calc(var(--to) * 100%); border-top: .7cqw solid var(--good); }
+.gs-meter.is-drops { display: flex; flex-direction: column-reverse; gap: .8cqw; padding: .8cqw; background: rgba(255,255,255,.85); }
+.gs-meter.is-drops i { position: static; flex: 1; height: auto; border-radius: 1cqw; background: rgba(22,38,77,.15); transition: background .1s; }
+.gs-meter.is-drops i.is-on { background: var(--good); }
+.gs-meter.is-drops i.is-extra.is-on { background: var(--bad); }
+
+/* the pouch: clear, filled to its line, sealed; then it's the finished gel */
+.gs-pouch { position: absolute; left: 74.5%; top: 45.5%; width: 11%; aspect-ratio: 152 / 320; pointer-events: none; }
 .gs-pouch-art, .gs-final { position: absolute; inset: 0; width: 100%; height: 100%; }
 .gs-pouch-art { filter: drop-shadow(0 1cqw .8cqw rgba(22,38,77,.25)); }
 .gs-pfill { position: absolute; left: 12%; right: 12.5%; top: 20%; bottom: 7%; display: flex; align-items: flex-end; border-radius: 0 0 2cqw 2cqw; overflow: hidden; }
 .gs-pfill i { width: 100%; height: calc(var(--f) * 100%); background: linear-gradient(90deg, rgba(255,255,255,.35), transparent 30% 70%, rgba(255,255,255,.25)), var(--gel); opacity: .88; }
 /* the pouch is tinted blue: a multiply would turn amber gel green, so its fill is laid on plainly */
-.gs-pline { position: absolute; left: -6%; right: -6%; bottom: calc(7% + var(--to) * 73%); border-top: .9cqw dashed var(--bad); }
-.gs-sealbar { position: absolute; left: 8%; right: 8%; top: 4%; height: 9%; border-radius: 1cqw; background: rgba(91,180,229,.3); box-shadow: 0 0 0 .5cqw var(--sky); }
-.gs-sealbar b { position: absolute; top: 0; bottom: 0; left: 0; width: 0; background: var(--sky); border-radius: 1cqw; }
+.gs-pline { position: absolute; left: -10%; right: -10%; bottom: calc(7% + var(--to) * 73%); border-top: .9cqw dashed var(--bad); }
 .gs-final { opacity: 0; transform: scale(.8); }
 .gs-pouch.is-sealed .gs-final { opacity: 1; transform: scale(1); transition: opacity .25s, transform .4s cubic-bezier(.3,1.6,.5,1); }
-.gs-pouch.is-sealed .gs-pouch-art, .gs-pouch.is-sealed .gs-pfill, .gs-pouch.is-sealed .gs-sealbar { opacity: 0; transition: opacity .2s; }
+.gs-pouch.is-sealed .gs-pouch-art, .gs-pouch.is-sealed .gs-pfill { opacity: 0; transition: opacity .2s; }
+.gs-pouch.is-made { scale: 1.45; translate: 0 -12%; animation: gs-made .6s cubic-bezier(.3,1.5,.5,1); }
+.gs-final { object-fit: contain; }
+.gs-ring-fx, .gs-sparkle-fx { position: absolute; left: calc(80% - 17cqw); top: calc(52% - 17cqw); width: 34cqw; opacity: 0; pointer-events: none; }
+.gs-ring-fx { animation: gs-ring .9s ease-out forwards; }
+.gs-sparkle-fx { animation: gs-spark 1.1s ease-out .15s forwards; }
 
-/* the tools: laid over the worktop */
-.gs-tool { position: absolute; inset: 0; pointer-events: none; }
-.gs-tool > button, .gs-tool > .gs-dial { pointer-events: auto; }
-/* the bottle waits over the jug's rim and tips when you hold; its stream runs down into the jug */
-.gs-bottle { position: absolute; left: 21%; top: 0; width: 15%; height: 26%; transform-origin: 50% 60%; transition: transform .25s cubic-bezier(.3,1.4,.5,1); z-index: 3; }
-.gs-bottle img { width: 100%; height: 100%; object-fit: contain; }
-.is-pouring .gs-bottle { transform: translate(18%, 8%) rotate(118deg); }
-.gs-stream { position: absolute; left: 38%; top: 20%; width: 2.4cqw; height: 0; border-radius: 1.2cqw; background: var(--c);
-  box-shadow: 0 0 0 .3cqw rgba(22,38,77,.15); transition: height .12s ease-in; z-index: 1; }
-.is-pouring .gs-stream { height: 40%; }
-.gs-jug { z-index: 3; }
-.gs-dial { pointer-events: auto; }
-.gs-bottle { position: absolute; left: 4%; top: 2%; width: 16%; aspect-ratio: 1; transform-origin: 80% 20%; transition: transform .25s cubic-bezier(.3,1.4,.5,1); }
-.gs-bottle img { width: 100%; height: 100%; object-fit: contain; }
-.gs-stream { position: absolute; left: 155%; top: 40%; width: 2.2cqw; height: 0; border-radius: 1cqw; background: var(--c); box-shadow: 0 0 0 .3cqw rgba(22,38,77,.15); transition: height .15s; }
-.is-pouring .gs-bottle { transform: translate(85%, 10%) rotate(-115deg); }
-.is-pouring .gs-stream { height: 34cqw; transform: rotate(115deg) translateY(-100%); transform-origin: 50% 0; }
-.gs-dial { position: absolute; left: 3%; bottom: 6%; width: 19%; aspect-ratio: 1; border-radius: 50%; touch-action: none;
-  background: conic-gradient(from -135deg, var(--good) 0 calc(var(--v) * 270deg), rgba(22,38,77,.15) 0 270deg, transparent 0); }
-.gs-knob { position: absolute; inset: 1.4cqw; width: calc(100% - 2.8cqw); height: calc(100% - 2.8cqw); transform: rotate(calc(var(--v) * 270deg - 135deg)); }
-.gs-mark { position: absolute; inset: 0; transform: rotate(calc(var(--to) * 270deg - 135deg)); z-index: 2; pointer-events: none; }
-.gs-mark::before { content: ''; position: absolute; left: calc(50% - .8cqw); top: -2.4cqw; width: 1.6cqw; height: 4cqw; border-radius: 1cqw; background: var(--bad); }
-.gs-side { position: absolute; left: 30%; top: -2%; width: 14%; height: auto; transform: rotate(-150deg); }
-.gs-salt-fx { position: absolute; left: 33%; top: 12%; width: 9%; opacity: 0; }
-.gs-salt-fx.is-on { animation: gs-fall .5s ease-in; }
-.gs-dropper { position: absolute; left: 37%; top: -6%; width: 10%; height: 44%; border: 0; padding: 0; background: none; }
-.gs-dropper img { width: 100%; height: 100%; object-fit: contain; }
-.gs-dropper:active { transform: translateY(1cqw) scaleY(.94); }
-.gs-count { position: absolute; left: 49%; top: 6%; padding: .6cqw 2.4cqw; border-radius: 3cqw; background: #fff; box-shadow: 0 0 0 .5cqw var(--line); font-size: 4.4cqw; font-weight: 900; }
-.gs-drop-fx { position: absolute; left: 39%; top: 30%; width: 5%; opacity: 0; }
-.gs-drop-fx.is-on { animation: gs-fall .45s ease-in; }
-.gs-whisk { position: absolute; left: 52%; top: 20%; width: 20%; height: auto; transform: translate(-50%, -85%) rotate(var(--r, 20deg)); z-index: 4; }
-.gs-bubble-fx { position: absolute; left: 38%; top: 35%; width: 8%; opacity: 0; }
-.gs-bubble-fx.is-on { animation: gs-rise .6s ease-out; }
-.gs-sealer { position: absolute; right: 1%; bottom: 66%; width: 27%; height: auto; transform: translateX(calc((var(--x, .5) - .5) * 20%)) rotate(-4deg); transition: transform .08s; }
+/* the sealer, over the pouch's top: swipe across it, its jaws snap shut */
+.gs-sealer { position: absolute; left: 68%; top: 39.4%; width: 24%; aspect-ratio: 629 / 306; pointer-events: none; z-index: 5; }
+.gs-sealer img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.gs-sealer-shut { opacity: 0; }
+.gs-sealer.is-shut .gs-sealer-open { opacity: 0; }
+.gs-sealer.is-shut .gs-sealer-shut { opacity: 1; animation: gs-snap .25s cubic-bezier(.3,1.8,.5,1); }
+.gs-sealbar { position: absolute; left: 6%; right: 6%; bottom: -14%; height: 1.4cqw; border-radius: 1cqw; background: rgba(255,255,255,.35); }
+.gs-sealbar b { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 1cqw; background: var(--sky); }
+
+/* stirring: the whisk goes where the finger does */
+.gs-whisk { position: absolute; left: 47.5%; top: 48%; width: 14%; height: auto; transform: translate(-50%, -85%) rotate(var(--r, 20deg)); z-index: 6; pointer-events: none; }
+
+/* what you hold, and what falls from it */
+.gs-held { position: absolute; z-index: 8; width: auto; transform: translate(-50%, -50%) rotate(var(--rot, 0deg)); transition: transform .14s ease-out;
+  filter: drop-shadow(0 1.6cqw 1.2cqw rgba(22,38,77,.35)); pointer-events: none; }
+.gs-held.is-shake.is-over { transition: transform .05s linear; }
+.gs-flow { position: absolute; z-index: 7; transform: translateX(-50%); object-fit: fill; opacity: 0; transition: opacity .08s; pointer-events: none; }
+.gs-flow.is-on { opacity: 1; }
+.gs-flow.is-drops.is-on { animation: gs-drip .4s ease-in; }
+
+/* the tray: this gel's ingredients standing on its floor, each with a stock bar */
+.gs-tray { position: absolute; left: 0; right: 0; top: 64%; height: 21.5%; }
+.gs-slot {
+  position: absolute; left: calc(var(--x) - 7%); width: 14%; top: 0; bottom: 0; padding: 0; border: 0; background: none; font: inherit;
+  touch-action: none; transition: transform .2s cubic-bezier(.3,1.4,.5,1);
+}
+.gs-slot-art { position: absolute; left: 50%; bottom: 25%; height: 20cqw; max-width: 15cqw; width: auto; object-fit: contain; object-position: 50% 100%;
+  transform: translateX(-50%); filter: drop-shadow(0 1cqw .8cqw rgba(22,38,77,.3)); transition: opacity .15s, filter .15s; }
+.gs-slot.is-short .gs-slot-art { opacity: .45; filter: grayscale(.8); }
+.gs-slot.is-out .gs-slot-art { opacity: .2; }
+.gs-slot.is-now .gs-slot-art { filter: drop-shadow(0 0 1.6cqw #fff) drop-shadow(0 0 .8cqw var(--sky)); animation: gs-bob 1.2s ease-in-out infinite; }
+.gs-slot.is-bought { animation: gs-squish .35s cubic-bezier(.3,1.5,.5,1); }
+.gs-slot.is-on { animation: gs-shake .35s ease-in-out; }
+.gs-stockbar { position: absolute; left: 14%; right: 14%; bottom: 8%; height: 2.2cqw; display: flex; gap: .6cqw; padding: .5cqw; border-radius: 2cqw; background: rgba(22,38,77,.75); }
+.gs-stockbar i { flex: 1; border-radius: .8cqw; background: rgba(255,255,255,.18); }
+.gs-stockbar i.is-on { background: var(--sky); animation: gs-fill .3s cubic-bezier(.3,1.6,.5,1); }
+.gs-stockbar.is-low i.is-on { background: #F2A33A; }
+.gs-plus { position: absolute; right: 2%; top: 4%; width: 8cqw; height: 8cqw; }
+.gs-plus img { width: 100%; height: 100%; }
+.gs-cost-pop { position: absolute; left: 50%; top: 10%; padding: .6cqw 2cqw; border-radius: 2cqw; background: var(--navy); color: #fff; font-size: 3.4cqw; font-weight: 900;
+  white-space: nowrap; transform: translateX(-50%); animation: gs-cost .9s ease-out forwards; pointer-events: none; }
 
 /* how a step went */
-.gs-pop { position: absolute; left: 50%; top: 44%; display: grid; place-items: center; transform: translate(-50%, 0) scale(.6); opacity: 0; pointer-events: none; z-index: 6; }
+.gs-pop { position: absolute; left: 47.5%; top: 38%; display: grid; place-items: center; transform: translate(-50%, 0) scale(.6); opacity: 0; pointer-events: none; z-index: 10; }
 .gs-pop b { position: relative; padding: 1.6cqw 4cqw; border-radius: 3.4cqw; font-size: 5.6cqw; font-weight: 900; color: #fff; background: var(--navy); box-shadow: 0 1cqw 0 rgba(0,0,0,.2); white-space: nowrap; }
 .gs-pop img { position: absolute; width: 40cqw; }
-.gs-pop.is-perfect b { background: var(--good); }
-.gs-pop.is-great b { background: #2E7FB0; }
-.gs-pop.is-off b { background: var(--bad); }
-.gs-pop.is-on { animation: gs-pop .7s cubic-bezier(.3,1.5,.5,1) forwards; }
+.gs-pop.is-exact b { background: var(--good); }
+.gs-pop.is-good b { background: #2E7FB0; }
+.gs-pop.is-over b, .gs-pop.is-under b { background: var(--bad); }
+.gs-pop.is-on { animation: gs-pop .45s cubic-bezier(.3,1.5,.5,1) forwards; }
 
-/* the navy strip at the bottom: the step's tip or its buttons */
-.gs-strip { position: absolute; left: 4%; right: 4%; top: 87.4%; height: 10%; display: flex; align-items: center; justify-content: center; gap: 3cqw; }
-.gs-tip { margin: 0; color: #fff; font-size: 4cqw; font-weight: 900; text-align: center; }
+/* the button panel at the very bottom */
+.gs-dock { position: absolute; left: 5%; right: 5%; top: 87.2%; height: 11.4%; display: flex; align-items: center; justify-content: center; gap: 3cqw; }
+.gs-status { margin: 0; color: #fff; font-size: 4.2cqw; font-weight: 900; text-align: center; }
 .gs-btn {
   flex: 1; max-width: 50%; min-height: 48px; border: 0; border-radius: 14px; background: #fff; color: var(--navy); font: inherit; font-size: 15px; font-weight: 900;
   box-shadow: 0 4px 0 #0A1430; transition: transform .1s ease-out;
 }
 .gs-btn.is-alt { background: transparent; color: #fff; box-shadow: 0 0 0 2px #fff inset; }
 .gs-btn:active { transform: translateY(2px); }
-.gs-btn:disabled { opacity: .4; }
+.gs-btn[aria-disabled="true"] { opacity: .45; }
 
-/* the result, on the worktop */
-.gs-result { position: absolute; left: 0; right: 0; top: 48%; height: 38%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4cqw; }
-.gs-made { position: relative; height: 42%; width: auto; animation: gs-made .6s cubic-bezier(.3,1.5,.5,1); z-index: 1; }
-.gs-ring-fx, .gs-sparkle-fx { position: absolute; top: 2%; width: 42cqw; opacity: 0; }
-.gs-ring-fx { animation: gs-ring .9s ease-out forwards; }
-.gs-sparkle-fx { animation: gs-spark 1.1s ease-out .15s forwards; }
 .gs-stars { display: flex; gap: 2cqw; }
 .gs-stars i { display: block; width: 12cqw; height: 12cqw; transform: scale(0); animation: gs-star .4s cubic-bezier(.3,1.6,.5,1) forwards; animation-delay: calc(.3s + var(--i) * .18s); }
 .gs-stars img { width: 100%; height: 100%; object-fit: contain; }
-.gs-result .gs-boost { margin: 0; font-size: 5.4cqw; }
-.gs-result .gs-note { margin: 0; font-size: 3.2cqw; color: #3E4A6B; }
+.gs-carbs.is-on { animation: gs-shake .35s ease-in-out; }
+
+@keyframes gs-drain { 0% { opacity: 0; transform: translate(-50%, -70%) scale(.4) rotate(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -70%) scale(.9) rotate(200deg); } }
+@keyframes gs-snap { 0% { transform: scaleY(1.25); } 100% { transform: none; } }
+@keyframes gs-drip { 0% { clip-path: inset(0 0 100% 0); } 100% { clip-path: inset(0 0 0 0); } }
+@keyframes gs-bob { 0%, 100% { transform: translateX(-50%); } 50% { transform: translate(-50%, -1.2cqw); } }
+@keyframes gs-shake { 0%, 100% { transform: none; } 25% { transform: translateX(-1.4cqw); } 75% { transform: translateX(1.4cqw); } }
+@keyframes gs-fill { 0% { transform: scaleY(.2); } 100% { transform: none; } }
+@keyframes gs-cost { 0% { opacity: 0; transform: translate(-50%, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -8cqw); } }
 
 @keyframes gs-pop { 0% { opacity: 0; transform: translate(-50%, 0) scale(.6); } 25% { opacity: 1; transform: translate(-50%, -2cqw) scale(1.05); } 75% { opacity: 1; transform: translate(-50%, -3cqw) scale(1); } 100% { opacity: 0; transform: translate(-50%, -6cqw) scale(.95); } }
 @keyframes gs-splash { 0% { opacity: 0; transform: translateY(20%) scale(.5); } 30% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-10%) scale(1.1); } }

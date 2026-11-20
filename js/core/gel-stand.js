@@ -154,6 +154,23 @@ export function buy(stock, ing, n, carbs) {
   return { stock: { ...stock, [ing]: (Number(stock[ing]) || 0) + k }, carbs: carbs - cost, cost };
 }
 
+/** Every stock bar holds this many: a restock bag fills a bar up to it. */
+export const STOCK_MAX = 4;
+
+/**
+ * A restock bag emptied into its tray: as many as the bar has room for and the carbs pay for, each at the same
+ * price. { stock, carbs, cost, n } or { error: 'free' | 'full' | 'carbs' }.
+ */
+export function fill(stock, ing, carbs, max = STOCK_MAX) {
+  const i = INGREDIENTS[ing];
+  if (!i || i.free) return { error: 'free' };
+  const room = max - (Number(stock[ing]) || 0);
+  if (room <= 0) return { error: 'full' };
+  const n = Math.min(room, Math.floor(carbs / i.cost));
+  if (n <= 0) return { error: 'carbs' };
+  return { ...buy(stock, ing, n, carbs), n };
+}
+
 /** Start making a gel: its ingredients come out of the stock. { stock } or { error: 'locked' | 'stock' }. */
 export function start(stock, g, level) {
   if (g.level > lvl(level)) return { error: 'locked' };

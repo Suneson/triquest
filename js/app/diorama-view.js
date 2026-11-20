@@ -167,7 +167,7 @@ function hud(ctx, avatarBtn) {
     <div class="dg-badge">${avatarBtn}<span class="dg-who"><b>${esc(name)}</b><i>${t('cp.lvl', { n: ctx.acct?.level || 1 })}</i></span></div>
     <div class="dg-gauges">
       ${gauge('coins', w.coins, w.cap, 'icons/Pixelart/GEAR/coin.png', t('cp.coinsAria', { n: fmtNum(w.coins) }))}
-      ${gauge('carbs', w.carbs, w.cap, 'icons/Pixelart/GEAR/carbs.png', t('cp.carbsAria', { n: fmtNum(w.carbs) }))}
+      ${gauge('carbs', w.carbs, w.cap, 'icons/Gels/ui-carbs.webp', t('cp.carbsAria', { n: fmtNum(w.carbs) }))}
       ${gauge('stamina', st, STAMINA.max, 'icons/Pixelart/NEW/stamina-bolt.png', t('cp.staminaAria', { n: st, max: STAMINA.max }))}
     </div>
   </header>`;

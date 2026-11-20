@@ -22,6 +22,7 @@ import { ISLAND_RULES, isIslandPiece, isStandSpot, islandRow, pieceState, standO
 import { MARKET_RULES, marketIn, marketStock, marketCollect, isMarketSlot, marketNext, marketUpgrade } from '../core/markets.js';
 import { EXPANSION_RULES, expandedSize, nextExpansion } from '../core/expansions.js';
 import { t } from '../core/i18n.js';
+import { getSettings } from './store.js';
 
 const KEY = 'moske-gear';
 // jobs, bays and offset come from workshop() (0022): offset is the server's clock
@@ -594,6 +595,9 @@ export const takePrestige = (sport, xp) => (isDemo() ? demoCall('prestige', { p_
  * worked out from your sessions the same way (wallet.js), so it shows offline.
  * { coins, carbs, cap, held: { gel, 'energy-bar', pasta } }
  */
+/** Carbs the gel stand has spent on this device (settings.gelStand.spent), until its restocks go to the server. */
+const gelCarbsSpent = () => Number(getSettings()?.gelStand?.spent) || 0;
+
 export function walletNow(workouts) {
   const s = gearState();
   const w = s.wallet;
@@ -601,7 +605,8 @@ export function walletNow(workouts) {
   const held = Object.fromEntries(FUELS.map((f) => [f.id, fuelHeld(s.spends, s.boosts, f.id, s.jobs)]));
   return {
     coins: Number(w ? w.coins : local.coins) || 0,
-    carbs: Number(w ? w.carbs : local.carbs) || 0,
+    // less what the gel stand has spent on this device (its restocks aren't on the server yet)
+    carbs: Math.max(0, (Number(w ? w.carbs : local.carbs) || 0) - gelCarbsSpent()),
     cap: GEAR_RULES.storageCap,
     held,
     gels: held.gel,

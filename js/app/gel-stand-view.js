@@ -12,11 +12,13 @@
 // pour it in (or over the bin to tip it out); a scoop from a tray over the jug, shaken; the dropper over the
 // jug; the whisk round it; a pouch from the box onto the counter; the jug over the pouch; the sealer across
 // the pouch's top. Letting go ends a step: it's judged and the next one starts. Before starting, a tap on a
-// jar restocks it, a tap on a powder brings a sachet to snip open with the scissors. The liquids are drawn
+// jar restocks it, a tap on a powder brings its bag up big to snip open with the scissors; cut, it flies to
+// its tray and pours itself in, filling the bar as far as the carbs pay (fill()). The liquids are drawn
 // over their pictures (multiply), so lines and shine show through.
 //
-// For now it's a preview (?gels=1, &lvl=1-6): the stock, the bag and the carbs are kept on this device
-// (settings.gelStand) until the server side exists.
+// The stock and the bag of gels are kept on this device (settings.gelStand) until the server side exists. The
+// carbs are the player's own (the wallet), less what the stand has spent here (settings.gelStand.spent, taken
+// off the wallet by gear-state.js); with no wallet (signed out, ?gels=1 on its own) the stand has its own 600.
 
 import { openLayer, closeLayer } from './nav.js';
 import { esc } from './ui.js';
@@ -24,6 +26,7 @@ import { t } from '../core/i18n.js';
 import { haptic } from './haptics.js';
 import * as store from './store.js';
 import * as G from '../core/gel-stand.js';
+import { gearEnabled, walletNow } from './gear-state.js';
 
 const ART = 'icons/Gels';
 const KEY = 'gelStand';
@@ -40,7 +43,9 @@ const DROP_MS = 420;      // a caffeine drop this often while the dropper's over
 const DROP_FIRST = 220;   // and the first this soon after it gets there
 const STEP_BEAT = 450;    // a step's pop shows this long, then the next step
 const STOCK_BAR = 4;      // a stock bar: four to a refill
-const SNIP_CUT = 0.72;    // how much of a sachet's top the scissors must cross to cut it
+const SNIP_CUT = 0.72;    // how much of a bag's top the scissors must cross to cut it
+const BAG_LINE = 0.143;   // the bag's dashed cut line, down its picture (bag-*.webp: the foil strip above it)
+const BAR_MS = 300;       // a bar fills this often while the bag pours
 const ASPECT = 2752 / 1536;   // the scene's height over its width: 1% of its height is this many % of its width
 const LIQUID = new Set(['water', 'honey', 'maple', 'beet']);
 /** The shelf, left to right (its jars stand on it, % across). */
@@ -56,7 +61,7 @@ const TRAYS = {
   salt: { l: 50.2, t: 70.75, w: 20.83, h: 6.54 },
   caffeine: { l: 0.07, t: 79.94, w: 22.66, h: 10.43 },
 };
-const POWDERS = ['malto', 'fructose', 'salt'];   // restocked from a sachet, snipped open
+const POWDERS = ['malto', 'fructose', 'salt'];   // restocked from a bag in their colour, snipped open
 const BOX = { l: 49.67, t: 77.29, w: 25, h: 13.08 };     // the box of empty pouches
 const BIN = { l: 71.5, r: 99, t: 44, b: 52 };            // the bin's lid, flush in the counter
 /** The tools hanging from the hooks of the counter's front: % across, their picture's height in cqw, turned
@@ -78,9 +83,11 @@ const STREAM = { water: 'stream-water', honey: 'stream-honey', maple: 'stream-ma
 const num = (v, d) => (v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : d);
 const load = () => {
   const s = settled();
-  return { ...G.normalise(s), carbs: num(s.carbs, PREVIEW_CARBS), coins: num(s.coins, PREVIEW_COINS), level: G.levelOf(s), build: G.buildOf(s) };
+  return { ...G.normalise(s), carbs: carbsOf(s), spent: num(s.spent, 0), previewCarbs: num(s.carbs, PREVIEW_CARBS), coins: num(s.coins, PREVIEW_COINS), level: G.levelOf(s), build: G.buildOf(s) };
 };
-const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.carbs, coins: s.coins, level: s.level, build: s.build || null });
+/** The carbs to spend: the wallet's (already less what the stand spent), or the stand's own without one. */
+const carbsOf = (s) => (gearEnabled() ? walletNow(store.getWorkouts()).carbs : num(s.carbs, PREVIEW_CARBS));
+const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.previewCarbs, spent: s.spent, coins: s.coins, level: s.level, build: s.build || null });
 /** "1 h 52 min", "4 min 10 s". */
 const hm = (ms) => {
   const s = Math.ceil(ms / 1000);
@@ -137,6 +144,15 @@ export function openGelStand({ level = null } = {}) {
   let snipping = null;     // a well's sachet waiting to be snipped open: its ingredient
 
   const set = (patch) => { st = { ...st, ...patch }; save(st); };
+  /** Carbs spent with the stock that bought them: off the wallet (noted on this device), or the stand's own. */
+  const spend = (cost, stock) => {
+    if (gearEnabled()) set({ stock, spent: st.spent + cost });
+    else set({ stock, previewCarbs: st.previewCarbs - cost });
+    st.carbs = carbsOf({ carbs: st.previewCarbs });
+    const c = root.querySelector('.gs-carbs b');
+    if (c) c.textContent = st.carbs;
+    document.dispatchEvent(new CustomEvent('gels-changed'));   // the top bar's carbs
+  };
 
   function frame(body, cls) {
     root.innerHTML = `<div class="gs ${cls}">
@@ -321,9 +337,10 @@ export function openGelStand({ level = null } = {}) {
         ${gimg(`patch-${id}`, 'gs-well-empty')}${short ? gimg('ui-plus', 'gs-well-plus') : ''}${stockBar(id)}</button>`;
     }).join('');
     const box = `<button class="gs-box${s?.kind === 'fill' && !run.pouch ? ' is-now' : ''}" data-box style="--l:${BOX.l}%;--t:${BOX.t}%;--w:${BOX.w}%;--h:${BOX.h}%" aria-label="${esc(t('gels.boxAria'))}"></button>`;
-    const sachet = snipping ? `<div class="gs-sachet" role="img" aria-label="${esc(t('gels.sachetAria', { ing: ingName(snipping) }))}">
-      ${gimg('sachet', 'gs-sachet-whole')}${gimg('sachet-cut', 'gs-sachet-cut')}${gimg('sachet-strip', 'gs-sachet-strip')}<i class="gs-cutline"><b></b></i></div>` : '';
-    return places + box + sachet;
+    // restocking a powder: its bag, big in the middle over a veil, its dashed line to cut
+    const bag = snipping ? `<i class="gs-veil"></i><div class="gs-bag" role="img" aria-label="${esc(t('gels.sachetAria', { ing: ingName(snipping) }))}">
+      ${gimg(`bag-${snipping}`, 'gs-bag-whole')}${gimg(`bag-${snipping}-cut`, 'gs-bag-cut')}${gimg('bag-strip', 'gs-bag-strip')}<i class="gs-cutline"><b></b></i></div>` : '';
+    return places + box + bag;
   }
 
   /** The counter: the measuring glass, the jug (with its liquid) and its meter, the pouch, the bin. */
@@ -867,12 +884,12 @@ export function openGelStand({ level = null } = {}) {
       return { move, up };
     }
 
-    // ---- restocking a well: the sachet over it, snipped open with the scissors ----
+    // ---- restocking a powder: its bag, big in the middle, snipped open with the scissors ----
     function snip(e) {
       const id = snipping;
-      const sachetEl = scene.querySelector('.gs-sachet');
+      const sachetEl = scene.querySelector('.gs-bag');
       const sr = rectOf(sachetEl);
-      const lineY = sr.t + (sr.b - sr.t) * 0.11;
+      const lineY = sr.t + (sr.b - sr.t) * BAG_LINE;
       const fill = sachetEl.querySelector('.gs-cutline b');
       const { held, place } = holding('scissors-open', 13, 'is-scissors');
       toolEl('scissors')?.classList.add('is-out');
@@ -906,32 +923,82 @@ export function openGelStand({ level = null } = {}) {
       move(e);
       return { move, up };
     }
-    /** The sachet's cut: the strip flies off, it tips into the well, and the well's restocked. */
-    function snipped(id, sachetEl) {
+    /**
+     * The bag's cut: the foil strip flies off, then on its own the bag shrinks, flies to its tray and tips over it,
+     * its powder pouring in while the bar fills one by one (as far as the carbs pay, all paid now), then it's gone.
+     */
+    function snipped(id, bagEl) {
       haptic('place');
-      sachetEl.classList.add('is-cut');
-      setTimeout(() => sachetEl.classList.add('is-pour'), 320);
+      bagEl.classList.add('is-cut');
+      busy = true;   // hands off while it pours
+      const r = G.fill(st.stock, id, st.carbs);
+      if (r.error) { setTimeout(() => { busy = false; snipping = null; drawPrep(); }, 500); return; }
+      const from = Number(st.stock[id]) || 0;
+      spend(r.cost, r.stock);
+      // where it tips: its mouth (the top, turned down to the left) just over the tray's middle
+      const tr = TRAYS[id];
+      const tx = tr.l + tr.w / 2; const ty = tr.t + tr.h / 2;
+      const W = 17;                                   // its width when small, % of the scene's
+      const half = W * 360 / 302 / 2;                 // half its height, in % of the scene's width
+      const mouth = { x: tx, y: tr.t - 6 };
+      const cx = mouth.x + 0.866 * half; const cy = mouth.y - 0.5 * half / ASPECT;
+      const wellEl = scene.querySelector(`[data-slot="${id}"]`);
+      const bars = wellEl?.querySelectorAll('.gs-stockbar i') || [];
+      const pour = document.createElement('img');
+      pour.className = 'gs-bagpour'; pour.src = `${ART}/pour-${id}.webp`; pour.alt = '';
+      pour.style.cssText = `left:${mouth.x}%;top:${mouth.y}%;height:${ty - mouth.y}%`;
+      const puff = document.createElement('img');
+      puff.className = 'gs-bagpuff'; puff.src = `${ART}/puff-${id}.webp`; puff.alt = '';
+      puff.style.cssText = `left:${tx}%;top:${ty}%`;
       setTimeout(() => {
+        // fly: from the middle of the screen, small, to over the tray, tipped
+        scene.querySelector('.gs-veil')?.classList.add('is-off');
+        bagEl.classList.add('is-flying');
+        bagEl.style.left = `${cx - W / 2}%`;
+        bagEl.style.top = `${cy - half / ASPECT}%`;
+        bagEl.style.width = `${W}%`;
+        bagEl.style.setProperty('--rot', '-120deg');
+      }, 380);
+      setTimeout(() => {
+        // pour: the powder falls, a puff where it lands, the tray's full again and its bar fills
+        scene.append(pour, puff);
+        wellEl?.classList.remove('is-out-of');
+        wellEl?.querySelector('.gs-well-plus')?.remove();
+        for (let k = 0; k < r.n; k++) {
+          setTimeout(() => { bars[from + k]?.classList.add('is-on'); haptic('select'); }, k * BAR_MS);
+        }
+      }, 1050);
+      const end = 1050 + r.n * BAR_MS + 250;
+      setTimeout(() => { pour.classList.add('is-off'); bagEl.classList.add('is-gone'); }, end);
+      setTimeout(() => {
+        busy = false;
         snipping = null;
-        refill(id, true);
-      }, 900);
+        dumped = false;
+        drawPrep();
+        // what it cost floats up from the tray
+        const again = root.querySelector(`[data-slot="${id}"]`);
+        const tag = document.createElement('b');
+        tag.className = 'gs-cost-pop'; tag.textContent = `-${r.cost} g`;
+        again?.append(tag);
+      }, end + 300);
     }
 
-    // ---- a tap on a jar or a well: a refill with carbs (a well's comes in a sachet to snip) ----
-    function refill(id, fromSachet = false) {
+    // ---- a tap on a jar or a tray: a refill with carbs (a powder's comes in a bag to snip, filling its bar) ----
+    function refill(id) {
       const have = Number(st.stock[id]) || 0;
       if (G.INGREDIENTS[id].free || have >= STOCK_BAR) { haptic('refuse'); return; }
-      const r = G.buy(st.stock, id, 1, st.carbs);
-      if (r.error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
-      if (POWDERS.includes(id) && !fromSachet) {
-        // a powder comes in a sachet: snip it open to pour it in
+      if (POWDERS.includes(id)) {
+        // a powder comes in a bag: snip it open and it pours itself in (as far as the carbs pay for)
+        if (G.fill(st.stock, id, st.carbs).error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
         haptic('tick');
         snipping = id;
         drawPrep();
         return;
       }
+      const r = G.buy(st.stock, id, 1, st.carbs);
+      if (r.error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
       haptic('tick');
-      set({ stock: r.stock, carbs: r.carbs });
+      spend(r.cost, r.stock);
       dumped = false;
       drawPrep();
       // the cost floats up from it, its bar springs

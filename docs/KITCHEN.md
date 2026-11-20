@@ -163,9 +163,14 @@ done ones ticked, the one now ringed, and the one now big beside its instruction
 - **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it and hold; let go
   at the red line. **Seal:** take the sealer off its hook and swipe it across the pouch's top.
 - **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost).
-- **Restocking**, before you start: tap a jar or the caffeine vials for one more (carbs); a short one shows a +. A
-  powder comes in a sachet: tap its tray, a sachet drops onto the stone pad, swipe the scissors along its dashed
-  line (snip, snip) and it tips in.
+- **Restocking**, before you start: tap a jar or the caffeine vials for one more bar (each bar the same price); a
+  short one shows a +. A powder comes in a bag in its own colour: tap its tray and the bag comes up big in the
+  middle of the screen; take the scissors off their hook and cut along its dashed line (snip, snip). It then
+  shrinks, flies to its tray, tips and pours itself in (`pour-*`, `puff-*`), filling the bar as far as the carbs
+  pay for, up to all 4 (`fill()`), all paid at the cut. Art: `gel-stand-bags.csv`, `tools/cut-gels.py --bags`.
+- **Carbs** are the player's own (the wallet in the top bar, whose icon is now the stand's carb bag). What the
+  stand spends is kept on this device (`settings.gelStand.spent`) and taken off the wallet until the server side
+  (a migration) records it; signed out, `?gels=1` keeps its own 600.
 - **Stars** multiply the boost by ×0.6 / ×1.0 / ×1.4 (a honey gel: +15% / +25% / +35% XP). XP only, as all gels.
 - Citrus, berry and lime jars (and their streams) are painted for the gels still to come.
 

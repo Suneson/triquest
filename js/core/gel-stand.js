@@ -1,8 +1,8 @@
 // gel-stand.js — the gel stand's rules (docs/KITCHEN.md, "The gel stand"). Pure: no DOM, no clock.
 //
 // You pick a final gel from the stand's menu (the stand's level opens more of them), its ingredients are
-// taken from your stock, and you make it step by step: pour into the jug, salt, caffeine, stir, fill the
-// pouch, seal it. Each step scores 0 to 1 from how close you got; their mean gives 1-3 stars, and the
+// taken from your stock, and you make it step by step: pour or shake into the jug, shake in the salt, drop
+// in caffeine, stir, fill the pouch, seal it. Each step scores 0 to 1 from how close you got; their mean gives 1-3 stars, and the
 // stars scale the gel's boost (an XP boost on your next workout).
 //
 //   stock: { <ingredient>: n }          what you hold (water is free and never counted)
@@ -61,8 +61,8 @@ export function settleBuild(saved, now) {
 /** Time left on the build in ms (0 when there's none). */
 export const buildLeft = (saved, now) => { const b = buildOf(saved); return b ? Math.max(0, b.done - now) : 0; };
 
-/** What the stars multiply a boost by. */
-export const STAR_MULT = [0, 0.7, 1, 1.15];
+/** What the stars multiply a boost by (a honey gel: +15% / +25% / +35% XP). */
+export const STAR_MULT = [0, 0.6, 1, 1.4];
 /** Buying a gel ready-made costs this many times its ingredients. */
 export const READY_MADE = 5;
 
@@ -70,9 +70,10 @@ const lvl = (n) => Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(n) || 1)));
 /** A saved level, made safe (1 to MAX_LEVEL). */
 export const levelOf = (saved) => lvl(saved?.level);
 
-// the steps, as data. pour/fill `to`: the jug's (or pouch's) level to stop at, 0-1, counted from the bottom
+// the steps, as data. pour/fill `to`: the jug's (or pouch's) level to stop at, 0-1, counted from the bottom;
+// salt `to`: how much salt (0-1, its own meter beside the jug)
 const pour = (ing, to) => ({ kind: 'pour', ing, to });
-const salt = (to) => ({ kind: 'dial', ing: 'salt', to });
+const salt = (to) => ({ kind: 'salt', ing: 'salt', to });
 const drops = (n) => ({ kind: 'drops', ing: 'caffeine', n });
 const stir = (turns) => ({ kind: 'stir', turns });
 const FILL = { kind: 'fill', to: 0.85 };
@@ -170,14 +171,33 @@ export function scorePour(level, to, from = 0) {
   const tol = Math.max(0.06, 0.45 * Math.abs(to - from));       // small pours are judged as fairly as big ones
   return clamp01(1 - off / tol);
 }
-/** The salt dial (0-1) against its mark. */
-export const scoreDial = (v, to) => clamp01(1 - Math.max(0, Math.abs(v - to) - 0.025) / 0.25);
+/** The salt shaken in (0-1) against its mark. */
+export const scoreSalt = (v, to) => clamp01(1 - Math.max(0, Math.abs(v - to) - 0.025) / 0.25);
+/** The old name (the dial is gone; salt is shaken in now). */
+export const scoreDial = scoreSalt;
 /** Drops of caffeine: exact is perfect, one out is half. */
 export const scoreDrops = (n, want) => (n === want ? 1 : Math.abs(n - want) === 1 ? 0.5 : 0);
 /** Stirring: done is done, but rushing it (over 2.5 turns a second) splashes. */
 export const scoreStir = (turns, secs) => (turns / Math.max(0.1, secs) > 2.5 ? 0.7 : 1);
 /** The seal: how much of the pouch's top the swipe covered (0-1). */
 export const scoreSeal = (cover) => clamp01((cover - 0.5) / 0.45);
+
+/**
+ * The green "sweet spot" on a step's meter, where it scores 0.8 or more: [lo, hi] (0-1).
+ * `from`: the jug's level before a pour.
+ */
+export function sweetSpot(step, from = 0) {
+  if (step.kind === 'salt') return [Math.max(0, step.to - 0.075), Math.min(1, step.to + 0.075)];
+  const half = 0.012 + 0.2 * Math.max(0.06, 0.45 * Math.abs(step.to - from));
+  return [Math.max(0, step.to - half), Math.min(1, step.to + half)];
+}
+
+/** How a step went, for its pop: 'exact' | 'good' | 'over' | 'under'. `value`/`to`: where it stopped and the mark. */
+export function verdict(score, value = 0, to = 0) {
+  if (score >= 0.95) return 'exact';
+  if (score >= 0.6) return 'good';
+  return value > to ? 'over' : 'under';
+}
 
 /** Stars from the steps' scores. */
 export function stars(scores) {

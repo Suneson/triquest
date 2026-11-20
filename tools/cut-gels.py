@@ -153,6 +153,11 @@ SHEETS_BAGS = {
     'gel-bag-pours': (8, 1, [f'pour-{p}' for p in P8], 512),
     'gel-bag-bits': (4, 2, ['bag-strip'] + [f'puff-{p}' for p in P8[:7]], 192),
 }
+# --streams: a scoop's powder over the jug (gel-stand-v8.csv): a thin trickle held, a heavy pour shaken
+SHEETS_STREAMS = {
+    'gel-powder-trickle': (8, 1, [f'trickle-{p}' for p in P8], 512),
+    'gel-powder-shake': (8, 1, [f'shake-{p}' for p in P8], 512),
+}
 
 
 def cut_bags(gen):
@@ -212,6 +217,12 @@ def main():
     os.makedirs(GELS, exist_ok=True)
     if '--bags' in sys.argv:
         cut_bags(gen)
+        return
+    if '--streams' in sys.argv:
+        for sheet, (cols, rws, names, height) in SHEETS_STREAMS.items():
+            im = key(Image.open(os.path.join(gen, f'{sheet}.jpg')))
+            for cell, name in zip(cells(im, cols, rws), names):
+                save(cell, os.path.join(GELS, f'{name}.webp'), height)
         return
     if '--screen' in sys.argv:
         cut_screen(gen)

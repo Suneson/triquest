@@ -139,25 +139,31 @@ server: the wallet's coins, the build as a builder's job (coffee cuts it), and a
 The art is cut from the CSV's sheets by `tools/cut-gels.py` into `icons/Gels/` (gels, ingredients, tools, pouch,
 interface, effects, the prep view's background) and `icons/Items/gel-stand-t<n>-<a|b>.webp` (the stand).
 
-**The prep view, every tool on show** (third layout; art in `MOSKE APP/PromptQueue Prompts/gel-stand-v3.csv`, the
-background is take `b` with its screen and rail moved up one brick period, `tools/cut-gels.py --v3`). Top to bottom:
-the recipe and what to do now on the white wall screen; a tool rail (sealer, whisk, dropper, scissors); a shelf of
-tap jars (water, honey, maple, beet) and the caffeine vial; the counter with the measuring glass, the jug and its
-meter, the pouch's place and a bin; the tray's three powder wells (maltodextrin, fructose, salt) and a box of empty
-pouches; the buttons at the very bottom. The brick wall carries on above the scene on tall phones. Everything is
-dragged, and letting go ends a step (judged "Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
+**The prep view, every tool on show** (fifth layout; background `gel-prep-bg-v5-b.jpg` made with Gemini from the
+third layout's art, and the same picture painted empty, `gel-prep-bg-v5-b-empty.jpg`; `tools/cut-gels.py --v5` cuts
+the background and, from the empty one, a patch for each tray place and the open bin). Top to bottom: the recipe
+and what to do now on the white wall screen at the very top; a shelf of tap jars (water, honey, maple, beet); the
+counter with the measuring glass, the jug and its meter, the pouch's place, and a bin built flush into it (its lid
+opens when the glass or the jug is brought to it); the counter's navy front with the tools on hooks (sealer,
+whisk, dropper, scissors, and a scoop for show); the tray unit painted into the picture: maltodextrin (white),
+fructose (sky blue), salt (pink), the caffeine vials, an orange electrolyte (for gels still to come), the box of
+empty pouches, and a stone pad. A tray place that runs out shows its empty picture. The buttons (Start, Back to
+the gels, Make another) float over the bottom of the tray only when there's one to press; none while making. The
+marble carries on below the scene on tall phones. Everything is dragged, and letting go ends a step (judged
+"Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
 - **Liquids:** hold the measuring glass under the jar's tap (it fills by the time held) up to its red line, with a
   green band either side; drag it over the jug and it pours in. Too much? Drag it over the bin to tip it out and
   measure again (no cost). A full glass is 0.75 of the jug.
-- **Powders and salt:** drag a scoop from the well over the jug and shake it side to side; the meter beside the jug
+- **Powders and salt:** drag a scoop from its tray over the jug and shake it side to side; the meter beside the jug
   shows the level (or the salt) and its green sweet spot.
-- **Caffeine:** take the dropper off the rail and hold it over the jug: a drop every 0.4 s.
-- **Stir:** the whisk comes off the rail, round and round the jug, a ring fills.
+- **Caffeine:** take the dropper off its hook (or drag from the vials) and hold it over the jug: a drop every 0.4 s.
+- **Stir:** the whisk comes off its hook, round and round the jug, a ring fills.
 - **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it and hold; let go
-  at the red line. **Seal:** take the sealer off the rail and swipe it across the pouch's top.
+  at the red line. **Seal:** take the sealer off its hook and swipe it across the pouch's top.
 - **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost).
-- **Restocking**, before you start: tap a jar or the vial for one more (carbs). A well's powder comes in a sachet:
-  tap the well, a sachet drops over it, swipe the scissors along its dashed line (snip, snip) and it tips in.
+- **Restocking**, before you start: tap a jar or the caffeine vials for one more (carbs); a short one shows a +. A
+  powder comes in a sachet: tap its tray, a sachet drops onto the stone pad, swipe the scissors along its dashed
+  line (snip, snip) and it tips in.
 - **Stars** multiply the boost by ×0.6 / ×1.0 / ×1.4 (a honey gel: +15% / +25% / +35% XP). XP only, as all gels.
 - Citrus, berry and lime jars (and their streams) are painted for the gels still to come.
 

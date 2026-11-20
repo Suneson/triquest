@@ -3,6 +3,9 @@
     python tools/cut-gels.py <gen dir> [--v2]
 
 --v2: only the thumb redesign's sheets (gel-hand, gel-streams) and its background (gel-prep-bg-screen-b).
+--v5: the fifth layout's background (gel-prep-bg-v5-b.jpg, trays and pouch box painted in) and its patches,
+      cut from gel-prep-bg-v5-b-empty.jpg (the same picture with every tray empty and the bin open): only the
+      pixels that differ, inside each place's box. Prints each patch's box in % of the scene for css/gels.css.
 --v3: only the third layout's sheets (gel-stand-v3.csv: jars, tools, wells, streams) and its background
       (gel-prep-bg-v3.jpg: take b with the screen and rail moved up a brick period, made in Python).
 
@@ -15,7 +18,7 @@ to icons/Gels/prep-bg.webp. Run tools/measure-items.py afterwards for the stands
 """
 import os, sys
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GELS = os.path.join(HERE, '..', 'icons', 'Gels')
@@ -116,6 +119,46 @@ def cells(im, cols, rows):
             yield im.crop((round(i * w), round(j * h), round((i + 1) * w), round((j + 1) * h)))
 
 
+# the fifth layout's patches: (name, box in px of the 1536 x 2752 picture, boxes left out)
+PATCHES_V5 = [
+    ('patch-malto', (24, 1947, 397, 2176), []),
+    ('patch-fructose', (400, 1947, 733, 2176), []),
+    ('patch-salt', (771, 1947, 1091, 2176), [(763, 2127, 1147, 2487)]),   # the pouch box stands over its foot
+    ('patch-caffeine', (0, 2200, 349, 2487), []),
+    ('patch-bin-open', (1060, 880, 1536, 1430), []),
+]
+
+
+def cut_v5(gen):
+    from scipy import ndimage
+    full = Image.open(os.path.join(gen, 'gel-prep-bg-v5-b.jpg')).convert('RGB')
+    empty = Image.open(os.path.join(gen, 'gel-prep-bg-v5-b-empty.jpg')).convert('RGB')
+    assert full.size == empty.size == (1536, 2752)
+    a = np.asarray(full).astype(float); b = np.asarray(empty).astype(float)
+    diff = np.abs(a - b).sum(axis=2) > 36
+    out = full.resize((900, 1612), Image.LANCZOS)
+    out.save(os.path.join(GELS, 'prep-bg-v5.webp'), quality=84, method=6)
+    print('icons/Gels/prep-bg-v5.webp', out.size)
+    W, H = full.size
+    for name, (x0, y0, x1, y1), leave in PATCHES_V5:
+        m = np.zeros(diff.shape, bool)
+        m[y0:y1, x0:x1] = diff[y0:y1, x0:x1]
+        m = ndimage.binary_closing(m, iterations=6)
+        m = ndimage.binary_fill_holes(m)
+        m = ndimage.binary_dilation(m, iterations=5)
+        for lx0, ly0, lx1, ly1 in leave: m[ly0:ly1, lx0:lx1] = False
+        m[:y0] = False; m[y1:] = False; m[:, :x0] = False; m[:, x1:] = False
+        alpha = Image.fromarray((m * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2.5))
+        ys, xs = np.nonzero(m)
+        bx0, by0, bx1, by1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+        p = empty.convert('RGBA'); p.putalpha(alpha)
+        p = p.crop((bx0, by0, bx1, by1))
+        k = 900 / 1536   # stored at the background's own scale
+        p = p.resize((max(1, round(p.width * k)), max(1, round(p.height * k))), Image.LANCZOS)
+        p.save(os.path.join(GELS, f'{name}.webp'), quality=88, method=6)
+        print(f'{name}: left {bx0 / W * 100:.2f}% top {by0 / H * 100:.2f}% width {(bx1 - bx0) / W * 100:.2f}% height {(by1 - by0) / H * 100:.2f}%')
+
+
 def save(im, path, height):
     im = trimmed(im)
     if im.height > height: im = im.resize((round(im.width * height / im.height), height), Image.LANCZOS)
@@ -126,6 +169,9 @@ def save(im, path, height):
 def main():
     gen = sys.argv[1]
     os.makedirs(GELS, exist_ok=True)
+    if '--v5' in sys.argv:
+        cut_v5(gen)
+        return
     if '--v3' in sys.argv:
         for sheet, (names, height) in SHEETS_V3.items():
             raw = Image.open(os.path.join(gen, f'{sheet}.jpg'))

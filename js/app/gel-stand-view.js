@@ -373,8 +373,7 @@ export function openGelStand({ level = null } = {}) {
         <div class="gs-rail">${hooksHtml()}</div>
         <div class="gs-counter">${counterHtml()}</div>
         <span class="gs-pop" aria-hidden="true"></span>
-        ${dockHtml()}
-      </div></div>`, 'is-prep');
+      </div>${dockHtml()}</div>`, 'is-prep');
     bindScene();
   }
 
@@ -443,6 +442,14 @@ export function openGelStand({ level = null } = {}) {
       const r = box(); const b = el.getBoundingClientRect();
       return { l: (b.left - r.left) / r.width * 100, r: (b.right - r.left) / r.width * 100, t: (b.top - r.top) / r.height * 100, b: (b.bottom - r.top) / r.height * 100 };
     };
+    /** An element's own place in scene %, its transform left out (it may still be on its way back). */
+    const homeOf = (el) => {
+      const r = box();
+      const l = el.offsetLeft / r.width * 100; const tp = el.offsetTop / r.height * 100;
+      return { l, r: l + el.offsetWidth / r.width * 100, t: tp, b: tp + el.offsetHeight / r.height * 100 };
+    };
+    /** Back to its place: the move's undone (its transition carries it home). */
+    const goHome = (el) => { el.style.removeProperty('--tx'); el.style.removeProperty('--ty'); el.style.removeProperty('--rot'); };
     const inside = (p, r, pad = 0, padY = pad) => p.x > r.l - pad && p.x < r.r + pad && p.y > r.t - padY && p.y < r.b + padY;
     const liquidEl = () => jugEl.querySelector('.gs-liquid');
     const meterEl = () => scene.querySelector('.gs-meter');
@@ -492,7 +499,7 @@ export function openGelStand({ level = null } = {}) {
     function dragGlass(e, s) {
       const glassEl = scene.querySelector('.gs-glass');
       const liqEl = glassEl.querySelector('.gs-gliq');
-      const home = rectOf(glassEl);
+      const home = homeOf(glassEl);
       const moveTo = mover(glassEl, home);
       const gH = home.b - home.t; const gW = home.r - home.l;
       const tap = tapOf(s.ing);
@@ -574,7 +581,7 @@ export function openGelStand({ level = null } = {}) {
         jarEl?.classList.remove('is-pouring');
         binOpen(false);
         glassEl.classList.remove('is-held');
-        moveTo((home.l + home.r) / 2, (home.t + home.b) / 2, 0);
+        goHome(glassEl);   // always back to its place, whatever happened
         if (where === 'bin') {
           // tipped out: try again
           run.glass = 0; show();
@@ -679,7 +686,7 @@ export function openGelStand({ level = null } = {}) {
     // ---- the jug: to the bin to tip it away, or (filling) over the pouch ----
     function dragJug(e, s) {
       const filling = s.kind === 'fill' && run.pouch;
-      const home = rectOf(jugEl);
+      const home = homeOf(jugEl);
       const moveTo = mover(jugEl, home);
       const pouchEl = scene.querySelector('.gs-pouch');
       const pr = pouchEl ? rectOf(pouchEl) : null;
@@ -734,7 +741,7 @@ export function openGelStand({ level = null } = {}) {
         flow.remove();
         binOpen(false);
         jugEl.classList.remove('is-held');
-        moveTo((home.l + home.r) / 2, (home.t + home.b) / 2, 0);
+        goHome(jugEl);
         if (where === 'bin') { dump(); return; }
         if (filling && run.fill > 0) finishStep(G.scorePour(run.fill, s.to, 0), run.fill, s.to);
       };

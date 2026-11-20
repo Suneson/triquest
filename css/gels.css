@@ -176,7 +176,7 @@
 .gs-glass { position: absolute; left: 59%; top: 45.4%; width: 12.4%; aspect-ratio: 315 / 360; z-index: 5; }
 .gs-glass-art { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1cqw .8cqw rgba(22,38,77,.25)); }
 /* its liquid, over its picture (multiply, so the glass's lines show through): the inside is about 13-90% across, 8-94% down */
-.gs-gliq { position: absolute; left: 14%; right: 10%; bottom: 6%; height: calc(var(--g) * 82%); background: var(--c); mix-blend-mode: multiply;
+.gs-gliq { position: absolute; left: 14%; right: 10%; bottom: 6%; height: calc(var(--g) * 70%); background: var(--c); mix-blend-mode: multiply;
   clip-path: polygon(0 0, 100% 0, 96% 100%, 4% 100%); border-radius: 0 0 1.4cqw 1.4cqw; }
 .gs-glass.is-now .gs-glass-art { filter: drop-shadow(0 0 1.2cqw #fff) drop-shadow(0 0 .6cqw var(--sky)); }
 

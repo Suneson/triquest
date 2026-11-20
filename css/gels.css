@@ -173,14 +173,14 @@
 /* the counter */
 .gs-glass, .gs-jug { transform: translate(var(--tx, 0), var(--ty, 0)) rotate(var(--rot, 0deg)) scaleX(var(--flip, 1)); transition: transform .35s cubic-bezier(.3,1.4,.5,1); touch-action: none; cursor: grab; }
 .gs-glass.is-held, .gs-jug.is-held { transition: transform .06s linear; z-index: 9; cursor: grabbing; }
-.gs-glass { position: absolute; left: 5%; top: 45.4%; width: 12.4%; aspect-ratio: 315 / 360; z-index: 5; }
+.gs-glass { position: absolute; left: 59%; top: 45.4%; width: 12.4%; aspect-ratio: 315 / 360; z-index: 5; }
 .gs-glass-art { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1cqw .8cqw rgba(22,38,77,.25)); }
 /* its liquid, over its picture (multiply, so the glass's lines show through): the inside is about 13-90% across, 8-94% down */
 .gs-gliq { position: absolute; left: 14%; right: 10%; bottom: 6%; height: calc(var(--g) * 82%); background: var(--c); mix-blend-mode: multiply;
   clip-path: polygon(0 0, 100% 0, 96% 100%, 4% 100%); border-radius: 0 0 1.4cqw 1.4cqw; }
 .gs-glass.is-now .gs-glass-art { filter: drop-shadow(0 0 1.2cqw #fff) drop-shadow(0 0 .6cqw var(--sky)); }
 
-.gs-jug { position: absolute; left: 21%; top: 41.2%; width: 22%; aspect-ratio: 307 / 320; z-index: 4; }
+.gs-jug { position: absolute; left: 36.5%; top: 41.2%; width: 22%; aspect-ratio: 307 / 320; z-index: 4; }
 .gs-jug > img:first-child { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1.2cqw 1cqw rgba(22,38,77,.25)); }
 /* the liquid, over the jug's picture: its inside is 15-72% across, 9-95% down, narrowing a little to the foot */
 .gs-liquid { position: absolute; left: 15.5%; right: 28%; top: 9%; bottom: 5%; display: flex; flex-direction: column-reverse;
@@ -193,7 +193,7 @@
 .gs-splash.is-on { animation: gs-splash .55s ease-out; }
 
 /* the meter beside the jug: what's gone in, the green sweet spot, the mark */
-.gs-meter { position: absolute; left: 44.5%; top: 43%; width: 3.4%; height: 10.6%; border-radius: 2cqw; background: rgba(255,255,255,.9);
+.gs-meter { position: absolute; left: 9.5%; top: 43%; width: 3.4%; height: 10.6%; border-radius: 2cqw; background: rgba(255,255,255,.9);
   box-shadow: 0 0 0 .5cqw var(--navy); overflow: hidden; pointer-events: none !important; }
 .gs-meter b { position: absolute; left: 0; right: 0; bottom: calc(var(--lo) * 100%); height: calc((var(--hi) - var(--lo)) * 100%); background: rgba(47,138,62,.35); }
 .gs-meter i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--v) * 100%); background: var(--sky); transition: height .05s linear; }
@@ -204,10 +204,10 @@
 .gs-meter.is-drops i.is-extra.is-on { background: var(--bad); }
 
 /* the pouch's place, then the pouch: clear, filled to its line, sealed; then it's the finished gel */
-.gs-spot { position: absolute; left: 52%; top: 42.6%; width: 12%; height: 12.4%; border-radius: 2cqw; border: .7cqw dashed rgba(91,180,229,.8);
+.gs-spot { position: absolute; left: 24%; top: 42.6%; width: 12%; height: 12.4%; border-radius: 2cqw; border: .7cqw dashed rgba(91,180,229,.8);
   pointer-events: none !important; animation: gs-glow 1.2s ease-in-out infinite; }
 .gs-scene.is-over-spot .gs-spot { background: rgba(91,180,229,.18); }
-.gs-pouch { position: absolute; left: 53%; top: 42.9%; width: 10%; aspect-ratio: 152 / 320; pointer-events: none !important; z-index: 3; }
+.gs-pouch { position: absolute; left: 25%; top: 42.9%; width: 10%; aspect-ratio: 152 / 320; pointer-events: none !important; z-index: 3; }
 .gs-pouch.is-in { animation: gs-drop-in .35s cubic-bezier(.3,1.5,.5,1); }
 .gs-pouch-art, .gs-final { position: absolute; inset: 0; width: 100%; height: 100%; }
 .gs-pouch-art { filter: drop-shadow(0 1cqw .8cqw rgba(22,38,77,.25)); }

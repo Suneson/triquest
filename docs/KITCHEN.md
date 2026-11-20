@@ -153,9 +153,10 @@ marble carries on below the scene on tall phones. The wall screen shows the reci
 tool for an action; `gel-stand-screen.csv`, cut with `tools/cut-gels.py --screen` into `icons/Gels/scr-*.webp`):
 done ones ticked, the one now ringed, and the one now big beside its instruction. Everything is dragged, and letting go ends a step (judged
 "Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
-- **Liquids:** hold the measuring glass under the jar's tap and it fills to the top (no line on it). Tip it over
+- **The counter, left to right:** the meter, the pouch's place, the jug, the measuring glass, the bin.
+- **Liquids:** hold the measuring glass under the jar's tap and it fills to the top in half a second (no line on it). Tip it over
   the jug and it pours in slowly (0.5 glass a second); the meter beside the jug shows the line and its green sweet
-  spot, and letting go over the jug judges it (what's left in the glass is poured away). Over the bin it's tipped
+  spot, and letting go (anywhere, once some is in) judges it (what's left in the glass is poured away). Over the bin it's tipped
   out to fill again (no cost). A full glass is 0.75 of the jug.
 - **Powders and salt:** drag a scoop from its tray over the jug: held there it always trickles in slowly (a thin
   stream), shaken side to side it pours faster (a heavy pour over it). The meter shows the level (or the salt) and
@@ -168,7 +169,7 @@ done ones ticked, the one now ringed, and the one now big beside its instruction
 - **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it and hold; let go
   at the red line. **Seal:** take the sealer off its hook and swipe it across the pouch's top.
 - **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost). Its lid only opens
-  over a small spot low on the lid (76-97% across, 46-53% down), and the pouch is checked first. The jug's turned
+  over a small square in its far corner (92-99% across, 48-52.5% down), and the pouch is checked first. The jug's turned
   round as it tips, so its spout leads.
 - **Restocking**, before you start: tap a jar or the caffeine vials for one more bar (each bar the same price); a
   short one shows a +. A powder comes in a bag in its own colour: tap its tray and the bag comes up big in the

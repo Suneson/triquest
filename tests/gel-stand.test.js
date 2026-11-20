@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  GELS, SHELF, INGREDIENTS, menu, gelById, gelCost, readyMadeCost, normalise, missing, missingCost, buy, start,
+  GELS, SHELF, INGREDIENTS, menu, gelById, gelCost, readyMadeCost, normalise, missing, missingCost, buy, fill, STOCK_MAX, start,
   scorePour, scoreDial, scoreSalt, sweetSpot, verdict, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged, UPGRADES, nextUpgrade, levelOf, MAX_LEVEL, startUpgrade, settleBuild, buildLeft, buildOf,
 } from '../js/core/gel-stand.js';
 
@@ -124,4 +124,15 @@ test('salt is shaken in; sweet spots hold the scores of 0.8 and up; verdicts', (
   assert.ok(scorePour(plo + 1e-6, 0.54, 0.3) >= 0.8 && scorePour(phi - 1e-6, 0.54, 0.3) >= 0.8);
   assert.ok(scorePour(phi + 0.02, 0.54, 0.3) < 0.8);
   assert.deepEqual([verdict(1), verdict(0.7), verdict(0.2, 0.9, 0.5), verdict(0.2, 0.1, 0.5)], ['exact', 'good', 'over', 'under']);
+});
+
+test('a restock bag fills the bar as far as the carbs pay, one price a bar', () => {
+  assert.equal(STOCK_MAX, 4);
+  assert.deepEqual(fill({ malto: 4 }, 'malto', 999), { error: 'full' });
+  assert.deepEqual(fill({ malto: 0 }, 'malto', 19), { error: 'carbs' });
+  assert.deepEqual(fill({}, 'water', 99), { error: 'free' });
+  let r = fill({ malto: 1 }, 'malto', 1000);
+  assert.equal(r.n, 3); assert.equal(r.stock.malto, 4); assert.equal(r.cost, 60); assert.equal(r.carbs, 940);
+  r = fill({ malto: 0 }, 'malto', 45);   // only two bars' worth
+  assert.equal(r.n, 2); assert.equal(r.stock.malto, 2); assert.equal(r.carbs, 5);
 });

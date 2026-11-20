@@ -145,17 +145,30 @@
 .gs-jar.is-on, .gs-well.is-on { animation: gs-shake .35s ease-in-out; }
 .gs-box { position: absolute; left: var(--l); top: var(--t); width: var(--w); height: var(--h); padding: 0; border: 0; border-radius: 2cqw; background: none; touch-action: none; }
 
-/* a sachet to restock a powder: it lies on the stone pad, snipped along its dashed top, it tips out */
-.gs-sachet { position: absolute; left: 75.5%; width: 18%; top: 72.5%; aspect-ratio: 279 / 360; z-index: 6; animation: gs-drop-in .4s cubic-bezier(.3,1.4,.5,1); }
-.gs-sachet img { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; filter: drop-shadow(0 1cqw .8cqw rgba(10,18,40,.35)); }
-.gs-sachet-cut, .gs-sachet-strip { opacity: 0; }
-.gs-sachet-strip { bottom: auto !important; top: 0; width: 90% !important; left: 5% !important; }
-.gs-cutline { position: absolute; left: 6%; right: 6%; top: 9%; height: 1.2cqw; border-radius: 1cqw; background: rgba(22,38,77,.15); }
-.gs-cutline b { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 1cqw; background: var(--sky); }
-.gs-sachet.is-cut .gs-sachet-whole, .gs-sachet.is-cut .gs-cutline { opacity: 0; }
-.gs-sachet.is-cut .gs-sachet-cut { opacity: 1; }
-.gs-sachet.is-cut .gs-sachet-strip { animation: gs-strip .7s ease-out forwards; }
-.gs-sachet.is-pour { transition: transform .45s cubic-bezier(.4,0,.6,1), opacity .3s .35s; transform: translate(-60%, -10%) rotate(-120deg); opacity: 0; }
+/* a bag to restock a powder: big in the middle over a veil, snipped along its dashed line; cut, it shrinks, flies
+   to its tray and tips over it (left, top, width and --rot set by the code), its powder pouring in */
+.gs-veil { position: absolute; left: 0; right: 0; top: 0; bottom: -100vh; background: rgba(10,20,48,.38); z-index: 11; pointer-events: none;
+  animation: gs-fade-in .25s ease-out; transition: opacity .35s; }
+.gs-veil.is-off { opacity: 0; }
+.gs-bag { position: absolute; left: 28%; width: 44%; top: 26.5%; aspect-ratio: 302 / 360; z-index: 12; pointer-events: none;
+  transform: rotate(var(--rot, 0deg)); animation: gs-bag-in .45s cubic-bezier(.3,1.4,.5,1); }
+.gs-bag.is-flying { transition: left .65s cubic-bezier(.5,0,.3,1), top .65s cubic-bezier(.5,0,.3,1), width .65s cubic-bezier(.5,0,.3,1), transform .65s cubic-bezier(.4,0,.3,1.2); }
+.gs-bag.is-gone { transition: opacity .25s; opacity: 0; }
+.gs-bag img { position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 1.4cqw 1cqw rgba(10,18,40,.4)); }
+.gs-bag-cut, .gs-bag-strip { opacity: 0; }
+.gs-bag-strip { bottom: auto !important; top: 0; height: auto !important; width: 92% !important; left: 4% !important; }
+.gs-bag .gs-cutline { position: absolute; left: 7%; right: 7%; top: calc(14.3% - .8cqw); height: 1.6cqw; border-radius: 1cqw; background: rgba(255,255,255,.35); }
+.gs-bag .gs-cutline b { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 1cqw; background: var(--sky); box-shadow: 0 0 1.4cqw var(--sky); }
+.gs-bag.is-cut .gs-bag-whole, .gs-bag.is-cut .gs-cutline { opacity: 0; }
+.gs-bag.is-cut .gs-bag-cut { opacity: 1; }
+.gs-bag.is-cut .gs-bag-strip { animation: gs-strip .7s ease-out forwards; }
+.gs-bagpour { position: absolute; width: 5.5cqw; transform: translateX(-50%); transform-origin: 50% 0; object-fit: fill; z-index: 10; pointer-events: none;
+  animation: gs-pour-in .25s ease-out both; transition: opacity .25s; }
+.gs-bagpour.is-off { opacity: 0; }
+.gs-bagpuff { position: absolute; width: 16cqw; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; animation: gs-puff 1s ease-out forwards; }
+/* the scissors, and the hook they're on, stay above the veil */
+.gs-held.is-scissors { z-index: 13; }
+.gs-tool.is-now { z-index: 12; }
 
 /* the counter */
 .gs-glass, .gs-jug { transform: translate(var(--tx, 0), var(--ty, 0)) rotate(var(--rot, 0deg)); transition: transform .35s cubic-bezier(.3,1.4,.5,1); touch-action: none; cursor: grab; }
@@ -278,6 +291,10 @@
 @keyframes gs-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); } 50% { filter: drop-shadow(0 0 1.4cqw #fff) drop-shadow(0 0 .7cqw #5BB4E5); } }
 @keyframes gs-ring-glow { 0%, 100% { box-shadow: 0 0 0 .5cqw rgba(255,255,255,.5); } 50% { box-shadow: 0 0 0 .9cqw #fff, 0 0 2.4cqw .6cqw #5BB4E5; } }
 @keyframes gs-dock-in { 0% { opacity: 0; transform: translate(-50%, 20%) scale(.9); } 100% { opacity: 1; transform: translateX(-50%); } }
+@keyframes gs-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gs-bag-in { 0% { opacity: 0; transform: translateY(12%) scale(.6); } 100% { opacity: 1; transform: none; } }
+@keyframes gs-pour-in { from { transform: translateX(-50%) scaleY(0); } to { transform: translateX(-50%) scaleY(1); } }
+@keyframes gs-puff { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 25% { opacity: .95; } 100% { opacity: 0; transform: translate(-50%, -70%) scale(1.25); } }
 @keyframes gs-binflash { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes gs-tap { 0% { transform: none; } 40% { transform: translateY(.4cqw); } 100% { transform: none; } }
 @keyframes gs-drop-in { 0% { opacity: 0; transform: translateY(-20%) scale(.8); } 100% { opacity: 1; transform: none; } }

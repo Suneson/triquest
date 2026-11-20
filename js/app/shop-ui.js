@@ -15,7 +15,7 @@ import { openLayer, closeLayer } from './nav.js';
 import { sheetHead } from './sheet.js';
 import { haptic } from './haptics.js';
 
-export const CUR_ART = { coins: 'icons/Pixelart/GEAR/coin.png', carbs: 'icons/Pixelart/GEAR/carbs.png' };
+export const CUR_ART = { coins: 'icons/Pixelart/GEAR/coin.png', carbs: 'icons/Gels/ui-carbs.webp' };
 const online = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 const coinImg = (cur) => `<img class="sc-cur" src="${CUR_ART[cur]}" width="64" height="64" alt="">`;
 

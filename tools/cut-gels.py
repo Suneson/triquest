@@ -3,6 +3,8 @@
     python tools/cut-gels.py <gen dir> [--v2]
 
 --v2: only the thumb redesign's sheets (gel-hand, gel-streams) and its background (gel-prep-bg-screen-b).
+--bags: the restock bags (gel-stand-bags.csv): a bag per powder whole and cut, its pour, its puff and the
+      foil strip, into icons/Gels/bag-*.webp, pour-*.webp, puff-*.webp.
 --screen: the wall screen's little pictures (gel-stand-screen.csv): a drop for each liquid, a pile for each
       powder, an icon for each action step, into icons/Gels/scr-*.webp.
 --v5: the fifth layout's background (gel-prep-bg-v5-b.jpg, trays and pouch box painted in) and its patches,
@@ -143,6 +145,23 @@ SHEETS_SCREEN = {
 }
 
 
+# the restock bags: sheet -> (columns, rows, names in reading order, height to store)
+P8 = ['malto', 'fructose', 'salt', 'glucose', 'electro', 'beet', 'citrus', 'cocoa']
+SHEETS_BAGS = {
+    'gel-bags-a': (4, 2, [f'bag-{p}' for p in P8[:4]] + [f'bag-{p}-cut' for p in P8[:4]], 360),
+    'gel-bags-b': (4, 2, [f'bag-{p}' for p in P8[4:]] + [f'bag-{p}-cut' for p in P8[4:]], 360),
+    'gel-bag-pours': (8, 1, [f'pour-{p}' for p in P8], 512),
+    'gel-bag-bits': (4, 2, ['bag-strip'] + [f'puff-{p}' for p in P8[:7]], 192),
+}
+
+
+def cut_bags(gen):
+    for sheet, (cols, rws, names, height) in SHEETS_BAGS.items():
+        im = key(Image.open(os.path.join(gen, f'{sheet}.jpg')))
+        for cell, name in zip(cells(im, cols, rws), names):
+            save(cell, os.path.join(GELS, f'{name}.webp'), height)
+
+
 def cut_screen(gen):
     for sheet, names in SHEETS_SCREEN.items():
         im = key(Image.open(os.path.join(gen, f'{sheet}.jpg')))
@@ -191,6 +210,9 @@ def save(im, path, height):
 def main():
     gen = sys.argv[1]
     os.makedirs(GELS, exist_ok=True)
+    if '--bags' in sys.argv:
+        cut_bags(gen)
+        return
     if '--screen' in sys.argv:
         cut_screen(gen)
         return

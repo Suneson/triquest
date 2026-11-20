@@ -39,7 +39,7 @@ function rewardChips() {
   const r = MISSION_RULES.reward;
   return `<span class="mb-reward" aria-label="${esc(t('mission.ui.rewardAria', { coins: r.coins, carbs: r.carbs }))}">
     <span><img src="icons/Pixelart/GEAR/coin.png" width="20" height="20" alt="">${fmtNum(r.coins)}</span>
-    <span><img src="icons/Pixelart/GEAR/carbs.png" width="20" height="20" alt="">${fmtNum(r.carbs)}</span></span>`;
+    <span><img src="icons/Gels/ui-carbs.webp" width="20" height="20" alt="">${fmtNum(r.carbs)}</span></span>`;
 }
 
 function missionCard(m) {

@@ -41,7 +41,7 @@ import * as store from './store.js';
 import { shopCard, cardButton, actionButton, tapButton, denyTap, walletBar, openShopInfo, priceText } from './shop-ui.js';
 import { cardState } from '../core/shop-cards.js';
 
-const CUR_ICON = { coins: 'icons/Pixelart/GEAR/coin.png', carbs: 'icons/Pixelart/GEAR/carbs.png' };
+const CUR_ICON = { coins: 'icons/Pixelart/GEAR/coin.png', carbs: 'icons/Gels/ui-carbs.webp' };
 const online = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 
 // ---- coins and carbs, top right of the scene ------------------------------------------

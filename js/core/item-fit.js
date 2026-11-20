@@ -1144,6 +1144,66 @@ export const ITEM_FIT = {
     "mid": 0.526,
     "pad": 0.011
   },
+  "icons/Items/gel-stand-t1-a.webp": {
+    "w": 0.828,
+    "mid": 0.53,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t1-b.webp": {
+    "w": 0.905,
+    "mid": 0.541,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t2-a.webp": {
+    "w": 0.988,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t2-b.webp": {
+    "w": 0.988,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t3-a.webp": {
+    "w": 0.985,
+    "mid": 0.501,
+    "pad": 0.004
+  },
+  "icons/Items/gel-stand-t3-b.webp": {
+    "w": 0.982,
+    "mid": 0.502,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t4-a.webp": {
+    "w": 0.986,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t4-b.webp": {
+    "w": 0.985,
+    "mid": 0.499,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t5-a.webp": {
+    "w": 0.987,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t5-b.webp": {
+    "w": 0.987,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t6-a.webp": {
+    "w": 0.988,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/gel-stand-t6-b.webp": {
+    "w": 0.989,
+    "mid": 0.501,
+    "pad": 0.006
+  },
   "icons/Items/ice-bath-a.webp": {
     "w": 0.915,
     "mid": 0.537,

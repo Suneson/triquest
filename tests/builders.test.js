@@ -27,3 +27,13 @@ test('every hut fits its first spot on the lawn, in its first facing', () => {
     placed[it.id] = { room: 'locker', u: b.spot[0], v: b.spot[1], face: b.face };
   }
 });
+
+test('the gel stand: everyone has it on the single-plot base only, its picture by level', () => {
+  const ids = (plot) => placeablesFor([], null, { plot }).map((p) => p.id);
+  assert.ok(ids(true).includes('gel-stand'));
+  assert.ok(!ids(false).includes('gel-stand'));
+  const g = placeableById('gel-stand');
+  assert.equal(g.opens, 'gels');
+  assert.equal(g.art({ levels: { gels: 3 }, face: 'b' }), 'icons/Items/gel-stand-t3-b.webp');
+  assert.equal(g.art({}), 'icons/Items/gel-stand-t1-a.webp');
+});

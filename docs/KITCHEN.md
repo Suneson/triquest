@@ -147,7 +147,7 @@ counter with the measuring glass, the jug and its meter, the pouch's place, and 
 opens when the glass or the jug is brought to it); the counter's navy front with the tools on hooks (sealer,
 whisk, dropper, scissors, and a scoop for show); the tray unit painted into the picture: maltodextrin (white),
 fructose (sky blue), salt (pink), the caffeine vials, an orange electrolyte (for gels still to come), the box of
-empty pouches, and a stone pad. A tray place that runs out shows its empty picture. The buttons (Start, Back to
+empty pouches, centred (no stone pad since v9: `gel-prep-bg-v9-d` and its empty twin `-empty-c`, cut with `tools/cut-gels.py --v9` into `prep-bg-v9.webp` and `patch9-*`). A tray place that runs out shows its empty picture. The buttons (Start, Back to
 the gels, Make another) float over the bottom of the tray only when there's one to press; none while making. The
 marble carries on below the scene on tall phones. The wall screen shows the recipe as a row of little pictures (a drop for a liquid, a pile for a powder, the
 tool for an action; `gel-stand-screen.csv`, cut with `tools/cut-gels.py --screen` into `icons/Gels/scr-*.webp`):

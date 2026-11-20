@@ -1,13 +1,13 @@
 // gel-stand-view.js — the gel stand's screens (docs/KITCHEN.md, "The gel stand"): the menu of final gels,
 // then the prep view, then the result. The rules are js/core/gel-stand.js.
 //
-// The prep view is one scene on the stand's background (icons/Gels/prep-bg-v5.webp), made for one thumb, with
+// The prep view is one scene on the stand's background (icons/Gels/prep-bg-v9.webp), made for one thumb, with
 // every tool on show: the recipe and what to do now on the wall screen at the very top; the tap jars of
 // liquids on the shelf under it; the measuring glass, the jug and the pouch on the counter, with the bin built
 // into it; the tools on the hooks of the counter's front (the sealer, the whisk, the dropper, the scissors);
 // the tray of powders, caffeine vials and the box of empty pouches painted into the picture below. A tray
-// that runs out shows its empty picture (patch-*.webp, cut from the same picture painted empty), and the bin's
-// lid opens (patch-bin-open) when something's brought to it. The buttons float over the tray only when
+// that runs out shows its empty picture (patch9-*.webp, cut from the same picture painted empty), and the bin's
+// lid opens (patch9-bin-open) when something's brought to it. The buttons float over the tray only when
 // there's one to press. Everything is dragged: the glass under a jar's tap to its line, then over the jug to
 // pour it in (or over the bin to tip it out); a scoop from a tray over the jug, shaken; the dropper over the
 // jug; the whisk round it; a pouch from the box onto the counter; the jug over the pouch; the sealer across
@@ -57,15 +57,15 @@ const SHELF_X = { water: 17, honey: 39, maple: 61, beet: 83 };
 const JAR_W = 12;                          // a jar's width, % of the scene's
 const JAR_H = JAR_W * 420 / 280 / ASPECT;  // and its height, % of the scene's (jar-*.webp is 280 x 420)
 const JAR_TOP = 34.4 - JAR_H;              // they stand on the shelf's top
-/** The tray's places painted into the picture, % of the scene (each its empty patch's box, cut-gels.py --v5). */
+/** The tray's places painted into the picture, % of the scene (each its empty patch's box, cut-gels.py --v9). */
 const TRAYS = {
-  malto: { l: 1.56, t: 70.75, w: 24.28, h: 8.32 },
-  fructose: { l: 26.04, t: 70.75, w: 21.68, h: 8.32 },
-  salt: { l: 50.2, t: 70.75, w: 20.83, h: 6.54 },
-  caffeine: { l: 0.07, t: 79.94, w: 22.66, h: 10.43 },
+  malto: { l: 11.65, t: 70.49, w: 27.02, h: 9.19 },
+  fructose: { l: 38.67, t: 70.49, w: 22.66, h: 8.9 },
+  salt: { l: 61.85, t: 70.49, w: 22.79, h: 9.19 },
+  caffeine: { l: 9.77, t: 79.69, w: 25.91, h: 10.97 },
 };
 const POWDERS = ['malto', 'fructose', 'salt'];   // restocked from a bag in their colour, snipped open
-const BOX = { l: 49.67, t: 77.29, w: 25, h: 13.08 };     // the box of empty pouches
+const BOX = { l: 62, t: 78, w: 26.5, h: 12 };     // the box of empty pouches
 const BIN = { l: 71.5, r: 99, t: 44, b: 52 };            // the bin's lid, flush in the counter
 const BIN_HIT = { l: 76, r: 97, t: 46, b: 53 };          // where something held opens it (smaller, lower)
 /** The tools hanging from the hooks of the counter's front: % across, their picture's height in cqw, turned
@@ -224,12 +224,12 @@ export function openGelStand({ level = null } = {}) {
   }, 1000);
 
   // ---- the prep view ----
-  // One scene on prep-bg-v5.webp (1536 x 2752, at the top; the marble carries on below it, prep-floor-v5.webp).
+  // One scene on prep-bg-v9.webp (1536 x 2752, at the top; the marble carries on below it, prep-floor-v5.webp).
   // Its painted places, in % of the scene: the wall screen's face 13-87% across, 5.5-21.8% down; the shelf's
   // top 33-35.3%; the counter top 43-54.5% with the bin's lid 71.5-99% across, 44-52% down; the counter's
   // front 55.5-67% with its hook strip 56.5-59% (hooks at 21.8, 35.8, 50, 64 and 78% across); the tray unit
   // 70.5-91%: maltodextrin, fructose and salt on top, the caffeine vials, an orange electrolyte (for later)
-  // and the box of pouches below, a stone pad on the right (the sachet's put there). Everything is placed in
+  // and the box of pouches below, the tray centred (no stone pad since v9). Everything is placed in
   // % of the scene and sized in cqw, and every gesture works in scene %.
   const step = () => (run ? gel.steps[run.i] : null);
   const jugLevel = () => (run ? run.layers.reduce((n, l) => n + l.h, 0) : 0);
@@ -338,13 +338,13 @@ export function openGelStand({ level = null } = {}) {
   }
 
   /** The tray, painted in: a place over each powder and the caffeine vials (its empty picture when it's run
-   *  out, a plus when it's short), the box of empty pouches, and a sachet on the stone pad while restocking. */
+   *  out, a plus when it's short), the box of empty pouches, and a powder's bag while restocking. */
   function trayHtml() {
     const s = step();
     const places = Object.entries(TRAYS).map(([id, r]) => {
       const { cls, label, have, short } = slotState(id);
       return `<button class="gs-well${cls}${have ? '' : ' is-out-of'}" data-slot="${id}" style="--l:${r.l}%;--t:${r.t}%;--w:${r.w}%;--h:${r.h}%" aria-label="${esc(label)}">
-        ${gimg(`patch-${id}`, 'gs-well-empty')}${short ? gimg('ui-plus', 'gs-well-plus') : ''}${stockBar(id)}</button>`;
+        ${gimg(`patch9-${id}`, 'gs-well-empty')}${short ? gimg('ui-plus', 'gs-well-plus') : ''}${stockBar(id)}</button>`;
     }).join('');
     const box = `<button class="gs-box${s?.kind === 'fill' && !run.pouch ? ' is-now' : ''}" data-box style="--l:${BOX.l}%;--t:${BOX.t}%;--w:${BOX.w}%;--h:${BOX.h}%" aria-label="${esc(t('gels.boxAria'))}"></button>`;
     // restocking a powder: its bag, big in the middle over a veil, its dashed line to cut
@@ -400,7 +400,7 @@ export function openGelStand({ level = null } = {}) {
 
   function drawPrep() {
     frame(`<div class="gs-body"><div class="gs-scene" style="--gel:${gel.liquid}">
-        ${gimg('patch-bin-open', 'gs-binlid')}
+        ${gimg('patch9-bin-open', 'gs-binlid')}
         ${screenHtml()}
         <div class="gs-shelf">${shelfHtml()}</div>
         <div class="gs-tray">${trayHtml()}</div>

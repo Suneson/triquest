@@ -131,6 +131,14 @@ PATCHES_V5 = [
     ('patch-caffeine', (0, 2200, 349, 2487), []),
     ('patch-bin-open', (1060, 880, 1536, 1430), []),
 ]
+# --v9: the tray centred, no stone pad (gel-prep-bg-v9-d.jpg, its empty twin gel-prep-bg-v9-d-empty-c.jpg)
+PATCHES_V9 = [
+    ('patch9-malto', (150, 1940, 594, 2193), []),
+    ('patch9-fructose', (594, 1940, 944, 2193), []),
+    ('patch9-salt', (950, 1940, 1300, 2193), [(1050, 2168, 1392, 2495)]),   # the pouch box stands over its foot
+    ('patch9-caffeine', (150, 2193, 548, 2495), []),
+    ('patch9-bin-open', (1060, 880, 1536, 1430), []),
+]
 
 
 # the wall screen's pictures: sheet -> names in reading order (4 x 2). The piles' top row has its names written
@@ -175,18 +183,18 @@ def cut_screen(gen):
             save(cell, os.path.join(GELS, f'{name}.webp'), 160)
 
 
-def cut_v5(gen):
+def cut_v5(gen, full_name='gel-prep-bg-v5-b', empty_name='gel-prep-bg-v5-b-empty', out_name='prep-bg-v5', patches=PATCHES_V5):
     from scipy import ndimage
-    full = Image.open(os.path.join(gen, 'gel-prep-bg-v5-b.jpg')).convert('RGB')
-    empty = Image.open(os.path.join(gen, 'gel-prep-bg-v5-b-empty.jpg')).convert('RGB')
+    full = Image.open(os.path.join(gen, f'{full_name}.jpg')).convert('RGB')
+    empty = Image.open(os.path.join(gen, f'{empty_name}.jpg')).convert('RGB')
     assert full.size == empty.size == (1536, 2752)
     a = np.asarray(full).astype(float); b = np.asarray(empty).astype(float)
     diff = np.abs(a - b).sum(axis=2) > 36
     out = full.resize((900, 1612), Image.LANCZOS)
-    out.save(os.path.join(GELS, 'prep-bg-v5.webp'), quality=84, method=6)
-    print('icons/Gels/prep-bg-v5.webp', out.size)
+    out.save(os.path.join(GELS, f'{out_name}.webp'), quality=84, method=6)
+    print(f'icons/Gels/{out_name}.webp', out.size)
     W, H = full.size
-    for name, (x0, y0, x1, y1), leave in PATCHES_V5:
+    for name, (x0, y0, x1, y1), leave in patches:
         m = np.zeros(diff.shape, bool)
         m[y0:y1, x0:x1] = diff[y0:y1, x0:x1]
         m = ndimage.binary_closing(m, iterations=6)
@@ -226,6 +234,9 @@ def main():
         return
     if '--screen' in sys.argv:
         cut_screen(gen)
+        return
+    if '--v9' in sys.argv:
+        cut_v5(gen, 'gel-prep-bg-v9-d', 'gel-prep-bg-v9-d-empty-c', 'prep-bg-v9', PATCHES_V9)
         return
     if '--v5' in sys.argv:
         cut_v5(gen)

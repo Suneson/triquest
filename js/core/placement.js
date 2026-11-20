@@ -313,6 +313,10 @@ const ITEMS = [
     id: builderId(b.who), w: 3, h: 3, home: 'locker', plot: true, fit: 0.96, faces: true, face: b.face, spot: b.spot,
     gift: b.cost === 0, owned: (inv) => hasBuilder(b, inv), art: (o) => `${ITEM3D}/builder-${b.who}-2-${o?.face || b.face}.webp`,
   })),
+  // the gel stand (gel-stand.js, docs/KITCHEN.md): everyone's, on the single-plot base's lawn. Tap it to make
+  // gels. Its picture is its level's (1-6, `levels.gels`), from a cart to a race-nutrition bar.
+  { id: 'gel-stand', w: 3, h: 3, home: 'locker', plot: true, gift: true, fit: 0.9, faces: true, face: 'a', spot: [33, 5], opens: 'gels',
+    art: (o) => `${ITEM3D}/gel-stand-t${Math.max(1, Math.min(6, Number(o?.levels?.gels) || 1))}-${o?.face || 'a'}.webp` },
   // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py): they
   // belong in the club room (in the club house). Bar-top pieces stand on the floor for now (the game
   // can't stack items yet).

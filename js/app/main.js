@@ -1089,7 +1089,7 @@ async function boot() {
   syncLang(store.getSettings());
   applyStatic();
   // ?gels=1 (&lvl=1-4): the gel stand's preview, until it stands on the base (docs/KITCHEN.md)
-  { const q = new URLSearchParams(location.search); if (q.has('gels')) setTimeout(() => import('./gel-stand-view.js').then((m) => m.openGelStand({ level: Number(q.get('lvl')) || 1 })), 800); }
+  { const q = new URLSearchParams(location.search); if (q.has('gels')) setTimeout(() => import('./gel-stand-view.js').then((m) => m.openGelStand({ level: Number(q.get('lvl')) || null })), 800); }
   const today = todayISO();
   appState.journalDate = today;
   // Restore last tab.

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GELS, SHELF, INGREDIENTS, menu, gelById, gelCost, readyMadeCost, normalise, missing, missingCost, buy, start,
-  scorePour, scoreDial, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged,
+  scorePour, scoreDial, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged, UPGRADES, nextUpgrade, levelOf, MAX_LEVEL,
 } from '../js/core/gel-stand.js';
 
 test('eight ingredients on the shelf, water free', () => {
@@ -85,4 +85,11 @@ test('stars and boosts', () => {
   assert.equal(boostOf(beet, 2, 'run'), 5500);
   assert.equal(boostOf(beet, 2, 'bike'), 4000);
   assert.deepEqual(bagged([], 'classic', 3, 5), [{ id: 'classic', stars: 3, at: 5 }]);
+});
+
+test('levels: saved level made safe, upgrades cost more each time, none past the top', () => {
+  assert.deepEqual([levelOf(null), levelOf({ level: 3 }), levelOf({ level: 99 }), levelOf({ level: 'x' })], [1, 3, MAX_LEVEL, 1]);
+  for (let n = 3; n <= MAX_LEVEL; n++) assert.ok(UPGRADES[n].coins > UPGRADES[n - 1].coins && UPGRADES[n].hours > UPGRADES[n - 1].hours);
+  assert.deepEqual(nextUpgrade(1), UPGRADES[2]);
+  assert.equal(nextUpgrade(MAX_LEVEL), null);
 });

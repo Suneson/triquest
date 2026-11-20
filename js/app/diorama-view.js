@@ -28,6 +28,7 @@ import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
 import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/drills.js';
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
+import { openGelStand, standLevel } from './gel-stand-view.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
@@ -477,7 +478,7 @@ export function wireDiorama(root, ctx) {
   const inv = s.inventory;
   const items = itemsOwned();
   const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '',
-    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx) } };
+    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx), gels: standLevel() } };
   lastLevels = artOpts.levels;
   // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
   const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
@@ -623,6 +624,7 @@ export function wireDiorama(root, ctx) {
   const openItem = (it) => {
     if (it?.opens === 'missions') openMissionBoard(ctx);
     else if (it?.opens === 'trophies') openTrophyDisplay();
+    else if (it?.opens === 'gels') openGelStand();
     if (it?.opens === 'drill' || it?.opens === 'recovery') athSave({ ...athSaved(), use: it.id });
     if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
     else if (it?.opens === 'recovery') openRecovery(recoveryOfItem(it.id));
@@ -783,6 +785,12 @@ export function wireDiorama(root, ctx) {
           open.querySelector('span').textContent = label;
           const busy = busyOn(chosen);
           open.querySelector('b').textContent = busy ? mmss(busy.left) : '';
+          open.setAttribute('aria-label', label);
+        } else if (chosen.opens === 'gels') {
+          const label = t('gels.menu');
+          open.querySelector('img').src = 'icons/Gels/gel-classic.webp';
+          open.querySelector('span').textContent = label;
+          open.querySelector('b').textContent = '';
           open.setAttribute('aria-label', label);
         } else if (chosen.opens) {
           const isBoard = chosen.opens === 'missions';
@@ -1342,6 +1350,11 @@ export function wireDiorama(root, ctx) {
     tellResult();
     draw();   // the athlete walks to the machine, or steps off it
   };
+  // the gel stand went up a level: its new picture
+  const onGels = () => { artOpts.levels.gels = standLevel(); draw(); };
+  document.removeEventListener('gels-changed', view.onGels || (() => {}));
+  view.onGels = onGels;
+  document.addEventListener('gels-changed', onGels);
   document.removeEventListener('drills-changed', view.onDrills || (() => {}));
   view.onDrills = onDrills;
   document.addEventListener('drills-changed', onDrills);

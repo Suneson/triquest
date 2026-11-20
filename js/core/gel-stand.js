@@ -23,10 +23,23 @@ export const SHELF = Object.keys(INGREDIENTS);
 
 /** The stand's levels: 1 to 6 (its pictures, icons/Items/gel-stand-t<n>). Levels 5 and 6 open gels still to come. */
 export const MAX_LEVEL = 6;
+/**
+ * Taking the stand up a level: coins, and the hours a builder spends on it (a first guess, to be tuned).
+ * UPGRADES[n] takes it from level n - 1 to n; level 1 is everyone's from the start.
+ */
+export const UPGRADES = [null, null, { coins: 400, hours: 2 }, { coins: 900, hours: 6 }, { coins: 1800, hours: 12 },
+  { coins: 3500, hours: 24 }, { coins: 6000, hours: 36 }];
+/** What the next level costs, or null at the top. */
+export const nextUpgrade = (level) => UPGRADES[lvl(level) + 1] || null;
+
 /** What the stars multiply a boost by. */
 export const STAR_MULT = [0, 0.7, 1, 1.15];
 /** Buying a gel ready-made costs this many times its ingredients. */
 export const READY_MADE = 5;
+
+const lvl = (n) => Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(n) || 1)));
+/** A saved level, made safe (1 to MAX_LEVEL). */
+export const levelOf = (saved) => lvl(saved?.level);
 
 // the steps, as data. pour/fill `to`: the jug's (or pouch's) level to stop at, 0-1, counted from the bottom
 const pour = (ing, to) => ({ kind: 'pour', ing, to });
@@ -67,7 +80,6 @@ export const GELS = [
 export const gelById = (id) => GELS.find((g) => g.id === id) || null;
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
-const lvl = (n) => Math.max(1, Math.min(MAX_LEVEL, Math.floor(Number(n) || 1)));
 
 /** The menu at a stand level: every gel, with whether it's open. */
 export const menu = (level) => GELS.map((g) => ({ ...g, open: g.level <= lvl(level) }));

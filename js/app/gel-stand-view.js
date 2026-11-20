@@ -27,9 +27,12 @@ const POWDER = new Set(['malto', 'fructose']);
 const load = () => {
   const s = store.getSettings()[KEY] || {};
   const carbs = Number(s.carbs);
-  return { ...G.normalise(s), carbs: Number.isFinite(carbs) ? carbs : PREVIEW_CARBS };
+  return { ...G.normalise(s), carbs: Number.isFinite(carbs) ? carbs : PREVIEW_CARBS, level: G.levelOf(s) };
 };
-const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.carbs });
+const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.carbs, level: s.level });
+
+/** The stand's level (1-6), as the base draws it. */
+export const standLevel = () => G.levelOf(store.getSettings()[KEY]);
 
 const img = (src, cls = '') => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
 const gimg = (file, cls = '') => img(`${ART}/${file}.webp`, cls);
@@ -50,12 +53,12 @@ const starsHtml = (n) => `<span class="gs-stars" role="img" aria-label="${esc(t(
 
 /**
  * The gel stand's window.
- * @param {{ level?: number }} opts  the stand's level (1-6): it opens more gels
+ * @param {{ level?: number }} opts  show it at this level (the ?gels=1&lvl= preview); else the stand's own
  */
-export function openGelStand({ level = 1 } = {}) {
-  level = Math.max(1, Math.min(G.MAX_LEVEL, Math.floor(level) || 1));
+export function openGelStand({ level = null } = {}) {
   const root = openLayer('gel-stand', { className: 'gs-layer' });
   let st = load();
+  level = level ? Math.max(1, Math.min(G.MAX_LEVEL, Math.floor(level) || 1)) : st.level;
   let gel = null;          // the gel picked
   let run = null;          // making it: { i, scores, layers, mix, fill, sealed, drops, dial, stirAcc, stirT0 }
   let result = null;       // { stars, bp }
@@ -91,8 +94,20 @@ export function openGelStand({ level = 1 } = {}) {
         <div><span class="gs-lvl">${gimg('ui-badge')}<b>${level}</b></span>
         <p>${esc(t('gels.about'))}</p>
         ${next.length ? `<small>${esc(t('gels.nextLevel', { n: Math.min(...next) }))}</small>` : ''}</div></div>
+      ${upgradeHtml()}
       <div class="gs-menu">${cards}</div>
       <p class="gs-note">${esc(t('gels.preview'))}</p></div>`, 'is-menu');
+  }
+
+  /** Taking the stand up a level. Preview: free and at once; later it's coins and a builder's job. */
+  function upgradeHtml() {
+    const up = G.nextUpgrade(level);
+    if (!up) return `<p class="gs-up is-top">${esc(t('gels.topLevel'))}</p>`;
+    return `<button class="gs-up" data-gs-up>
+      ${img(standArt(level + 1), 'gs-up-art')}
+      <span><b>${esc(t('gels.upgrade', { n: level + 1 }))}</b>
+      <small>${esc(t('gels.upgradeCost', { coins: up.coins, h: up.hours }))}</small></span>
+      <i>${esc(t('gels.upgradeGo'))}</i></button>`;
   }
 
   // ---- the prep view ----
@@ -372,6 +387,15 @@ export function openGelStand({ level = 1 } = {}) {
   // ---- taps ----
   root.addEventListener('click', (e) => {
     const b = (sel) => e.target.closest(sel);
+    if (b('[data-gs-up]')) {
+      if (!G.nextUpgrade(level)) return;
+      level += 1;
+      set({ level });
+      haptic('levelUp');
+      document.dispatchEvent(new CustomEvent('gels-changed'));   // the base draws the stand's new picture
+      drawMenu();
+      return;
+    }
     if (b('[data-gs-back]')) {
       if (!gel) { closeLayer(root); return; }
       gel = null; run = null; result = null; drawMenu(); return;

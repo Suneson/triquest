@@ -3,6 +3,8 @@
     python tools/cut-gels.py <gen dir> [--v2]
 
 --v2: only the thumb redesign's sheets (gel-hand, gel-streams) and its background (gel-prep-bg-screen-b).
+--screen: the wall screen's little pictures (gel-stand-screen.csv): a drop for each liquid, a pile for each
+      powder, an icon for each action step, into icons/Gels/scr-*.webp.
 --v5: the fifth layout's background (gel-prep-bg-v5-b.jpg, trays and pouch box painted in) and its patches,
       cut from gel-prep-bg-v5-b-empty.jpg (the same picture with every tray empty and the bin open): only the
       pixels that differ, inside each place's box. Prints each patch's box in % of the scene for css/gels.css.
@@ -129,6 +131,26 @@ PATCHES_V5 = [
 ]
 
 
+# the wall screen's pictures: sheet -> names in reading order (4 x 2). The piles' top row has its names written
+# under it (Gemini added them): those cells are cut off above the writing.
+SHEETS_SCREEN = {
+    'gel-screen-drops': ['scr-drop-water', 'scr-drop-honey', 'scr-drop-maple', 'scr-drop-beet', 'scr-drop-citrus',
+                         'scr-drop-berry', 'scr-drop-lime', 'scr-drop-caffeine'],
+    'gel-screen-piles': ['scr-pile-malto', 'scr-pile-fructose', 'scr-pile-salt', 'scr-pile-glucose', 'scr-pile-electro',
+                         'scr-pile-beet', 'scr-pile-citrus', 'scr-pile-cocoa'],
+    'gel-screen-steps': ['scr-step-measure', 'scr-step-scoop', 'scr-step-drops', 'scr-step-stir', 'scr-step-fill',
+                         'scr-step-seal', 'scr-step-snip', 'scr-step-bin'],
+}
+
+
+def cut_screen(gen):
+    for sheet, names in SHEETS_SCREEN.items():
+        im = key(Image.open(os.path.join(gen, f'{sheet}.jpg')))
+        for k, (cell, name) in enumerate(zip(cells(im, 4, 2), names)):
+            if sheet == 'gel-screen-piles' and k < 4: cell = cell.crop((0, 0, cell.width, round(cell.height * 0.76)))
+            save(cell, os.path.join(GELS, f'{name}.webp'), 160)
+
+
 def cut_v5(gen):
     from scipy import ndimage
     full = Image.open(os.path.join(gen, 'gel-prep-bg-v5-b.jpg')).convert('RGB')
@@ -169,6 +191,9 @@ def save(im, path, height):
 def main():
     gen = sys.argv[1]
     os.makedirs(GELS, exist_ok=True)
+    if '--screen' in sys.argv:
+        cut_screen(gen)
+        return
     if '--v5' in sys.argv:
         cut_v5(gen)
         return

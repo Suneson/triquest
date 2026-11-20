@@ -235,29 +235,41 @@ export function openGelStand({ level = null } = {}) {
     return t(`gels.hint.${s.kind}`);
   }
 
-  /** The wall screen: the gel, its boost, the steps as dots, and what to do now (or how it went). */
+  /** A step's little picture for the wall screen: a liquid's drop, a powder's pile, or the action's tool. */
+  const stepIcon = (s) => {
+    if (s.kind === 'pour') return how(s.ing) === 'glass' ? `scr-drop-${s.ing}` : `scr-pile-${s.ing}`;
+    if (s.kind === 'salt') return 'scr-pile-salt';
+    if (s.kind === 'drops') return 'scr-drop-caffeine';
+    return `scr-step-${s.kind}`;
+  };
+
+  /** The wall screen: the gel and its boost, the recipe as a row of pictures (done, now, to come), and what to do
+   *  now with its picture big beside it (or how it went). */
   function screenHtml() {
     const total = gel.steps.length;
     const now = step();
     const doneN = result ? total : run ? run.i : 0;
-    const dots = `<span class="gs-dots">${gel.steps.map((_, i) => `<i class="${i < doneN ? 'is-done' : i === doneN && run ? 'is-now' : ''}"></i>`).join('')}</span>`;
+    const recipe = `<span class="gs-recipe">${gel.steps.map((s, i) => `<i class="${i < doneN ? 'is-done' : i === doneN && run ? 'is-now' : ''}">${gimg(stepIcon(s))}${
+      s.kind === 'drops' ? `<b>${s.n}</b>` : ''}</i>`).join('')}</span>`;
+    const top = `<div class="gs-screen-top">${gimg(`gel-${gel.id}`, 'gs-screen-art')}
+        <h3>${esc(result ? t('gels.made', { name: gelName(gel) }) : gelName(gel))}</h3>
+        ${result ? '' : `<span class="gs-boost">${esc(t('gels.boost', { n: pct(gel.boostBp) }))}</span>`}</div>`;
     let body;
     if (result) {
-      body = `${starsHtml(result.stars)}<p class="gs-step">${esc(t('gels.boost', { n: pct(result.bp) }))}</p><p class="gs-hint">${esc(t('gels.bagged'))}</p>`;
+      body = `${top}${starsHtml(result.stars)}<p class="gs-step">${esc(t('gels.boost', { n: pct(result.bp) }))}</p><p class="gs-hint">${esc(t('gels.bagged'))}</p>`;
     } else if (now) {
-      body = `${dots}<p class="gs-step">${esc(t('gels.stepOf', { i: run.i + 1, n: total, step: stepText(now) }))}</p><p class="gs-hint">${esc(hintText(now))}</p>`;
+      // making: what to add now, big, then the recipe so far
+      body = `<div class="gs-now">${gimg(stepIcon(now), 'gs-now-art')}<p class="gs-step">${esc(t('gels.stepOf', { i: run.i + 1, n: total, step: stepText(now) }))}</p></div>
+        ${recipe}<p class="gs-hint">${esc(hintText(now))}</p>`;
     } else if (snipping) {
-      body = `${dots}<p class="gs-step">${esc(ingName(snipping))}</p><p class="gs-hint">${esc(t('gels.hint.snip'))}</p>`;
+      body = `<div class="gs-now">${gimg(`scr-pile-${snipping}`, 'gs-now-art')}<p class="gs-step">${esc(ingName(snipping))}</p></div>
+        <p class="gs-hint">${esc(t('gels.hint.snip'))}</p>`;
     } else {
       const short = G.missingCost(st.stock, gel) > 0;
-      body = `${dots}<p class="gs-step">${esc(dumped ? t('gels.dumped') : t('gels.ready', { n: total }))}</p>
+      body = `${top}${recipe}<p class="gs-step">${dumped ? `${gimg('scr-step-bin', 'gs-inline-art')} ` : ''}${esc(dumped ? t('gels.dumped') : t('gels.ready', { n: total }))}</p>
         <p class="gs-hint">${esc(t(short ? 'gels.restock' : 'gels.readyGo'))}</p>`;
     }
-    return `<div class="gs-screen" aria-live="polite">
-      <div class="gs-screen-top">${gimg(`gel-${gel.id}`, 'gs-screen-art')}
-        <h3>${esc(result ? t('gels.made', { name: gelName(gel) }) : gelName(gel))}</h3>
-        ${result ? '' : `<span class="gs-boost">${esc(t('gels.boost', { n: pct(gel.boostBp) }))}</span>`}</div>
-      ${body}</div>`;
+    return `<div class="gs-screen" aria-live="polite">${body}</div>`;
   }
 
   /** A stock bar: four to a refill, amber when low, red when empty. */

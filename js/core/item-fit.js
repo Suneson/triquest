@@ -174,45 +174,45 @@ export const ITEM_FIT = {
     "mid": 0.608,
     "pad": 0.022
   },
-  "icons/Items/builder-blue-a.webp": {
-    "w": 0.909,
+  "icons/Items/builder-blue-2-a.webp": {
+    "w": 0.907,
     "mid": 0.541,
-    "pad": 0.007
+    "pad": 0.004
   },
-  "icons/Items/builder-blue-b.webp": {
+  "icons/Items/builder-blue-2-b.webp": {
     "w": 0.922,
     "mid": 0.535,
-    "pad": 0.007
+    "pad": 0.004
   },
-  "icons/Items/builder-gold-a.webp": {
+  "icons/Items/builder-gold-2-a.webp": {
     "w": 0.875,
     "mid": 0.558,
-    "pad": 0.024
+    "pad": 0.015
   },
-  "icons/Items/builder-gold-b.webp": {
-    "w": 0.922,
+  "icons/Items/builder-gold-2-b.webp": {
+    "w": 0.921,
+    "mid": 0.534,
+    "pad": 0.018
+  },
+  "icons/Items/builder-green-2-a.webp": {
+    "w": 0.93,
     "mid": 0.535,
-    "pad": 0.028
+    "pad": 0.014
   },
-  "icons/Items/builder-green-a.webp": {
+  "icons/Items/builder-green-2-b.webp": {
     "w": 0.929,
     "mid": 0.535,
-    "pad": 0.019
+    "pad": 0.015
   },
-  "icons/Items/builder-green-b.webp": {
-    "w": 0.929,
-    "mid": 0.535,
-    "pad": 0.022
-  },
-  "icons/Items/builder-red-a.webp": {
+  "icons/Items/builder-red-2-a.webp": {
     "w": 0.916,
-    "mid": 0.538,
-    "pad": 0.011
-  },
-  "icons/Items/builder-red-b.webp": {
-    "w": 0.919,
     "mid": 0.537,
-    "pad": 0.021
+    "pad": 0.007
+  },
+  "icons/Items/builder-red-2-b.webp": {
+    "w": 0.917,
+    "mid": 0.536,
+    "pad": 0.014
   },
   "icons/Items/clan-arcade-cabinet-a.webp": {
     "w": 0.926,

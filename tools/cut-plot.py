@@ -28,13 +28,18 @@ OUT = os.path.join(REPO, 'icons', 'Plot')
 ART_JS = os.path.join(REPO, 'js', 'core', 'plot-art.js')
 N = 48            # the lawn, tiles each way
 P = 3             # the platform's floor starts this many tiles in from the lawn's back corner
-FLOOR = 16        # the platform's floor, tiles each way: its body reaches the club's two exits in the fence
+FLOOR = 23        # the platform's floor, tiles each way: its body reaches the far side of the club's two exits
+                  # in the fence (their pillars at u, v = 26.8 on map v4), so the paths to the club house and the
+                  # stadium meet its sides
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
-ART_TAG = 'r8'    # in the platform's and club buildings' names: change it whenever they're repainted
-MAP_TAG = 'v2'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
-RIM_SHARE = 0.0359   # the rim under the floor's guide line, as a share of the floor's width (see platform())
+ART_TAG = 'r9'    # in the platform's and club buildings' names: change it whenever they're repainted
+MAP_TAG = 'v4'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
+# the platform repaint's guide line, roughly (its px: back, right, front, left corners): platform() fits each
+# side as a straight line through the line's own dark px near it and meets them, so these only say where to look
+# (measured on Base/final/platform-navy_V4.png; set them again for a new repaint)
+GUIDE_ROUGH = [(1196, 640), (2070, 1070), (1224, 1490), (350, 1054)]
 RENDER_TILE = 100 * math.sqrt(2)   # a tile's width in render-base-assets.py's pictures (PPU 100, 45 degrees)
 # builders, in pad order along the platform's front-right side (back first): pad tiles (square), hut tiles
 # (its footprint's longest side; a person is about 1 tile wide and 3.5 tall, so the arch fits one standing)
@@ -110,40 +115,67 @@ def key_green(rgb):
     return out
 
 
+def guide_corners(rgb, alpha):
+    """The floor's guide line on the platform repaint: each side fitted as a straight line (least squares on the
+    line's own dark px within reach of GUIDE_ROUGH's side, twice, the second time without stray px) and the four
+    met. The corners (back, right, front, left) are on the line's middle."""
+    lum = rgb.astype(float).mean(2)
+    dark = (lum < 0.62 * nd.median_filter(lum, size=31)) & (alpha > 200)
+    dy, dx = np.nonzero(dark)
+    fits = []
+    for i in range(4):
+        (x0, y0), (x1, y1) = GUIDE_ROUGH[i], GUIDE_ROUGH[(i + 1) % 4]
+        L = math.hypot(x1 - x0, y1 - y0); ux, uy = (x1 - x0) / L, (y1 - y0) / L
+        t = (dx - x0) * ux + (dy - y0) * uy; d = -(dx - x0) * uy + (dy - y0) * ux
+        sel = (t > 0.08 * L) & (t < 0.92 * L) & (np.abs(d) < 45)
+        a, c = np.polyfit(dx[sel], dy[sel], 1)
+        near = np.abs(dy[sel] - (a * dx[sel] + c)) / math.hypot(a, 1) < 6
+        fits.append(np.polyfit(dx[sel][near], dy[sel][near], 1))
+    out = []
+    for i in range(4):
+        (a1, c1), (a2, c2) = fits[(i - 1) % 4], fits[i]
+        x = (c2 - c1) / (a1 - a2); out.append((x, a1 * x + c1))
+    print('guide line slopes', [round(float(f[0]), 4) for f in fits])
+    return out
+
+
 def platform(path, world):
-    """The repainted platform, keyed, scaled and placed so its guide line sits on the floor's tiles, raised."""
+    """The repainted platform, keyed and placed so its guide line's corners sit on the floor's tiles, raised."""
     rgb = np.asarray(Image.open(path).convert('RGB'))
     rgba = key_green(rgb)
     h, w = rgb.shape[:2]
-    lum = rgb.astype(int).sum(2) / 3
-    pale = (lum > 150) & (rgba[..., 3] > 200)
-    lab, _ = nd.label(pale)
-    k = lab[int(h * 0.55), int(w * 0.5)]
-    m = nd.binary_fill_holes(lab == k)
-    ys, xs = np.nonzero(m)
-    top = (xs[np.argmin(ys)], ys.min()); bot = (xs[np.argmax(ys)], ys.max())
-    left = (xs.min(), ys[np.argmin(xs)]); right = (xs.max(), ys[np.argmax(xs)])
-    # the floor's height: down the front corner's column, from the top's front edge to the platform's foot (its
-    # last solid px). The front edge is the rim's: RIM_SHARE of the floor's width under the guide line's corner
-    # (measured on platform-navy-redo-11, which still had its navy band under the rim to find it by)
-    col = int(bot[0])
-    edge = bot[1] + RIM_SHARE * (right[0] - left[0])
+    top, right, bot, left = guide_corners(rgb, rgba[..., 3])
+    # the floor's height: down the front corner's column, from the floor's front edge (the top of the navy band
+    # under the rim) to the platform's foot (its last solid px)
+    col = int(round(bot[0]))
+    c = rgb[:, col].astype(int)
+    edge = next(y for y in range(int(bot[1]) + 8, h) if c[y, 2] > c[y, 0] + 25 and c[y].mean() < 120)
     foot = max(np.nonzero(rgba[:, col, 3] > 200)[0])
     tgt = lambda u, v: world(u, v)
     s = (tgt(P + FLOOR, P)[0] - tgt(P, P + FLOOR)[0]) / (right[0] - left[0])
     lift = s * (foot - edge)
     rim = s * (edge - bot[1]) / ((tgt(1, 1)[1] - tgt(0, 0)[1]))    # tiles round the guide line, in the plan
-    # the floor's four corners fitted onto the raised grid's with a plain scale and shift (least squares, x and y
-    # apart): no warp, so the walls stay upright; the leftover is the repaint's own skew (regenerate it if big)
+    # the guide line's four corners onto the raised grid's with an affine map (least squares; four corners, six
+    # numbers, so it lands them all within a hair): x = a x + b y + c, y = d x + e y + f. A repaint's slight skew
+    # tilts its walls by about b (V4: 1.6 degrees), small enough not to show
     src = np.float64([top, right, bot, left])
     dst = np.float64([np.array(tgt(u, v)) - [0, lift] for u, v in ((P, P), (P + FLOOR, P), (P + FLOOR, P + FLOOR), (P, P + FLOOR))])
-    sx, tx = np.polyfit(src[:, 0], dst[:, 0], 1); sy, ty = np.polyfit(src[:, 1], dst[:, 1], 1)
-    fitted = np.c_[src[:, 0] * sx + tx, src[:, 1] * sy + ty]
-    off = np.abs(fitted - dst).max() / TILE_W
-    x0, y0, x1, y1 = tx, ty, tx + w * sx, ty + h * sy
-    im = Image.fromarray(rgba, 'RGBA').resize((math.ceil(w * sx * STORE_K), math.ceil(h * sy * STORE_K)), Image.LANCZOS)
+    S3 = np.c_[src, np.ones(4)]
+    (a, b, c), *_ = np.linalg.lstsq(S3, dst[:, 0], rcond=None)
+    (d, e, f), *_ = np.linalg.lstsq(S3, dst[:, 1], rcond=None)
+    M = np.array([[a, b, c], [d, e, f], [0, 0, 1]])
+    off = np.abs((S3 @ M[:2].T) - dst).max() / TILE_W
+    # the picture's own corners, placed: its box in world px
+    X, Y = (np.c_[[0, w, w, 0], [0, 0, h, h], np.ones(4)] @ M[:2].T).T
+    x0, y0, x1, y1 = X.min(), Y.min(), X.max(), Y.max()
+    k = STORE_K; W, H = math.ceil((x1 - x0) * k), math.ceil((y1 - y0) * k)
+    # stored px (i, j) -> world (x0 + i / k, y0 + j / k) -> the repaint's px
+    to_world = np.array([[1 / k, 0, x0], [0, 1 / k, y0], [0, 0, 1]])
+    inv = np.linalg.inv(M) @ to_world
+    im = Image.fromarray(rgba, 'RGBA').convert('RGBa')
+    im = im.transform((W, H), Image.AFFINE, tuple(inv[:2].ravel()), resample=Image.BICUBIC).convert('RGBA')
     im.save(os.path.join(OUT, f'platform-{FLOOR}-{ART_TAG}.webp'), quality=88, method=6)
-    print('platform fit x', round(sx, 4), 'y', round(sy, 4), 'worst corner', round(off, 2), 'tiles off')
+    print('platform fit', np.round(M[:2], 4).tolist(), 'walls lean', round(math.degrees(math.atan2(b, e)), 2), 'deg, worst corner', round(off, 4), 'tiles off')
     print('platform scale', round(s, 4), 'lift', round(lift, 1), 'rim tiles', round(rim, 2))
     return {'src': f'icons/Plot/platform-{FLOOR}-{ART_TAG}.webp', 'x': round(float(x0), 1), 'y': round(float(y0), 1), 'w': round(float(x1 - x0), 1),
             'h': round(float(y1 - y0), 1), 'at': P, 'size': FLOOR, 'lift': round(lift, 1), 'rim': round(rim, 2)}
@@ -176,10 +208,10 @@ def main():
     (W, H), tiles = cut_tiles(mp)
     plat = platform(rep, world)
     body = math.ceil(P + FLOOR + plat['rim'])         # the platform's body reaches this far, from the back
-    # the stairs come down the front-left side, their foot from 6/16 to 10/16 of the way along the floor from its
-    # left end, a sixth of the floor out from the platform (measured on platform-navy-redo-11 at FLOOR 16)
-    k = FLOOR / 16
-    stairs = [round(P + 6 * k), body, round(P + 10 * k), body + round(FLOOR / 6)]
+    # the stairs come down the front-left side, their foot from 8/23 to 14/23 of the way along the floor from its
+    # left end, 4 tiles out from the platform at FLOOR 23 (measured on platform-navy_V4 at FLOOR 23)
+    k = FLOOR / 23
+    stairs = [round(P + 8 * k), body, round(P + 14 * k), body + round(4 * k)]
     blocked = [[0, 0, body, P], [0, P, P, body], [P + FLOOR, P, body, body], [P, P + FLOOR, P + FLOOR, body], stairs]
     # the way up: the stairs' middle 3 tiles and the rim above them can be walked on (never built on); the
     # ground rises up the stairs from the lawn (v = stairs' foot) to the platform's top (v = body)

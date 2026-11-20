@@ -28,7 +28,7 @@ import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
 import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/drills.js';
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
-import { openGelStand, standLevel } from './gel-stand-view.js';
+import { openGelStand, standLevel, standBuild } from './gel-stand-view.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
@@ -761,6 +761,13 @@ export function wireDiorama(root, ctx) {
         if (busy && !tag) { tag = document.createElement('i'); tag.className = 'dg-tag is-clock'; tag.dataset.dgBusy = it.id; el.append(tag); }
         if (!busy) tag?.remove(); else tag.textContent = mmss(busy.left);
       }
+      if (it.opens === 'gels') {
+        // the time left on its build
+        const b = standBuild();
+        let tag = el.querySelector('.dg-tag');
+        if (b && !tag) { tag = document.createElement('i'); tag.className = 'dg-tag is-clock'; tag.dataset.dgBuild = it.id; el.append(tag); }
+        if (!b) tag?.remove(); else tag.textContent = mmss(b.left);
+      }
       if (it.opens === 'trophies') {
         let tag = el.querySelector('.dg-tag');
         if (!tag) { tag = document.createElement('i'); tag.className = 'dg-tag'; el.append(tag); }
@@ -1365,6 +1372,11 @@ export function wireDiorama(root, ctx) {
     root.querySelectorAll('[data-dg-busy]').forEach((tag) => {
       const it = itemAt(tag.dataset.dgBusy); const busy = it && busyOn(it);
       if (busy) tag.textContent = mmss(busy.left); else tag.remove();
+    });
+    // and the gel stand's build (standBuild() raises its level when it's done, and the base redraws)
+    root.querySelectorAll('[data-dg-build]').forEach((tag) => {
+      const b = standBuild();
+      if (b) tag.textContent = mmss(b.left); else tag.remove();
     });
     // and on the picked-up machine's Train / Recover button
     const sel = view.sel && itemAt(view.sel);

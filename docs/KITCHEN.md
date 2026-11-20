@@ -119,6 +119,23 @@ gels; boosts at 2 stars, on the next workout's XP):
 | 4 | Race gel | maltodextrin, fructose, honey, water, salt, caffeine | +50% |
 | 5-6 | still to come (new gels and their art: ideas are a double-carb gel and an electrolyte race gel) | | |
 
+**On the base:** the stand is an item on everyone's single-plot base (`gel-stand` in `placement.js`), on the lawn by
+the builder's hut. Its picture is its level's.
+
+**Upgrading** costs coins at once, then a builder's time; the stand keeps working at its old level meanwhile, and
+its clock shows over it on the base (`UPGRADES` in `gel-stand.js`, a first guess):
+
+| To level | Coins | Build |
+|---|---|---|
+| 2 | 400 | 2 h |
+| 3 | 900 | 6 h |
+| 4 | 1,800 | 12 h |
+| 5 | 3,500 | 24 h |
+| 6 | 6,000 | 36 h |
+
+In the preview the coins are the stand's own (2,000 to start) and a "Finish now" button ends the build. With the
+server: the wallet's coins, the build as a builder's job (coffee cuts it), and a migration (**needs the user's OK**).
+
 The art is cut from the CSV's sheets by `tools/cut-gels.py` into `icons/Gels/` (gels, ingredients, tools, pouch,
 interface, effects, the prep view's background) and `icons/Items/gel-stand-t<n>-<a|b>.webp` (the stand).
 

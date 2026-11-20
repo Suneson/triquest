@@ -32,6 +32,35 @@ export const UPGRADES = [null, null, { coins: 400, hours: 2 }, { coins: 900, hou
 /** What the next level costs, or null at the top. */
 export const nextUpgrade = (level) => UPGRADES[lvl(level) + 1] || null;
 
+const HOUR = 3600e3;
+/** A saved build made safe: { to, at, done } (ms), or null. */
+export function buildOf(saved) {
+  const b = saved?.build;
+  const to = Math.floor(Number(b?.to)); const at = Number(b?.at); const done = Number(b?.done);
+  if (!(to === lvl(saved?.level) + 1 && to <= MAX_LEVEL && Number.isFinite(at) && done > at)) return null;
+  return { to, at, done };
+}
+/**
+ * Start taking the stand up a level: it costs coins at once and a builder works on it for the level's
+ * hours. The stand keeps working at its old level meanwhile. Returns { build, coins } (coins left), or
+ * { error: 'top' | 'busy' | 'coins' }.
+ */
+export function startUpgrade(saved, coins, now) {
+  if (buildOf(saved)) return { error: 'busy' };
+  const level = lvl(saved?.level);
+  const up = nextUpgrade(level);
+  if (!up) return { error: 'top' };
+  if (!(Number(coins) >= up.coins)) return { error: 'coins' };
+  return { build: { to: level + 1, at: now, done: now + up.hours * HOUR }, coins: Number(coins) - up.coins };
+}
+/** A finished build raises the level. Returns the saved state, changed only when a build just finished. */
+export function settleBuild(saved, now) {
+  const b = buildOf(saved);
+  return b && now >= b.done ? { ...saved, level: b.to, build: null } : saved;
+}
+/** Time left on the build in ms (0 when there's none). */
+export const buildLeft = (saved, now) => { const b = buildOf(saved); return b ? Math.max(0, b.done - now) : 0; };
+
 /** What the stars multiply a boost by. */
 export const STAR_MULT = [0, 0.7, 1, 1.15];
 /** Buying a gel ready-made costs this many times its ingredients. */

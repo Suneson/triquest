@@ -31,16 +31,26 @@
 .gs-lvl b { position: relative; color: #fff; font-size: 18px; font-weight: 900; }
 /* taking the stand up a level */
 .gs-up {
-  display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 8px 16px 4px; padding: 8px 12px 8px 8px;
-  border: 0; border-radius: 16px; background: #fff; color: var(--ink); font: inherit; text-align: left;
-  box-shadow: 0 0 0 2px var(--line), 0 4px 0 var(--line); transition: transform .12s ease-out;
+  display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 8px 16px 4px; padding: 8px 8px 8px 8px;
+  border-radius: 16px; background: #fff; color: var(--ink); text-align: left;
+  box-shadow: 0 0 0 2px var(--line), 0 4px 0 var(--line);
 }
-.gs-up:active { transform: scale(.98); }
 .gs-up-art { width: 56px; height: 56px; object-fit: contain; flex: none; }
-.gs-up span { flex: 1; min-width: 0; }
-.gs-up b { display: block; font-size: 15px; font-weight: 900; }
+.gs-up > span { flex: 1; min-width: 0; }
+.gs-up > span > b { display: block; font-size: 15px; font-weight: 900; }
 .gs-up small { display: block; margin-top: 2px; font-size: 12px; font-weight: 700; color: #3E4A6B; }
-.gs-up i { flex: none; padding: 10px 14px; border-radius: 12px; background: #16264D; color: #fff; font-style: normal; font-weight: 900; font-size: 14px; }
+.gs-up-cost { display: flex !important; align-items: center; gap: 4px; }
+.gs-up-cost img { width: 16px; height: 16px; }
+.gs-up-cost b { display: inline; font-size: 13px; color: var(--ink); }
+.gs-up.is-short .gs-up-cost b { color: #C8323C; }
+.gs-up-go {
+  flex: none; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #16264D; color: #fff;
+  font: inherit; font-weight: 900; font-size: 14px; transition: transform .12s ease-out;
+}
+.gs-up-go:active { transform: scale(.96); }
+.gs-up-go[aria-disabled="true"] { opacity: .45; }
+.gs-up-go.is-alt { background: #fff; color: #16264D; box-shadow: 0 0 0 2px #16264D inset; }
+.gs-up.is-building .gs-up-art { opacity: .7; }
 .gs-up.is-top { justify-content: center; font-size: 13px; font-weight: 800; color: #3E4A6B; box-shadow: none; background: transparent; }
 .gs-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 8px; }
 .gs-card {

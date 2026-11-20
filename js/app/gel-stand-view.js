@@ -20,19 +20,46 @@ import * as G from '../core/gel-stand.js';
 const ART = 'icons/Gels';
 const KEY = 'gelStand';
 const PREVIEW_CARBS = 600;
+const PREVIEW_COINS = 2000;   // the preview's own coins, for upgrades (the server's wallet later)
+const COIN = 'icons/Pixelart/GEAR/coin.png';
 const POUR_RATE = 0.22;   // jug per second while you hold
 const FILL_RATE = 0.32;   // pouch per second while you hold
 const POWDER = new Set(['malto', 'fructose']);
 
+const num = (v, d) => (v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : d);
 const load = () => {
-  const s = store.getSettings()[KEY] || {};
-  const carbs = Number(s.carbs);
-  return { ...G.normalise(s), carbs: Number.isFinite(carbs) ? carbs : PREVIEW_CARBS, level: G.levelOf(s) };
+  const s = settled();
+  return { ...G.normalise(s), carbs: num(s.carbs, PREVIEW_CARBS), coins: num(s.coins, PREVIEW_COINS), level: G.levelOf(s), build: G.buildOf(s) };
 };
-const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.carbs, level: s.level });
+const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.carbs, coins: s.coins, level: s.level, build: s.build || null });
+/** "1 h 52 min", "4 min 10 s". */
+const hm = (ms) => {
+  const s = Math.ceil(ms / 1000);
+  const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60);
+  return h ? t('gels.hm', { h, m }) : t('gels.ms', { m, s: s % 60 });
+};
+
+/** What's saved, with a build that has finished turned into its level (saved, and the base told). */
+function settled() {
+  const s = store.getSettings()[KEY] || {};
+  const n = G.settleBuild(s, Date.now());
+  if (n !== s) {
+    store.setSetting(KEY, n);
+    haptic('levelUp');
+    // after this call: it may be asked mid-draw, and the base redraws on this
+    setTimeout(() => document.dispatchEvent(new CustomEvent('gels-changed')), 0);
+  }
+  return n;
+}
 
 /** The stand's level (1-6), as the base draws it. */
-export const standLevel = () => G.levelOf(store.getSettings()[KEY]);
+export const standLevel = () => G.levelOf(settled());
+/** The stand's build: { to, left } (ms left), or null. */
+export function standBuild() {
+  const s = settled();
+  const b = G.buildOf(s);
+  return b ? { to: b.to, left: G.buildLeft(s, Date.now()) } : null;
+}
 
 const img = (src, cls = '') => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
 const gimg = (file, cls = '') => img(`${ART}/${file}.webp`, cls);
@@ -58,6 +85,7 @@ const starsHtml = (n) => `<span class="gs-stars" role="img" aria-label="${esc(t(
 export function openGelStand({ level = null } = {}) {
   const root = openLayer('gel-stand', { className: 'gs-layer' });
   let st = load();
+  const pinned = !!level;   // ?gels=1&lvl=: shown at that level, no upgrading
   level = level ? Math.max(1, Math.min(G.MAX_LEVEL, Math.floor(level) || 1)) : st.level;
   let gel = null;          // the gel picked
   let run = null;          // making it: { i, scores, layers, mix, fill, sealed, drops, dial, stirAcc, stirT0 }
@@ -99,16 +127,37 @@ export function openGelStand({ level = null } = {}) {
       <p class="gs-note">${esc(t('gels.preview'))}</p></div>`, 'is-menu');
   }
 
-  /** Taking the stand up a level. Preview: free and at once; later it's coins and a builder's job. */
+  /** Taking the stand up a level: coins at once, then a builder's hours (preview: the preview's coins). */
   function upgradeHtml() {
+    if (pinned) return '';
+    if (st.build) {
+      const left = Math.max(0, st.build.done - Date.now());
+      return `<div class="gs-up is-building">
+        ${img(standArt(st.build.to), 'gs-up-art')}
+        <span><b>${esc(t('gels.building', { n: st.build.to }))}</b>
+        <small><span data-gs-left class="data-num">${esc(hm(left))}</span> · ${esc(t('gels.buildKeeps'))}</small></span>
+        <button class="gs-up-go is-alt" data-gs-finish>${esc(t('gels.finishNow'))}</button></div>`;
+    }
     const up = G.nextUpgrade(level);
     if (!up) return `<p class="gs-up is-top">${esc(t('gels.topLevel'))}</p>`;
-    return `<button class="gs-up" data-gs-up>
+    const short = st.coins < up.coins;
+    return `<div class="gs-up${short ? ' is-short' : ''}">
       ${img(standArt(level + 1), 'gs-up-art')}
       <span><b>${esc(t('gels.upgrade', { n: level + 1 }))}</b>
-      <small>${esc(t('gels.upgradeCost', { coins: up.coins, h: up.hours }))}</small></span>
-      <i>${esc(t('gels.upgradeGo'))}</i></button>`;
+      <small class="gs-up-cost"><img src="${COIN}" alt=""><b class="data-num">${up.coins}</b> · ${esc(t('gels.buildHours', { h: up.hours }))}</small>
+      <small>${esc(t('gels.coinsHave', { n: st.coins }))}</small></span>
+      <button class="gs-up-go" data-gs-up ${short ? 'aria-disabled="true"' : ''}>${esc(t('gels.upgradeGo'))}</button></div>`;
   }
+  // the build's clock, while the stand is open
+  const clock = setInterval(() => {
+    if (!root.isConnected) { clearInterval(clock); return; }
+    if (!st.build) return;
+    const before = st.level;
+    st = load();
+    if (st.level !== before) { if (!pinned) level = st.level; if (!gel) drawMenu(); return; }
+    const el = root.querySelector('[data-gs-left]');
+    if (el) el.textContent = hm(Math.max(0, st.build.done - Date.now()));
+  }, 1000);
 
   // ---- the prep view ----
   const step = () => (run ? gel.steps[run.i] : null);
@@ -388,11 +437,19 @@ export function openGelStand({ level = null } = {}) {
   root.addEventListener('click', (e) => {
     const b = (sel) => e.target.closest(sel);
     if (b('[data-gs-up]')) {
-      if (!G.nextUpgrade(level)) return;
-      level += 1;
-      set({ level });
-      haptic('levelUp');
-      document.dispatchEvent(new CustomEvent('gels-changed'));   // the base draws the stand's new picture
+      const r = G.startUpgrade(st, st.coins, Date.now());
+      if (r.error) { haptic('refuse'); return; }
+      set({ build: r.build, coins: r.coins });
+      haptic('place');
+      document.dispatchEvent(new CustomEvent('gels-changed'));   // the base shows the build's clock
+      drawMenu();
+      return;
+    }
+    if (b('[data-gs-finish]')) {
+      // preview only: finish the build now (coffee will cut it later)
+      if (!st.build) return;
+      set({ build: { ...st.build, done: Date.now() } });
+      st = load(); level = st.level;
       drawMenu();
       return;
     }

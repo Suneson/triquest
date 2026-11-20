@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GELS, SHELF, INGREDIENTS, menu, gelById, gelCost, readyMadeCost, normalise, missing, missingCost, buy, start,
-  scorePour, scoreDial, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged, UPGRADES, nextUpgrade, levelOf, MAX_LEVEL,
+  scorePour, scoreDial, scoreDrops, scoreStir, scoreSeal, stars, boostOf, bagged, UPGRADES, nextUpgrade, levelOf, MAX_LEVEL, startUpgrade, settleBuild, buildLeft, buildOf,
 } from '../js/core/gel-stand.js';
 
 test('eight ingredients on the shelf, water free', () => {
@@ -92,4 +92,21 @@ test('levels: saved level made safe, upgrades cost more each time, none past the
   for (let n = 3; n <= MAX_LEVEL; n++) assert.ok(UPGRADES[n].coins > UPGRADES[n - 1].coins && UPGRADES[n].hours > UPGRADES[n - 1].hours);
   assert.deepEqual(nextUpgrade(1), UPGRADES[2]);
   assert.equal(nextUpgrade(MAX_LEVEL), null);
+});
+
+test('upgrading: coins at once, then the build hours, then the level', () => {
+  const t0 = 1_000_000;
+  assert.deepEqual(startUpgrade({ level: 1 }, 100, t0), { error: 'coins' });
+  assert.deepEqual(startUpgrade({ level: MAX_LEVEL }, 1e9, t0), { error: 'top' });
+  const r = startUpgrade({ level: 1 }, 1000, t0);
+  assert.equal(r.coins, 1000 - UPGRADES[2].coins);
+  const saved = { level: 1, build: r.build };
+  assert.deepEqual(startUpgrade(saved, 1e9, t0), { error: 'busy' });
+  assert.equal(buildLeft(saved, t0), UPGRADES[2].hours * 3600e3);
+  assert.equal(settleBuild(saved, t0 + 1000), saved);            // not done: nothing changes
+  const done = settleBuild(saved, r.build.done);
+  assert.equal(levelOf(done), 2);
+  assert.equal(buildOf(done), null);
+  // a build that doesn't match the level is junk
+  assert.equal(buildOf({ level: 3, build: r.build }), null);
 });

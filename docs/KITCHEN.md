@@ -139,20 +139,27 @@ server: the wallet's coins, the build as a builder's job (coffee cuts it), and a
 The art is cut from the CSV's sheets by `tools/cut-gels.py` into `icons/Gels/` (gels, ingredients, tools, pouch,
 interface, effects, the prep view's background) and `icons/Items/gel-stand-t<n>-<a|b>.webp` (the stand).
 
-**The prep view, made for one thumb** (since the redesign; art in `MOSKE APP/PromptQueue Prompts/gel-stand-v2.csv`
-and `gel-stand-bg.csv`, the background is `screen-b`, widened in Photoshop): the recipe and what to do now on a white
-wall screen; the jug and the pouch on the counter, the sink on its left; this gel's ingredients on a tray below
-(a stock bar each, four to a refill; tap a dimmed one to restock it with carbs); the buttons at the very bottom.
-Everything is dragged, and letting go ends a step (it's judged, "Exact!" / "Good" / "Over-poured!" / "Too
-little", and the next starts):
-- **Liquids** (honey, water, maple, beet): drag over the jug and hold; it tips and pours by the time held. A
-  meter beside the jug shows the level and its green sweet spot.
-- **Powders** (maltodextrin, fructose, salt): drag over the jug and shake side to side; shaking puts it in.
-- **Caffeine:** drag the dropper over the jug; a drop every 0.4 s while it's there.
-- **Stir:** round the jug, a ring fills. **Fill:** drag the jug over the pouch and hold, let go at the red line.
-  **Seal:** swipe across the sealer.
-- **The sink:** drag the jug to it to pour it away and start again (the ingredients are lost).
+**The prep view, every tool on show** (third layout; art in `MOSKE APP/PromptQueue Prompts/gel-stand-v3.csv`, the
+background is take `b` with its screen and rail moved up one brick period, `tools/cut-gels.py --v3`). Top to bottom:
+the recipe and what to do now on the white wall screen; a tool rail (sealer, whisk, dropper, scissors); a shelf of
+tap jars (water, honey, maple, beet) and the caffeine vial; the counter with the measuring glass, the jug and its
+meter, the pouch's place and a bin; the tray's three powder wells (maltodextrin, fructose, salt) and a box of empty
+pouches; the buttons at the very bottom. The brick wall carries on above the scene on tall phones. Everything is
+dragged, and letting go ends a step (judged "Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
+- **Liquids:** hold the measuring glass under the jar's tap (it fills by the time held) up to its red line, with a
+  green band either side; drag it over the jug and it pours in. Too much? Drag it over the bin to tip it out and
+  measure again (no cost). A full glass is 0.75 of the jug.
+- **Powders and salt:** drag a scoop from the well over the jug and shake it side to side; the meter beside the jug
+  shows the level (or the salt) and its green sweet spot.
+- **Caffeine:** take the dropper off the rail and hold it over the jug: a drop every 0.4 s.
+- **Stir:** the whisk comes off the rail, round and round the jug, a ring fills.
+- **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it and hold; let go
+  at the red line. **Seal:** take the sealer off the rail and swipe it across the pouch's top.
+- **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost).
+- **Restocking**, before you start: tap a jar or the vial for one more (carbs). A well's powder comes in a sachet:
+  tap the well, a sachet drops over it, swipe the scissors along its dashed line (snip, snip) and it tips in.
 - **Stars** multiply the boost by ×0.6 / ×1.0 / ×1.4 (a honey gel: +15% / +25% / +35% XP). XP only, as all gels.
+- Citrus, berry and lime jars (and their streams) are painted for the gels still to come.
 
 **The screens (first version):**
 

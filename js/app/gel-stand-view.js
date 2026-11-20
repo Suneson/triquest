@@ -649,9 +649,9 @@ export function openGelStand({ level = null } = {}) {
       const jr = rectOf(jugEl);
       const heightCqw = mode === 'drops' ? 15 : 13;
       const { held, place } = holding(HELD[ing], heightCqw, `is-${mode}`);
-      const { flow, show: showFlow } = streamEl(STREAM[ing], `is-${mode}`);
-      // shaken, a heavier pour over the thin trickle (the bag's pour of that powder)
-      const heavy = mode === 'shake' ? streamEl(POWDERS.includes(ing) ? `pour-${ing}` : STREAM[ing], 'is-shake is-heavy') : null;
+      // a scoop: a thin trickle while it's held (trickle-*), the heavy pour over it while it's shaken (shake-*)
+      const { flow, show: showFlow } = streamEl(mode === 'shake' ? `trickle-${ing}` : STREAM[ing], `is-${mode}`);
+      const heavy = mode === 'shake' ? streamEl(`shake-${ing}`, 'is-shake is-heavy') : null;
       from.classList.add('is-out');
       let over = false; let amount = 0; let lastX = null; let shookAt = 0; let raf = 0; let tickAt = 0; let shaken = 0;
       // time held over the jug, in seconds: the drops and a scoop's trickle come from this, never from frames drawn
@@ -693,8 +693,8 @@ export function openGelStand({ level = null } = {}) {
           // a thin trickle while it's held, the heavy pour over it while it's shaken
           const x = parseFloat(held.style.left) - 3; const top = parseFloat(held.style.top) + 1; const bottom = surfaceY(jr, jugLevel());
           const shaking = now - shookAt < 160;
-          showFlow(true, x, top, bottom, 1.8);
-          heavy.show(shaking, x, top, bottom, 6);
+          showFlow(!shaking, x, top, bottom, 2.6);
+          heavy.show(shaking, x, top, bottom, 5);
         }
       };
       const move = (ev) => {

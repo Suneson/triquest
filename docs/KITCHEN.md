@@ -159,8 +159,8 @@ done ones ticked, the one now ringed, and the one now big beside its instruction
   out to fill again (no cost). A full glass is 0.75 of the jug.
 - **Powders and salt:** drag a scoop from its tray over the jug: held there it always trickles in slowly (a thin
   stream), shaken side to side it pours faster (a heavy pour over it). The meter shows the level (or the salt) and
-  its sweet spot. Art for both streams: `gel-stand-v8.csv` (until it's in, the thin one is `stream-powder`, the
-  heavy one the bag's `pour-*`).
+  its sweet spot. Art: `trickle-*` and `shake-*` (`gel-stand-v8.csv`, cut with
+  `tools/cut-gels.py --streams`).
 - **Stock shown while making:** what's taken at Start still shows in its tray or jar until its step is done, so a
   tray with its last bar only shows empty once that step's used it.
 - **Caffeine:** take the dropper off its hook (or drag from the vials) and hold it over the jug: a drop every 0.4 s.

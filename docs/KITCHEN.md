@@ -16,6 +16,21 @@ Nothing here is built yet. The art is queued in `MOSKE APP/PromptQueue Prompts/k
 | **Kitchen** (the restaurant item, 4 x 4) | Meals and shakes: carbs before, protein after | Coins on your next workout |
 | **Coffee machine** (already on the base) | Coffee, drunk straight away | Time off a builder's job |
 
+- **Every station works the same way:** tap it, pick a **final recipe** from its menu, then make it in the
+  station's prep view. The menu grows as the station is upgraded (like a barracks unlocking new units): a level
+  opens new recipes.
+- **Ingredients are restocked on the spot:** the prep view shows each ingredient's stock, and a + on it buys more
+  with carbs without leaving.
+- **Who it's for:**
+  - **Gel stand:** for you only. No customers.
+  - **Coffee machine:** for your builders only.
+  - **Kitchen:** two modes. **Cook for me** (pick a meal, make it, it goes to your bag) and **Service**:
+    customers come for meals. The customers are the game's characters, including the future bosses
+    (Blomvelt turning up hungry). About 5-10 customers a day, worth about 100 coins a day in all.
+- **Balance rule:** training must stay the big earner. Workouts give about **75% of all coins**; playing without
+  training earns something, but training with food on top is where the strong rewards are. Exact numbers come
+  after the beta, from real data.
+
 ## The rules
 
 ### 1. Carbs buy ingredients
@@ -75,15 +90,50 @@ Each thing made by hand gets 1-3 stars from how well its steps went. The boost i
 **Gels no longer finish a builder's job** (too strong). Remove `skipKinds` in `js/core/workshop.js`; coffee is
 the only way food helps builders.
 
-### 8. Kitchen customers
+### 8. Kitchen customers (Service mode)
 
-Clubmates come to the window and order. Serving them pays carbs back (about the ingredients' cost) plus a tip in
-coins, **at most 30 coins a day** from tips, so cooking never overtakes training.
+Characters come to the window and order, 5-10 a day. Serving them pays carbs back (about the ingredients' cost)
+plus coins, about 100 coins a day in all, kept below a quarter of what training pays (to be tuned after the beta).
 
 ### 9. Battles (later, once PVE and the arena exist)
 
 A race belt: 1 meal before the battle and 2 gels to use during it. In the arena 1v1 both players have the same
 belt and everything counts as 2 stars, so it stays fair; stars matter in PVE.
+
+## The gel stand (built first)
+
+The rules are `js/core/gel-stand.js`, the screens `js/app/gel-stand-view.js` (preview: `?gels=1`, `&lvl=1-4`).
+The art is queued in `MOSKE APP/PromptQueue Prompts/gel-stand.csv` (`MOSKE APP/Island/make-gels-csv.py`).
+
+**Recipes, by stand level** (boosts at 2 stars, on the next workout's XP):
+
+| Level | Gel | Ingredients | Boost |
+|---|---|---|---|
+| 1 | Classic gel | maltodextrin, fructose, water, salt | +30% |
+| 1 | Honey gel | honey, water, salt | +25% |
+| 2 | Caffeine gel | maltodextrin, fructose, water, salt, caffeine | +40% |
+| 2 | Maple gel | maple syrup, water, salt | +35% |
+| 3 | Beet gel | beetroot juice, maltodextrin, fructose, salt | +45% on a run, +30% otherwise |
+| 3 | Hydro gel | maltodextrin, water (a lot), salt (a lot) | +45% on a ride, +30% otherwise |
+| 4 | Race gel | maltodextrin, fructose, water, salt, caffeine, honey | +50% |
+
+**The screens:**
+
+1. **Menu:** every gel as a card (picture, name, boost, what its ingredients cost). Locked ones show the level
+   that opens them. Pick one.
+2. **Prep view, top half:** the chosen gel's recipe card (its picture, boost, and its steps as a list that ticks
+   off) and the ingredient shelf: 8 ingredients, each with its stock and a + that buys one with carbs.
+3. **Prep view, bottom half:** the step being done, one at a time:
+   - **Pour:** hold to pour an ingredient into the mixing jug, let go at the line on its side.
+   - **Salt:** turn a dial to the mark.
+   - **Caffeine:** tap the dropper the right number of times.
+   - **Stir:** stir in circles round the jug.
+   - **Fill:** hold to fill the pouch to its line.
+   - **Seal:** swipe across the pouch's top.
+4. **Result:** 1-3 stars (from how close each step was), and the gel goes into your bag.
+
+The ingredients are taken from stock when you start making it. Every step answers straight away: a light
+vibration as things land, the liquid rising under your finger, the steps ticking off on the card.
 
 ## What changes in today's code
 

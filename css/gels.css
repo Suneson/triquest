@@ -6,14 +6,14 @@
 .gs {
   --navy: #16264D; --stone: #F4F2EC; --line: #D9D4C7; --sky: #5BB4E5; --ink: #16264D; --good: #2F8A3E; --bad: #C8382E;
   position: absolute; inset: 0; display: flex; flex-direction: column; color: var(--ink);
-  padding: var(--safe-t, env(safe-area-inset-top)) 0 var(--safe-b, env(safe-area-inset-bottom));
+  padding: 0 0 var(--safe-b, env(safe-area-inset-bottom));
   background: var(--stone); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .gs.is-prep { background: var(--navy); }
 .gs img { -webkit-user-drag: none; pointer-events: none; }
 
 /* the top bar */
-.gs-bar { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--navy); color: #fff; }
+.gs-bar { flex: none; display: flex; align-items: center; gap: 10px; padding: calc(var(--safe-t, env(safe-area-inset-top)) + 14px) 16px 10px; background: var(--navy); color: #fff; }
 .gs-bar h2 { flex: 1; margin: 0; font-size: 18px; font-weight: 900; }
 .gs-bar h2 small { font-size: 12px; font-weight: 800; opacity: .7; margin-left: 6px; }
 .gs-x { width: 44px; height: 44px; border-radius: 12px; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 26px; font-weight: 900; line-height: 1; }
@@ -243,9 +243,16 @@
 .gs-pop.is-over b, .gs-pop.is-under b, .gs-pop.is-binned b { background: var(--bad); }
 .gs-pop.is-on { animation: gs-pop .45s cubic-bezier(.3,1.5,.5,1) forwards; }
 
-/* the buttons, floating over the tray only when there's one to press */
-.gs-dock { position: absolute; left: 6%; right: 6%; top: 91.6%; height: 7.4%; display: flex; align-items: center; justify-content: center; gap: 3cqw; z-index: 11;
-  animation: gs-drop-in .3s cubic-bezier(.3,1.4,.5,1); }
+/* the buttons, only when there's one to press: centred in the marble under the tray (the scene's last 8.5% and
+   whatever the phone has below it), over the tray's foot if the phone's too short for that. In cq of .gs-body. */
+.gs-body { position: relative; }
+.gs-dock {
+  --hs: min(100cqh, 100cqw * 2752 / 1536);
+  position: absolute; left: 50%; width: calc(var(--hs) * 1536 / 2752 * .88); bottom: 0;
+  top: min(calc(var(--hs) * .915), calc(100cqh - 72px));
+  display: flex; align-items: center; justify-content: center; gap: 12px; z-index: 11;
+  transform: translateX(-50%); animation: gs-dock-in .3s cubic-bezier(.3,1.4,.5,1);
+}
 .gs-btn {
   flex: 1; max-width: 50%; min-height: 48px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; font: inherit; font-size: 15px; font-weight: 900;
   box-shadow: 0 4px 0 #0A1430, 0 8px 18px rgba(10,20,48,.35); transition: transform .1s ease-out;
@@ -261,6 +268,7 @@
 
 @keyframes gs-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); } 50% { filter: drop-shadow(0 0 1.4cqw #fff) drop-shadow(0 0 .7cqw #5BB4E5); } }
 @keyframes gs-ring-glow { 0%, 100% { box-shadow: 0 0 0 .5cqw rgba(255,255,255,.5); } 50% { box-shadow: 0 0 0 .9cqw #fff, 0 0 2.4cqw .6cqw #5BB4E5; } }
+@keyframes gs-dock-in { 0% { opacity: 0; transform: translate(-50%, 20%) scale(.9); } 100% { opacity: 1; transform: translateX(-50%); } }
 @keyframes gs-binflash { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes gs-tap { 0% { transform: none; } 40% { transform: translateY(.4cqw); } 100% { transform: none; } }
 @keyframes gs-drop-in { 0% { opacity: 0; transform: translateY(-20%) scale(.8); } 100% { opacity: 1; transform: none; } }

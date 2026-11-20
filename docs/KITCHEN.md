@@ -153,16 +153,23 @@ marble carries on below the scene on tall phones. The wall screen shows the reci
 tool for an action; `gel-stand-screen.csv`, cut with `tools/cut-gels.py --screen` into `icons/Gels/scr-*.webp`):
 done ones ticked, the one now ringed, and the one now big beside its instruction. Everything is dragged, and letting go ends a step (judged
 "Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
-- **Liquids:** hold the measuring glass under the jar's tap (it fills by the time held) up to its red line, with a
-  green band either side; drag it over the jug and it pours in. Too much? Drag it over the bin to tip it out and
-  measure again (no cost). A full glass is 0.75 of the jug.
-- **Powders and salt:** drag a scoop from its tray over the jug and shake it side to side; the meter beside the jug
-  shows the level (or the salt) and its green sweet spot.
+- **Liquids:** hold the measuring glass under the jar's tap and it fills to the top (no line on it). Tip it over
+  the jug and it pours in slowly (0.5 glass a second); the meter beside the jug shows the line and its green sweet
+  spot, and letting go over the jug judges it (what's left in the glass is poured away). Over the bin it's tipped
+  out to fill again (no cost). A full glass is 0.75 of the jug.
+- **Powders and salt:** drag a scoop from its tray over the jug: held there it always trickles in slowly (a thin
+  stream), shaken side to side it pours faster (a heavy pour over it). The meter shows the level (or the salt) and
+  its sweet spot. Art for both streams: `gel-stand-v8.csv` (until it's in, the thin one is `stream-powder`, the
+  heavy one the bag's `pour-*`).
+- **Stock shown while making:** what's taken at Start still shows in its tray or jar until its step is done, so a
+  tray with its last bar only shows empty once that step's used it.
 - **Caffeine:** take the dropper off its hook (or drag from the vials) and hold it over the jug: a drop every 0.4 s.
 - **Stir:** the whisk comes off its hook, round and round the jug, a ring fills.
 - **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it and hold; let go
   at the red line. **Seal:** take the sealer off its hook and swipe it across the pouch's top.
-- **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost).
+- **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost). Its lid only opens
+  over a small spot low on the lid (76-97% across, 46-53% down), and the pouch is checked first. The jug's turned
+  round as it tips, so its spout leads.
 - **Restocking**, before you start: tap a jar or the caffeine vials for one more bar (each bar the same price); a
   short one shows a +. A powder comes in a bag in its own colour: tap its tray and the bag comes up big in the
   middle of the screen; take the scissors off their hook and cut along its dashed line (snip, snip). It then

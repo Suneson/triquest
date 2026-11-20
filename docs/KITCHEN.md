@@ -154,8 +154,8 @@ tool for an action; `gel-stand-screen.csv`, cut with `tools/cut-gels.py --screen
 done ones ticked, the one now ringed, and the one now big beside its instruction. Everything is dragged, and letting go ends a step (judged
 "Exact!" / "Good" / "Over-poured!" / "Too little", then the next):
 - **The counter, left to right:** the meter, the pouch's place, the jug, the measuring glass, the bin.
-- **Liquids:** hold the measuring glass under the jar's tap and it fills to the top in half a second (no line on it). Tip it over
-  the jug and it pours in slowly (0.5 glass a second); the meter beside the jug shows the line and its green sweet
+- **Liquids:** hold the measuring glass under the jar's tap and it fills to the top in 0.4 s (no line on it). Tip it over
+  the jug and it pours in slowly (0.2 glass a second); the meter beside the jug shows the line and its green sweet
   spot, and letting go (anywhere, once some is in) judges it (what's left in the glass is poured away). Over the bin it's tipped
   out to fill again (no cost). A full glass is 0.75 of the jug.
 - **Powders and salt:** drag a scoop from its tray over the jug: held there it always trickles in slowly (a thin
@@ -164,10 +164,10 @@ done ones ticked, the one now ringed, and the one now big beside its instruction
   `tools/cut-gels.py --streams`).
 - **Stock shown while making:** what's taken at Start still shows in its tray or jar until its step is done, so a
   tray with its last bar only shows empty once that step's used it.
-- **Caffeine:** take the dropper off its hook (or drag from the vials) and hold it over the jug: a drop every 0.4 s.
+- **Caffeine:** take the dropper off its hook (or drag from the vials) and hold it over the jug: a drop every 0.63 s.
 - **Stir:** the whisk comes off its hook, round and round the jug, a ring fills.
-- **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it and hold; let go
-  at the red line. **Seal:** take the sealer off its hook and swipe it across the pouch's top.
+- **Fill:** take an empty pouch from the box and put it on the counter, then drag the jug over it (it tips to the left, as
+  drawn) and hold; let go at the red line. Let go short of it and the step waits: pick the jug up again to top it off. **Seal:** take the sealer off its hook and swipe it across the pouch's top.
 - **The bin:** drag the jug to it to tip it away and start again (the ingredients are lost). Its lid only opens
   over a small square in its far corner (92-99% across, 48-52.5% down), and the pouch is checked first. The jug's turned
   round as it tips, so its spout leads.

@@ -34,16 +34,16 @@ const PREVIEW_CARBS = 600;
 const PREVIEW_COINS = 2000;   // the preview's own coins, for upgrades (the server's wallet later)
 const COIN = 'icons/Pixelart/GEAR/coin.png';
 const FILL_RATE = 0.32;   // pouch per second while the jug's held over it
-const TAP_RATE = 2;       // glass per second under a tap: full in half a second
+const TAP_RATE = 2.5;     // glass per second under a tap: full in 0.4 s
 const GLASS_CAP = 0.75;   // a full glass is this much of the jug
 const GLASS_POUR_MS = 650;   // the glass tips out in the bin in this long
-const GLASS_FLOW = 0.5;   // glass per second while it's tipped over the jug (slow enough to stop at the line)
+const GLASS_FLOW = 0.2;   // glass per second while it's tipped over the jug (slow: stop at the line)
 const HOLD_RATE = 0.07;   // jug level per second while a scoop is just held over the jug (shaking adds more)
 const SALT_HOLD = 0.1;    // the salt meter per second, held
 const SHAKE_K = 0.0045;   // jug level per 1% of the scene's width shaken (maltodextrin, fructose)
 const SALT_K = 0.007;     // the salt meter per 1% shaken
-const DROP_MS = 420;      // a caffeine drop this often while the dropper's over the jug
-const DROP_FIRST = 220;   // and the first this soon after it gets there
+const DROP_MS = 630;      // a caffeine drop this often while the dropper's over the jug
+const DROP_FIRST = 330;   // and the first this soon after it gets there
 const STEP_BEAT = 450;    // a step's pop shows this long, then the next step
 const STOCK_BAR = 4;      // a stock bar: four to a refill
 const SNIP_CUT = 0.72;    // how much of a bag's top the scissors must cross to cut it
@@ -750,9 +750,11 @@ export function openGelStand({ level = null } = {}) {
       jugEl.classList.add('is-held');
       const hCqw = (home.b - home.t) * ASPECT;   // the jug's height in % of the scene's width
       const fillEl = scene.querySelector('.gs-pfill i');
-      const startLevel = jugLevel();
-      let where = null; let raf = 0; let tickAt = 0;
-      let pouredFor = 0; let since = 0;   // seconds held over the pouch: the fill comes from this
+      // the fill carries on from the last time (let go short of the line, the jug's picked up again to top it off)
+      if (run.fillStart == null) run.fillStart = jugLevel();
+      const startLevel = run.fillStart;
+      let where = null; let raf = 0; let tickAt = run.fill;
+      let pouredFor = run.fillSecs || 0; let since = 0;   // seconds held over the pouch: the fill comes from this
       const fillTo = (now) => {
         run.fill = Math.min(1, FILL_RATE * (pouredFor + (since ? (now - since) / 1000 : 0)));
         fillEl.style.setProperty('--f', run.fill.toFixed(4));
@@ -769,10 +771,10 @@ export function openGelStand({ level = null } = {}) {
         const p = at(ev);
         const half = hCqw / 2;
         const was = where;
-        where = filling && p.x > pr.l - 16 && p.x < pr.r + 4 && p.y < pr.b && p.y > pr.t - 26 ? 'pouch'
+        where = filling && p.x > pr.l - 4 && p.x < pr.r + 16 && p.y < pr.b && p.y > pr.t - 26 ? 'pouch'
           : jugLevel() > 0 && inside(p, BIN_HIT) ? 'bin' : null;
-        // tipped, it's turned round so its spout leads (the picture's spout is on its left)
-        jugEl.style.setProperty('--flip', where ? '-1' : '1');
+        // over the bin (on its right) it's turned round so its spout leads; the pouch is on its left, as drawn
+        jugEl.style.setProperty('--flip', where === 'bin' ? '-1' : '1');
         if (where !== was && where) haptic('tick');
         const now = performance.now();
         if (where === 'pouch' && was !== 'pouch') since = now;
@@ -784,9 +786,9 @@ export function openGelStand({ level = null } = {}) {
           moveTo(bx - 0.966 * half, by - 0.259 * half / ASPECT - 3, 105);
           flow.classList.add('is-on'); flow.style.left = `${bx}%`; flow.style.top = `${by}%`; flow.style.height = '6%'; flow.style.width = '4.5cqw';
         } else if (where === 'pouch') {
-          // tipped to the right, its spout over the pouch's open top
+          // tipped to the left, its spout over the pouch's open top
           const px = (pr.l + pr.r) / 2; const py = pr.t - 5;
-          moveTo(px - 0.966 * half, py - 0.259 * half / ASPECT, 105);
+          moveTo(px + 0.966 * half, py - 0.259 * half / ASPECT, -105);
           flow.classList.add('is-on'); flow.style.left = `${px}%`; flow.style.top = `${py}%`; flow.style.width = '4.5cqw';
         } else {
           moveTo(p.x, p.y - 4, 0);
@@ -795,13 +797,16 @@ export function openGelStand({ level = null } = {}) {
       };
       const up = () => {
         cancelAnimationFrame(raf);
-        if (where === 'pouch') fillTo(performance.now());
+        if (where === 'pouch') { const now = performance.now(); fillTo(now); pouredFor += (now - since) / 1000; since = 0; }
+        run.fillSecs = pouredFor;
         flow.remove();
         binOpen(false);
         jugEl.classList.remove('is-held');
         goHome(jugEl);
         if (where === 'bin') { dump(); return; }
-        if (filling && run.fill > 0) finishStep(G.scorePour(run.fill, s.to, 0), run.fill, s.to);
+        // short of the line: it waits, the jug can be picked up again to top it off
+        if (filling && run.fill >= G.sweetSpot(s, 0)[0]) finishStep(G.scorePour(run.fill, s.to, 0), run.fill, s.to);
+        else if (filling && run.fill > 0) haptic('tick');
       };
       raf = requestAnimationFrame(loop);
       move(e);

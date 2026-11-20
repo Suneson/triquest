@@ -1,16 +1,19 @@
 // gel-stand-view.js — the gel stand's screens (docs/KITCHEN.md, "The gel stand"): the menu of final gels,
 // then the prep view, then the result. The rules are js/core/gel-stand.js.
 //
-// The prep view is one scene on the stand's background (icons/Gels/prep-bg-v3.webp), made for one thumb, with
-// every tool on show: the recipe and what to do now on the wall screen; the tool rail under it (the sealer,
-// the whisk, the dropper, the scissors); the tap jars of liquids and the caffeine vial on the shelf; the
-// measuring glass, the jug, the pouch and the bin on the counter; the powder wells and the box of empty
-// pouches on the tray; the buttons on the panel at the very bottom. Everything is dragged: the glass under a
-// jar's tap to its line, then over the jug to pour it in (or over the bin to tip it out); a scoop from a well
-// over the jug, shaken; the dropper over the jug; the whisk round it; a pouch from the box onto the counter;
-// the jug over the pouch; the sealer across the pouch's top. Letting go ends a step: it's judged and the next
-// one starts. Before starting, a tap on a jar restocks it, a tap on a well brings a sachet to snip open with
-// the scissors. The liquids are drawn over their pictures (multiply), so lines and shine show through.
+// The prep view is one scene on the stand's background (icons/Gels/prep-bg-v5.webp), made for one thumb, with
+// every tool on show: the recipe and what to do now on the wall screen at the very top; the tap jars of
+// liquids on the shelf under it; the measuring glass, the jug and the pouch on the counter, with the bin built
+// into it; the tools on the hooks of the counter's front (the sealer, the whisk, the dropper, the scissors);
+// the tray of powders, caffeine vials and the box of empty pouches painted into the picture below. A tray
+// that runs out shows its empty picture (patch-*.webp, cut from the same picture painted empty), and the bin's
+// lid opens (patch-bin-open) when something's brought to it. The buttons float over the tray only when
+// there's one to press. Everything is dragged: the glass under a jar's tap to its line, then over the jug to
+// pour it in (or over the bin to tip it out); a scoop from a tray over the jug, shaken; the dropper over the
+// jug; the whisk round it; a pouch from the box onto the counter; the jug over the pouch; the sealer across
+// the pouch's top. Letting go ends a step: it's judged and the next one starts. Before starting, a tap on a
+// jar restocks it, a tap on a powder brings a sachet to snip open with the scissors. The liquids are drawn
+// over their pictures (multiply), so lines and shine show through.
 //
 // For now it's a preview (?gels=1, &lvl=1-6): the stock, the bag and the carbs are kept on this device
 // (settings.gelStand) until the server side exists.
@@ -40,22 +43,32 @@ const STOCK_BAR = 4;      // a stock bar: four to a refill
 const SNIP_CUT = 0.72;    // how much of a sachet's top the scissors must cross to cut it
 const ASPECT = 2752 / 1536;   // the scene's height over its width: 1% of its height is this many % of its width
 const LIQUID = new Set(['water', 'honey', 'maple', 'beet']);
-/** The shelf, left to right (its jars stand on it, % across), and the tray's wells. */
+/** The shelf, left to right (its jars stand on it, % across). */
 const JARS = ['water', 'honey', 'maple', 'beet'];
-const SHELF_X = { water: 15, honey: 31.5, maple: 48, beet: 64.5, caffeine: 81 };
+const SHELF_X = { water: 17, honey: 39, maple: 61, beet: 83 };
 const JAR_W = 12;                          // a jar's width, % of the scene's
 const JAR_H = JAR_W * 420 / 280 / ASPECT;  // and its height, % of the scene's (jar-*.webp is 280 x 420)
-const JAR_TOP = 41.6 - JAR_H;              // they stand on the shelf's top
-const WELLS = ['malto', 'fructose', 'salt'];
-const WELL_X = { malto: 13.4, fructose: 36.6, salt: 61 };
-/** The tools stuck on the rail: % across, height in cqw, turned. */
-const RAIL = {
-  sealer: { x: 18, w: 8.5, rot: 0, art: 'sealer-open' },
-  whisk: { x: 37, w: 10, rot: 0, art: 'tool-whisk' },
-  dropper: { x: 54, w: 14, rot: 90, art: 'tool-dropper' },
-  scissors: { x: 73, w: 7.5, rot: 0, art: 'scissors-closed' },
+const JAR_TOP = 34.4 - JAR_H;              // they stand on the shelf's top
+/** The tray's places painted into the picture, % of the scene (each its empty patch's box, cut-gels.py --v5). */
+const TRAYS = {
+  malto: { l: 1.56, t: 70.75, w: 24.28, h: 8.32 },
+  fructose: { l: 26.04, t: 70.75, w: 21.68, h: 8.32 },
+  salt: { l: 50.2, t: 70.75, w: 20.83, h: 6.54 },
+  caffeine: { l: 0.07, t: 79.94, w: 22.66, h: 10.43 },
 };
-const POUCH_AT = { x: 71, y: 51.4 };       // the pouch's place on the counter (its middle)
+const POWDERS = ['malto', 'fructose', 'salt'];   // restocked from a sachet, snipped open
+const BOX = { l: 49.67, t: 77.29, w: 25, h: 13.08 };     // the box of empty pouches
+const BIN = { l: 71.5, r: 99, t: 44, b: 52 };            // the bin's lid, flush in the counter
+/** The tools hanging from the hooks of the counter's front: % across, their picture's height in cqw, turned
+ *  (the long ones hang down, handle up). The scoop's only for show. */
+const HOOKS = {
+  sealer: { x: 21.8, w: 6.1, rot: -90, art: 'sealer-open' },
+  whisk: { x: 35.8, w: 12, rot: 0, art: 'tool-whisk' },
+  dropper: { x: 50, w: 12, rot: 0, art: 'tool-dropper' },
+  scissors: { x: 64, w: 5.2, rot: -90, art: 'scissors-closed' },
+  scoop: { x: 78, w: 4.4, rot: -90, art: 'tool-scoop' },
+};
+const POUCH_AT = { x: 58, y: 48.8 };       // the pouch's place on the counter (its middle)
 /** What you hold: a scoop of each powder, the dropper. */
 const HELD = { salt: 'scoop-salt', malto: 'scoop-malto', fructose: 'scoop-fructose', caffeine: 'tool-dropper' };
 /** What falls from it. */
@@ -191,11 +204,13 @@ export function openGelStand({ level = null } = {}) {
   }, 1000);
 
   // ---- the prep view ----
-  // One scene on prep-bg-v3.webp (1536 x 2752; the brick wall carries on above it, prep-wall.webp). Its
-  // painted places, in % of the scene: the wall screen's face 13-87% across, 6-21.5% down; the tool rail
-  // 25.4-28.6%; the shelf's top 41.3% (its front to 44.3%); the counter top 48-60%; the tray's three wells
-  // 70.5-81.7% down (13, 36.5 and 61% across) and the pad for the pouch box right of them; the button panel
-  // 86.5-99%. Everything is placed in % of the scene and sized in cqw, and every gesture works in scene %.
+  // One scene on prep-bg-v5.webp (1536 x 2752, at the top; the marble carries on below it, prep-floor-v5.webp).
+  // Its painted places, in % of the scene: the wall screen's face 13-87% across, 5.5-21.8% down; the shelf's
+  // top 33-35.3%; the counter top 43-54.5% with the bin's lid 71.5-99% across, 44-52% down; the counter's
+  // front 55.5-67% with its hook strip 56.5-59% (hooks at 21.8, 35.8, 50, 64 and 78% across); the tray unit
+  // 70.5-91%: maltodextrin, fructose and salt on top, the caffeine vials, an orange electrolyte (for later)
+  // and the box of pouches below, a stone pad on the right (the sachet's put there). Everything is placed in
+  // % of the scene and sized in cqw, and every gesture works in scene %.
   const step = () => (run ? gel.steps[run.i] : null);
   const jugLevel = () => (run ? run.layers.reduce((n, l) => n + l.h, 0) : 0);
   /** How an ingredient goes in: measured in the glass, scooped and shaken, or dropped. */
@@ -265,14 +280,14 @@ export function openGelStand({ level = null } = {}) {
     return { ing, have, cls, label, short };
   }
 
-  /** The rail under the screen: the tools stuck on it (each leaves when it's taken). */
-  function railHtml() {
+  /** The hooks on the counter's front: the tools hanging there (each leaves while it's in your hand). */
+  function hooksHtml() {
     const s = step();
     const want = s?.kind === 'seal' ? 'sealer' : s?.kind === 'stir' ? 'whisk' : s?.kind === 'drops' ? 'dropper' : snipping ? 'scissors' : null;
-    return Object.entries(RAIL).map(([id, r]) => `<span class="gs-tool${want === id ? ' is-now' : ''}" data-tool="${id}" style="--x:${r.x}%;--w:${r.w};--rot:${r.rot}deg">${gimg(r.art)}</span>`).join('');
+    return Object.entries(HOOKS).map(([id, r]) => `<span class="gs-tool${want === id ? ' is-now' : ''}" data-tool="${id}" style="--x:${r.x}%;--w:${r.w};--rot:${r.rot}deg">${gimg(r.art)}</span>`).join('');
   }
 
-  /** The shelf: the four liquids in their tap jars, and the caffeine vial. */
+  /** The shelf: the four liquids in their tap jars. */
   function shelfHtml() {
     const s = step();
     const jars = JARS.map((id) => {
@@ -281,23 +296,22 @@ export function openGelStand({ level = null } = {}) {
       return `<button class="gs-jar${cls}${now ? ' is-now' : ''}" data-slot="${id}" style="--x:${SHELF_X[id]}%" aria-label="${esc(label)}">
         ${gimg(`jar-${id}`, 'gs-jar-art')}${ing.free ? '' : stockBar(id)}</button>`;
     }).join('');
-    const v = slotState('caffeine');
-    return `${jars}<button class="gs-vial${v.cls}" data-slot="caffeine" style="--x:${SHELF_X.caffeine}%" aria-label="${esc(v.label)}">
-      ${gimg('vial-caffeine', 'gs-jar-art')}${stockBar('caffeine')}</button>`;
+    return jars;
   }
 
-  /** The tray: the three powder wells (a scoop's taken from them), and the box of empty pouches. */
+  /** The tray, painted in: a place over each powder and the caffeine vials (its empty picture when it's run
+   *  out, a plus when it's short), the box of empty pouches, and a sachet on the stone pad while restocking. */
   function trayHtml() {
     const s = step();
-    const wells = WELLS.map((id) => {
-      const { cls, label, have } = slotState(id);
-      return `<button class="gs-well${cls}" data-slot="${id}" style="--x:${WELL_X[id]}%" aria-label="${esc(label)}">
-        ${gimg(have ? `well-${id}` : 'well-low', 'gs-well-art')}${stockBar(id)}</button>`;
+    const places = Object.entries(TRAYS).map(([id, r]) => {
+      const { cls, label, have, short } = slotState(id);
+      return `<button class="gs-well${cls}${have ? '' : ' is-out-of'}" data-slot="${id}" style="--l:${r.l}%;--t:${r.t}%;--w:${r.w}%;--h:${r.h}%" aria-label="${esc(label)}">
+        ${gimg(`patch-${id}`, 'gs-well-empty')}${short ? gimg('ui-plus', 'gs-well-plus') : ''}${stockBar(id)}</button>`;
     }).join('');
-    const box = `<button class="gs-box${s?.kind === 'fill' && !run.pouch ? ' is-now' : ''}" data-box aria-label="${esc(t('gels.boxAria'))}">${gimg('pouch-box')}</button>`;
-    const sachet = snipping ? `<div class="gs-sachet" style="--x:${WELL_X[snipping]}%" role="img" aria-label="${esc(t('gels.sachetAria', { ing: ingName(snipping) }))}">
+    const box = `<button class="gs-box${s?.kind === 'fill' && !run.pouch ? ' is-now' : ''}" data-box style="--l:${BOX.l}%;--t:${BOX.t}%;--w:${BOX.w}%;--h:${BOX.h}%" aria-label="${esc(t('gels.boxAria'))}"></button>`;
+    const sachet = snipping ? `<div class="gs-sachet" role="img" aria-label="${esc(t('gels.sachetAria', { ing: ingName(snipping) }))}">
       ${gimg('sachet', 'gs-sachet-whole')}${gimg('sachet-cut', 'gs-sachet-cut')}${gimg('sachet-strip', 'gs-sachet-strip')}<i class="gs-cutline"><b></b></i></div>` : '';
-    return wells + box + sachet;
+    return places + box + sachet;
   }
 
   /** The counter: the measuring glass, the jug (with its liquid) and its meter, the pouch, the bin. */
@@ -334,30 +348,32 @@ export function openGelStand({ level = null } = {}) {
         <span class="gs-pfill"><i style="--f:${run?.fill || 0}"></i></span>
         ${kind === 'fill' ? `<i class="gs-pline" style="--to:${s.to}"></i>` : ''}
         ${gimg(`gel-${gel.id}`, 'gs-final')}</div>` : ''}
-      <div class="gs-bin">${gimg('bin-closed', 'gs-bin-shut')}${gimg('bin-open', 'gs-bin-open')}</div>
+      <div class="gs-bin" style="--l:${BIN.l}%;--t:${BIN.t}%;--w:${BIN.r - BIN.l}%;--h:${BIN.b - BIN.t}%"></div>
       ${gimg('fx-glass-splash', 'gs-gsplash')}
       ${kind === 'stir' ? gimg('tool-whisk', 'gs-whisk') : ''}
       ${result ? `${gimg('fx-ring', 'gs-ring-fx')}${gimg('fx-sparkle', 'gs-sparkle-fx')}` : ''}`;
   }
 
+  /** The buttons, floating over the tray only when there's one to press (none while making). */
   function dockHtml() {
     if (result) {
-      return `<button class="gs-btn is-alt" data-gs-menu>${esc(t('gels.toMenu'))}</button>
-        <button class="gs-btn" data-gs-again>${esc(t('gels.again'))}</button>`;
+      return `<div class="gs-dock"><button class="gs-btn is-alt" data-gs-menu>${esc(t('gels.toMenu'))}</button>
+        <button class="gs-btn" data-gs-again>${esc(t('gels.again'))}</button></div>`;
     }
-    if (run) return `<p class="gs-status">${esc(t('gels.making', { name: gelName(gel) }))}</p>`;
-    return `<button class="gs-btn" data-gs-start ${G.missingCost(st.stock, gel) || snipping ? 'aria-disabled="true"' : ''}>${esc(t('gels.start'))}</button>`;
+    if (run || snipping) return '';
+    return `<div class="gs-dock"><button class="gs-btn" data-gs-start ${G.missingCost(st.stock, gel) ? 'aria-disabled="true"' : ''}>${esc(t('gels.start'))}</button></div>`;
   }
 
   function drawPrep() {
     frame(`<div class="gs-body"><div class="gs-scene" style="--gel:${gel.liquid}">
+        ${gimg('patch-bin-open', 'gs-binlid')}
         ${screenHtml()}
-        <div class="gs-rail">${railHtml()}</div>
         <div class="gs-shelf">${shelfHtml()}</div>
-        <div class="gs-counter">${counterHtml()}</div>
         <div class="gs-tray">${trayHtml()}</div>
+        <div class="gs-rail">${hooksHtml()}</div>
+        <div class="gs-counter">${counterHtml()}</div>
         <span class="gs-pop" aria-hidden="true"></span>
-        <div class="gs-dock">${dockHtml()}</div>
+        ${dockHtml()}
       </div></div>`, 'is-prep');
     bindScene();
   }
@@ -409,7 +425,7 @@ export function openGelStand({ level = null } = {}) {
     haptic('refuse');
     run = null; dumped = true;
     drawPrep();
-    flash('.gs-bin');
+    flash('.gs-binlid');
   }
 
   /** Every gesture on the scene: the glass, a scoop, the dropper, the jug, the whisk, a pouch, the sealer, the scissors. */
@@ -418,7 +434,7 @@ export function openGelStand({ level = null } = {}) {
     if (!scene) return;
     const counter = scene.querySelector('.gs-counter');
     const jugEl = scene.querySelector('.gs-jug');
-    const binEl = scene.querySelector('.gs-bin');
+    const binLid = scene.querySelector('.gs-binlid');
     const box = () => scene.getBoundingClientRect();
     /** A pointer in scene % (x across, y down). */
     const at = (e) => { const r = box(); return { x: (e.clientX - r.left) / r.width * 100, y: (e.clientY - r.top) / r.height * 100 }; };
@@ -462,7 +478,8 @@ export function openGelStand({ level = null } = {}) {
       el.style.setProperty('--ty', `${((y - (home.t + home.b) / 2) / h * 100).toFixed(2)}%`);
       el.style.setProperty('--rot', `${rot}deg`);
     };
-    const binOpen = (on) => binEl.classList.toggle('is-open', on);
+    const binOpen = (on) => binLid.classList.toggle('is-open', on);
+    const br = { ...BIN };   // the bin's lid, in scene %
 
     function drawJug() {
       const liq = liquidEl();
@@ -481,7 +498,6 @@ export function openGelStand({ level = null } = {}) {
       const tap = tapOf(s.ing);
       const jarEl = scene.querySelector(`.gs-jar[data-slot="${s.ing}"]`);
       const jr = rectOf(jugEl);
-      const br = rectOf(binEl);
       const tapStream = streamEl(STREAM[s.ing]);
       const pourStream = streamEl(STREAM[s.ing]);
       glassEl.classList.add('is-held');
@@ -521,8 +537,8 @@ export function openGelStand({ level = null } = {}) {
         const was = where;
         // (still over the jug or the bin once it's empty: that's where it'll be let go)
         // under the tap: close below it (the jug's under the taps too: lower down, the glass is over the jug)
-        where = Math.abs(p.x - tap.x) < 6 && p.y > tap.y - 4 && p.y < tap.y + 9 ? 'tap'
-          : (run.glass > 0 || was === 'jug') && inside(p, jr, 6, 8) ? 'jug'
+        where = Math.abs(p.x - tap.x) < 6 && p.y > tap.y - 4 && p.y < tap.y + 6 ? 'tap'
+          : (run.glass > 0 || was === 'jug') && inside(p, jr, 6, 3) ? 'jug'
             : (run.glass > 0 || was === 'bin') && inside(p, br, 5, 8) ? 'bin' : null;
         if (where !== was) {
           since = now; from = run.glass; jugBase = topLayer().h;
@@ -667,7 +683,6 @@ export function openGelStand({ level = null } = {}) {
       const moveTo = mover(jugEl, home);
       const pouchEl = scene.querySelector('.gs-pouch');
       const pr = pouchEl ? rectOf(pouchEl) : null;
-      const br = rectOf(binEl);
       const { flow } = streamEl('stream-gel');
       jugEl.classList.add('is-held');
       const hCqw = (home.b - home.t) * ASPECT;   // the jug's height in % of the scene's width
@@ -737,7 +752,7 @@ export function openGelStand({ level = null } = {}) {
       const move = (ev) => {
         const p = at(ev);
         const was = ok;
-        ok = p.x > 52 && p.x < 98 && p.y > 38 && p.y < 64;
+        ok = p.x > 44 && p.x < 72 && p.y > 37 && p.y < 62;
         if (ok && !was) haptic('tick');
         scene.classList.toggle('is-over-spot', ok);
         place(ok ? POUCH_AT.x : p.x, ok ? POUCH_AT.y : p.y - 5, 0);
@@ -889,7 +904,7 @@ export function openGelStand({ level = null } = {}) {
       if (G.INGREDIENTS[id].free || have >= STOCK_BAR) { haptic('refuse'); return; }
       const r = G.buy(st.stock, id, 1, st.carbs);
       if (r.error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
-      if (WELLS.includes(id) && !fromSachet) {
+      if (POWDERS.includes(id) && !fromSachet) {
         // a powder comes in a sachet: snip it open to pour it in
         haptic('tick');
         snipping = id;

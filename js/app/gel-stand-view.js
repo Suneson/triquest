@@ -1,10 +1,14 @@
 // gel-stand-view.js — the gel stand's screens (docs/KITCHEN.md, "The gel stand"): the menu of final gels,
-// then the prep view (top: the recipe card and the ingredient shelf; bottom: the step being done), then
-// the result. The rules are js/core/gel-stand.js.
+// then the prep view, then the result. The rules are js/core/gel-stand.js.
 //
-// For now it's a preview (?gels=1, &lvl=1-4): the stock, the bag and the carbs are kept on this device
-// (settings.gelStand) until the server side exists. The pictures come from icons/Gels/ when they're
-// there (cut from the gel-stand.csv sheets); until then each one is drawn in CSS.
+// The prep view is one scene on the stand's background (icons/Gels/prep-bg.webp, 9:16), everything placed
+// in % of it so it lines up on any phone: the recipe card on the wall, the eight ingredients standing on
+// the two shelves (stock, and a + to buy one), the jug and the pouch on the worktop, the buttons on the
+// navy strip at the bottom. The jug's and pouch's liquid is drawn over their pictures (multiply), so
+// their lines and shine show through. Sealing turns the clear pouch into the finished gel.
+//
+// For now it's a preview (?gels=1, &lvl=1-6): the stock, the bag and the carbs are kept on this device
+// (settings.gelStand) until the server side exists.
 
 import { openLayer, closeLayer } from './nav.js';
 import { esc } from './ui.js';
@@ -18,6 +22,7 @@ const KEY = 'gelStand';
 const PREVIEW_CARBS = 600;
 const POUR_RATE = 0.22;   // jug per second while you hold
 const FILL_RATE = 0.32;   // pouch per second while you hold
+const POWDER = new Set(['malto', 'fructose']);
 
 const load = () => {
   const s = store.getSettings()[KEY] || {};
@@ -26,12 +31,12 @@ const load = () => {
 };
 const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.carbs });
 
-// a picture not there yet (404) isn't asked for again while the app runs: the CSS stand-in shows instead
-const noArt = new Set();
-const art = (file) => (noArt.has(file) ? '' : `<img data-art="${file}" src="${ART}/${file}.webp" alt="" draggable="false">`);
+const img = (src, cls = '') => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
+const gimg = (file, cls = '') => img(`${ART}/${file}.webp`, cls);
 const pct = (bp) => Math.round(bp / 100);
 const gelName = (g) => t(`gels.name.${g.id}`);
 const ingName = (id) => t(`gels.ing.${id}`);
+const standArt = (level) => `icons/Items/gel-stand-t${Math.max(1, Math.min(G.MAX_LEVEL, level))}-a.webp`;
 
 function stepText(s) {
   if (s.kind === 'pour') return t('gels.step.pour', { ing: ingName(s.ing).toLocaleLowerCase() });
@@ -39,26 +44,22 @@ function stepText(s) {
   if (s.kind === 'stir') return t('gels.step.stir', { n: s.turns });
   return t(`gels.step.${s.kind}`);
 }
-function judge(score) {
-  return score >= 0.95 ? 'perfect' : score >= 0.8 ? 'great' : score >= 0.5 ? 'good' : 'off';
-}
+const judge = (score) => (score >= 0.95 ? 'perfect' : score >= 0.8 ? 'great' : score >= 0.5 ? 'good' : 'off');
 const starsHtml = (n) => `<span class="gs-stars" role="img" aria-label="${esc(t('gels.starsAria', { n }))}">${
-  [1, 2, 3].map((i) => `<i class="${i <= n ? 'is-on' : ''}" style="--i:${i}"></i>`).join('')}</span>`;
-
-/** A pouch drawn in CSS, with the gel's own picture over it when there is one. */
-const pouch = (g) => `<span class="gs-mini" style="--c:${g.colour}"><i></i>${art(`gel-${g.id}`)}</span>`;
+  [1, 2, 3].map((i) => `<i style="--i:${i}">${gimg(i <= n ? 'ui-star' : 'ui-star-empty')}</i>`).join('')}</span>`;
 
 /**
  * The gel stand's window.
- * @param {{ level?: number }} opts  the stand's level (1-4): it opens more gels
+ * @param {{ level?: number }} opts  the stand's level (1-6): it opens more gels
  */
 export function openGelStand({ level = 1 } = {}) {
+  level = Math.max(1, Math.min(G.MAX_LEVEL, Math.floor(level) || 1));
   const root = openLayer('gel-stand', { className: 'gs-layer' });
   let st = load();
   let gel = null;          // the gel picked
-  let run = null;          // making it: { i, scores, layers, mix, fill, sealed, drops, dial, stirAcc, stirT0, from }
+  let run = null;          // making it: { i, scores, layers, mix, fill, sealed, drops, dial, stirAcc, stirT0 }
   let result = null;       // { stars, bp }
-  let busy = false;        // a step is being judged (its result is showing)
+  let busy = false;        // a step's result is showing
 
   const set = (patch) => { st = { ...st, ...patch }; save(st); };
 
@@ -67,9 +68,8 @@ export function openGelStand({ level = 1 } = {}) {
       <header class="gs-bar">
         <button class="gs-x" data-gs-back aria-label="${esc(t(gel ? 'gels.toMenu' : 'gels.close'))}">${gel ? '‹' : '×'}</button>
         <h2>${esc(t('gels.title'))} <small>${esc(t('gels.level', { n: level }))}</small></h2>
-        <span class="gs-carbs" title="${esc(t('gels.preview'))}">${art('ui-carbs')}<b class="data-num">${st.carbs}</b> g</span>
+        <span class="gs-carbs" title="${esc(t('gels.preview'))}">${gimg('ui-carbs')}<b class="data-num">${st.carbs}</b> g</span>
       </header>${body}</div>`;
-    root.querySelectorAll('img[data-art]').forEach((im) => im.addEventListener('error', () => { im.hidden = true; noArt.add(im.dataset.art); }, { once: true }));
   }
 
   // ---- the menu ----
@@ -77,100 +77,128 @@ export function openGelStand({ level = 1 } = {}) {
     const cards = G.menu(level).map((g) => {
       const sport = g.sport ? Object.entries(g.sport)[0] : null;
       return `<button class="gs-card${g.open ? '' : ' is-locked'}" data-gs-pick="${g.id}" ${g.open ? '' : 'aria-disabled="true"'}>
-        ${pouch(g)}
-        <b>${esc(gelName(g))}</b>
+        <span class="gs-card-art">${gimg(g.open ? `gel-${g.id}` : 'gel-blank')}</span>
+        <b>${esc(g.open ? gelName(g) : t('gels.unknown'))}</b>
         <span class="gs-boost">${esc(t('gels.boost', { n: pct(g.boostBp) }))}</span>
         ${sport ? `<small>${esc(t('gels.sportBoost', { n: pct(sport[1]), sport: t(`gels.sport.${sport[0]}`) }))}</small>` : ''}
-        <span class="gs-cost">${esc(t('gels.cost', { n: G.gelCost(g) }))}</span>
-        ${g.open ? '' : `<span class="gs-lock">${esc(t('gels.locked', { n: g.level }))}</span>`}
+        <span class="gs-cost">${gimg('ui-carbs')}${G.gelCost(g)} g</span>
+        ${g.open ? '' : `<span class="gs-lock">${gimg('ui-lock')}<b>${esc(t('gels.locked', { n: g.level }))}</b></span>`}
       </button>`;
     }).join('');
-    frame(`<p class="gs-about">${esc(t('gels.about'))}</p><div class="gs-menu">${cards}</div>
-      <p class="gs-note">${esc(t('gels.preview'))}</p>`, 'is-menu');
+    const next = G.GELS.filter((g) => g.level > level).map((g) => g.level);
+    frame(`<div class="gs-menu-wrap">
+      <div class="gs-hero">${img(standArt(level), 'gs-stand')}
+        <div><span class="gs-lvl">${gimg('ui-badge')}<b>${level}</b></span>
+        <p>${esc(t('gels.about'))}</p>
+        ${next.length ? `<small>${esc(t('gels.nextLevel', { n: Math.min(...next) }))}</small>` : ''}</div></div>
+      <div class="gs-menu">${cards}</div>
+      <p class="gs-note">${esc(t('gels.preview'))}</p></div>`, 'is-menu');
   }
 
   // ---- the prep view ----
   const step = () => (run ? gel.steps[run.i] : null);
   const jugLevel = () => (run ? run.layers.reduce((n, l) => n + l.h, 0) : 0);
 
-  function drawPrep() {
+  function shelf() {
     const now = step();
-    const steps = gel.steps.map((s, i) => {
-      const state = !run ? '' : i < run.i ? 'is-done' : i === run.i ? 'is-now' : '';
-      return `<li class="${state}">${esc(stepText(s))}</li>`;
-    }).join('');
-    const shelf = G.SHELF.map((id) => {
+    return G.SHELF.map((id, k) => {
       const ing = G.INGREDIENTS[id];
-      const used = gel.uses[id] || (id === 'water' && gel.steps.some((s) => s.ing === 'water'));
-      const short = !run && !result && (Number(st.stock[id]) || 0) < (gel.uses[id] || 0);
-      const glow = now?.ing === id;
-      return `<div class="gs-bin${used ? ' is-used' : ''}${short ? ' is-short' : ''}${glow ? ' is-now' : ''}" style="--c:${ing.colour}">
-        <span class="gs-ing"><i></i>${art(`ing-${id}`)}</span>
+      const need = gel.uses[id] || 0;
+      const used = need || (id === 'water' && gel.steps.some((s) => s.ing === 'water'));
+      const short = !run && !result && (Number(st.stock[id]) || 0) < need;
+      return `<div class="gs-bin${used ? ' is-used' : ''}${short ? ' is-short' : ''}${now?.ing === id ? ' is-now' : ''}" style="--c:${k % 4};--r:${Math.floor(k / 4)}">
+        ${gimg(`ing-${id}`, 'gs-ing')}
+        <b class="gs-stock data-num">${ing.free ? '∞' : st.stock[id] || 0}</b>
         <small>${esc(ingName(id))}</small>
-        <b class="data-num">${ing.free ? esc(t('gels.free')) : `×${st.stock[id] || 0}`}</b>
-        ${ing.free ? '' : `<button class="gs-plus" data-gs-buy="${id}" aria-label="${esc(t('gels.buyAria', { ing: ingName(id), n: ing.cost }))}">+</button>`}
+        ${ing.free ? '' : `<button class="gs-plus" data-gs-buy="${id}" aria-label="${esc(t('gels.buyAria', { ing: ingName(id), n: ing.cost }))}">${gimg('ui-plus')}</button>`}
       </div>`;
     }).join('');
-    let lower;
+  }
+
+  function drawPrep() {
+    const now = step();
+    const total = gel.steps.length;
+    const doneN = result ? total : run ? run.i : 0;
+    const line = result ? t('gels.made', { name: gelName(gel) })
+      : now ? t('gels.stepOf', { i: run.i + 1, n: total, step: stepText(now) })
+        : t('gels.ready', { n: total });
+    let strip;
     if (result) {
-      lower = `<div class="gs-result">${starsHtml(result.stars)}
-        <h3>${esc(t('gels.made', { name: gelName(gel) }))}</h3>
-        <p class="gs-boost">${esc(t('gels.boost', { n: pct(result.bp) }))}</p>
-        <p class="gs-note">${esc(t('gels.bagged'))}</p>
-        <div class="gs-actions"><button class="gs-btn is-alt" data-gs-menu>${esc(t('gels.toMenu'))}</button>
-        <button class="gs-btn" data-gs-again>${esc(t('gels.again'))}</button></div></div>`;
+      strip = `<button class="gs-btn is-alt" data-gs-menu>${esc(t('gels.toMenu'))}</button>
+        <button class="gs-btn" data-gs-again>${esc(t('gels.again'))}</button>`;
     } else if (!run) {
       const short = G.missingCost(st.stock, gel);
-      lower = `<div class="gs-ready">${stage()}<div class="gs-actions">
-        ${short ? `<button class="gs-btn is-alt" data-gs-fill ${short > st.carbs ? 'disabled' : ''}>${esc(t('gels.buyMissing', { n: short }))}</button>` : ''}
-        <button class="gs-btn" data-gs-start ${short ? 'disabled' : ''}>${esc(t('gels.start'))}</button></div></div>`;
+      strip = `${short ? `<button class="gs-btn is-alt" data-gs-fill ${short > st.carbs ? 'disabled' : ''}>${esc(t('gels.buyMissing', { n: short }))}</button>` : ''}
+        <button class="gs-btn" data-gs-start ${short ? 'disabled' : ''}>${esc(t('gels.start'))}</button>`;
+    } else if (now.kind === 'dial' || now.kind === 'drops') {
+      strip = `<button class="gs-btn" data-gs-done>${esc(t('gels.done'))}</button>`;
     } else {
-      lower = `<p class="gs-hint" aria-live="polite">${esc(t(`gels.hint.${now.kind}`, { n: now.n || now.turns || 0 }))}</p>${stage()}
-        <div class="gs-dots">${gel.steps.map((_, i) => `<i class="${i < run.i ? 'is-done' : i === run.i ? 'is-now' : ''}"></i>`).join('')}</div>`;
+      strip = `<p class="gs-tip">${esc(t(`gels.hint.${now.kind}`, { n: now.n || now.turns || 0 }))}</p>`;
     }
-    frame(`<section class="gs-upper">
-        <div class="gs-recipe">${pouch(gel)}<div><h3>${esc(gelName(gel))}</h3>
-          <span class="gs-boost">${esc(t('gels.boost', { n: pct(gel.boostBp) }))}</span><ol>${steps}</ol></div></div>
-        <div class="gs-shelf">${shelf}</div>
-      </section><section class="gs-lower" style="--gel:${gel.colour}">${lower}</section>`, 'is-prep');
+    frame(`<div class="gs-body"><div class="gs-scene" style="--gel:${gel.liquid}">
+        <div class="gs-recipe">${gimg(`gel-${gel.id}`, 'gs-recipe-art')}
+          <div><h3>${esc(gelName(gel))} <span class="gs-boost">${esc(t('gels.boost', { n: pct(gel.boostBp) }))}</span></h3>
+          <p aria-live="polite">${esc(line)}</p>
+          <span class="gs-dots">${gel.steps.map((_, i) => `<i class="${i < doneN ? 'is-done' : i === doneN && run ? 'is-now' : ''}"></i>`).join('')}</span></div></div>
+        ${shelf()}
+        ${result ? resultHtml() : stage()}
+        <span class="gs-pop" aria-hidden="true"></span>
+        <div class="gs-strip">${strip}</div>
+      </div></div>`, 'is-prep');
     bindStage();
   }
+
+  const resultHtml = () => `<div class="gs-result">
+      ${gimg('fx-ring', 'gs-ring-fx')}${gimg('fx-sparkle', 'gs-sparkle-fx')}${gimg(`gel-${gel.id}`, 'gs-made')}
+      ${starsHtml(result.stars)}
+      <p class="gs-boost">${esc(t('gels.boost', { n: pct(result.bp) }))}</p>
+      <p class="gs-note">${esc(t('gels.bagged'))}</p></div>`;
 
   /** The worktop: the jug, the pouch and the tool the step needs. */
   function stage() {
     const s = step();
-    const layers = (run?.layers || []).map((l) => `<i style="--h:${l.h.toFixed(4)};--c:${l.c}"></i>`).join('');
-    const pourTo = s?.kind === 'pour' ? `<i class="gs-line" style="--to:${s.to}"></i>` : '';
-    const ingC = s?.ing ? G.INGREDIENTS[s.ing].colour : 'transparent';
-    let tool = '';
-    if (s?.kind === 'pour') tool = `<span class="gs-bottle" style="--c:${ingC}"><span class="gs-ing"><i></i>${art(`ing-${s.ing}`)}</span><i class="gs-stream"></i></span>`;
-    if (s?.kind === 'dial') {
-      tool = `<div class="gs-dial" style="--v:${run.dial};--to:${s.to}"><i class="gs-mark"></i><span class="gs-knob">${art('tool-dial')}</span></div>
-        <button class="gs-btn gs-done" data-gs-done>${esc(t('gels.done'))}</button>`;
-    }
-    if (s?.kind === 'drops') {
-      tool = `<button class="gs-dropper" data-gs-drop aria-label="${esc(t('gels.dropAria'))}">${art('tool-dropper')}<i></i></button>
-        <b class="gs-count data-num">${run.drops} / ${s.n}</b>
-        <button class="gs-btn gs-done" data-gs-done>${esc(t('gels.done'))}</button>`;
-    }
     const kind = s?.kind || 'idle';
-    const target = s?.kind === 'fill' ? `<i class="gs-pline" style="--to:${s.to}"></i>` : '';
+    const layers = (run?.layers || []).map((l) => `<i style="--h:${l.h.toFixed(4)};--c:${l.c}"></i>`).join('');
+    let tool = '';
+    if (kind === 'pour') {
+      tool = `<i class="gs-stream" style="--c:${G.INGREDIENTS[s.ing].colour}"></i><span class="gs-bottle">${gimg(`ing-${s.ing}`)}</span>`;
+    } else if (kind === 'dial') {
+      tool = `<div class="gs-dial" style="--v:${run.dial};--to:${s.to}"><i class="gs-mark"></i>${gimg('tool-dial', 'gs-knob')}</div>
+        ${gimg('ing-salt', 'gs-side')}${gimg('fx-salt', 'gs-salt-fx')}`;
+    } else if (kind === 'drops') {
+      tool = `<button class="gs-dropper" data-gs-drop aria-label="${esc(t('gels.dropAria'))}">${gimg('tool-dropper')}</button>
+        <b class="gs-count data-num">${run.drops} / ${s.n}</b>${gimg('fx-drops', 'gs-drop-fx')}`;
+    } else if (kind === 'stir') {
+      tool = `${gimg('tool-whisk', 'gs-whisk')}${gimg('fx-bubble', 'gs-bubble-fx')}`;
+    } else if (kind === 'seal') {
+      tool = `${gimg('tool-sealer', 'gs-sealer')}`;
+    }
+    const pourLine = kind === 'pour' ? `<i class="gs-line" style="--to:${s.to}"></i>` : '';
     return `<div class="gs-stage" data-kind="${kind}">
-      <div class="gs-jug">${art('tool-jug')}<span class="gs-layers" style="--mix:${run?.mix || 0};--total:${jugLevel().toFixed(4)}">${layers}<em></em></span>${pourTo}
-        ${kind === 'stir' ? `<svg class="gs-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" pathLength="1" style="--p:0"/></svg>` : ''}</div>
-      <div class="gs-pouch${run?.sealed ? ' is-sealed' : ''}"><i class="gs-pfill" style="--f:${run?.fill || 0}"></i>${target}
-        ${kind === 'seal' ? '<i class="gs-sealbar"><b></b></i>' : ''}<i class="gs-crimp"></i></div>
-      <div class="gs-tool">${tool}</div>
-      <span class="gs-pop" aria-hidden="true"></span>
+      <div class="gs-jug">${gimg('tool-jug')}
+        <span class="gs-liquid" style="--mix:${run?.mix || 0};--total:${jugLevel().toFixed(4)}">${layers}<em></em></span>${pourLine}
+        ${kind === 'stir' ? '<svg class="gs-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" pathLength="1" style="--p:0"/></svg>' : ''}
+        ${gimg(POWDER.has(s?.ing) ? 'fx-puff' : 'fx-splash', 'gs-splash')}</div>
+      <div class="gs-pouch">${gimg('pouch-0', 'gs-pouch-art')}
+        <span class="gs-pfill"><i style="--f:${run?.fill || 0}"></i></span>
+        ${kind === 'fill' ? `<i class="gs-pline" style="--to:${s.to}"></i>` : ''}
+        ${kind === 'seal' ? '<i class="gs-sealbar"><b></b></i>' : ''}
+        ${gimg(`gel-${gel.id}`, 'gs-final')}</div>
+      <div class="gs-tool" data-kind="${kind}">${tool}</div>
     </div>`;
   }
 
   // ---- doing the steps ----
+  function flash(cls) {
+    const el = root.querySelector(cls);
+    if (!el) return;
+    el.classList.remove('is-on'); void el.offsetWidth; el.classList.add('is-on');
+  }
   function pop(score) {
     const p = root.querySelector('.gs-pop');
     if (!p) return;
     const j = judge(score);
-    p.textContent = t(`gels.judge.${j}`);
+    p.innerHTML = `${j === 'perfect' ? gimg('fx-sparkle') : ''}<b>${esc(t(`gels.judge.${j}`))}</b>`;
     p.className = `gs-pop is-${j}`;
     void p.offsetWidth; p.classList.add('is-on');
   }
@@ -191,13 +219,12 @@ export function openGelStand({ level = 1 } = {}) {
         run = null;
       } else {
         const s = step();
-        run.from = jugLevel();
         if (s.kind === 'pour') run.layers.push({ c: G.INGREDIENTS[s.ing].colour, h: 0 });
         if (s.kind === 'dial') run.dial = 0;
         if (s.kind === 'drops') run.drops = 0;
       }
       drawPrep();
-    }, 650);
+    }, 700);
   }
 
   /**
@@ -207,11 +234,10 @@ export function openGelStand({ level = 1 } = {}) {
    */
   function hold(el, rate, onLevel, onDone) {
     let raf = 0; let t0 = 0; let tickAt = 0;
-    const tickStep = 0.04;
     const poured = () => rate * (performance.now() - t0) / 1000;
     const loop = () => {
       const v = onLevel(poured());
-      if (v >= tickAt + tickStep) { tickAt = v; haptic('select'); }
+      if (v >= tickAt + 0.04) { tickAt = v; haptic('select'); }
       raf = requestAnimationFrame(loop);
     };
     el.addEventListener('pointerdown', (e) => {
@@ -235,26 +261,27 @@ export function openGelStand({ level = 1 } = {}) {
     const s = step();
     const stageEl = root.querySelector('.gs-stage');
     if (!s || !stageEl) return;
-    const jugLayers = stageEl.querySelector('.gs-layers');
+    const liquid = stageEl.querySelector('.gs-liquid');
     if (s.kind === 'pour') {
       const below = jugLevel();   // what was in the jug before this pour
       hold(stageEl, POUR_RATE, (d) => {
         const top = run.layers[run.layers.length - 1];
         top.h = Math.min(1 - below, d);
-        jugLayers.lastElementChild.previousElementSibling.style.setProperty('--h', top.h.toFixed(4));
+        liquid.lastElementChild.previousElementSibling.style.setProperty('--h', top.h.toFixed(4));
+        liquid.style.setProperty('--total', jugLevel().toFixed(4));
         return jugLevel();
-      }, () => finishStep(G.scorePour(jugLevel(), s.to, run.from)));
+      }, () => { flash('.gs-splash'); finishStep(G.scorePour(jugLevel(), s.to, below)); });
     }
     if (s.kind === 'fill') {
-      const fillEl = stageEl.querySelector('.gs-pfill');
+      const fillEl = stageEl.querySelector('.gs-pfill i');
       const start = jugLevel();
       hold(stageEl, FILL_RATE, (d) => {
         run.fill = Math.min(1, d);
         fillEl.style.setProperty('--f', run.fill.toFixed(4));
-        // the jug empties into the pouch
-        const left = Math.max(0, start * (1 - run.fill / 0.95));
-        run.layers = [{ c: gel.colour, h: left }];
-        jugLayers.querySelector('i')?.style.setProperty('--h', left.toFixed(4));
+        const left = Math.max(0, start * (1 - run.fill / 0.95));   // the jug empties into the pouch
+        run.layers = [{ c: gel.liquid, h: left }];
+        liquid.querySelector('i')?.style.setProperty('--h', left.toFixed(4));
+        liquid.style.setProperty('--total', left.toFixed(4));
         return run.fill;
       }, () => finishStep(G.scorePour(run.fill, s.to, 0)));
     }
@@ -266,7 +293,7 @@ export function openGelStand({ level = 1 } = {}) {
         const a = Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI; // 0 = up
         run.dial = Math.max(0, Math.min(1, (a + 135) / 270));
         dial.style.setProperty('--v', run.dial.toFixed(4));
-        if (Math.abs(run.dial - tickAt) >= 0.05) { tickAt = run.dial; haptic('select'); }
+        if (Math.abs(run.dial - tickAt) >= 0.05) { tickAt = run.dial; haptic('select'); flash('.gs-salt-fx'); }
       };
       dial.addEventListener('pointerdown', (e) => { if (busy) return; e.preventDefault(); dial.setPointerCapture?.(e.pointerId); turn(e); dial.onpointermove = turn; });
       const stop = () => { dial.onpointermove = null; };
@@ -275,45 +302,55 @@ export function openGelStand({ level = 1 } = {}) {
     if (s.kind === 'stir') {
       const jug = stageEl.querySelector('.gs-jug');
       const ring = stageEl.querySelector('.gs-ring circle');
+      const whisk = stageEl.querySelector('.gs-whisk');
       let prev = null;
-      const at = (e) => { const r = jug.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)); };
+      const centre = () => { const r = jug.getBoundingClientRect(); return [r.left + r.width * 0.43, r.top + r.height * 0.6]; };
       const move = (e) => {
         if (busy) return;
-        const a = at(e);
+        const [cx, cy] = centre();
+        const a = Math.atan2(e.clientY - cy, e.clientX - cx);
+        const sr = stageEl.getBoundingClientRect();
+        whisk.style.left = `${e.clientX - sr.left}px`; whisk.style.top = `${e.clientY - sr.top}px`;
+        whisk.style.setProperty('--r', `${Math.cos(a) * 14}deg`);
         if (prev != null) {
           let d = a - prev; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
           const before = Math.floor(run.stirAcc / Math.PI);
           run.stirAcc += Math.abs(d);
-          if (Math.floor(run.stirAcc / Math.PI) > before) haptic('select');
+          if (Math.floor(run.stirAcc / Math.PI) > before) { haptic('select'); flash('.gs-bubble-fx'); }
         }
         prev = a;
         const turns = run.stirAcc / (2 * Math.PI);
         run.mix = Math.min(1, turns / s.turns);
-        jugLayers.style.setProperty('--mix', run.mix.toFixed(3));
+        liquid.style.setProperty('--mix', run.mix.toFixed(3));
         ring.style.setProperty('--p', run.mix.toFixed(3));
         if (turns >= s.turns) {
           stageEl.onpointermove = null;
-          run.layers = [{ c: gel.colour, h: jugLevel() }]; run.mix = 0;
+          stageEl.classList.remove('is-stirring');
+          run.layers = [{ c: gel.liquid, h: jugLevel() }]; run.mix = 0;
           finishStep(G.scoreStir(turns, (performance.now() - run.stirT0) / 1000));
         }
       };
       stageEl.addEventListener('pointerdown', (e) => {
         if (busy) return;
         e.preventDefault(); stageEl.setPointerCapture?.(e.pointerId);
-        prev = at(e); if (!run.stirT0) run.stirT0 = performance.now();
-        stageEl.onpointermove = move;
+        stageEl.classList.add('is-stirring');
+        const [cx, cy] = centre(); prev = Math.atan2(e.clientY - cy, e.clientX - cx);
+        if (!run.stirT0) run.stirT0 = performance.now();
+        stageEl.onpointermove = move; move(e);
       });
-      const stop = () => { stageEl.onpointermove = null; prev = null; };
+      const stop = () => { stageEl.onpointermove = null; prev = null; stageEl.classList.remove('is-stirring'); };
       stageEl.addEventListener('pointerup', stop); stageEl.addEventListener('pointercancel', stop);
     }
     if (s.kind === 'seal') {
       const bar = stageEl.querySelector('.gs-sealbar');
       const fillBar = bar.querySelector('b');
+      const sealer = stageEl.querySelector('.gs-sealer');
       let lo = null; let hi = null;
       const x = (e) => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
       const move = (e) => {
         const v = x(e); lo = lo == null ? v : Math.min(lo, v); hi = hi == null ? v : Math.max(hi, v);
         fillBar.style.left = `${lo * 100}%`; fillBar.style.width = `${(hi - lo) * 100}%`;
+        sealer.style.setProperty('--x', v.toFixed(3));
       };
       stageEl.addEventListener('pointerdown', (e) => {
         if (busy) return;
@@ -325,7 +362,7 @@ export function openGelStand({ level = 1 } = {}) {
         const cover = (hi ?? 0) - (lo ?? 0);
         if (cover < 0.15) return;   // a tap, not a swipe: try again
         run.sealed = true;
-        stageEl.querySelector('.gs-pouch').classList.add('is-sealed');
+        stageEl.querySelector('.gs-pouch').classList.add('is-sealed');   // the clear pouch becomes the gel
         finishStep(G.scoreSeal(cover));
       };
       stageEl.addEventListener('pointerup', up); stageEl.addEventListener('pointercancel', up);
@@ -349,7 +386,14 @@ export function openGelStand({ level = 1 } = {}) {
     if (buyBtn) {
       const r = G.buy(st.stock, buyBtn.dataset.gsBuy, 1, st.carbs);
       if (r.error) { haptic('refuse'); return; }
-      haptic('tick'); set({ stock: r.stock, carbs: r.carbs }); drawPrep(); return;
+      haptic('tick'); set({ stock: r.stock, carbs: r.carbs });
+      if (run || result) {   // mid-making: just the count, so the step in hand isn't redrawn
+        const bin = buyBtn.closest('.gs-bin');
+        bin.querySelector('.gs-stock').textContent = st.stock[buyBtn.dataset.gsBuy];
+        root.querySelector('.gs-carbs b').textContent = st.carbs;
+        bin.classList.remove('is-bought'); void bin.offsetWidth; bin.classList.add('is-bought');
+      } else drawPrep();
+      return;
     }
     if (b('[data-gs-fill]')) {
       let { stock, carbs } = st;
@@ -365,12 +409,12 @@ export function openGelStand({ level = 1 } = {}) {
       if (r.error) { haptic('refuse'); return; }
       set({ stock: r.stock });
       const first = gel.steps[0];
-      run = { i: 0, scores: [], layers: first.kind === 'pour' ? [{ c: G.INGREDIENTS[first.ing].colour, h: 0 }] : [], mix: 0, fill: 0, sealed: false, drops: 0, dial: 0, stirAcc: 0, stirT0: 0, from: 0 };
+      run = { i: 0, scores: [], layers: first.kind === 'pour' ? [{ c: G.INGREDIENTS[first.ing].colour, h: 0 }] : [], mix: 0, fill: 0, sealed: false, drops: 0, dial: 0, stirAcc: 0, stirT0: 0 };
       haptic('place'); drawPrep(); return;
     }
     if (b('[data-gs-drop]') && run && !busy) {
       run.drops += 1; haptic('select');
-      const d = root.querySelector('.gs-dropper i'); d.classList.remove('is-on'); void d.offsetWidth; d.classList.add('is-on');
+      flash('.gs-drop-fx');
       root.querySelector('.gs-count').textContent = `${run.drops} / ${step().n}`;
       return;
     }

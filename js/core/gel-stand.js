@@ -21,8 +21,8 @@ export const INGREDIENTS = {
 };
 export const SHELF = Object.keys(INGREDIENTS);
 
-/** The stand's levels: 1 to 4. */
-export const MAX_LEVEL = 4;
+/** The stand's levels: 1 to 6 (its pictures, icons/Items/gel-stand-t<n>). Levels 5 and 6 open gels still to come. */
+export const MAX_LEVEL = 6;
 /** What the stars multiply a boost by. */
 export const STAR_MULT = [0, 0.7, 1, 1.15];
 /** Buying a gel ready-made costs this many times its ingredients. */
@@ -42,21 +42,26 @@ const SEAL = { kind: 'seal' };
  * boostBp: the XP boost at 2 stars, in basis points (100 = +1%)
  * sport:   a bigger boost when the next workout is that sport ({ run: bp })
  * fuel:    the shop's fuel id it stands for, when there is one (gear.js FUEL_ITEMS)
+ * colour:  the pouch's colour; liquid: the gel's own, as it's mixed and poured
  */
 export const GELS = [
-  { id: 'classic', level: 1, colour: '#5BB4E5', fuel: 'gel', boostBp: 3000, uses: { malto: 1, fructose: 1, salt: 1 },
+  // level 1: the basics
+  { id: 'classic', liquid: '#EBC37E', level: 1, colour: '#5BB4E5', fuel: 'gel', boostBp: 3000, uses: { malto: 1, fructose: 1, salt: 1 },
     steps: [pour('malto', 0.3), pour('fructose', 0.54), pour('water', 0.8), salt(0.45), stir(3), FILL, SEAL] },
-  { id: 'honey', level: 1, colour: '#F0B23A', boostBp: 2500, uses: { honey: 2, salt: 1 },
+  { id: 'honey', liquid: '#E9A83A', level: 1, colour: '#F0B23A', boostBp: 2500, uses: { honey: 2, salt: 1 },
     steps: [pour('honey', 0.5), pour('water', 0.75), salt(0.35), stir(2), FILL, SEAL] },
-  { id: 'caffeine', level: 2, colour: '#C8382E', fuel: 'gel-caffeine', boostBp: 4000, uses: { malto: 1, fructose: 1, salt: 1, caffeine: 1 },
-    steps: [pour('malto', 0.3), pour('fructose', 0.54), pour('water', 0.8), salt(0.45), drops(2), stir(3), FILL, SEAL] },
-  { id: 'maple', level: 2, colour: '#B4652B', boostBp: 3500, uses: { maple: 2, salt: 1 },
+  // level 2: stronger, one of them for rides
+  { id: 'maple', liquid: '#B8692E', level: 2, colour: '#B4652B', boostBp: 3500, uses: { maple: 2, salt: 1 },
     steps: [pour('maple', 0.55), pour('water', 0.78), salt(0.55), stir(2), FILL, SEAL] },
-  { id: 'beet', level: 3, colour: '#8E1F4C', boostBp: 3000, sport: { run: 4500 }, uses: { beet: 1, malto: 1, fructose: 1, salt: 1 },
-    steps: [pour('beet', 0.25), pour('malto', 0.5), pour('fructose', 0.7), salt(0.4), stir(3), FILL, SEAL] },
-  { id: 'hydro', level: 3, colour: '#3CC7D6', boostBp: 3000, sport: { bike: 4500 }, uses: { malto: 1, salt: 2 },
+  { id: 'hydro', liquid: '#8FDCE3', level: 2, colour: '#3CC7D6', boostBp: 3500, sport: { bike: 5000 }, uses: { malto: 1, salt: 2 },
     steps: [pour('malto', 0.2), pour('water', 0.85), salt(0.8), stir(2), FILL, SEAL] },
-  { id: 'race', level: 4, colour: '#16264D', fuel: 'gel-race', boostBp: 5000, uses: { malto: 1, fructose: 1, salt: 1, caffeine: 1, honey: 1 },
+  // level 3: caffeine, and one for runs
+  { id: 'caffeine', liquid: '#C98A4E', level: 3, colour: '#C8382E', fuel: 'gel-caffeine', boostBp: 4000, uses: { malto: 1, fructose: 1, salt: 1, caffeine: 1 },
+    steps: [pour('malto', 0.3), pour('fructose', 0.54), pour('water', 0.8), salt(0.45), drops(2), stir(3), FILL, SEAL] },
+  { id: 'beet', liquid: '#9C2F5A', level: 3, colour: '#8E1F4C', boostBp: 4000, sport: { run: 5500 }, uses: { beet: 1, malto: 1, fructose: 1, salt: 1 },
+    steps: [pour('beet', 0.25), pour('malto', 0.5), pour('fructose', 0.7), salt(0.4), stir(3), FILL, SEAL] },
+  // level 4: the race gel (levels 5 and 6: gels still to come, docs/KITCHEN.md)
+  { id: 'race', liquid: '#DDB25E', level: 4, colour: '#16264D', fuel: 'gel-race', boostBp: 5000, uses: { malto: 1, fructose: 1, salt: 1, caffeine: 1, honey: 1 },
     steps: [pour('malto', 0.25), pour('fructose', 0.45), pour('honey', 0.6), pour('water', 0.8), salt(0.5), drops(3), stir(4), FILL, SEAL] },
 ];
 export const gelById = (id) => GELS.find((g) => g.id === id) || null;

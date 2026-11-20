@@ -102,20 +102,25 @@ belt and everything counts as 2 stars, so it stays fair; stars matter in PVE.
 
 ## The gel stand (built first)
 
-The rules are `js/core/gel-stand.js`, the screens `js/app/gel-stand-view.js` (preview: `?gels=1`, `&lvl=1-4`).
+The rules are `js/core/gel-stand.js`, the screens `js/app/gel-stand-view.js` (preview: `?gels=1`, `&lvl=1-6`).
 The art is queued in `MOSKE APP/PromptQueue Prompts/gel-stand.csv` (`MOSKE APP/Island/make-gels-csv.py`).
 
-**Recipes, by stand level** (boosts at 2 stars, on the next workout's XP):
+**Recipes, by stand level** (the stand has 6 levels, `icons/Items/gel-stand-t1..t6`; each level opens better
+gels; boosts at 2 stars, on the next workout's XP):
 
 | Level | Gel | Ingredients | Boost |
 |---|---|---|---|
 | 1 | Classic gel | maltodextrin, fructose, water, salt | +30% |
 | 1 | Honey gel | honey, water, salt | +25% |
-| 2 | Caffeine gel | maltodextrin, fructose, water, salt, caffeine | +40% |
 | 2 | Maple gel | maple syrup, water, salt | +35% |
-| 3 | Beet gel | beetroot juice, maltodextrin, fructose, salt | +45% on a run, +30% otherwise |
-| 3 | Hydro gel | maltodextrin, water (a lot), salt (a lot) | +45% on a ride, +30% otherwise |
-| 4 | Race gel | maltodextrin, fructose, water, salt, caffeine, honey | +50% |
+| 2 | Hydro gel | maltodextrin, water (a lot), salt (a lot) | +35%, +50% on a ride |
+| 3 | Caffeine gel | maltodextrin, fructose, water, salt, caffeine | +40% |
+| 3 | Beet gel | beetroot juice, maltodextrin, fructose, salt | +40%, +55% on a run |
+| 4 | Race gel | maltodextrin, fructose, honey, water, salt, caffeine | +50% |
+| 5-6 | still to come (new gels and their art: ideas are a double-carb gel and an electrolyte race gel) | | |
+
+The art is cut from the CSV's sheets by `tools/cut-gels.py` into `icons/Gels/` (gels, ingredients, tools, pouch,
+interface, effects, the prep view's background) and `icons/Items/gel-stand-t<n>-<a|b>.webp` (the stand).
 
 **The screens:**
 

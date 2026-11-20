@@ -23,6 +23,7 @@ test('every gel: known ingredients, steps that end fill then seal, pours that ri
 
 test('the menu opens by level', () => {
   assert.deepEqual(menu(1).filter((g) => g.open).map((g) => g.id), ['classic', 'honey']);
+  assert.deepEqual(menu(2).filter((g) => g.open && g.level === 2).map((g) => g.id), ['maple', 'hydro']);
   assert.equal(menu(4).filter((g) => g.open).length, GELS.length);
   assert.equal(menu(99).filter((g) => g.open).length, GELS.length);
 });
@@ -47,6 +48,9 @@ test('stock: missing, buying, starting', () => {
   const s = start(stock, g, 1);
   assert.deepEqual(s.stock, { ...stock, malto: 0, fructose: 0, salt: 1 });
   assert.deepEqual(start(s.stock, gelById('race'), 1), { error: 'locked' });
+  // better gels come with the levels: no level's best is weaker than the one before
+  const best = (n) => Math.max(...GELS.filter((x) => x.level === n).map((x) => x.boostBp));
+  for (let n = 2; n <= 4; n++) assert.ok(best(n) > best(n - 1), `level ${n}`);
 });
 
 test('normalise drops junk', () => {
@@ -78,7 +82,7 @@ test('stars and boosts', () => {
   const g = gelById('classic');
   assert.deepEqual([1, 2, 3].map((s) => boostOf(g, s)), [2100, 3000, 3450]);
   const beet = gelById('beet');
-  assert.equal(boostOf(beet, 2, 'run'), 4500);
-  assert.equal(boostOf(beet, 2, 'bike'), 3000);
+  assert.equal(boostOf(beet, 2, 'run'), 5500);
+  assert.equal(boostOf(beet, 2, 'bike'), 4000);
   assert.deepEqual(bagged([], 'classic', 3, 5), [{ id: 'classic', stars: 3, at: 5 }]);
 });

@@ -34,7 +34,7 @@ const PREVIEW_CARBS = 600;
 const PREVIEW_COINS = 2000;   // the preview's own coins, for upgrades (the server's wallet later)
 const COIN = 'icons/Pixelart/GEAR/coin.png';
 const FILL_RATE = 0.32;   // pouch per second while the jug's held over it
-const TAP_RATE = 0.42;    // glass per second while it's held under a tap
+const TAP_RATE = 2;       // glass per second under a tap: full in half a second
 const GLASS_CAP = 0.75;   // a full glass is this much of the jug
 const GLASS_POUR_MS = 650;   // the glass tips out in the bin in this long
 const GLASS_FLOW = 0.5;   // glass per second while it's tipped over the jug (slow enough to stop at the line)
@@ -67,7 +67,7 @@ const TRAYS = {
 const POWDERS = ['malto', 'fructose', 'salt'];   // restocked from a bag in their colour, snipped open
 const BOX = { l: 62, t: 78, w: 26.5, h: 12 };     // the box of empty pouches
 const BIN = { l: 71.5, r: 99, t: 44, b: 52 };            // the bin's lid, flush in the counter
-const BIN_HIT = { l: 76, r: 97, t: 46, b: 53 };          // where something held opens it (smaller, lower)
+const BIN_HIT = { l: 92, r: 99, t: 48, b: 52.5 };        // a small square in the lid's far corner opens it (rarely wanted)
 /** The tools hanging from the hooks of the counter's front: % across, their picture's height in cqw, turned
  *  (the long ones hang down, handle up). The scoop's only for show. */
 const HOOKS = {
@@ -77,7 +77,7 @@ const HOOKS = {
   scissors: { x: 64, w: 5.2, rot: -90, art: 'scissors-closed' },
   scoop: { x: 78, w: 4.4, rot: -90, art: 'tool-scoop' },
 };
-const POUCH_AT = { x: 58, y: 48.8 };       // the pouch's place on the counter (its middle)
+const POUCH_AT = { x: 30, y: 48.8 };       // the pouch's place on the counter (its middle), left of the jug
 /** What you hold: a scoop of each powder, the dropper. */
 const HELD = { salt: 'scoop-salt', malto: 'scoop-malto', fructose: 'scoop-fructose', caffeine: 'tool-dropper' };
 /** What falls from it. */
@@ -632,8 +632,8 @@ export function openGelStand({ level = null } = {}) {
           flash(scene.querySelector('.gs-gsplash')); pop('binned'); haptic('refuse');
           return;
         }
-        if (where === 'jug' && topLayer().h > 0) {
-          // let go over the jug: what's poured is judged (the rest of the glass goes back with it)
+        if (topLayer().h > 0) {
+          // let go once some is poured in, wherever: what's in the jug is judged (the rest of the glass goes back)
           flash('.gs-splash');
           finishStep(G.scorePour(jugLevel(), s.to, run.below), jugLevel(), s.to);
         }
@@ -817,7 +817,7 @@ export function openGelStand({ level = null } = {}) {
       const move = (ev) => {
         const p = at(ev);
         const was = ok;
-        ok = p.x > 44 && p.x < 72 && p.y > 37 && p.y < 62;
+        ok = p.x > 16 && p.x < 44 && p.y > 37 && p.y < 62;
         if (ok && !was) haptic('tick');
         scene.classList.toggle('is-over-spot', ok);
         place(ok ? POUCH_AT.x : p.x, ok ? POUCH_AT.y : p.y - 5, 0);

@@ -3,6 +3,8 @@
     python tools/cut-gels.py <gen dir> [--v2]
 
 --v2: only the thumb redesign's sheets (gel-hand, gel-streams) and its background (gel-prep-bg-screen-b).
+--v3: only the third layout's sheets (gel-stand-v3.csv: jars, tools, wells, streams) and its background
+      (gel-prep-bg-v3.jpg: take b with the screen and rail moved up a brick period, made in Python).
 
 <gen dir>  Grounds/gel-stand/gen (MOSKE APP/Characters/Photos/Robots/Robots/...)
 
@@ -34,6 +36,58 @@ SHEETS_V2 = {
     'gel-hand': (4, 2, ['hand-salt', 'hand-malto', 'hand-fructose', 'hand-honey', 'sealer-open', 'sealer-closed', None, 'fx-drain'], 320),
     'gel-streams': (8, 1, ['stream-water', 'stream-honey', 'stream-maple', 'stream-beet', 'stream-gel', 'stream-powder', 'stream-salt', 'stream-drops'], 512),
 }
+
+
+# the third layout (gel-stand-v3.csv): cut by outline, not grid (some sheets don't sit on an even grid).
+# sheet: (pieces expected in reading order, height to store)
+SHEETS_V3 = {
+    'gel-jars': (['jar-water', 'jar-honey', 'jar-maple', 'jar-beet', 'jar-citrus', 'jar-berry', 'jar-lime', 'jar-empty'], 420),
+    'gel-tools-v3': (['tool-glass', 'tool-scoop', 'scissors-open', 'scissors-closed', 'bin-closed', 'bin-open', 'pouch-box',
+                      'sachet', 'sachet-cut', 'sachet-strip', 'vial-caffeine', 'fx-glass-splash'], 360),
+    'gel-wells': (['well-malto', 'well-fructose', 'well-salt', 'well-caffeine', 'scoop-malto', 'scoop-fructose', 'scoop-salt',
+                   'well-low'], 360),
+    'gel-streams-v3': (['stream-citrus', 'stream-berry', 'stream-lime', 'stream-mix'], 512),
+}
+
+
+def pieces(im, n, grow=45, min_area=6000, raw=None):
+    """The sheet's `n` biggest separate pictures (a piece's bits within `grow` px count as one), in reading order."""
+    from scipy import ndimage
+    al = np.asarray(im.getchannel('A')) > 24
+    lab, k = ndimage.label(ndimage.binary_dilation(al, iterations=grow))
+    boxes = []
+    for i, sl in enumerate(ndimage.find_objects(lab), 1):
+        area = int((al[sl] & (lab[sl] == i)).sum())
+        if area >= min_area: boxes.append((area, sl, i))
+    boxes = sorted(boxes, key=lambda b: -b[0])[:n]
+    assert len(boxes) == n, f'found {len(boxes)} pieces, not {n}'
+    rows = []
+    for b in sorted(boxes, key=lambda b: b[1][0].start):   # rows: tops within a fifth of the sheet's height
+        if rows and b[1][0].start - rows[-1][0][1][0].start < im.height / 5: rows[-1].append(b)
+        else: rows.append([b])
+    out = []
+    for r in rows:
+        for _, sl, i in sorted(r, key=lambda b: b[1][1].start):
+            a = np.asarray(im).copy()
+            a[..., 3] = np.where(lab == i, a[..., 3], 0)       # only this piece, not a neighbour's bits
+            if raw is not None:
+                # green things (the lime juice): the key only bites at the outline, the inside stays as painted
+                inner = ndimage.binary_erosion(ndimage.binary_fill_holes(a[..., 3] > 24), iterations=8)
+                r = np.asarray(raw.convert('RGB'))
+                a[..., :3] = np.where(inner[..., None], r, a[..., :3])
+                a[..., 3] = np.where(inner, 255, a[..., 3])
+            out.append(Image.fromarray(a[sl]))
+    return out
+
+
+def hue_shift(im, deg):
+    """Turn an RGBA picture's hue by `deg` (the lime stream came out yellow)."""
+    a = im.getchannel('A')
+    h, s_, v = im.convert('RGB').convert('HSV').split()
+    h = h.point(lambda x: (x + round(deg * 255 / 360)) % 256)
+    out = Image.merge('HSV', (h, s_, v)).convert('RGB').convert('RGBA')
+    out.putalpha(a)
+    return out
 
 
 def key(im):
@@ -72,6 +126,22 @@ def save(im, path, height):
 def main():
     gen = sys.argv[1]
     os.makedirs(GELS, exist_ok=True)
+    if '--v3' in sys.argv:
+        for sheet, (names, height) in SHEETS_V3.items():
+            raw = Image.open(os.path.join(gen, f'{sheet}.jpg'))
+            im = key(raw)
+            whole = pieces(im, len(names), grow=18, raw=raw) if sheet == 'gel-jars' else None
+            for k, (piece, name) in enumerate(zip(pieces(im, len(names), grow=18), names)):
+                if name == 'jar-lime': piece = whole[k]
+                if name == 'stream-lime': piece = hue_shift(piece, 22)
+                save(piece, os.path.join(GELS, f'{name}.webp'), height)
+        # a new name: sw.js would keep showing the old prep-bg.webp on the first launch
+        bg = Image.open(os.path.join(gen, 'gel-prep-bg-v3.jpg')).convert('RGB')
+        assert bg.size == (1536, 2752), f'gel-prep-bg-v3 is {bg.size}, not 1536 x 2752'
+        bg = bg.resize((900, 1612), Image.LANCZOS)
+        bg.save(os.path.join(GELS, 'prep-bg-v3.webp'), quality=82, method=6)
+        print('icons/Gels/prep-bg-v3.webp', bg.size)
+        return
     if '--v2' in sys.argv:
         for sheet, (cols, rows, names, height) in SHEETS_V2.items():
             im = key(Image.open(os.path.join(gen, f'{sheet}.jpg')))

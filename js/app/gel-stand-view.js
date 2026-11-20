@@ -1,13 +1,16 @@
 // gel-stand-view.js — the gel stand's screens (docs/KITCHEN.md, "The gel stand"): the menu of final gels,
 // then the prep view, then the result. The rules are js/core/gel-stand.js.
 //
-// The prep view is one scene on the stand's background (icons/Gels/prep-bg.webp, 9:16), made for one thumb:
-// the recipe and what to do now on the wall screen, the jug and the pouch on the counter (the sink to pour
-// the jug away and start again), this gel's ingredients on the tray below (a stock bar each, tap one that's
-// short to restock it with carbs), the buttons on the panel at the very bottom. Everything is dragged: an
-// ingredient over the jug (held to pour, shaken, or dropped), round the jug to stir, the jug over the pouch
-// to fill it, across the sealer to seal it. Letting go ends a step: it's judged and the next one starts.
-// The jug's liquid is drawn over its picture (multiply), so its lines and shine show through.
+// The prep view is one scene on the stand's background (icons/Gels/prep-bg-v3.webp), made for one thumb, with
+// every tool on show: the recipe and what to do now on the wall screen; the tool rail under it (the sealer,
+// the whisk, the dropper, the scissors); the tap jars of liquids and the caffeine vial on the shelf; the
+// measuring glass, the jug, the pouch and the bin on the counter; the powder wells and the box of empty
+// pouches on the tray; the buttons on the panel at the very bottom. Everything is dragged: the glass under a
+// jar's tap to its line, then over the jug to pour it in (or over the bin to tip it out); a scoop from a well
+// over the jug, shaken; the dropper over the jug; the whisk round it; a pouch from the box onto the counter;
+// the jug over the pouch; the sealer across the pouch's top. Letting go ends a step: it's judged and the next
+// one starts. Before starting, a tap on a jar restocks it, a tap on a well brings a sachet to snip open with
+// the scissors. The liquids are drawn over their pictures (multiply), so lines and shine show through.
 //
 // For now it's a preview (?gels=1, &lvl=1-6): the stock, the bag and the carbs are kept on this device
 // (settings.gelStand) until the server side exists.
@@ -24,17 +27,37 @@ const KEY = 'gelStand';
 const PREVIEW_CARBS = 600;
 const PREVIEW_COINS = 2000;   // the preview's own coins, for upgrades (the server's wallet later)
 const COIN = 'icons/Pixelart/GEAR/coin.png';
-const POUR_RATE = 0.22;   // jug per second while a bottle's held over it
 const FILL_RATE = 0.32;   // pouch per second while the jug's held over it
+const TAP_RATE = 0.42;    // glass per second while it's held under a tap
+const GLASS_CAP = 0.75;   // a full glass is this much of the jug
+const GLASS_POUR_MS = 650;   // the glass empties into the jug (or the bin) in this long
 const SHAKE_K = 0.0045;   // jug level per 1% of the scene's width shaken (maltodextrin, fructose)
 const SALT_K = 0.007;     // the salt meter per 1% shaken
 const DROP_MS = 420;      // a caffeine drop this often while the dropper's over the jug
 const DROP_FIRST = 220;   // and the first this soon after it gets there
 const STEP_BEAT = 450;    // a step's pop shows this long, then the next step
-const STOCK_BAR = 4;      // a tray slot's stock bar: four to a refill
-const SHAKEN = new Set(['malto', 'fructose', 'salt']);
-/** What you hold, for those that look different in the hand (a shaker, a squeeze bottle, the dropper). */
-const HELD = { salt: 'hand-salt', malto: 'hand-malto', fructose: 'hand-fructose', honey: 'hand-honey', caffeine: 'tool-dropper' };
+const STOCK_BAR = 4;      // a stock bar: four to a refill
+const SNIP_CUT = 0.72;    // how much of a sachet's top the scissors must cross to cut it
+const ASPECT = 2752 / 1536;   // the scene's height over its width: 1% of its height is this many % of its width
+const LIQUID = new Set(['water', 'honey', 'maple', 'beet']);
+/** The shelf, left to right (its jars stand on it, % across), and the tray's wells. */
+const JARS = ['water', 'honey', 'maple', 'beet'];
+const SHELF_X = { water: 15, honey: 31.5, maple: 48, beet: 64.5, caffeine: 81 };
+const JAR_W = 12;                          // a jar's width, % of the scene's
+const JAR_H = JAR_W * 420 / 280 / ASPECT;  // and its height, % of the scene's (jar-*.webp is 280 x 420)
+const JAR_TOP = 41.6 - JAR_H;              // they stand on the shelf's top
+const WELLS = ['malto', 'fructose', 'salt'];
+const WELL_X = { malto: 13.4, fructose: 36.6, salt: 61 };
+/** The tools stuck on the rail: % across, height in cqw, turned. */
+const RAIL = {
+  sealer: { x: 18, w: 8.5, rot: 0, art: 'sealer-open' },
+  whisk: { x: 37, w: 10, rot: 0, art: 'tool-whisk' },
+  dropper: { x: 54, w: 14, rot: 90, art: 'tool-dropper' },
+  scissors: { x: 73, w: 7.5, rot: 0, art: 'scissors-closed' },
+};
+const POUCH_AT = { x: 71, y: 51.4 };       // the pouch's place on the counter (its middle)
+/** What you hold: a scoop of each powder, the dropper. */
+const HELD = { salt: 'scoop-salt', malto: 'scoop-malto', fructose: 'scoop-fructose', caffeine: 'tool-dropper' };
 /** What falls from it. */
 const STREAM = { water: 'stream-water', honey: 'stream-honey', maple: 'stream-maple', beet: 'stream-beet', malto: 'stream-powder',
   fructose: 'stream-powder', salt: 'stream-salt', caffeine: 'stream-drops' };
@@ -94,10 +117,11 @@ export function openGelStand({ level = null } = {}) {
   const pinned = !!level;   // ?gels=1&lvl=: shown at that level, no upgrading
   level = level ? Math.max(1, Math.min(G.MAX_LEVEL, Math.floor(level) || 1)) : st.level;
   let gel = null;          // the gel picked
-  let run = null;          // making it: { i, below, scores, layers, mix, fill, salt, drops, stirAcc, stirT0 }
+  let run = null;          // making it: { i, below, scores, layers, mix, fill, salt, drops, stirAcc, stirT0, glass, glassC, pouch }
   let result = null;       // { stars, bp }
   let busy = false;        // a step's pop is showing
-  let dumped = false;      // the jug was just poured away in the sink
+  let dumped = false;      // the jug was just tipped in the bin
+  let snipping = null;     // a well's sachet waiting to be snipped open: its ingredient
 
   const set = (patch) => { st = { ...st, ...patch }; save(st); };
 
@@ -167,17 +191,20 @@ export function openGelStand({ level = null } = {}) {
   }, 1000);
 
   // ---- the prep view ----
-  // One 9:16 scene on prep-bg.webp. Its painted places, in % of the scene: the wall screen 13-87% across,
-  // 16-37% down; the counter top 48-60% (the sink its left 23%); the tray's floor 72-81%; the button panel
-  // 87-99%. Everything is placed in % of the scene and sized in cqw, and every gesture works in scene %.
+  // One scene on prep-bg-v3.webp (1536 x 2752; the brick wall carries on above it, prep-wall.webp). Its
+  // painted places, in % of the scene: the wall screen's face 13-87% across, 6-21.5% down; the tool rail
+  // 25.4-28.6%; the shelf's top 41.3% (its front to 44.3%); the counter top 48-60%; the tray's three wells
+  // 70.5-81.7% down (13, 36.5 and 61% across) and the pad for the pouch box right of them; the button panel
+  // 86.5-99%. Everything is placed in % of the scene and sized in cqw, and every gesture works in scene %.
   const step = () => (run ? gel.steps[run.i] : null);
   const jugLevel = () => (run ? run.layers.reduce((n, l) => n + l.h, 0) : 0);
-  /** The ingredients this gel needs, in shelf order (water too when it's poured). */
-  const trayIngs = () => G.SHELF.filter((id) => gel.uses[id] || (id === 'water' && gel.steps.some((s) => s.ing === 'water')));
-  /** How an ingredient goes in: poured (held over the jug), shaken, or dropped. */
-  const how = (ing) => (SHAKEN.has(ing) ? 'shake' : ing === 'caffeine' ? 'drops' : 'pour');
-  const heldArt = (ing) => HELD[ing] || `ing-${ing}`;
-  const ADDS = new Set(['pour', 'salt', 'drops']);   // the steps that take an ingredient from the tray
+  /** How an ingredient goes in: measured in the glass, scooped and shaken, or dropped. */
+  const how = (ing) => (LIQUID.has(ing) ? 'glass' : ing === 'caffeine' ? 'drops' : 'shake');
+  /** The glass's line for a measuring step, 0-1 of the glass (it holds GLASS_CAP of the jug). */
+  const glassLine = (s) => Math.min(0.95, (s.to - run.below) / GLASS_CAP);
+  /** Where a jar's tap pours, in scene %. */
+  const tapOf = (id) => ({ x: SHELF_X[id] + JAR_W * 0.34, y: JAR_TOP + JAR_H * 0.88 });
+  const ADDS = new Set(['pour', 'salt', 'drops']);   // the steps that take an ingredient
 
   function stepText(s) {
     if (s.kind === 'pour') return t(how(s.ing) === 'shake' ? 'gels.step.shake' : 'gels.step.pour', { ing: ingName(s.ing).toLocaleLowerCase() });
@@ -186,8 +213,10 @@ export function openGelStand({ level = null } = {}) {
     return t(`gels.step.${s.kind}`);
   }
   function hintText(s) {
-    if (s.kind === 'pour' || s.kind === 'salt') return t(how(s.ing) === 'shake' ? 'gels.hint.shake' : 'gels.hint.pour');
+    if (s.kind === 'pour') return t(how(s.ing) === 'shake' ? 'gels.hint.shake' : 'gels.hint.pour');
+    if (s.kind === 'salt') return t('gels.hint.shake');
     if (s.kind === 'drops') return t('gels.hint.drops', { n: s.n });
+    if (s.kind === 'fill' && !run.pouch) return t('gels.hint.pouch');
     return t(`gels.hint.${s.kind}`);
   }
 
@@ -202,6 +231,8 @@ export function openGelStand({ level = null } = {}) {
       body = `${starsHtml(result.stars)}<p class="gs-step">${esc(t('gels.boost', { n: pct(result.bp) }))}</p><p class="gs-hint">${esc(t('gels.bagged'))}</p>`;
     } else if (now) {
       body = `${dots}<p class="gs-step">${esc(t('gels.stepOf', { i: run.i + 1, n: total, step: stepText(now) }))}</p><p class="gs-hint">${esc(hintText(now))}</p>`;
+    } else if (snipping) {
+      body = `${dots}<p class="gs-step">${esc(ingName(snipping))}</p><p class="gs-hint">${esc(t('gels.hint.snip'))}</p>`;
     } else {
       const short = G.missingCost(st.stock, gel) > 0;
       body = `${dots}<p class="gs-step">${esc(dumped ? t('gels.dumped') : t('gels.ready', { n: total }))}</p>
@@ -214,48 +245,97 @@ export function openGelStand({ level = null } = {}) {
       ${body}</div>`;
   }
 
-  /** The tray: only this gel's ingredients, each with a stock bar (4 to a refill) and a + when it's short. */
-  function trayHtml() {
-    const ids = trayIngs();
+  /** A stock bar: four to a refill, amber when low, red when empty. */
+  const stockBar = (id) => {
+    const have = Number(st.stock[id]) || 0;
+    const need = gel.uses[id] || 0;
+    return `<span class="gs-stockbar${have === 0 ? ' is-empty' : have < Math.max(need, 2) ? ' is-low' : ''}">${
+      [1, 2, 3, 4].map((i) => `<i class="${i <= have ? 'is-on' : ''}"></i>`).join('')}</span>`;
+  };
+  /** A jar, a well or the vial: what state it's in, for its classes and its label. */
+  function slotState(id) {
+    const ing = G.INGREDIENTS[id];
+    const have = Number(st.stock[id]) || 0;
+    const need = gel.uses[id] || 0;
     const now = step();
-    return ids.map((id, k) => {
-      const ing = G.INGREDIENTS[id];
-      const have = Number(st.stock[id]) || 0;
-      const need = gel.uses[id] || 0;
-      const active = !!(now && ADDS.has(now.kind) && now.ing === id);
-      const short = !ing.free && !run && !result && have < need;
-      const bar = ing.free ? '' : `<span class="gs-stockbar${have === 0 ? ' is-empty' : have < Math.max(need, 2) ? ' is-low' : ''}">${
-        [1, 2, 3, 4].map((i) => `<i class="${i <= have ? 'is-on' : ''}"></i>`).join('')}</span>`;
-      const label = ing.free ? ingName(id) : short || have === 0 ? t('gels.buyAria', { ing: ingName(id), n: ing.cost }) : t('gels.slotAria', { ing: ingName(id), n: have });
-      return `<button class="gs-slot${active ? ' is-now' : ''}${short ? ' is-short' : ''}" data-slot="${id}" style="--x:${(8 + (k + 0.5) * 84 / ids.length).toFixed(2)}%" aria-label="${esc(label)}">
-        ${gimg(heldArt(id), 'gs-slot-art')}${bar}
-        ${short ? `<span class="gs-plus">${gimg('ui-plus')}</span>` : ''}</button>`;
-    }).join('');
+    const active = !!(now && ADDS.has(now.kind) && now.ing === id && how(id) !== 'glass');
+    const short = !ing.free && !run && !result && have < need;
+    const label = ing.free ? ingName(id) : short || have === 0 ? t('gels.buyAria', { ing: ingName(id), n: ing.cost }) : t('gels.slotAria', { ing: ingName(id), n: have });
+    const cls = `${active ? ' is-now' : ''}${short ? ' is-short' : ''}${need || (now?.ing === id) ? ' is-used' : ''}`;
+    return { ing, have, cls, label, short };
   }
 
-  /** The counter: the sink's glow, the jug (with its liquid), the meter beside it, the pouch and the step's tool. */
+  /** The rail under the screen: the tools stuck on it (each leaves when it's taken). */
+  function railHtml() {
+    const s = step();
+    const want = s?.kind === 'seal' ? 'sealer' : s?.kind === 'stir' ? 'whisk' : s?.kind === 'drops' ? 'dropper' : snipping ? 'scissors' : null;
+    return Object.entries(RAIL).map(([id, r]) => `<span class="gs-tool${want === id ? ' is-now' : ''}" data-tool="${id}" style="--x:${r.x}%;--w:${r.w};--rot:${r.rot}deg">${gimg(r.art)}</span>`).join('');
+  }
+
+  /** The shelf: the four liquids in their tap jars, and the caffeine vial. */
+  function shelfHtml() {
+    const s = step();
+    const jars = JARS.map((id) => {
+      const { cls, label, ing } = slotState(id);
+      const now = s?.kind === 'pour' && s.ing === id;
+      return `<button class="gs-jar${cls}${now ? ' is-now' : ''}" data-slot="${id}" style="--x:${SHELF_X[id]}%" aria-label="${esc(label)}">
+        ${gimg(`jar-${id}`, 'gs-jar-art')}${ing.free ? '' : stockBar(id)}</button>`;
+    }).join('');
+    const v = slotState('caffeine');
+    return `${jars}<button class="gs-vial${v.cls}" data-slot="caffeine" style="--x:${SHELF_X.caffeine}%" aria-label="${esc(v.label)}">
+      ${gimg('vial-caffeine', 'gs-jar-art')}${stockBar('caffeine')}</button>`;
+  }
+
+  /** The tray: the three powder wells (a scoop's taken from them), and the box of empty pouches. */
+  function trayHtml() {
+    const s = step();
+    const wells = WELLS.map((id) => {
+      const { cls, label, have } = slotState(id);
+      return `<button class="gs-well${cls}" data-slot="${id}" style="--x:${WELL_X[id]}%" aria-label="${esc(label)}">
+        ${gimg(have ? `well-${id}` : 'well-low', 'gs-well-art')}${stockBar(id)}</button>`;
+    }).join('');
+    const box = `<button class="gs-box${s?.kind === 'fill' && !run.pouch ? ' is-now' : ''}" data-box aria-label="${esc(t('gels.boxAria'))}">${gimg('pouch-box')}</button>`;
+    const sachet = snipping ? `<div class="gs-sachet" style="--x:${WELL_X[snipping]}%" role="img" aria-label="${esc(t('gels.sachetAria', { ing: ingName(snipping) }))}">
+      ${gimg('sachet', 'gs-sachet-whole')}${gimg('sachet-cut', 'gs-sachet-cut')}${gimg('sachet-strip', 'gs-sachet-strip')}<i class="gs-cutline"><b></b></i></div>` : '';
+    return wells + box + sachet;
+  }
+
+  /** The counter: the measuring glass, the jug (with its liquid) and its meter, the pouch, the bin. */
   function counterHtml() {
     const s = step();
     const kind = s?.kind || 'idle';
     const layers = (run?.layers || []).map((l) => `<i style="--h:${l.h.toFixed(4)};--c:${l.c}"></i>`).join('');
     let meter = '';
-    if (s && (s.kind === 'pour' || s.kind === 'salt')) {
+    if (s && ((s.kind === 'pour' && how(s.ing) === 'shake') || s.kind === 'salt')) {
       const [lo, hi] = G.sweetSpot(s, s.kind === 'pour' ? run.below : 0);
       meter = `<div class="gs-meter" style="--lo:${lo.toFixed(3)};--hi:${hi.toFixed(3)};--to:${s.to};--v:${(s.kind === 'salt' ? run.salt : jugLevel()).toFixed(4)}"><b></b><i></i><em></em></div>`;
     } else if (s?.kind === 'drops') {
       meter = `<div class="gs-meter is-drops" style="--n:${s.n}">${Array.from({ length: s.n + 1 }, (_, i) => `<i class="${i < run.drops ? 'is-on' : ''}${i === s.n ? ' is-extra' : ''}"></i>`).join('')}</div>`;
     }
-    return `<div class="gs-sink"></div>${gimg('fx-drain', 'gs-drain')}
+    // the glass: what's in it, and (measuring) its line and the green either side of it
+    let mark = '';
+    const measuring = s?.kind === 'pour' && how(s.ing) === 'glass';
+    if (measuring) {
+      const [lo, hi] = G.sweetSpot(s, run.below).map((v) => Math.max(0, Math.min(1, (v - run.below) / GLASS_CAP)));
+      mark = `<b class="gs-gband" style="--lo:${lo.toFixed(3)};--hi:${hi.toFixed(3)}"></b><em class="gs-gline" style="--to:${glassLine(s).toFixed(3)}"></em>`;
+    }
+    const gl = run?.glass || 0;
+    const gc = run?.glassC || '#BFE2F4';
+    const pouch = run?.pouch || result;
+    return `<div class="gs-glass${measuring ? ' is-now' : ''}" data-glass role="img" aria-label="${esc(t('gels.glassAria', { n: Math.round(gl * 100) }))}">
+        ${gimg('tool-glass', 'gs-glass-art')}<span class="gs-gliq" style="--g:${gl.toFixed(4)};--c:${gc}"></span>${mark}</div>
       <div class="gs-jug" data-jug role="img" aria-label="${esc(t('gels.jugAria'))}">${gimg('tool-jug')}
         <span class="gs-liquid" style="--mix:${run?.mix || 0};--total:${jugLevel().toFixed(4)}">${layers}<em></em></span>
         ${kind === 'stir' ? '<svg class="gs-ring" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" pathLength="1" style="--p:0"/></svg>' : ''}
         ${gimg('fx-splash', 'gs-splash')}</div>
       ${meter}
-      <div class="gs-pouch${result ? ' is-sealed is-made' : ''}">${gimg('pouch-0', 'gs-pouch-art')}
+      ${kind === 'fill' && !run.pouch ? '<i class="gs-spot"></i>' : ''}
+      ${pouch ? `<div class="gs-pouch${result ? ' is-sealed is-made' : ''}">${gimg('pouch-0', 'gs-pouch-art')}
         <span class="gs-pfill"><i style="--f:${run?.fill || 0}"></i></span>
         ${kind === 'fill' ? `<i class="gs-pline" style="--to:${s.to}"></i>` : ''}
-        ${gimg(`gel-${gel.id}`, 'gs-final')}</div>
-      ${kind === 'seal' ? `<div class="gs-sealer">${gimg('sealer-open', 'gs-sealer-open')}${gimg('sealer-closed', 'gs-sealer-shut')}<i class="gs-sealbar"><b></b></i></div>` : ''}
+        ${gimg(`gel-${gel.id}`, 'gs-final')}</div>` : ''}
+      <div class="gs-bin">${gimg('bin-closed', 'gs-bin-shut')}${gimg('bin-open', 'gs-bin-open')}</div>
+      ${gimg('fx-glass-splash', 'gs-gsplash')}
       ${kind === 'stir' ? gimg('tool-whisk', 'gs-whisk') : ''}
       ${result ? `${gimg('fx-ring', 'gs-ring-fx')}${gimg('fx-sparkle', 'gs-sparkle-fx')}` : ''}`;
   }
@@ -266,12 +346,14 @@ export function openGelStand({ level = null } = {}) {
         <button class="gs-btn" data-gs-again>${esc(t('gels.again'))}</button>`;
     }
     if (run) return `<p class="gs-status">${esc(t('gels.making', { name: gelName(gel) }))}</p>`;
-    return `<button class="gs-btn" data-gs-start ${G.missingCost(st.stock, gel) ? 'aria-disabled="true"' : ''}>${esc(t('gels.start'))}</button>`;
+    return `<button class="gs-btn" data-gs-start ${G.missingCost(st.stock, gel) || snipping ? 'aria-disabled="true"' : ''}>${esc(t('gels.start'))}</button>`;
   }
 
   function drawPrep() {
     frame(`<div class="gs-body"><div class="gs-scene" style="--gel:${gel.liquid}">
         ${screenHtml()}
+        <div class="gs-rail">${railHtml()}</div>
+        <div class="gs-shelf">${shelfHtml()}</div>
         <div class="gs-counter">${counterHtml()}</div>
         <div class="gs-tray">${trayHtml()}</div>
         <span class="gs-pop" aria-hidden="true"></span>
@@ -313,28 +395,30 @@ export function openGelStand({ level = null } = {}) {
       drawPrep();
     }, STEP_BEAT);
   }
-  /** Set up the step that's starting: a pour gets its own layer in the jug. */
+  /** Set up the step that's starting: a pour gets its own layer in the jug; a measure starts with an empty glass. */
   function beginStep() {
     const s = step();
     run.below = jugLevel();
     if (s.kind === 'pour') run.layers.push({ c: G.INGREDIENTS[s.ing].colour, h: 0 });
+    if (s.kind === 'pour' && how(s.ing) === 'glass') { run.glass = 0; run.glassC = G.INGREDIENTS[s.ing].colour; }
     if (s.kind === 'salt') run.salt = 0;
     if (s.kind === 'drops') run.drops = 0;
   }
-  /** Pour the jug away in the sink: the ingredients are gone, back to the start. */
+  /** Tip the jug in the bin: the ingredients are gone, back to the start. */
   function dump() {
     haptic('refuse');
     run = null; dumped = true;
     drawPrep();
-    flash('.gs-drain');
+    flash('.gs-bin');
   }
 
-  /** Every gesture on the scene: drag an ingredient, drag the jug, stir, swipe the sealer, tap a tray slot. */
+  /** Every gesture on the scene: the glass, a scoop, the dropper, the jug, the whisk, a pouch, the sealer, the scissors. */
   function bindScene() {
     const scene = root.querySelector('.gs-scene');
     if (!scene) return;
     const counter = scene.querySelector('.gs-counter');
     const jugEl = scene.querySelector('.gs-jug');
+    const binEl = scene.querySelector('.gs-bin');
     const box = () => scene.getBoundingClientRect();
     /** A pointer in scene % (x across, y down). */
     const at = (e) => { const r = box(); return { x: (e.clientX - r.left) / r.width * 100, y: (e.clientY - r.top) / r.height * 100 }; };
@@ -343,12 +427,42 @@ export function openGelStand({ level = null } = {}) {
       const r = box(); const b = el.getBoundingClientRect();
       return { l: (b.left - r.left) / r.width * 100, r: (b.right - r.left) / r.width * 100, t: (b.top - r.top) / r.height * 100, b: (b.bottom - r.top) / r.height * 100 };
     };
-    const ASPECT = 16 / 9;   // 1% of the scene's height is this many % of its width
+    const inside = (p, r, pad = 0, padY = pad) => p.x > r.l - pad && p.x < r.r + pad && p.y > r.t - padY && p.y < r.b + padY;
     const liquidEl = () => jugEl.querySelector('.gs-liquid');
     const meterEl = () => scene.querySelector('.gs-meter');
     /** The jug's liquid surface, in scene % down, for its level. */
     const surfaceY = (jr, level) => jr.b - (jr.b - jr.t) * (0.05 + 0.86 * level);
+    const toolEl = (id) => scene.querySelector(`[data-tool="${id}"]`);
     let g = null;
+
+    /** Something taken in the hand: a picture that follows the finger (and the rail's or tray's one fades). */
+    function holding(file, heightCqw, cls = '') {
+      const held = document.createElement('img');
+      held.className = `gs-held ${cls}`; held.src = `${ART}/${file}.webp`; held.alt = ''; held.draggable = false;
+      held.style.height = `${heightCqw}cqw`;
+      scene.append(held);
+      const place = (x, y, rot = 0) => { held.style.left = `${x}%`; held.style.top = `${y}%`; held.style.setProperty('--rot', `${rot}deg`); };
+      return { held, place };
+    }
+    function streamEl(file, cls = 'is-pour') {
+      const flow = document.createElement('img');
+      flow.className = `gs-flow ${cls}`; flow.src = `${ART}/${file}.webp`; flow.alt = '';
+      scene.append(flow);
+      const show = (on, x, top, bottom, w) => {
+        flow.classList.toggle('is-on', on);
+        if (!on) return;
+        flow.style.left = `${x}%`; flow.style.top = `${top}%`; flow.style.height = `${Math.max(0, bottom - top)}%`; flow.style.width = `${w}cqw`;
+      };
+      return { flow, show };
+    }
+    /** Something moved from its place on the counter: by --tx/--ty (a translate's % is of its own box) and --rot. */
+    const mover = (el, home) => (x, y, rot) => {
+      const w = home.r - home.l; const h = home.b - home.t;
+      el.style.setProperty('--tx', `${((x - (home.l + home.r) / 2) / w * 100).toFixed(2)}%`);
+      el.style.setProperty('--ty', `${((y - (home.t + home.b) / 2) / h * 100).toFixed(2)}%`);
+      el.style.setProperty('--rot', `${rot}deg`);
+    };
+    const binOpen = (on) => binEl.classList.toggle('is-open', on);
 
     function drawJug() {
       const liq = liquidEl();
@@ -357,34 +471,127 @@ export function openGelStand({ level = null } = {}) {
       liq.style.setProperty('--total', jugLevel().toFixed(4));
     }
 
-    // ---- an ingredient from the tray, over the jug ----
-    function dragIngredient(e, slot, s) {
+    // ---- the measuring glass: under a tap to fill it, over the jug to pour it in, over the bin to tip it out ----
+    function dragGlass(e, s) {
+      const glassEl = scene.querySelector('.gs-glass');
+      const liqEl = glassEl.querySelector('.gs-gliq');
+      const home = rectOf(glassEl);
+      const moveTo = mover(glassEl, home);
+      const gH = home.b - home.t; const gW = home.r - home.l;
+      const tap = tapOf(s.ing);
+      const jarEl = scene.querySelector(`.gs-jar[data-slot="${s.ing}"]`);
+      const jr = rectOf(jugEl);
+      const br = rectOf(binEl);
+      const tapStream = streamEl(STREAM[s.ing]);
+      const pourStream = streamEl(STREAM[s.ing]);
+      glassEl.classList.add('is-held');
+      let where = null; let since = 0; let from = run.glass; let tickAt = run.glass;
+      const topLayer = () => run.layers[run.layers.length - 1];
+      let jugBase = topLayer().h;   // the jug's layer when the glass got over it
+      const show = () => {
+        liqEl.style.setProperty('--g', run.glass.toFixed(4));
+        glassEl.setAttribute('aria-label', t('gels.glassAria', { n: Math.round(run.glass * 100) }));
+      };
+      /** Bring the glass up to now: filling under the tap, emptying into the jug or the bin (all by time held). */
+      const catchUp = (now) => {
+        const secs = since ? (now - since) / 1000 : 0;
+        if (where === 'tap') {
+          run.glass = Math.min(1, from + TAP_RATE * secs);
+          if (run.glass >= tickAt + 0.05) { tickAt = run.glass; haptic('select'); }
+          // the stream lands on the glass's filling
+          tapStream.show(run.glass < 1, tap.x, tap.y, glassAt.y + gH * 0.44 - gH * 0.82 * run.glass, 2.6);
+        } else if (where === 'jug' || where === 'bin') {
+          const f = Math.min(1, secs * 1000 / GLASS_POUR_MS);
+          run.glass = from * (1 - f);
+          if (where === 'jug') {
+            topLayer().h = Math.min(1 - run.below, jugBase + (from - run.glass) * GLASS_CAP);
+            drawJug();
+          }
+          if (f >= 1) pourStream.show(false);
+        }
+        show();
+      };
+      let glassAt = { x: (home.l + home.r) / 2, y: (home.t + home.b) / 2 };
+      const loop = (now) => { raf = requestAnimationFrame(loop); if (where) catchUp(now); };
+      let raf = requestAnimationFrame(loop);
+      const move = (ev) => {
+        const p = at(ev);
+        const now = performance.now();
+        if (where) catchUp(now);
+        const was = where;
+        // (still over the jug or the bin once it's empty: that's where it'll be let go)
+        // under the tap: close below it (the jug's under the taps too: lower down, the glass is over the jug)
+        where = Math.abs(p.x - tap.x) < 6 && p.y > tap.y - 4 && p.y < tap.y + 9 ? 'tap'
+          : (run.glass > 0 || was === 'jug') && inside(p, jr, 6, 8) ? 'jug'
+            : (run.glass > 0 || was === 'bin') && inside(p, br, 5, 8) ? 'bin' : null;
+        if (where !== was) {
+          since = now; from = run.glass; jugBase = topLayer().h;
+          if (where) haptic('tick');
+          jarEl?.classList.toggle('is-pouring', where === 'tap');
+          binOpen(where === 'bin');
+          if (where !== 'tap') tapStream.show(false);
+          if (where !== 'jug' && where !== 'bin') pourStream.show(false);
+        }
+        if (where === 'tap') {
+          // snapped under the tap, its rim just below the spout
+          glassAt = { x: tap.x, y: tap.y + 3.2 + gH / 2 };
+          moveTo(glassAt.x, glassAt.y, 0);
+          catchUp(now);
+        } else if (where === 'jug' || where === 'bin') {
+          // tipped over the jug's (or the bin's) top, its spout (on its left) over the middle
+          const r = where === 'jug' ? jr : br;
+          const cx = (r.l + r.r) / 2;
+          const half = gH / 2 * ASPECT;   // half its height, in % of the width
+          glassAt = { x: cx + 0.6 * half + gW * 0.3, y: r.t - 6 };
+          moveTo(glassAt.x, glassAt.y, -100);
+          if (run.glass > 0.001) pourStream.show(true, cx - 1, r.t - 4, where === 'jug' ? surfaceY(jr, jugLevel()) : r.t + 4, 3.4);
+          catchUp(now);
+        } else {
+          glassAt = { x: p.x, y: p.y - 3 };
+          moveTo(glassAt.x, glassAt.y, 0);
+        }
+      };
+      const up = () => {
+        cancelAnimationFrame(raf);
+        if (where) catchUp(performance.now());
+        tapStream.flow.remove(); pourStream.flow.remove();
+        jarEl?.classList.remove('is-pouring');
+        binOpen(false);
+        glassEl.classList.remove('is-held');
+        moveTo((home.l + home.r) / 2, (home.t + home.b) / 2, 0);
+        if (where === 'bin') {
+          // tipped out: try again
+          run.glass = 0; show();
+          flash(scene.querySelector('.gs-gsplash')); pop('binned'); haptic('refuse');
+          return;
+        }
+        if (where === 'jug' && topLayer().h > 0) {
+          // whatever was in the glass is in the jug now, and the step's judged on the jug
+          topLayer().h = Math.min(1 - run.below, jugBase + from * GLASS_CAP);
+          run.glass = 0; show(); drawJug();
+          flash('.gs-splash');
+          finishStep(G.scorePour(jugLevel(), s.to, run.below), jugLevel(), s.to);
+        }
+      };
+      move(e);
+      return { move, up };
+    }
+
+    // ---- a scoop from a well, or the dropper from the rail, over the jug ----
+    function dragIngredient(e, from, s) {
       const ing = s.ing;
       const mode = how(ing);
       const jr = rectOf(jugEl);
-      const held = document.createElement('img');
-      held.className = `gs-held is-${mode}`; held.src = `${ART}/${heldArt(ing)}.webp`; held.alt = ''; held.draggable = false;
-      const flow = document.createElement('img');
-      flow.className = `gs-flow is-${mode}`; flow.src = `${ART}/${STREAM[ing]}.webp`; flow.alt = '';
-      scene.append(flow, held);
-      slot.classList.add('is-out');
-      // the held thing's height in % of the scene's width: smaller over the jug, so the wall screen still reads
-      const heightCqw = mode === 'pour' ? 17 : 14;
-      held.style.height = `${heightCqw}cqw`;
+      const heightCqw = mode === 'drops' ? 15 : 13;
+      const { held, place } = holding(HELD[ing], heightCqw, `is-${mode}`);
+      const { flow, show: showFlow } = streamEl(STREAM[ing], `is-${mode}`);
+      from.classList.add('is-out');
       let over = false; let amount = 0; let lastX = null; let shookAt = 0; let raf = 0; let tickAt = 0;
-      // time held over the jug, in seconds: what's poured and dropped comes from this, never from frames drawn
+      // time held over the jug, in seconds: the drops come from this, never from frames drawn
       let heldFor = 0; let since = 0;
       const overTime = (now) => heldFor + (over && since ? (now - since) / 1000 : 0);
       const cx = (jr.l + jr.r) / 2;
-      const pourX = cx - 3;                // where a stream falls into the jug
-      const spoutY = jr.t - 2;             // and where it starts
 
-      const place = (x, y, rot) => { held.style.left = `${x}%`; held.style.top = `${y}%`; held.style.setProperty('--rot', `${rot}deg`); };
-      const showFlow = (on, x, top, bottom, w) => {
-        flow.classList.toggle('is-on', on);
-        if (!on) return;
-        flow.style.left = `${x}%`; flow.style.top = `${top}%`; flow.style.height = `${Math.max(0, bottom - top)}%`; flow.style.width = `${w}cqw`;
-      };
       /** What's gone in so far shows: the jug's layer, the meter, a light tick every 4%. */
       const apply = () => {
         if (s.kind === 'pour') {
@@ -396,61 +603,51 @@ export function openGelStand({ level = null } = {}) {
         meterEl()?.style.setProperty('--v', v.toFixed(4));
         if (v >= tickAt + 0.04) { tickAt = v; haptic('select'); }
       };
-      /** Bring what's gone in up to now (pouring and dropping go by the time held over the jug). */
       const catchUp = (now) => {
+        if (mode !== 'drops') return;
         const secs = overTime(now);
-        if (mode === 'pour') { amount = POUR_RATE * secs; apply(); }
-        if (mode === 'drops') {
-          const n = secs * 1000 < DROP_FIRST ? 0 : 1 + Math.floor((secs * 1000 - DROP_FIRST) / DROP_MS);
-          if (n > run.drops) {
-            run.drops = n; haptic('select');
-            meterEl()?.querySelectorAll('i').forEach((el, i) => el.classList.toggle('is-on', i < run.drops));
-            flash(flow);
-          }
+        const n = secs * 1000 < DROP_FIRST ? 0 : 1 + Math.floor((secs * 1000 - DROP_FIRST) / DROP_MS);
+        if (n > run.drops) {
+          run.drops = n; haptic('select');
+          meterEl()?.querySelectorAll('i').forEach((el, i) => el.classList.toggle('is-on', i < run.drops));
+          flash(flow);
         }
       };
       const loop = (now) => {
         raf = requestAnimationFrame(loop);
         if (!over) return;
         catchUp(now);
-        if (mode === 'shake') showFlow(now - shookAt < 140, parseFloat(held.style.left), parseFloat(held.style.top) + heightCqw / 2 / ASPECT, surfaceY(jr, jugLevel()), 5);
+        if (mode === 'shake') showFlow(now - shookAt < 140, parseFloat(held.style.left) - 3, parseFloat(held.style.top), surfaceY(jr, jugLevel()), 5);
       };
       const move = (ev) => {
         const p = at(ev);
         const was = over;
-        over = p.x > jr.l - 10 && p.x < jr.r + 10 && p.y > jr.t - 26 && p.y < jr.b + 4;
+        over = p.x > jr.l - 10 && p.x < jr.r + 10 && p.y > jr.t - 22 && p.y < jr.b + 4;
         const now = performance.now();
         if (over && !was) { haptic('tick'); since = now; }
         if (!over && was) { heldFor += (now - since) / 1000; since = 0; }
         held.classList.toggle('is-over', over);
-        if (!over) {
-          place(p.x, p.y - 7, 0); showFlow(false); lastX = null;
-          return;
-        }
-        if (mode === 'pour') {
-          // tipped over the jug: its top (the spout) right over the stream
-          const rot = -105; const half = heightCqw / 2;
-          place(pourX + 0.966 * half, spoutY - 0.259 * half / ASPECT, rot);
-          showFlow(true, pourX, spoutY, surfaceY(jr, jugLevel()), mode === 'pour' && ing === 'water' ? 3.4 : 4.2);
-        } else if (mode === 'shake') {
-          // upside down over the jug, following the finger side to side; shaking is what puts it in
-          const x = Math.max(jr.l + 4, Math.min(jr.r - 4, p.x));
+        if (!over) { place(p.x, p.y - 6, 0); showFlow(false); lastX = null; return; }
+        if (mode === 'shake') {
+          // the scoop tipped over the jug, following the finger side to side; shaking is what puts it in
+          const x = Math.max(jr.l + 6, Math.min(jr.r, p.x));
           const dx = lastX == null ? 0 : Math.max(-8, Math.min(8, x - lastX));
           lastX = x;
-          place(x, jr.t - 4.5, 180 + Math.max(-22, Math.min(22, dx * 6)));
-          if (Math.abs(dx) > 0.3) { amount += Math.abs(dx) * (s.kind === 'salt' ? SALT_K : SHAKE_K); shookAt = performance.now(); apply(); }
+          place(x + 4, jr.t - 3, -35 + Math.max(-18, Math.min(18, dx * 5)));
+          if (Math.abs(dx) > 0.3) { amount += Math.abs(dx) * (s.kind === 'salt' ? SALT_K : SHAKE_K); shookAt = performance.now(); apply(); showFlow(true, x + 1, jr.t - 2, surfaceY(jr, jugLevel()), 5); }
         } else {
           // the dropper, upright over the middle of the jug
-          place(cx, jr.t - 4.5, 0);
-          const tip = jr.t - 4.5 + heightCqw / 2 / ASPECT;
+          place(cx, jr.t - 5, 0);
+          const tip = jr.t - 5 + heightCqw / 2 / ASPECT;
           flow.style.left = `${cx}%`; flow.style.top = `${tip}%`; flow.style.height = `${Math.max(2, surfaceY(jr, jugLevel()) - tip)}%`; flow.style.width = '2cqw';
+          catchUp(now);
         }
       };
       const up = () => {
         cancelAnimationFrame(raf);
         if (over) catchUp(performance.now());
         held.remove(); flow.remove();
-        slot.classList.remove('is-out');
+        from.classList.remove('is-out');
         const put = s.kind === 'drops' ? run.drops : amount;
         if (!put) return;   // let go away from the jug: nothing went in, try again
         flash('.gs-splash');
@@ -463,28 +660,21 @@ export function openGelStand({ level = null } = {}) {
       return { move, up };
     }
 
-    // ---- the jug: to the sink to pour it away, or (filling) over the pouch ----
+    // ---- the jug: to the bin to tip it away, or (filling) over the pouch ----
     function dragJug(e, s) {
-      const filling = s.kind === 'fill';
+      const filling = s.kind === 'fill' && run.pouch;
       const home = rectOf(jugEl);
-      const pr = rectOf(scene.querySelector('.gs-pouch'));
-      const sink = { l: 0, r: 26, t: 42, b: 64 };
-      const flow = document.createElement('img');
-      flow.className = 'gs-flow is-pour'; flow.src = `${ART}/stream-gel.webp`; flow.alt = '';
-      scene.append(flow);
+      const moveTo = mover(jugEl, home);
+      const pouchEl = scene.querySelector('.gs-pouch');
+      const pr = pouchEl ? rectOf(pouchEl) : null;
+      const br = rectOf(binEl);
+      const { flow } = streamEl('stream-gel');
       jugEl.classList.add('is-held');
-      const hCqw = (home.b - home.t) * 16 / 9;   // the jug's height in % of the scene's width
+      const hCqw = (home.b - home.t) * ASPECT;   // the jug's height in % of the scene's width
       const fillEl = scene.querySelector('.gs-pfill i');
       const startLevel = jugLevel();
       let where = null; let raf = 0; let tickAt = 0;
       let pouredFor = 0; let since = 0;   // seconds held over the pouch: the fill comes from this
-      // moved in scene %: a translate's % is of the jug's own box, so it's scaled by the jug's size
-      const moveTo = (x, y, rot) => {
-        const w = home.r - home.l; const h = home.b - home.t;
-        jugEl.style.setProperty('--tx', `${((x - (home.l + home.r) / 2) / w * 100).toFixed(2)}%`);
-        jugEl.style.setProperty('--ty', `${((y - (home.t + home.b) / 2) / h * 100).toFixed(2)}%`);
-        jugEl.style.setProperty('--rot', `${rot}deg`);
-      };
       const fillTo = (now) => {
         run.fill = Math.min(1, FILL_RATE * (pouredFor + (since ? (now - since) / 1000 : 0)));
         fillEl.style.setProperty('--f', run.fill.toFixed(4));
@@ -493,30 +683,26 @@ export function openGelStand({ level = null } = {}) {
         liquidEl().querySelector('i')?.style.setProperty('--h', left.toFixed(4));
         liquidEl().style.setProperty('--total', left.toFixed(4));
         if (run.fill >= tickAt + 0.04) { tickAt = run.fill; haptic('select'); }
-        // the stream lands on the pouch's filling
         const surf = pr.b - (pr.b - pr.t) * (0.07 + 0.73 * run.fill);
         flow.style.height = `${Math.max(0, surf - parseFloat(flow.style.top))}%`;
       };
-      const loop = (now) => {
-        raf = requestAnimationFrame(loop);
-        if (where === 'pouch' && filling) fillTo(now);
-      };
+      const loop = (now) => { raf = requestAnimationFrame(loop); if (where === 'pouch') fillTo(now); };
       const move = (ev) => {
         const p = at(ev);
         const half = hCqw / 2;
         const was = where;
-        where = p.x < sink.r && p.y > sink.t && p.y < sink.b && jugLevel() > 0 ? 'sink'
-          : filling && p.x > pr.l - 14 && p.y < pr.b && p.y > pr.t - 30 ? 'pouch' : null;
+        where = jugLevel() > 0 && inside(p, br, 4, 8) ? 'bin'
+          : filling && p.x > pr.l - 16 && p.x < pr.r + 4 && p.y < pr.b && p.y > pr.t - 26 ? 'pouch' : null;
         if (where !== was && where) haptic('tick');
         const now = performance.now();
-        if (filling && where === 'pouch' && was !== 'pouch') since = now;
-        if (filling && was === 'pouch' && where !== 'pouch') { pouredFor += (now - since) / 1000; since = 0; }
-        scene.classList.toggle('is-over-sink', where === 'sink');
-        if (where === 'sink') {
-          // tipped to the left over the basin
-          const sx = 11; const sy = 46;
-          moveTo(sx + 0.966 * half, sy - 0.259 * half / ASPECT - 4, -105);
-          flow.classList.add('is-on'); flow.style.left = `${sx}%`; flow.style.top = `${sy - 4}%`; flow.style.height = '9%'; flow.style.width = '4.5cqw';
+        if (where === 'pouch' && was !== 'pouch') since = now;
+        if (was === 'pouch' && where !== 'pouch') { pouredFor += (now - since) / 1000; since = 0; }
+        binOpen(where === 'bin');
+        if (where === 'bin') {
+          // tipped to the right over the bin
+          const bx = (br.l + br.r) / 2; const by = br.t - 3;
+          moveTo(bx - 0.966 * half, by - 0.259 * half / ASPECT - 3, 105);
+          flow.classList.add('is-on'); flow.style.left = `${bx}%`; flow.style.top = `${by}%`; flow.style.height = '6%'; flow.style.width = '4.5cqw';
         } else if (where === 'pouch') {
           // tipped to the right, its spout over the pouch's open top
           const px = (pr.l + pr.r) / 2; const py = pr.t - 5;
@@ -529,12 +715,12 @@ export function openGelStand({ level = null } = {}) {
       };
       const up = () => {
         cancelAnimationFrame(raf);
-        if (filling && where === 'pouch') fillTo(performance.now());
+        if (where === 'pouch') fillTo(performance.now());
         flow.remove();
-        scene.classList.remove('is-over-sink');
+        binOpen(false);
         jugEl.classList.remove('is-held');
         moveTo((home.l + home.r) / 2, (home.t + home.b) / 2, 0);
-        if (where === 'sink') { dump(); return; }
+        if (where === 'bin') { dump(); return; }
         if (filling && run.fill > 0) finishStep(G.scorePour(run.fill, s.to, 0), run.fill, s.to);
       };
       raf = requestAnimationFrame(loop);
@@ -542,17 +728,45 @@ export function openGelStand({ level = null } = {}) {
       return { move, up };
     }
 
-    // ---- stirring round the jug ----
+    // ---- an empty pouch from the box, onto the counter ----
+    function dragPouch(e) {
+      const boxEl = scene.querySelector('.gs-box');
+      const { held, place } = holding('pouch-0', 22, 'is-pouch');
+      boxEl.classList.add('is-out');
+      let ok = false;
+      const move = (ev) => {
+        const p = at(ev);
+        const was = ok;
+        ok = p.x > 52 && p.x < 98 && p.y > 38 && p.y < 64;
+        if (ok && !was) haptic('tick');
+        scene.classList.toggle('is-over-spot', ok);
+        place(ok ? POUCH_AT.x : p.x, ok ? POUCH_AT.y : p.y - 5, 0);
+      };
+      const up = () => {
+        held.remove(); boxEl.classList.remove('is-out');
+        scene.classList.remove('is-over-spot');
+        if (!ok) return;
+        haptic('place');
+        run.pouch = true;
+        drawPrep();
+        root.querySelector('.gs-pouch')?.classList.add('is-in');
+      };
+      move(e);
+      return { move, up };
+    }
+
+    // ---- stirring: the whisk off the rail, round the jug ----
     function stir(e, s) {
       const ring = scene.querySelector('.gs-ring circle');
       const whisk = scene.querySelector('.gs-whisk');
       const jr = rectOf(jugEl);
       const cx = jr.l + (jr.r - jr.l) * 0.43; const cy = jr.t + (jr.b - jr.t) * 0.6;
       // the angle round the jug, measured in screen pixels so it's a true circle
-      const ang = (p) => Math.atan2((p.y - cy) * 16 / 9, p.x - cx);
+      const ang = (p) => Math.atan2((p.y - cy) * ASPECT, p.x - cx);
       let prev = ang(at(e));
       if (!run.stirT0) run.stirT0 = performance.now();
       counter.classList.add('is-stirring');
+      toolEl('whisk')?.classList.add('is-out');
       const move = (ev) => {
         const p = at(ev);
         whisk.style.left = `${p.x}%`; whisk.style.top = `${p.y}%`;
@@ -575,43 +789,118 @@ export function openGelStand({ level = null } = {}) {
         }
       };
       move(e);
-      return { move, up: () => counter.classList.remove('is-stirring') };
+      return { move, up: () => { counter.classList.remove('is-stirring'); toolEl('whisk')?.classList.remove('is-out'); } };
     }
 
-    // ---- swiping across the sealer ----
+    // ---- sealing: the sealer off the rail, swiped across the pouch's top ----
     function seal(e) {
-      const sealer = scene.querySelector('.gs-sealer');
-      const bar = sealer.querySelector('.gs-sealbar b');
-      const sr = rectOf(sealer);
+      const pouchEl = scene.querySelector('.gs-pouch');
+      const pr = rectOf(pouchEl);
+      const { held, place } = holding('sealer-open', 11, 'is-sealer');
+      toolEl('sealer')?.classList.add('is-out');
+      const bar = document.createElement('i');
+      bar.className = 'gs-sealbar'; bar.innerHTML = '<b></b>';
+      pouchEl.append(bar);
+      const fill = bar.querySelector('b');
+      const topY = pr.t + (pr.b - pr.t) * 0.08;
       let lo = null; let hi = null;
       const move = (ev) => {
-        const v = Math.max(0, Math.min(1, (at(ev).x - sr.l) / (sr.r - sr.l)));
+        const p = at(ev);
+        const near = Math.abs(p.y - topY) < 7 && p.x > pr.l - 14 && p.x < pr.r + 14;
+        // over the pouch, the jaws ride along its top; else the sealer just follows the finger
+        place(p.x, near ? topY : p.y - 4, 0);
+        held.classList.toggle('is-over', near);
+        if (!near) return;
+        const v = Math.max(0, Math.min(1, (p.x - pr.l) / (pr.r - pr.l)));
         lo = lo == null ? v : Math.min(lo, v); hi = hi == null ? v : Math.max(hi, v);
-        bar.style.left = `${lo * 100}%`; bar.style.width = `${(hi - lo) * 100}%`;
+        fill.style.left = `${lo * 100}%`; fill.style.width = `${(hi - lo) * 100}%`;
       };
       const up = () => {
         const cover = (hi ?? 0) - (lo ?? 0);
-        if (cover < 0.15) { bar.style.width = '0'; return; }   // a tap, not a swipe: try again
-        sealer.classList.add('is-shut');                        // the jaws snap shut
-        scene.querySelector('.gs-pouch').classList.add('is-sealed');   // and the clear pouch is the gel
+        if (cover < 0.15) {
+          // a tap, not a swipe: back on the rail, try again
+          held.remove(); bar.remove(); toolEl('sealer')?.classList.remove('is-out');
+          return;
+        }
+        // the jaws snap shut on the pouch's top, and the clear pouch is the gel
+        held.src = `${ART}/sealer-closed.webp`;
+        place((pr.l + pr.r) / 2, topY, 0);
+        held.classList.add('is-shut');
+        pouchEl.classList.add('is-sealed');
         finishStep(G.scoreSeal(cover), cover, 1);
       };
       move(e);
       return { move, up };
     }
 
-    // ---- a tap on a tray slot: a refill with carbs ----
-    function refill(slot) {
-      const id = slot.dataset.slot;
+    // ---- restocking a well: the sachet over it, snipped open with the scissors ----
+    function snip(e) {
+      const id = snipping;
+      const sachetEl = scene.querySelector('.gs-sachet');
+      const sr = rectOf(sachetEl);
+      const lineY = sr.t + (sr.b - sr.t) * 0.11;
+      const fill = sachetEl.querySelector('.gs-cutline b');
+      const { held, place } = holding('scissors-open', 13, 'is-scissors');
+      toolEl('scissors')?.classList.add('is-out');
+      let lo = null; let hi = null; let lastSnip = null; let open = true; let cut = false;
+      const move = (ev) => {
+        if (cut) return;
+        const p = at(ev);
+        const near = Math.abs(p.y - lineY) < 6 && p.x > sr.l - 8 && p.x < sr.r + 8;
+        place(p.x, near ? lineY : p.y - 4, 0);
+        if (!near) return;
+        // snip, snip: the blades close and open as they go
+        if (lastSnip == null || Math.abs(p.x - lastSnip) > 2.5) {
+          lastSnip = p.x; open = !open;
+          held.src = `${ART}/${open ? 'scissors-open' : 'scissors-closed'}.webp`;
+          haptic('select');
+        }
+        const v = Math.max(0, Math.min(1, (p.x - sr.l) / (sr.r - sr.l)));
+        lo = lo == null ? v : Math.min(lo, v); hi = hi == null ? v : Math.max(hi, v);
+        fill.style.left = `${lo * 100}%`; fill.style.width = `${(hi - lo) * 100}%`;
+        if (hi - lo >= SNIP_CUT) {
+          cut = true;
+          g = null;
+          held.remove(); toolEl('scissors')?.classList.remove('is-out');
+          snipped(id, sachetEl);
+        }
+      };
+      const up = () => {
+        if (cut) return;
+        held.remove(); toolEl('scissors')?.classList.remove('is-out');
+      };
+      move(e);
+      return { move, up };
+    }
+    /** The sachet's cut: the strip flies off, it tips into the well, and the well's restocked. */
+    function snipped(id, sachetEl) {
+      haptic('place');
+      sachetEl.classList.add('is-cut');
+      setTimeout(() => sachetEl.classList.add('is-pour'), 320);
+      setTimeout(() => {
+        snipping = null;
+        refill(id, true);
+      }, 900);
+    }
+
+    // ---- a tap on a jar or a well: a refill with carbs (a well's comes in a sachet to snip) ----
+    function refill(id, fromSachet = false) {
       const have = Number(st.stock[id]) || 0;
       if (G.INGREDIENTS[id].free || have >= STOCK_BAR) { haptic('refuse'); return; }
       const r = G.buy(st.stock, id, 1, st.carbs);
       if (r.error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
+      if (WELLS.includes(id) && !fromSachet) {
+        // a powder comes in a sachet: snip it open to pour it in
+        haptic('tick');
+        snipping = id;
+        drawPrep();
+        return;
+      }
       haptic('tick');
       set({ stock: r.stock, carbs: r.carbs });
       dumped = false;
       drawPrep();
-      // the cost floats up from the slot, the bar springs
+      // the cost floats up from it, its bar springs
       const again = root.querySelector(`[data-slot="${id}"]`);
       again?.classList.add('is-bought');
       const tag = document.createElement('b');
@@ -621,14 +910,26 @@ export function openGelStand({ level = null } = {}) {
 
     scene.onpointerdown = (e) => {
       if (busy || g || e.button > 0) return;
+      if (e.target.closest('.gs-dock')) return;
       const s = step();
       const slot = e.target.closest('[data-slot]');
-      if (slot) {
-        if (s && ADDS.has(s.kind) && s.ing === slot.dataset.slot) g = dragIngredient(e, slot, s);
-        else if (!run && !result) { const p0 = at(e); g = { move: () => {}, up: (ev) => { const p = at(ev); if (Math.hypot(p.x - p0.x, p.y - p0.y) < 4) refill(slot); } }; }
-      } else if (run && s && s.kind !== 'seal' && s.kind !== 'stir' && e.target.closest('[data-jug]')) g = dragJug(e, s);
-      else if (run && s?.kind === 'stir' && !e.target.closest('.gs-dock')) g = stir(e, s);
-      else if (run && s?.kind === 'seal' && !e.target.closest('.gs-dock')) g = seal(e);
+      const tool = e.target.closest('[data-tool]');
+      if (snipping) {
+        g = snip(e);
+      } else if (!run && !result) {
+        // before starting: a tap on a jar, the vial or a well restocks it
+        if (slot) { const p0 = at(e); g = { move: () => {}, up: (ev) => { const p = at(ev); if (Math.hypot(p.x - p0.x, p.y - p0.y) < 4) refill(slot.dataset.slot); } }; }
+      } else if (run && s) {
+        const glassStep = s.kind === 'pour' && how(s.ing) === 'glass';
+        if (e.target.closest('[data-glass]') && (glassStep || run.glass > 0)) {
+          if (glassStep) g = dragGlass(e, s);
+        } else if (s.kind === 'stir') g = stir(e, s);
+        else if (s.kind === 'seal') g = seal(e);
+        else if (ADDS.has(s.kind) && how(s.ing) === 'shake' && slot?.dataset.slot === s.ing) g = dragIngredient(e, slot, s);
+        else if (s.kind === 'drops' && (tool?.dataset.tool === 'dropper' || slot?.dataset.slot === 'caffeine')) g = dragIngredient(e, toolEl('dropper'), s);
+        else if (s.kind === 'fill' && !run.pouch && e.target.closest('[data-box]')) g = dragPouch(e);
+        else if (e.target.closest('[data-jug]')) g = dragJug(e, s);
+      }
       if (!g) return;
       e.preventDefault();
       try { scene.setPointerCapture(e.pointerId); } catch { /* a pointer the browser doesn't track */ }
@@ -661,26 +962,27 @@ export function openGelStand({ level = null } = {}) {
     }
     if (b('[data-gs-back]')) {
       if (!gel) { closeLayer(root); return; }
-      gel = null; run = null; result = null; drawMenu(); return;
+      gel = null; run = null; result = null; snipping = null; drawMenu(); return;
     }
     const pick = b('[data-gs-pick]');
     if (pick) {
       const g = G.gelById(pick.dataset.gsPick);
       if (g.level > level) { haptic('refuse'); return; }
-      haptic('tick'); gel = g; run = null; result = null; dumped = false; drawPrep(); return;
+      haptic('tick'); gel = g; run = null; result = null; dumped = false; snipping = null; drawPrep(); return;
     }
     const startBtn = b('[data-gs-start]');
     if (startBtn) {
+      if (snipping) return;
       const r = G.start(st.stock, gel, level);
       if (r.error) {
         // something's short: the slots to tap say so
         haptic('refuse');
-        root.querySelectorAll('.gs-slot.is-short').forEach((el) => flash(el));
+        root.querySelectorAll('[data-slot].is-short').forEach((el) => flash(el));
         return;
       }
       set({ stock: r.stock });
       dumped = false;
-      run = { i: 0, below: 0, scores: [], layers: [], mix: 0, fill: 0, salt: 0, drops: 0, stirAcc: 0, stirT0: 0 };
+      run = { i: 0, below: 0, scores: [], layers: [], mix: 0, fill: 0, salt: 0, drops: 0, stirAcc: 0, stirT0: 0, glass: 0, glassC: '', pouch: false };
       beginStep();
       haptic('place'); drawPrep(); return;
     }

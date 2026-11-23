@@ -3,7 +3,7 @@ locker room stands on, the platform and the club's buildings (the builders' huts
 
     python tools/cut-plot.py <map 3x png> <platform repaint> <renders dir>
 
-  <map 3x png>        MOSKE APP/Characters/Photos/Robots/Robots/World map/map-navy-navy-upscale-3x_v2.png (no flags)
+  <map 3x png>        MOSKE APP/Characters/Photos/Robots/Robots/World map/map-navy-navy-upscale-3x_v5.png (no walls, taller)
   <platform repaint>  MOSKE APP/Characters/Photos/Robots/Robots/Base/final/platform-navy.jpg (on green)
   <renders dir>       <name>-a.png + <name>-a.json: Base/repaint/cut (tools/render-items/cut-base-repaints.py),
                       or render-base-assets.py's plain renders
@@ -28,14 +28,14 @@ OUT = os.path.join(REPO, 'icons', 'Plot')
 ART_JS = os.path.join(REPO, 'js', 'core', 'plot-art.js')
 N = 48            # the lawn, tiles each way
 P = 3             # the platform's floor starts this many tiles in from the lawn's back corner
-FLOOR = 23        # the platform's floor, tiles each way: its body reaches the far side of the club's two exits
-                  # in the fence (their pillars at u, v = 26.8 on map v4), so the paths to the club house and the
-                  # stadium meet its sides
+FLOOR = 17        # the platform's floor, tiles each way: its body (floor + rim) ends at u, v = 20.7, where the paths
+                  # from the club house's and the stadium's plazas reach the lawn (map v5: 20.5 to 25.7), so they
+                  # stay open
 TILE = 1280       # map px per stored tile
 STORE_K = 0.75    # stored px per map px
 SMALL = 0.25      # a tile's small copy, as a share of its stored size
 ART_TAG = 'r9'    # in the platform's and club buildings' names: change it whenever they're repainted
-MAP_TAG = 'v4'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
+MAP_TAG = 'v5'    # in the tiles' names: change it whenever the map is repainted (sw.js keeps old pictures)
 # the platform repaint's guide line, roughly (its px: back, right, front, left corners): platform() fits each
 # side as a straight line through the line's own dark px near it and meets them, so these only say where to look
 # (measured on Base/final/platform-navy_V4.png; set them again for a new repaint)

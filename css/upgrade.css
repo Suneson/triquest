@@ -42,3 +42,11 @@
 @media (prefers-reduced-motion: reduce) { .up-bar i, .up-b { transition: none; } }
 /* the item menu's Upgrade button: the builder's face in a round frame */
 .dg-sq[data-dg-up] img { border-radius: 50%; background: radial-gradient(circle at 50% 35%, #EAF4FF, #9FC3E8); box-shadow: 0 0 0 3px #16264D; }
+
+/* the locker room's Upgrade button, on its plate (diorama-view.js hallPill) */
+.dg-pill-chip.is-up { cursor: pointer; padding-left: 4px; font: inherit; }
+.dg-pill-chip.is-up img { width: 28px; height: 28px; border-radius: 9999px; object-fit: cover; }
+.dg-pill-chip.is-up b { font-size: 14px; }
+.dg-pill-chip.is-up:active { transform: scale(0.96); }
+.up-gives { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 4px 0 0; font-weight: 700; color: #2E7D4F; }
+.up-gives svg { width: 16px; height: 16px; }

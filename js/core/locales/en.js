@@ -3500,3 +3500,6 @@ en.jobs = {"of": "Level {n} of {max}", "level": "Level {n}", "building": "Upgrad
 Object.assign(en.gear.err, {"unknown_target": "That can't be upgraded.", "top": "It's at the top level.", "busy_target": "A builder is already on it.", "not_hired": "That builder isn't hired yet.", "builder_busy": "That builder is busy."});
 
 export default en;
+
+Object.assign(en.jobs, {"hallLow": "Upgrade the locker room to level {n} first.", "hallGives": "Lets your other buildings reach level {n}", "hallUpAria": "Locker room, level {n}. Upgrade it", "hallBusyAria": "A builder is taking the locker room to level {n}"});
+Object.assign(en.gear.err, {"hall_low": "Upgrade the locker room first."});

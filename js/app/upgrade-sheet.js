@@ -5,7 +5,7 @@
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
-import { nextLevel, jobOn, levelOf, maxLevel, crew, freeBuilder, whyNot, left, progress } from '../core/jobs.js';
+import { nextLevel, jobOn, levelOf, maxLevel, crew, freeBuilder, whyNot, left, progress, HALL, HALL_CAPS, hallFor } from '../core/jobs.js';
 import { myBuilds, buildsOpen, startBuild, walletNow, gearError, serverNow, gearState } from './gear-state.js';
 import { openLayer, closeLayer } from './nav.js';
 import { haptic } from './haptics.js';
@@ -74,12 +74,16 @@ export function openUpgrade({ target, name, art }) {
           aria-label="${esc(t('jobs.pickAria', { who: t(`jobs.who.${c.who}`), note }))}">
           <img src="${ring(c.who)}" alt="">${!c.hired ? `<span class="up-lock">${svg('lock')}</span>` : ''}<small>${esc(note)}</small></button>`;
       }).join('');
-      const msg = why === 'closed' ? t('jobs.closed') : why === 'nobody' ? t('jobs.nobody') : why === 'gear:insufficient' ? t('gear.err.insufficient') : '';
+      const msg = why === 'closed' ? t('jobs.closed') : why === 'nobody' ? t('jobs.nobody') : why === 'gear:insufficient' ? t('gear.err.insufficient')
+        : why === 'gear:hall_low' ? t('jobs.hallLow', { n: hallFor(next.to) }) : '';
+      // the locker room's level caps the others: say what the next one opens up
+      const gives = target === HALL && HALL_CAPS[next.to] > HALL_CAPS[level] ? `<p class="up-gives">${svg('lock')}<span>${esc(t('jobs.hallGives', { n: HALL_CAPS[next.to] }))}</span></p>` : '';
       body = `<div class="up-pics">
           <figure class="up-pic"><img src="${art(level)}" alt="" draggable="false"><figcaption>${esc(t('jobs.level', { n: level }))}</figcaption></figure>
           <span class="up-arrow" aria-hidden="true">${svg('chevron')}</span>
           <figure class="up-pic is-next"><img src="${art(next.to)}" alt="" draggable="false"><figcaption>${esc(t('jobs.level', { n: next.to }))}</figcaption></figure>
         </div>
+        ${gives}
         <p class="up-time">${svg('clock')}<span>${esc(t('jobs.takes', { t: hours(next.hours) }))}</span></p>
         <p class="up-pick">${esc(t('jobs.pick'))}</p>
         <div class="up-crew">${crewHtml}</div>

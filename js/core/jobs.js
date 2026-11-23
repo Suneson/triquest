@@ -21,10 +21,16 @@ const L = (coins, hours) => ({ coins, hours });
  * levels[n] takes it from level n - 1 to n; level 1 is what you're given. First guesses, to be tuned.
  */
 export const TARGETS = {
+  // the locker room is the base's hall: its level caps every other building's (HALL_CAPS)
+  locker: { levels: [null, null, L(1000, 4), L(2500, 12), L(5000, 24), L(9000, 36), L(15000, 48)] },
   'gel-stand': { levels: [null, null, L(400, 2), L(900, 6), L(1800, 12), L(3500, 24), L(6000, 36)] },
   'coffee-shop': { levels: [null, null, L(500, 2), L(1000, 6), L(2000, 12), L(4000, 24), L(7000, 36)] },
 };
 export const isTarget = (id) => Object.hasOwn(TARGETS, id);
+/** The hall: the building whose level caps all the others. */
+export const HALL = 'locker';
+/** The highest level the other buildings can reach, by the hall's level. */
+export const HALL_CAPS = { 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 6 };
 /** A target's top level. */
 export const maxLevel = (target) => (isTarget(target) ? TARGETS[target].levels.length - 1 : 1);
 
@@ -42,6 +48,12 @@ export const jobOf = (jobs, who, now) => (jobs || []).find((j) => j?.builder ===
 export const left = (j, now) => Math.max(0, at(j.finishes_at) - now);
 /** How far along a job is, 0 to 1. */
 export const progress = (j, now) => { const a = at(j.started_at); const b = at(j.finishes_at); return b > a ? Math.min(1, Math.max(0, (now - a) / (b - a))) : 1; };
+
+/** The highest level a building can reach now (the hall's cap; the hall only by its own top). */
+export const capOf = (jobs, target, now) =>
+  (target === HALL ? maxLevel(target) : Math.min(maxLevel(target), HALL_CAPS[levelOf(jobs, HALL, now)] ?? maxLevel(target)));
+/** The hall level a building's level needs. */
+export const hallFor = (level) => Number(Object.entries(HALL_CAPS).find(([, c]) => c >= level)?.[0] || maxLevel(HALL));
 
 /** The next level of a building and its price: { to, coins, hours }, or null at the top. */
 export function nextLevel(jobs, target, now) {
@@ -61,12 +73,13 @@ export const freeBuilder = (jobs, inventory, now) => crew(jobs, inventory, now).
 
 /**
  * Can this job start? Returns null when it can, or the server's error code:
- * unknown_target, top, busy_target, not_hired, builder_busy, insufficient.
+ * unknown_target, top, hall_low, busy_target, not_hired, builder_busy, insufficient.
  */
 export function whyNot({ jobs, inventory, coins, target, builder, now }) {
   if (!isTarget(target)) return 'gear:unknown_target';
   const next = nextLevel(jobs, target, now);
   if (!next) return 'gear:top';
+  if (next.to > capOf(jobs, target, now)) return 'gear:hall_low';
   if (jobOn(jobs, target, now)) return 'gear:busy_target';
   const b = BUILDERS.find((x) => x.who === builder);
   if (!b || !hasBuilder(b, inventory)) return 'gear:not_hired';
@@ -85,4 +98,6 @@ export function startRow(jobs, target, builder, now, id = 1) {
 export const JOB_RULES = {
   targets: Object.fromEntries(Object.entries(TARGETS).map(([id, t]) => [id, Object.fromEntries(t.levels.map((p, n) => [n, p]).filter(([, p]) => p).map(([n, p]) => [String(n), p]))])),
   builders: Object.fromEntries(BUILDERS.map((b) => [b.who, b.cost])),
+  hall: HALL,
+  caps: Object.fromEntries(Object.entries(HALL_CAPS).map(([k, v]) => [String(k), v])),
 };

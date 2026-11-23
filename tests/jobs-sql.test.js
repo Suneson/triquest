@@ -40,6 +40,9 @@ const fails = async (db, sql, code) => {
 };
 
 const start = (db, target, who) => db.query(`select public.start_builder_job($1, $2)`, [target, who]);
+// the locker room (the hall) already at a level, for free: finished jobs at no cost
+const hallAt = (db, level) => db.query(`insert into public.builder_jobs (user_id, builder, target, to_level, cost, started_at, finishes_at)
+  select $1, 'blue', 'locker', n, 0, now() - interval '3 days', now() - interval '2 days' from generate_series(2, $2::int) n`, [UID, level]);
 const finishAll = (db) => db.query(`update public.builder_jobs set started_at = now() - interval '2 days', finishes_at = now() - interval '1 second'`);
 
 test('builder_rules() is JOB_RULES', { skip }, async () => {
@@ -59,8 +62,9 @@ test('a job: paid when it starts, the level goes up when it finishes', { skip },
   await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:busy_target');
   await fails(db, `select public.start_builder_job('coffee-shop', 'blue')`, 'gear:builder_busy');
   await finishAll(db);
+  await hallAt(db, 2);
   await start(db, 'gel-stand', 'blue');
-  assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs`)).rows[0].n, 3);
+  assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs where target = 'gel-stand'`)).rows[0].n, 3);
 });
 
 test('only hired builders work, and not past the top', { skip }, async () => {
@@ -70,6 +74,8 @@ test('only hired builders work, and not past the top', { skip }, async () => {
   await db.query(`select public.buy_builder('builder-red')`);
   await start(db, 'coffee-shop', 'red');
   await start(db, 'gel-stand', 'blue');
+  // the locker room first, to its top, so nothing else is capped
+  await hallAt(db, TARGETS.locker.levels.length - 1);
   for (let n = 3; n <= TARGETS['gel-stand'].levels.length - 1; n++) { await finishAll(db); await start(db, 'gel-stand', 'blue'); }
   await finishAll(db);
   await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:top');
@@ -80,4 +86,15 @@ test('no coins, no job', { skip }, async () => {
   await db.query(`insert into public.builder_jobs (user_id, builder, target, to_level, cost, started_at, finishes_at)
     values ($1, 'blue', 'coffee-shop', 2, 1000000, now() - interval '1 day', now() - interval '1 hour')`, [UID]);
   await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:insufficient');
+});
+
+test('the locker room caps the others: gear:hall_low', { skip }, async () => {
+  const db = await freshDb(200000);
+  await start(db, 'gel-stand', 'blue');
+  await finishAll(db);
+  await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:hall_low');
+  await start(db, 'locker', 'blue');
+  await finishAll(db);
+  await start(db, 'gel-stand', 'blue');
+  assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs where target = 'gel-stand'`)).rows[0].n, 3);
 });

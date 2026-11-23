@@ -28,3 +28,11 @@ Every upgrade on the base is a builder's job, as in a castle-builder game. Deliv
 - Finishing a job early.
 - The locker room as the Town Hall: its level caps everything else.
 - Upgrades for the huts, the pool, the stadium and the club house.
+
+## The locker room is the hall (0040)
+
+The locker room is a builder's job like the others (levels 2–6), and its level caps every other
+building's: `HALL_CAPS` in js/core/jobs.js (hall level → the others' top level: 1→2, 2→3, 3→4, 4→5,
+5→6). The server refuses a level past the cap with `gear:hall_low`; the upgrade sheet says which
+locker level is needed, and the locker's own sheet says what its next level opens up. Its Upgrade
+button sits on the locker room's plate at the top of the base.

@@ -30,8 +30,8 @@ import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/dril
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
 import { openGelStand, standLevel } from './gel-stand-view.js';
 import { openCoffeeShop, shopLevel } from './coffee-view.js';
-import { openUpgrade, buildingJob, buildsChanged, timeLeft } from './upgrade-sheet.js';
-import { isTarget } from '../core/jobs.js';
+import { openUpgrade, buildingJob, buildingLevel, buildsChanged, timeLeft, face } from './upgrade-sheet.js';
+import { isTarget, HALL } from '../core/jobs.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
@@ -176,12 +176,20 @@ function hud(ctx, avatarBtn) {
   </header>`;
 }
 
+/**
+ * The locker room's plate: its level (the hall's, from its builders' jobs: it caps every other
+ * building, jobs.js HALL_CAPS) and its Upgrade button, or the builder on it and their clock.
+ */
+function hallPill() {
+  const lvl = buildingLevel(HALL); const job = buildingJob(HALL);
+  return `<button class="dg-pill-name" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}"><b>${esc(roomName('locker'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></button>
+    <button class="dg-pill-chip is-up${job ? ' is-job' : ''}" data-dg-hall aria-label="${esc(job ? t('jobs.hallBusyAria', { n: job.to }) : t('jobs.hallUpAria', { n: lvl }))}"><img src="${face(job?.who || 'blue')}" alt="" width="64" height="64" draggable="false"><b data-dg-hall-t>${esc(job ? timeLeft(job.left) : t('jobs.upgrade'))}</b></button>`;
+}
+
 /** The room's own plate: name and level, its trophies, and what's building for it. */
 function roomPill(room, ctx) {
   const lvl = levelOf(room, ctx);
-  if (room === 'locker') {
-    return `<div class="dg-pill"><button class="dg-pill-name" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}"><b>${esc(roomName('locker'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></button></div>`;
-  }
+  if (room === 'locker') return `<div class="dg-pill" data-dg-hallpill>${hallPill()}</div>`;
   if (room === 'club') {
     return `<div class="dg-pill"><span class="dg-pill-name" aria-label="${esc(t('cp.roomAlt', { room: roomName('club'), n: lvl }))}"><b>${esc(roomName('club'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></span></div>`;
   }
@@ -1222,6 +1230,13 @@ export function wireDiorama(root, ctx) {
     const it = view.sel && itemAt(view.sel); if (!it || !isTarget(it.id)) return;
     openUpgrade({ target: it.id, name: itemName(it.id), art: (n) => it.art({ ...artOpts, levels: { ...artOpts.levels, gels: n, coffee: n }, face: 'a' }) });
   };
+  // the locker room's level: the hall's upgrade sheet
+  const hallEl = root.querySelector('[data-dg-hallpill]');
+  if (hallEl) hallEl.onclick = (e) => {
+    if (!e.target.closest('[data-dg-hall]')) return;
+    e.stopPropagation(); haptic('tick');
+    openUpgrade({ target: HALL, name: roomName('locker'), art: () => 'icons/UI/sports/sport-locker.webp' });
+  };
   // put the picked-up item away in the inventory's Stash tab
   root.querySelector('[data-dg-stash]').onclick = (e) => {
     e.stopPropagation();
@@ -1385,12 +1400,17 @@ export function wireDiorama(root, ctx) {
     draw();   // the athlete walks to the machine, or steps off it
   };
   // the gel stand went up a level: its new picture
-  const onGels = () => { artOpts.levels.gels = standLevel(); artOpts.levels.coffee = shopLevel(); draw(); };
+  const onGels = () => {
+    artOpts.levels.gels = standLevel(); artOpts.levels.coffee = shopLevel();
+    const hp = root.querySelector('[data-dg-hallpill]'); if (hp) hp.innerHTML = hallPill();
+    draw();
+  };
   // a builder's job started or finished: the clocks and the pictures
   document.removeEventListener('builds-changed', view.onBuilds || (() => {}));
   view.onBuilds = onGels;
   document.addEventListener('builds-changed', onGels);
-  let jobLevels = `${standLevel()}:${shopLevel()}`;
+  const levelsNow = () => `${standLevel()}:${shopLevel()}:${buildingLevel(HALL)}`;
+  let jobLevels = levelsNow();
   document.removeEventListener('gels-changed', view.onGels || (() => {}));
   view.onGels = onGels;
   document.addEventListener('gels-changed', onGels);
@@ -1410,7 +1430,9 @@ export function wireDiorama(root, ctx) {
       const b = buildingJob(tag.dataset.dgBuild);
       if (b) tag.querySelector('span').textContent = timeLeft(b.left); else tag.remove();
     });
-    const lv = `${standLevel()}:${shopLevel()}`;
+    const hallJob = buildingJob(HALL); const hallT = root.querySelector('[data-dg-hall-t]');
+    if (hallT && hallJob) hallT.textContent = timeLeft(hallJob.left);
+    const lv = levelsNow();
     if (lv !== jobLevels) { jobLevels = lv; haptic('levelUp'); buildsChanged(); }
     // and on the picked-up machine's Train / Recover button
     const sel = view.sel && itemAt(view.sel);

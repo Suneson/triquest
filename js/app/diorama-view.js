@@ -29,6 +29,7 @@ import { STAMINA } from '../core/stamina.js';
 import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/drills.js';
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
 import { openGelStand, standLevel, standBuild } from './gel-stand-view.js';
+import { openCoffeeShop, shopLevel } from './coffee-view.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
@@ -478,7 +479,7 @@ export function wireDiorama(root, ctx) {
   const inv = s.inventory;
   const items = itemsOwned();
   const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '',
-    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx), gels: standLevel() } };
+    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx), gels: standLevel(), coffee: shopLevel() } };
   lastLevels = artOpts.levels;
   // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
   const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
@@ -625,6 +626,7 @@ export function wireDiorama(root, ctx) {
     if (it?.opens === 'missions') openMissionBoard(ctx);
     else if (it?.opens === 'trophies') openTrophyDisplay();
     else if (it?.opens === 'gels') openGelStand();
+    else if (it?.opens === 'coffee') openCoffeeShop();
     if (it?.opens === 'drill' || it?.opens === 'recovery') athSave({ ...athSaved(), use: it.id });
     if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
     else if (it?.opens === 'recovery') openRecovery(recoveryOfItem(it.id));

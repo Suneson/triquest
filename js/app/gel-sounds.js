@@ -108,7 +108,7 @@ export function startMusic() {
   const mine = { src: null, gain: ac.createGain(), off: false };
   music = mine;
   mine.gain.gain.value = 0; mine.gain.connect(master);
-  load(MUSIC).then((buf) => {
+  Promise.resolve(load(MUSIC)).then((buf) => {
     if (!buf || mine.off) return;
     const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
     src.loopStart = PAD; src.loopEnd = buf.duration - PAD;

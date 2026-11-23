@@ -27,12 +27,13 @@ import { haptic } from './haptics.js';
 import * as sfx from './gel-sounds.js';
 import * as store from './store.js';
 import * as G from '../core/gel-stand.js';
-import { gearEnabled, walletNow } from './gear-state.js';
+import { gearEnabled, walletNow, myBuilds, serverNow } from './gear-state.js';
+import { openUpgrade, buildingLevel, buildingJob, timeLeft } from './upgrade-sheet.js';
+import { nextLevel } from '../core/jobs.js';
 
 const ART = 'icons/Gels';
 const KEY = 'gelStand';
 const PREVIEW_CARBS = 600;
-const PREVIEW_COINS = 2000;   // the preview's own coins, for upgrades (the server's wallet later)
 const COIN = 'icons/Pixelart/GEAR/coin.png';
 const FILL_RATE = 0.32;   // pouch per second while the jug's held over it
 const TAP_RATE = 2.5;     // glass per second under a tap: full in 0.4 s
@@ -88,11 +89,11 @@ const STREAM = { water: 'stream-water', honey: 'stream-honey', maple: 'stream-ma
 const num = (v, d) => (v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : d);
 const load = () => {
   const s = settled();
-  return { ...G.normalise(s), carbs: carbsOf(s), spent: num(s.spent, 0), previewCarbs: num(s.carbs, PREVIEW_CARBS), coins: num(s.coins, PREVIEW_COINS), level: G.levelOf(s), build: G.buildOf(s) };
+  return { ...G.normalise(s), carbs: carbsOf(s), spent: num(s.spent, 0), previewCarbs: num(s.carbs, PREVIEW_CARBS), level: buildingLevel('gel-stand'), build: buildingJob('gel-stand') };
 };
 /** The carbs to spend: the wallet's (already less what the stand spent), or the stand's own without one. */
 const carbsOf = (s) => (gearEnabled() ? walletNow(store.getWorkouts()).carbs : num(s.carbs, PREVIEW_CARBS));
-const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.previewCarbs, spent: s.spent, coins: s.coins, level: s.level, build: s.build || null });
+const save = (s) => store.setSetting(KEY, { stock: s.stock, bag: s.bag, carbs: s.previewCarbs, spent: s.spent });
 /** "1 h 52 min", "4 min 10 s". */
 const hm = (ms) => {
   const s = Math.ceil(ms / 1000);
@@ -100,27 +101,13 @@ const hm = (ms) => {
   return h ? t('gels.hm', { h, m }) : t('gels.ms', { m, s: s % 60 });
 };
 
-/** What's saved, with a build that has finished turned into its level (saved, and the base told). */
-function settled() {
-  const s = store.getSettings()[KEY] || {};
-  const n = G.settleBuild(s, Date.now());
-  if (n !== s) {
-    store.setSetting(KEY, n);
-    haptic('levelUp');
-    // after this call: it may be asked mid-draw, and the base redraws on this
-    setTimeout(() => document.dispatchEvent(new CustomEvent('gels-changed')), 0);
-  }
-  return n;
-}
+/** What's saved. (Its level comes from the builders' jobs, jobs.js.) */
+const settled = () => store.getSettings()[KEY] || {};
 
 /** The stand's level (1-6), as the base draws it. */
-export const standLevel = () => G.levelOf(settled());
-/** The stand's build: { to, left } (ms left), or null. */
-export function standBuild() {
-  const s = settled();
-  const b = G.buildOf(s);
-  return b ? { to: b.to, left: G.buildLeft(s, Date.now()) } : null;
-}
+export const standLevel = () => buildingLevel('gel-stand');
+/** The builder's job on the stand: { to, left, who } (ms left), or null. */
+export const standBuild = () => buildingJob('gel-stand');
 
 const img = (src, cls = '') => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
 const gimg = (file, cls = '') => img(`${ART}/${file}.webp`, cls);
@@ -194,36 +181,44 @@ export function openGelStand({ level = null } = {}) {
       <p class="gs-note">${esc(t('gels.preview'))}</p></div>`, 'is-menu');
   }
 
-  /** Taking the stand up a level: coins at once, then a builder's hours (preview: the preview's coins). */
+  /** Taking the stand up a level: a builder's job (the upgrade sheet). */
   function upgradeHtml() {
     if (pinned) return '';
     if (st.build) {
-      const left = Math.max(0, st.build.done - Date.now());
       return `<div class="gs-up is-building">
         ${img(standArt(st.build.to), 'gs-up-art')}
         <span><b>${esc(t('gels.building', { n: st.build.to }))}</b>
-        <small><span data-gs-left class="data-num">${esc(hm(left))}</span> · ${esc(t('gels.buildKeeps'))}</small></span>
-        <button class="gs-up-go is-alt" data-gs-finish>${esc(t('gels.finishNow'))}</button></div>`;
+        <small><span data-gs-left class="data-num">${esc(timeLeft(st.build.left))}</span> · ${esc(t('gels.buildKeeps'))}</small></span>
+        <button class="gs-up-go is-alt" data-gs-up>${esc(t('jobs.upgrade'))}</button></div>`;
     }
-    const up = G.nextUpgrade(level);
+    const up = nextLevel(myBuilds(), 'gel-stand', serverNow());
     if (!up) return `<p class="gs-up is-top">${esc(t('gels.topLevel'))}</p>`;
-    const short = st.coins < up.coins;
+    const coins = walletNow(store.getWorkouts()).coins;
+    const short = coins < up.coins;
     return `<div class="gs-up${short ? ' is-short' : ''}">
       ${img(standArt(level + 1), 'gs-up-art')}
       <span><b>${esc(t('gels.upgrade', { n: level + 1 }))}</b>
       <small class="gs-up-cost"><img src="${COIN}" alt=""><b class="data-num">${up.coins}</b> · ${esc(t('gels.buildHours', { h: up.hours }))}</small>
-      <small>${esc(t('gels.coinsHave', { n: st.coins }))}</small></span>
-      <button class="gs-up-go" data-gs-up ${short ? 'aria-disabled="true"' : ''}>${esc(t('gels.upgradeGo'))}</button></div>`;
+      <small>${esc(t('gels.coinsHave', { n: coins }))}</small></span>
+      <button class="gs-up-go" data-gs-up>${esc(t('gels.upgradeGo'))}</button></div>`;
   }
-  // the build's clock, while the stand is open
+  // the build's clock while the stand is open, and its new level when the builder's done
+  const refresh = () => {
+    const before = st.level;
+    st = load();
+    if (st.level !== before && !pinned) level = st.level;
+    if (!gel) drawMenu();
+  };
+  const onBuilds = () => { if (!root.isConnected) { document.removeEventListener('builds-changed', onBuilds); return; } refresh(); };
+  document.addEventListener('builds-changed', onBuilds);
   const clock = setInterval(() => {
-    if (!root.isConnected) { clearInterval(clock); return; }
+    if (!root.isConnected) { clearInterval(clock); document.removeEventListener('builds-changed', onBuilds); return; }
     if (!st.build) return;
     const before = st.level;
     st = load();
-    if (st.level !== before) { if (!pinned) level = st.level; if (!gel) drawMenu(); return; }
+    if (st.level !== before) { refresh(); return; }
     const el = root.querySelector('[data-gs-left]');
-    if (el) el.textContent = hm(Math.max(0, st.build.done - Date.now()));
+    if (el && st.build) el.textContent = timeLeft(st.build.left);
   }, 1000);
 
   // ---- the prep view ----
@@ -1126,20 +1121,8 @@ export function openGelStand({ level = null } = {}) {
       return;
     }
     if (b('[data-gs-up]')) {
-      const r = G.startUpgrade(st, st.coins, Date.now());
-      if (r.error) { haptic('refuse'); sfx.play('refuse'); return; }
-      set({ build: r.build, coins: r.coins });
-      haptic('place');
-      document.dispatchEvent(new CustomEvent('gels-changed'));   // the base shows the build's clock
-      drawMenu();
-      return;
-    }
-    if (b('[data-gs-finish]')) {
-      // preview only: finish the build now (coffee will cut it later)
-      if (!st.build) return;
-      set({ build: { ...st.build, done: Date.now() } });
-      st = load(); level = st.level;
-      drawMenu();
+      sfx.play('ui-tap');
+      openUpgrade({ target: 'gel-stand', name: t('gels.title'), art: standArt });
       return;
     }
     if (b('[data-gs-back]')) {

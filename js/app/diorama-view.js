@@ -28,8 +28,10 @@ import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
 import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/drills.js';
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
-import { openGelStand, standLevel, standBuild } from './gel-stand-view.js';
+import { openGelStand, standLevel } from './gel-stand-view.js';
 import { openCoffeeShop, shopLevel } from './coffee-view.js';
+import { openUpgrade, buildingJob, buildsChanged, timeLeft } from './upgrade-sheet.js';
+import { isTarget } from '../core/jobs.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
@@ -241,6 +243,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
       <h3 class="dg-menu-name" data-dg-menu-name></h3>
       <div class="dg-menu-btns">
         <button class="dg-sq" data-dg-open hidden><img alt="" width="64" height="64" draggable="false"><span></span><b class="dg-sq-n"></b></button>
+        <button class="dg-sq" data-dg-up hidden><img src="icons/Builders/face-blue.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('jobs.upgrade'))}</span><b class="dg-sq-n"></b></button>
         <button class="dg-sq" data-dg-rot hidden aria-label="${esc(t('cp.rotate'))}"><img src="icons/UI/rotate.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.rotate'))}</span></button>
         <button class="dg-sq" data-dg-stash aria-label="${esc(t('cp.menu.stashAria'))}"><img src="icons/UI/stash.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.stash'))}</span></button>
       </div>
@@ -763,12 +766,13 @@ export function wireDiorama(root, ctx) {
         if (busy && !tag) { tag = document.createElement('i'); tag.className = 'dg-tag is-clock'; tag.dataset.dgBusy = it.id; el.append(tag); }
         if (!busy) tag?.remove(); else tag.textContent = mmss(busy.left);
       }
-      if (it.opens === 'gels') {
-        // the time left on its build
-        const b = standBuild();
-        let tag = el.querySelector('.dg-tag');
-        if (b && !tag) { tag = document.createElement('i'); tag.className = 'dg-tag is-clock'; tag.dataset.dgBuild = it.id; el.append(tag); }
-        if (!b) tag?.remove(); else tag.textContent = mmss(b.left);
+      if (isTarget(it.id)) {
+        // a builder on it: their face and the time left
+        const b = buildingJob(it.id);
+        let tag = el.querySelector('.dg-tag.is-job');
+        if (b && !tag) { tag = document.createElement('i'); tag.className = 'dg-tag is-clock is-job'; tag.dataset.dgBuild = it.id; tag.innerHTML = '<img alt=""><span></span>'; el.append(tag); }
+        if (!b) tag?.remove();
+        else { tag.querySelector('img').src = `icons/Builders/face-${b.who}.webp`; tag.querySelector('span').textContent = timeLeft(b.left); }
       }
       if (it.opens === 'trophies') {
         let tag = el.querySelector('.dg-tag');
@@ -786,6 +790,13 @@ export function wireDiorama(root, ctx) {
       if (chosen) {
         menu.querySelector('[data-dg-menu-name]').textContent = itemName(chosen.id);
         menu.querySelector('[data-dg-rot]').hidden = !chosen.faces;
+        const upBtn = menu.querySelector('[data-dg-up]');
+        upBtn.hidden = !isTarget(chosen.id);
+        if (isTarget(chosen.id)) {
+          const job = buildingJob(chosen.id);
+          upBtn.querySelector('img').src = `icons/Builders/face-${job?.who || 'blue'}.webp`;
+          upBtn.querySelector('b').textContent = job ? timeLeft(job.left) : '';
+        }
         const open = menu.querySelector('[data-dg-open]');
         open.hidden = !chosen.opens;
         if (chosen.opens === 'drill' || chosen.opens === 'recovery') {
@@ -798,6 +809,12 @@ export function wireDiorama(root, ctx) {
         } else if (chosen.opens === 'gels') {
           const label = t('gels.menu');
           open.querySelector('img').src = 'icons/Gels/gel-classic.webp';
+          open.querySelector('span').textContent = label;
+          open.querySelector('b').textContent = '';
+          open.setAttribute('aria-label', label);
+        } else if (chosen.opens === 'coffee') {
+          const label = t('coffee.title');
+          open.querySelector('img').src = 'icons/Coffee/cup-cappuccino.webp';
           open.querySelector('span').textContent = label;
           open.querySelector('b').textContent = '';
           open.setAttribute('aria-label', label);
@@ -846,7 +863,7 @@ export function wireDiorama(root, ctx) {
     closeIslandBar(); stage.front?.querySelectorAll('.dg-mk-coin').forEach((el) => el.remove()); worldEl.querySelectorAll('.dg-mk-hit, .dg-mks, .dg-isl-hit.is-plot').forEach((el) => el.remove()); closeBar(); }
   // The view changes at once; the screen follows once a frame, however many touch or wheel
   // events come in between (a phone sends 120 a second).
-  let frameAsked = 0; let invAt = 0;
+  let frameAsked = 0; let invAt = 0; let jobInv = 0;
   const paint = () => {
     frameAsked = 0;
     if (!worldEl.isConnected) return;
@@ -858,6 +875,8 @@ export function wireDiorama(root, ctx) {
       // the labels' counter-scale: an inherited value, so it's only touched when the zoom changes
       if (invAt !== view.v.s) { invAt = view.v.s; stage.front.style.setProperty('--inv', (1 / view.v.s).toFixed(3)); }
     }
+    // and the builders' clocks over the items keep theirs
+    if (jobInv !== view.v.s) { jobInv = view.v.s; worldEl.style.setProperty('--job-inv', (1 / view.v.s).toFixed(3)); }
     cull();
     sharpen();
   };
@@ -1197,6 +1216,12 @@ export function wireDiorama(root, ctx) {
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
   root.querySelector('[data-dg-open]').onclick = (e) => { e.stopPropagation(); haptic('tick'); openItem(view.sel && itemAt(view.sel)); };
+  // a building's next level: the builders' upgrade sheet
+  root.querySelector('[data-dg-up]').onclick = (e) => {
+    e.stopPropagation(); haptic('tick');
+    const it = view.sel && itemAt(view.sel); if (!it || !isTarget(it.id)) return;
+    openUpgrade({ target: it.id, name: itemName(it.id), art: (n) => it.art({ ...artOpts, levels: { ...artOpts.levels, gels: n, coffee: n }, face: 'a' }) });
+  };
   // put the picked-up item away in the inventory's Stash tab
   root.querySelector('[data-dg-stash]').onclick = (e) => {
     e.stopPropagation();
@@ -1360,7 +1385,12 @@ export function wireDiorama(root, ctx) {
     draw();   // the athlete walks to the machine, or steps off it
   };
   // the gel stand went up a level: its new picture
-  const onGels = () => { artOpts.levels.gels = standLevel(); draw(); };
+  const onGels = () => { artOpts.levels.gels = standLevel(); artOpts.levels.coffee = shopLevel(); draw(); };
+  // a builder's job started or finished: the clocks and the pictures
+  document.removeEventListener('builds-changed', view.onBuilds || (() => {}));
+  view.onBuilds = onGels;
+  document.addEventListener('builds-changed', onGels);
+  let jobLevels = `${standLevel()}:${shopLevel()}`;
   document.removeEventListener('gels-changed', view.onGels || (() => {}));
   view.onGels = onGels;
   document.addEventListener('gels-changed', onGels);
@@ -1375,13 +1405,17 @@ export function wireDiorama(root, ctx) {
       const it = itemAt(tag.dataset.dgBusy); const busy = it && busyOn(it);
       if (busy) tag.textContent = mmss(busy.left); else tag.remove();
     });
-    // and the gel stand's build (standBuild() raises its level when it's done, and the base redraws)
+    // and the builders' jobs: their clocks, and a building's new level when one's done
     root.querySelectorAll('[data-dg-build]').forEach((tag) => {
-      const b = standBuild();
-      if (b) tag.textContent = mmss(b.left); else tag.remove();
+      const b = buildingJob(tag.dataset.dgBuild);
+      if (b) tag.querySelector('span').textContent = timeLeft(b.left); else tag.remove();
     });
+    const lv = `${standLevel()}:${shopLevel()}`;
+    if (lv !== jobLevels) { jobLevels = lv; haptic('levelUp'); buildsChanged(); }
     // and on the picked-up machine's Train / Recover button
     const sel = view.sel && itemAt(view.sel);
+    const upB = sel && isTarget(sel.id) && root.querySelector('[data-dg-up] b');
+    if (upB) { const j = buildingJob(sel.id); upB.textContent = j ? timeLeft(j.left) : ''; }
     if (sel && (sel.opens === 'drill' || sel.opens === 'recovery')) {
       const b = root.querySelector('[data-dg-open] b'); const busy = busyOn(sel);
       if (b) b.textContent = busy ? mmss(busy.left) : '';

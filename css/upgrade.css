@@ -1,0 +1,44 @@
+/* upgrade.css: the upgrade sheet (js/app/upgrade-sheet.js) and a building's job on the base. */
+.up .mk-info-body { gap: 10px; }
+.up-of { margin: 0; text-align: center; font-size: 13px; font-weight: 800; color: #6B5E46; letter-spacing: .02em; }
+.up-pics { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.up-pic { margin: 0; flex: 1 1 0; max-width: 150px; display: grid; justify-items: center; gap: 4px; padding: 8px 6px 6px; border-radius: 16px;
+  background: radial-gradient(circle at 50% 40%, #FFFFFF, #E4EEF8 70%, #CFDDEE); box-shadow: inset 0 0 0 3px #CFDDEE, 0 0 0 2px #16264D; }
+.up-pic img { width: 100%; height: 110px; object-fit: contain; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, .22)); }
+.up-pic.is-next { box-shadow: inset 0 0 0 3px #7BE36A, 0 0 0 2px #16264D; }
+.up-pics .up-pic:only-child { max-width: 220px; }
+.up-pics .up-pic:only-child img { height: 150px; }
+.up-pic figcaption { font-size: 13px; font-weight: 900; color: #16264D; }
+.up-arrow { flex: none; width: 22px; height: 22px; color: #16264D; }
+.up-arrow svg { width: 100%; height: 100%; }
+.up-lvl { margin: 0; text-align: center; font-size: 18px; font-weight: 900; color: #16264D; }
+.up-time { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; font-size: 15px; font-weight: 800; color: #16264D; }
+.up-time svg { width: 18px; height: 18px; }
+.up-pick { margin: 2px 0 0; text-align: center; font-size: 13px; font-weight: 800; color: #6B5E46; }
+.up-crew { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.up-b { position: relative; display: grid; justify-items: center; gap: 2px; min-height: 44px; margin: 0; padding: 6px 2px; border: 0; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(#FFFFFF, #EDE7DA); box-shadow: inset 0 -3px 0 rgba(120, 92, 40, .14), 0 0 0 2px #CFC4AE; transition: transform 120ms ease-out, box-shadow 120ms ease-out; }
+.up-b img, .up-who img, .dg-tag.is-job img { border-radius: 50%; background: radial-gradient(circle at 50% 35%, #EAF4FF, #9FC3E8); box-shadow: 0 0 0 2px #16264D; }
+.up-b img { width: 46px; height: 46px; object-fit: cover; }
+.up-b small { font-size: 11px; font-weight: 800; color: #6B5E46; line-height: 1.1; text-align: center; }
+.up-b.is-on { box-shadow: inset 0 -3px 0 rgba(120, 92, 40, .14), 0 0 0 3px #33A852; transform: translateY(-2px); }
+.up-b.is-busy img, .up-b.is-locked img { filter: grayscale(1) opacity(.55); }
+.up-b:disabled { cursor: default; }
+.up-lock { position: absolute; top: 18px; left: 50%; translate: -50% 0; width: 20px; height: 20px; color: #16264D; }
+.up-lock svg { width: 100%; height: 100%; }
+.up-b:active:not(:disabled) { transform: scale(.96); }
+.up-msg { margin: 0; text-align: center; font-size: 13px; font-weight: 800; color: #C0392B; }
+.up-go { justify-self: center; }
+.up-go:disabled { filter: grayscale(.8); opacity: .7; cursor: default; }
+.up-bar { height: 16px; margin: 0 8px; border-radius: 9999px; overflow: hidden; background: #DCD3C1; box-shadow: inset 0 2px 0 rgba(0, 0, 0, .12), 0 0 0 2px #16264D; }
+.up-bar i { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(var(--f, 0)); background: linear-gradient(#7BE36A, #33A852); transition: transform 900ms linear; }
+.up-who { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 800; color: #16264D; }
+.up-who img { width: 40px; height: 40px; object-fit: cover; }
+.up-who b { margin-left: 4px; }
+/* a building on the base while a builder's on it: its face over it */
+.dg-tag.is-clock.is-job { display: inline-flex; align-items: center; gap: 4px; padding-left: 2px; white-space: nowrap; top: 0;
+  transform: none; translate: -50% -100%; scale: var(--job-inv, 1); transform-origin: 50% 100%; }
+.dg-item .dg-tag.is-job img, .dg-world.is-gl .dg-item .dg-tag.is-job img { display: block; flex: none; width: 24px; height: 24px; margin: -5px 0 -5px -2px; object-fit: cover; filter: none; }
+@media (prefers-reduced-motion: reduce) { .up-bar i, .up-b { transition: none; } }
+/* the item menu's Upgrade button: the builder's face in a round frame */
+.dg-sq[data-dg-up] img { border-radius: 50%; background: radial-gradient(circle at 50% 35%, #EAF4FF, #9FC3E8); box-shadow: 0 0 0 3px #16264D; }

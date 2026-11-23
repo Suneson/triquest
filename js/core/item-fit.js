@@ -1124,6 +1124,66 @@ export const ITEM_FIT = {
     "mid": 0.542,
     "pad": 0.003
   },
+  "icons/Items/coffee-shop-t1-a.webp": {
+    "w": 0.989,
+    "mid": 0.499,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t1-b.webp": {
+    "w": 0.989,
+    "mid": 0.499,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t2-a.webp": {
+    "w": 0.987,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t2-b.webp": {
+    "w": 0.987,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t3-a.webp": {
+    "w": 0.989,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t3-b.webp": {
+    "w": 0.989,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t4-a.webp": {
+    "w": 0.989,
+    "mid": 0.499,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t4-b.webp": {
+    "w": 0.987,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t5-a.webp": {
+    "w": 0.989,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t5-b.webp": {
+    "w": 0.989,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t6-a.webp": {
+    "w": 0.989,
+    "mid": 0.5,
+    "pad": 0.006
+  },
+  "icons/Items/coffee-shop-t6-b.webp": {
+    "w": 0.989,
+    "mid": 0.5,
+    "pad": 0.006
+  },
   "icons/Items/drinks-fridge-a.webp": {
     "w": 0.848,
     "mid": 0.569,

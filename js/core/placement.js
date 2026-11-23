@@ -317,6 +317,10 @@ const ITEMS = [
   // gels. Its picture is its level's (1-6, `levels.gels`), from a cart to a race-nutrition bar.
   { id: 'gel-stand', w: 3, h: 3, home: 'locker', plot: true, gift: true, fit: 0.9, faces: true, face: 'a', spot: [33, 5], opens: 'gels',
     art: (o) => `${ITEM3D}/gel-stand-t${Math.max(1, Math.min(6, Number(o?.levels?.gels) || 1))}-${o?.face || 'a'}.webp` },
+  // the coffee shop (coffee-shop.js, MOSKE APP/Island/COFFEE-SHOP.md): everyone's, beside the gel stand. Tap it to
+  // make coffee for the builders (closed) or the bosses (open). Its picture is its level's (1-6, `levels.coffee`).
+  { id: 'coffee-shop', w: 3, h: 3, home: 'locker', plot: true, gift: true, fit: 0.92, faces: true, face: 'a', spot: [33, 12], opens: 'coffee',
+    art: (o) => `${ITEM3D}/coffee-shop-t${Math.max(1, Math.min(6, Number(o?.levels?.coffee) || 1))}-${o?.face || 'a'}.webp` },
   // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py): they
   // belong in the club room (in the club house). Bar-top pieces stand on the floor for now (the game
   // can't stack items yet).

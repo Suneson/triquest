@@ -44,8 +44,8 @@ button sits on the locker room's plate at the top of the base.
   The locker room's builder walks the platform. Only with the three.js base.
 - The gel stand and the coffee shop can't be opened while they're being upgraded (upgrade-sheet.js
   underUpgrade); starting an upgrade from inside one closes it.
-- A building shows its construction picture while it's upgraded, once it has one: placement.js `build`
-  (commented out till icons/Items/<id>-build-<face>.webp are in; PromptQueue Prompts/construction-buildings.csv).
+- A building being upgraded shows the fenced build site in its place (icons/Items/build-site-<a|b>.webp,
+  placement.js `build`), and the builder walks round it.
 
 ## Reviewing the item art
 

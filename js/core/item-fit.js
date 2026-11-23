@@ -174,6 +174,16 @@ export const ITEM_FIT = {
     "mid": 0.608,
     "pad": 0.022
   },
+  "icons/Items/build-site-a.webp": {
+    "w": 0.93,
+    "mid": 0.531,
+    "pad": 0.025
+  },
+  "icons/Items/build-site-b.webp": {
+    "w": 0.932,
+    "mid": 0.531,
+    "pad": 0.025
+  },
   "icons/Items/builder-blue-2-a.webp": {
     "w": 0.907,
     "mid": 0.541,

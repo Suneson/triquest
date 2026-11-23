@@ -199,6 +199,8 @@ export function boxCorners(geomKey, u, v, w = 1, h = 1) {
 // the items rendered from 3D models in Blender and repainted (docs/ITEMS-3D.md): each has two
 // facings, `a` (its front down-left) and `b` (its front down-right, the item turned 90 degrees)
 const ITEM3D = 'icons/Items';
+/** A building being upgraded by a builder: the fenced build site, from the side it faces (diorama-view.js). */
+const buildSite = (face) => `${ITEM3D}/build-site-${face === 'b' ? 'b' : 'a'}.webp`;
 /** Which tier of an item a room's level shows: 1 below the first band, 2 below the second, then 3. */
 export const tierFor = (level, bands) => 1 + bands.filter((b) => (Number(level) || 1) >= b).length;
 
@@ -317,15 +319,14 @@ const ITEMS = [
   // gels. Its picture is its level's (1-6, `levels.gels`), from a cart to a race-nutrition bar.
   { id: 'gel-stand', w: 3, h: 3, home: 'locker', plot: true, gift: true, fit: 0.9, faces: true, face: 'a', spot: [33, 5], opens: 'gels',
     art: (o) => `${ITEM3D}/gel-stand-t${Math.max(1, Math.min(6, Number(o?.levels?.gels) || 1))}-${o?.face || 'a'}.webp`,
-    // while a builder upgrades it: wrapped in scaffolding (PromptQueue Prompts/construction-buildings.csv).
-    // Turn on once icons/Items/gel-stand-build-a.webp and -b.webp are in:
-    // build: (face) => `${ITEM3D}/gel-stand-build-${face || 'a'}.webp`,
+    // while a builder upgrades it: the fenced build site (Base/repaint2/build-site-1.png, cut by cutout-green.py)
+    build: buildSite,
   },
   // the coffee shop (coffee-shop.js, MOSKE APP/Island/COFFEE-SHOP.md): everyone's, beside the gel stand. Tap it to
   // make coffee for the builders (closed) or the bosses (open). Its picture is its level's (1-6, `levels.coffee`).
   { id: 'coffee-shop', w: 3, h: 3, home: 'locker', plot: true, gift: true, fit: 0.92, faces: true, face: 'a', spot: [33, 12], opens: 'coffee',
     art: (o) => `${ITEM3D}/coffee-shop-t${Math.max(1, Math.min(6, Number(o?.levels?.coffee) || 1))}-${o?.face || 'a'}.webp`,
-    // build: (face) => `${ITEM3D}/coffee-shop-build-${face || 'a'}.webp`,   (as the gel stand's)
+    build: buildSite,   // as the gel stand's
   },
   // the club room's furniture, painted from all four sides (tools/render-items/cutout-club4.py): they
   // belong in the club room (in the club house). Bar-top pieces stand on the floor for now (the game

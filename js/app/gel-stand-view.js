@@ -24,6 +24,7 @@ import { openLayer, closeLayer } from './nav.js';
 import { esc } from './ui.js';
 import { t } from '../core/i18n.js';
 import { haptic } from './haptics.js';
+import * as sfx from './gel-sounds.js';
 import * as store from './store.js';
 import * as G from '../core/gel-stand.js';
 import { gearEnabled, walletNow } from './gear-state.js';
@@ -136,7 +137,8 @@ const starsHtml = (n) => `<span class="gs-stars" role="img" aria-label="${esc(t(
  * @param {{ level?: number }} opts  show it at this level (the ?gels=1&lvl= preview); else the stand's own
  */
 export function openGelStand({ level = null } = {}) {
-  const root = openLayer('gel-stand', { className: 'gs-layer' });
+  const root = openLayer('gel-stand', { className: 'gs-layer', onClose: sfx.stopMusic });
+  sfx.warmUp(); sfx.startMusic();
   let st = load();
   const pinned = !!level;   // ?gels=1&lvl=: shown at that level, no upgrading
   level = level ? Math.max(1, Math.min(G.MAX_LEVEL, Math.floor(level) || 1)) : st.level;
@@ -163,6 +165,7 @@ export function openGelStand({ level = null } = {}) {
       <header class="gs-bar">
         <button class="gs-x" data-gs-back aria-label="${esc(t(gel ? 'gels.toMenu' : 'gels.close'))}">${gel ? '‹' : '×'}</button>
         <h2>${esc(t('gels.title'))} <small>${esc(t('gels.level', { n: level }))}</small></h2>
+        <button class="gs-x gs-music${sfx.musicOn() ? '' : ' is-off'}" data-gs-music aria-pressed="${sfx.musicOn()}" aria-label="${esc(t('gels.music'))}">♪</button>
         <span class="gs-carbs" title="${esc(t('gels.preview'))}">${gimg('ui-carbs')}<b class="data-num">${st.carbs}</b> g</span>
       </header>${body}</div>`;
   }
@@ -429,6 +432,7 @@ export function openGelStand({ level = null } = {}) {
     busy = true;
     run.scores.push(score);
     haptic(score >= 0.8 ? 'place' : 'tick');
+    sfx.play(score >= 0.8 ? 'step-good' : 'step-ok');
     pop(G.verdict(score, value, to));
     setTimeout(() => {
       busy = false;
@@ -439,6 +443,8 @@ export function openGelStand({ level = null } = {}) {
         result = { stars: n, bp: G.boostOf(gel, n) };
         set({ bag: G.bagged(st.bag, gel.id, n, Date.now()) });
         haptic(n === 3 ? 'record' : 'levelUp');
+        sfx.play(n === 3 ? 'gel-record' : 'gel-done');
+        for (let k = 0; k < n; k++) sfx.play('star', { delay: 0.45 + k * 0.28, rate: 1 + k * 0.12 });   // as each star lands
         run = null;
       } else beginStep();
       drawPrep();
@@ -457,6 +463,7 @@ export function openGelStand({ level = null } = {}) {
   /** Tip the jug in the bin: the ingredients are gone, back to the start. */
   function dump() {
     haptic('refuse');
+    sfx.play('bin-dump');
     run = null; dumped = true;
     drawPrep();
     flash('.gs-binlid');
@@ -543,6 +550,8 @@ export function openGelStand({ level = null } = {}) {
       const tapStream = streamEl(STREAM[s.ing]);
       const pourStream = streamEl(STREAM[s.ing]);
       glassEl.classList.add('is-held');
+      sfx.play('pick-up');
+      const pourSound = sfx.loop('glass-pour', { level: 0 });
       let where = null; let since = 0; let from = run.glass; let tickAt = run.glass; let full = run.glass >= 1;
       const topLayer = () => run.layers[run.layers.length - 1];
       let jugBase = topLayer().h;   // the jug's layer when the glass got over it
@@ -576,6 +585,7 @@ export function openGelStand({ level = null } = {}) {
           if (v >= tickAt + 0.04) { tickAt = v; haptic('select'); }
           if (run.glass <= 0.001) pourStream.show(false);
         }
+        pourSound.level((where === 'jug' || where === 'bin') && run.glass > 0.001 ? 1 : 0);
         show();
       };
       let glassAt = { x: (home.l + home.r) / 2, y: (home.t + home.b) / 2 };
@@ -594,6 +604,8 @@ export function openGelStand({ level = null } = {}) {
         if (where !== was) {
           since = now; from = run.glass; jugBase = topLayer().h; tickAt = where === 'jug' ? jugLevel() : run.glass;
           if (where) haptic('tick');
+          if (where === 'tap' && run.glass < 1) sfx.play('tap-fill');
+          if (where === 'bin') sfx.play('bin-lid');
           jarEl?.classList.toggle('is-pouring', where === 'tap' && run.glass < 1);
           binOpen(where === 'bin');
           if (where !== 'tap') tapStream.show(false);
@@ -622,6 +634,8 @@ export function openGelStand({ level = null } = {}) {
         cancelAnimationFrame(raf);
         if (where) catchUp(performance.now());
         tapStream.flow.remove(); pourStream.flow.remove();
+        pourSound.stop();
+        if (where !== 'bin') sfx.play('put-down');
         jarEl?.classList.remove('is-pouring');
         binOpen(false);
         glassEl.classList.remove('is-held');
@@ -629,7 +643,7 @@ export function openGelStand({ level = null } = {}) {
         if (where === 'bin') {
           // tipped out: try again
           run.glass = 0; show();
-          flash(scene.querySelector('.gs-gsplash')); pop('binned'); haptic('refuse');
+          flash(scene.querySelector('.gs-gsplash')); pop('binned'); haptic('refuse'); sfx.play('bin-dump', { gain: 0.6 });
           return;
         }
         if (topLayer().h > 0) {
@@ -653,6 +667,10 @@ export function openGelStand({ level = null } = {}) {
       const { flow, show: showFlow } = streamEl(mode === 'shake' ? `trickle-${ing}` : STREAM[ing], `is-${mode}`);
       const heavy = mode === 'shake' ? streamEl(`shake-${ing}`, 'is-shake is-heavy') : null;
       from.classList.add('is-out');
+      sfx.play('pick-up');
+      // a scoop: its trickle while it's held over the jug, the shake on top while it's shaken
+      const trickle = mode === 'shake' ? sfx.loop('powder-trickle', { level: 0 }) : null;
+      const shake = mode === 'shake' ? sfx.loop(s.kind === 'salt' ? 'salt-shake' : 'powder-shake', { level: 0 }) : null;
       let over = false; let amount = 0; let lastX = null; let shookAt = 0; let raf = 0; let tickAt = 0; let shaken = 0;
       // time held over the jug, in seconds: the drops and a scoop's trickle come from this, never from frames drawn
       let heldFor = 0; let since = 0;
@@ -680,13 +698,16 @@ export function openGelStand({ level = null } = {}) {
         const secs = overTime(now);
         const n = secs * 1000 < DROP_FIRST ? 0 : 1 + Math.floor((secs * 1000 - DROP_FIRST) / DROP_MS);
         if (n > run.drops) {
-          run.drops = n; haptic('select');
+          run.drops = n; haptic('select'); sfx.play('caffeine-drop', { rate: 0.94 + Math.random() * 0.12 });
           meterEl()?.querySelectorAll('i').forEach((el, i) => el.classList.toggle('is-on', i < run.drops));
           flash(flow);
         }
       };
       const loop = (now) => {
         raf = requestAnimationFrame(loop);
+        const shakingNow = over && now - shookAt < 160;
+        trickle?.level(over && !shakingNow ? (s.kind === 'salt' ? 0.4 : 1) : 0);
+        shake?.level(shakingNow ? 1 : 0);
         if (!over) return;
         catchUp(now);
         if (mode === 'shake') {
@@ -726,6 +747,8 @@ export function openGelStand({ level = null } = {}) {
         cancelAnimationFrame(raf);
         if (over) catchUp(performance.now());
         held.remove(); flow.remove(); heavy?.flow.remove();
+        trickle?.stop(); shake?.stop();
+        sfx.play('put-down', { gain: 0.6 });
         from.classList.remove('is-out');
         const put = s.kind === 'drops' ? run.drops : amount;
         if (!put) return;   // let go away from the jug: nothing went in, try again
@@ -748,6 +771,8 @@ export function openGelStand({ level = null } = {}) {
       const pr = pouchEl ? rectOf(pouchEl) : null;
       const { flow } = streamEl('stream-gel');
       jugEl.classList.add('is-held');
+      sfx.play('pick-up');
+      const pourSound = sfx.loop('jug-pour', { level: 0 });
       const hCqw = (home.b - home.t) * ASPECT;   // the jug's height in % of the scene's width
       const fillEl = scene.querySelector('.gs-pfill i');
       // the fill carries on from the last time (let go short of the line, the jug's picked up again to top it off)
@@ -776,6 +801,8 @@ export function openGelStand({ level = null } = {}) {
         // over the bin (on its right) it's turned round so its spout leads; the pouch is on its left, as drawn
         jugEl.style.setProperty('--flip', where === 'bin' ? '-1' : '1');
         if (where !== was && where) haptic('tick');
+        if (where === 'bin' && was !== 'bin') sfx.play('bin-lid');
+        pourSound.level(where === 'pouch' && run.fill < 1 ? 1 : 0);
         const now = performance.now();
         if (where === 'pouch' && was !== 'pouch') since = now;
         if (was === 'pouch' && where !== 'pouch') { pouredFor += (now - since) / 1000; since = 0; }
@@ -800,6 +827,8 @@ export function openGelStand({ level = null } = {}) {
         if (where === 'pouch') { const now = performance.now(); fillTo(now); pouredFor += (now - since) / 1000; since = 0; }
         run.fillSecs = pouredFor;
         flow.remove();
+        pourSound.stop();
+        if (where !== 'bin') sfx.play('put-down');
         binOpen(false);
         jugEl.classList.remove('is-held');
         goHome(jugEl);
@@ -818,6 +847,7 @@ export function openGelStand({ level = null } = {}) {
       const boxEl = scene.querySelector('.gs-box');
       const { held, place } = holding('pouch-0', 22, 'is-pouch');
       boxEl.classList.add('is-out');
+      sfx.play('pouch-pick');
       let ok = false;
       const move = (ev) => {
         const p = at(ev);
@@ -831,7 +861,7 @@ export function openGelStand({ level = null } = {}) {
         held.remove(); boxEl.classList.remove('is-out');
         scene.classList.remove('is-over-spot');
         if (!ok) return;
-        haptic('place');
+        haptic('place'); sfx.play('put-down', { gain: 0.5 });
         run.pouch = true;
         drawPrep();
         root.querySelector('.gs-pouch')?.classList.add('is-in');
@@ -852,8 +882,13 @@ export function openGelStand({ level = null } = {}) {
       if (!run.stirT0) run.stirT0 = performance.now();
       counter.classList.add('is-stirring');
       toolEl('whisk')?.classList.add('is-out');
+      sfx.play('pick-up', { gain: 0.6 });
+      const swish = sfx.loop('whisk-stir', { level: 0 });
+      let still = 0;   // it goes quiet a moment after the whisk stops moving
+      const stopSwish = () => { clearTimeout(still); swish.stop(); };
       const move = (ev) => {
         const p = at(ev);
+        swish.level(1); clearTimeout(still); still = setTimeout(() => swish.level(0), 140);
         whisk.style.left = `${p.x}%`; whisk.style.top = `${p.y}%`;
         const a = ang(p);
         whisk.style.setProperty('--r', `${Math.cos(a) * 14}deg`);
@@ -869,12 +904,13 @@ export function openGelStand({ level = null } = {}) {
         if (turns >= s.turns && !busy) {
           g = null;
           counter.classList.remove('is-stirring');
+          stopSwish();
           run.layers = [{ c: gel.liquid, h: jugLevel() }]; run.mix = 0;
           finishStep(G.scoreStir(turns, (performance.now() - run.stirT0) / 1000), 1, 1);
         }
       };
       move(e);
-      return { move, up: () => { counter.classList.remove('is-stirring'); toolEl('whisk')?.classList.remove('is-out'); } };
+      return { move, up: () => { stopSwish(); counter.classList.remove('is-stirring'); toolEl('whisk')?.classList.remove('is-out'); } };
     }
 
     // ---- sealing: the sealer off the rail, swiped across the pouch's top ----
@@ -883,6 +919,7 @@ export function openGelStand({ level = null } = {}) {
       const pr = rectOf(pouchEl);
       const { held, place } = holding('sealer-open', 11, 'is-sealer');
       toolEl('sealer')?.classList.add('is-out');
+      sfx.play('pick-up', { gain: 0.6 });
       const bar = document.createElement('i');
       bar.className = 'gs-sealbar'; bar.innerHTML = '<b></b>';
       pouchEl.append(bar);
@@ -911,6 +948,7 @@ export function openGelStand({ level = null } = {}) {
         held.src = `${ART}/sealer-closed.webp`;
         place((pr.l + pr.r) / 2, topY, 0);
         held.classList.add('is-shut');
+        sfx.play('seal-press');
         pouchEl.classList.add('is-sealed');
         finishStep(G.scoreSeal(cover), cover, 1);
       };
@@ -939,6 +977,7 @@ export function openGelStand({ level = null } = {}) {
           lastSnip = p.x; open = !open;
           held.src = `${ART}/${open ? 'scissors-open' : 'scissors-closed'}.webp`;
           haptic('select');
+          if (!open) sfx.play('scissors-snip', { gain: 0.8, rate: 0.95 + Math.random() * 0.1 });
         }
         const v = Math.max(0, Math.min(1, (p.x - sr.l) / (sr.r - sr.l)));
         lo = lo == null ? v : Math.min(lo, v); hi = hi == null ? v : Math.max(hi, v);
@@ -996,6 +1035,7 @@ export function openGelStand({ level = null } = {}) {
       setTimeout(() => {
         // pour: the powder falls, a puff where it lands, the tray's full again and its bar fills
         scene.append(pour, puff);
+        sfx.play('restock');
         wellEl?.classList.remove('is-out-of');
         wellEl?.querySelector('.gs-well-plus')?.remove();
         for (let k = 0; k < r.n; k++) {
@@ -1020,18 +1060,18 @@ export function openGelStand({ level = null } = {}) {
     // ---- a tap on a jar or a tray: a refill with carbs (a powder's comes in a bag to snip, filling its bar) ----
     function refill(id) {
       const have = Number(st.stock[id]) || 0;
-      if (G.INGREDIENTS[id].free || have >= STOCK_BAR) { haptic('refuse'); return; }
+      if (G.INGREDIENTS[id].free || have >= STOCK_BAR) { haptic('refuse'); sfx.play('refuse'); return; }
       if (POWDERS.includes(id)) {
         // a powder comes in a bag: snip it open and it pours itself in (as far as the carbs pay for)
-        if (G.fill(st.stock, id, st.carbs).error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
-        haptic('tick');
+        if (G.fill(st.stock, id, st.carbs).error) { haptic('refuse'); sfx.play('refuse'); flash(root.querySelector('.gs-carbs')); return; }
+        haptic('tick'); sfx.play('ui-tap');
         snipping = id;
         drawPrep();
         return;
       }
       const r = G.buy(st.stock, id, 1, st.carbs);
-      if (r.error) { haptic('refuse'); flash(root.querySelector('.gs-carbs')); return; }
-      haptic('tick');
+      if (r.error) { haptic('refuse'); sfx.play('refuse'); flash(root.querySelector('.gs-carbs')); return; }
+      haptic('tick'); sfx.play('restock');
       spend(r.cost, r.stock);
       dumped = false;
       drawPrep();
@@ -1078,9 +1118,16 @@ export function openGelStand({ level = null } = {}) {
   // ---- taps ----
   root.addEventListener('click', (e) => {
     const b = (sel) => e.target.closest(sel);
+    const musicBtn = b('[data-gs-music]');
+    if (musicBtn) {
+      const on = sfx.toggleMusic();
+      musicBtn.classList.toggle('is-off', !on); musicBtn.setAttribute('aria-pressed', String(on));
+      sfx.play('ui-tap');
+      return;
+    }
     if (b('[data-gs-up]')) {
       const r = G.startUpgrade(st, st.coins, Date.now());
-      if (r.error) { haptic('refuse'); return; }
+      if (r.error) { haptic('refuse'); sfx.play('refuse'); return; }
       set({ build: r.build, coins: r.coins });
       haptic('place');
       document.dispatchEvent(new CustomEvent('gels-changed'));   // the base shows the build's clock
@@ -1096,14 +1143,15 @@ export function openGelStand({ level = null } = {}) {
       return;
     }
     if (b('[data-gs-back]')) {
+      sfx.play('ui-tap');
       if (!gel) { closeLayer(root); return; }
       gel = null; run = null; result = null; snipping = null; drawMenu(); return;
     }
     const pick = b('[data-gs-pick]');
     if (pick) {
       const g = G.gelById(pick.dataset.gsPick);
-      if (g.level > level) { haptic('refuse'); return; }
-      haptic('tick'); gel = g; run = null; result = null; dumped = false; snipping = null; drawPrep(); return;
+      if (g.level > level) { haptic('refuse'); sfx.play('refuse'); return; }
+      haptic('tick'); sfx.play('ui-tap'); gel = g; run = null; result = null; dumped = false; snipping = null; drawPrep(); return;
     }
     const startBtn = b('[data-gs-start]');
     if (startBtn) {
@@ -1111,7 +1159,7 @@ export function openGelStand({ level = null } = {}) {
       const r = G.start(st.stock, gel, level);
       if (r.error) {
         // something's short: the slots to tap say so
-        haptic('refuse');
+        haptic('refuse'); sfx.play('refuse');
         root.querySelectorAll('[data-slot].is-short').forEach((el) => flash(el));
         return;
       }
@@ -1119,8 +1167,9 @@ export function openGelStand({ level = null } = {}) {
       dumped = false;
       run = { i: 0, below: 0, scores: [], layers: [], mix: 0, fill: 0, salt: 0, drops: 0, stirAcc: 0, stirT0: 0, glass: 0, glassC: '', pouch: false };
       beginStep();
-      haptic('place'); drawPrep(); return;
+      haptic('place'); sfx.play('ui-tap'); drawPrep(); return;
     }
+    if (b('[data-gs-again]') || b('[data-gs-menu]')) sfx.play('ui-tap');
     if (b('[data-gs-again]')) { result = null; run = null; dumped = false; drawPrep(); return; }
     if (b('[data-gs-menu]')) { gel = null; result = null; drawMenu(); }
   });

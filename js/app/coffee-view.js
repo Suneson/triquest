@@ -5,6 +5,7 @@
 // (icons/Coffee/bg-*.webp, 900 x 1600): everything in it is placed in % of the scene, sized in cqw of it.
 // v1 for testing: coins and builder bonuses are kept on this device (settings.coffeeShop).
 
+import { openUpgrade, buildingLevel } from './upgrade-sheet.js';
 import { openLayer, closeLayer } from './nav.js';
 import { esc } from './ui.js';
 import { t } from '../core/i18n.js';
@@ -61,12 +62,13 @@ const drinkName = (d) => t(`coffee.drink.${d.id}`);
 
 function load() {
   const s = store.getSettings()[KEY] || {};
-  return { ...s, level: C.levelOf(s), open: !!s.open };
+  return { ...s, level: buildingLevel('coffee-shop'), open: !!s.open };
 }
 const save = (s) => store.setSetting(KEY, s);
 
 /** The coffee shop's level, as the base draws it. */
-export const shopLevel = () => C.levelOf(store.getSettings()[KEY]);
+export const shopLevel = () => buildingLevel('coffee-shop');
+const shopArt = (n) => `icons/Items/coffee-shop-t${Math.max(1, Math.min(C.MAX_LEVEL, n))}-a.webp`;
 
 /**
  * The coffee shop's window.
@@ -76,6 +78,7 @@ export function openCoffeeShop({ level = null } = {}) {
   let customer = null;   // coffee3d.js, once mounted
   const root = openLayer('coffee-shop', { className: 'cf-layer', onClose: () => { sfx.stopMusic(); customer?.dispose(); customer = null; } });
   let st = load();
+  const pinned = !!level;   // ?coffee=1&lvl=: shown at that level, no upgrading
   if (level) st.level = Math.max(1, Math.min(C.MAX_LEVEL, Math.floor(level) || 1));
   const set = (patch) => { st = { ...st, ...patch }; save(st); };
   sfx.warmUp(); sfx.startMusic();
@@ -89,7 +92,8 @@ export function openCoffeeShop({ level = null } = {}) {
   root.innerHTML = `<div class="cf">
     <header class="cf-bar">
       <button class="cf-x" data-cf-back aria-label="${esc(t('coffee.close'))}">×</button>
-      <h2>${esc(t('coffee.title'))} <small>${esc(t('coffee.level', { n: st.level }))}</small></h2>
+      <h2>${esc(t('coffee.title'))} <small data-cf-lvl>${esc(t('coffee.level', { n: st.level }))}</small></h2>
+      ${pinned ? '' : `<button class="cf-up" data-cf-up>${esc(t('jobs.upgrade'))}</button>`}
       <span class="cf-coins" title="${esc(t('coffee.preview'))}">${img('tip-jar')}<b class="data-num">${Number(st.coins) || 0}</b></span>
     </header>
     <div class="cf-body"><div class="cf-track">
@@ -529,6 +533,7 @@ export function openCoffeeShop({ level = null } = {}) {
       call({ kind: 'builder', id: builder.dataset.cfBuilder }); return;
     }
     if (b('[data-cf-call]')) { call({ kind: 'boss', id: BOSSES[Math.floor(Math.random() * BOSSES.length)] }); return; }
+    if (b('[data-cf-up]')) { sfx.play('ui-tap'); openUpgrade({ target: 'coffee-shop', name: t('coffee.title'), art: shopArt }); return; }
     if (b('[data-cf-make]')) { sfx.play('ui-tap'); drawBar(); drawFinish(); go(1); return; }
     if (b('[data-cf-next]')) {
       sfx.play('ui-tap');
@@ -537,8 +542,17 @@ export function openCoffeeShop({ level = null } = {}) {
       void leaving;
     }
   });
-  // the preview's level (and the finished build) can't be changed here yet
-  if (level) set({ level: st.level });
+  // a builder finished (or started) on the shop: its level in the bar, and its menu
+  const onBuilds = () => {
+    if (!root.isConnected) { document.removeEventListener('builds-changed', onBuilds); return; }
+    if (pinned) return;
+    const n = shopLevel();
+    if (n === st.level) return;
+    st.level = n;
+    root.querySelector('[data-cf-lvl]').textContent = t('coffee.level', { n });
+    if (!order) drawAll();
+  };
+  document.addEventListener('builds-changed', onBuilds);
 
   go(0);
   drawAll();

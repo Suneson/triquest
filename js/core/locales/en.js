@@ -3503,3 +3503,4 @@ export default en;
 
 Object.assign(en.jobs, {"hallLow": "Upgrade the locker room to level {n} first.", "hallGives": "Lets your other buildings reach level {n}", "hallUpAria": "Locker room, level {n}. Upgrade it", "hallBusyAria": "A builder is taking the locker room to level {n}"});
 Object.assign(en.gear.err, {"hall_low": "Upgrade the locker room first."});
+Object.assign(en.jobs, {"inUse": "The builder is upgrading the {name}: ready in {t}.", "busyOpen": "Upgrading"});

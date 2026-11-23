@@ -28,7 +28,7 @@ import * as sfx from './gel-sounds.js';
 import * as store from './store.js';
 import * as G from '../core/gel-stand.js';
 import { gearEnabled, walletNow, myBuilds, serverNow } from './gear-state.js';
-import { openUpgrade, buildingLevel, buildingJob, timeLeft } from './upgrade-sheet.js';
+import { openUpgrade, buildingLevel, buildingJob, timeLeft, underUpgrade } from './upgrade-sheet.js';
 import { nextLevel } from '../core/jobs.js';
 
 const ART = 'icons/Gels';
@@ -124,6 +124,7 @@ const starsHtml = (n) => `<span class="gs-stars" role="img" aria-label="${esc(t(
  * @param {{ level?: number }} opts  show it at this level (the ?gels=1&lvl= preview); else the stand's own
  */
 export function openGelStand({ level = null } = {}) {
+  if (!level && underUpgrade('gel-stand', t('gels.title'))) return null;   // closed while a builder's on it
   const root = openLayer('gel-stand', { className: 'gs-layer', onClose: sfx.stopMusic });
   sfx.warmUp(); sfx.startMusic();
   let st = load();
@@ -209,7 +210,11 @@ export function openGelStand({ level = null } = {}) {
     if (st.level !== before && !pinned) level = st.level;
     if (!gel) drawMenu();
   };
-  const onBuilds = () => { if (!root.isConnected) { document.removeEventListener('builds-changed', onBuilds); return; } refresh(); };
+  const onBuilds = () => {
+    if (!root.isConnected) { document.removeEventListener('builds-changed', onBuilds); return; }
+    if (!pinned && buildingJob('gel-stand')) { closeLayer(root); return; }   // an upgrade started: the stand closes
+    refresh();
+  };
   document.addEventListener('builds-changed', onBuilds);
   const clock = setInterval(() => {
     if (!root.isConnected) { clearInterval(clock); document.removeEventListener('builds-changed', onBuilds); return; }

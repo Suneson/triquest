@@ -50,3 +50,6 @@
 .dg-pill-chip.is-up:active { transform: scale(0.96); }
 .up-gives { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 4px 0 0; font-weight: 700; color: #2E7D4F; }
 .up-gives svg { width: 16px; height: 16px; }
+
+/* an item's Open button while a builder upgrades it (diorama-view.js) */
+.dg-sq.is-off { filter: grayscale(1); opacity: 0.6; }

@@ -36,3 +36,18 @@ building's: `HALL_CAPS` in js/core/jobs.js (hall level → the others' top level
 5→6). The server refuses a level past the cap with `gear:hall_low`; the upgrade sheet says which
 locker level is needed, and the locker's own sheet says what its next level opens up. Its Upgrade
 button sits on the locker room's plate at the top of the base.
+
+## While a builder works (PR 128)
+
+- The builder walks out of their hut (or from the middle of the plot) to the building and keeps walking
+  round it till the job's done (diorama-view.js syncBuilders, base-gl.js worker, walker.js `around`).
+  The locker room's builder walks the platform. Only with the three.js base.
+- The gel stand and the coffee shop can't be opened while they're being upgraded (upgrade-sheet.js
+  underUpgrade); starting an upgrade from inside one closes it.
+- A building shows its construction picture while it's upgraded, once it has one: placement.js `build`
+  (commented out till icons/Items/<id>-build-<face>.webp are in; PromptQueue Prompts/construction-buildings.csv).
+
+## Reviewing the item art
+
+tools/art-review.html lists every picture the base's items can show, to mark Keep / Repaint / Retire.
+Marks stay on the device; Copy list gives them as CSV.

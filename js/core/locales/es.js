@@ -3503,3 +3503,4 @@ export default es;
 
 Object.assign(es.jobs, {"hallLow": "Primero mejora el vestuario a nivel {n}.", "hallGives": "Permite a tus otros edificios llegar a nivel {n}", "hallUpAria": "Vestuario, nivel {n}. Mejorarlo", "hallBusyAria": "Un constructor está llevando el vestuario a nivel {n}"});
 Object.assign(es.gear.err, {"hall_low": "Primero mejora el vestuario."});
+Object.assign(es.jobs, {"inUse": "El constructor está mejorando {name}: listo en {t}.", "busyOpen": "Mejorando"});

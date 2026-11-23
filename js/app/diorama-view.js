@@ -35,7 +35,8 @@ import { isTarget, HALL } from '../core/jobs.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
-import { floorGrid, entryTile, besideItem } from '../core/walk.js';
+import { floorGrid, entryTile, besideItem, freeByDistance } from '../core/walk.js';
+import { builderId } from '../core/builders.js';
 import { mountWalker } from './walker.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -43,7 +44,7 @@ import { featsFor } from '../core/feats.js';
 import { gearById } from '../core/gear.js';
 import { building } from '../core/base.js';
 import { quadrantLevel } from '../core/workshop.js';
-import { gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow, myExpansions } from './gear-state.js';
+import { myBuilds, gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow, myExpansions } from './gear-state.js';
 import { featAwards } from './feats-state.js';
 import { clockLeft } from './gear-view.js';
 import { savedPlacements, savePlacement, stashPlacement, baseItemRows } from './placement-state.js';
@@ -345,6 +346,11 @@ const athSaved = () => {
 // a treadmill is got on from the back of its belt: away from where the runner faces
 const getOnSide = (it) => { const y = it?.runner?.[it.face]?.yaw; return y == null ? null : [-Math.round(Math.sin(y)), -Math.round(Math.cos(y))]; };
 const athSave = (a) => { try { localStorage.setItem(ATH_KEY, JSON.stringify(a)); } catch { /* private mode */ } };
+// the builders at work on the base (syncBuilders): who → { w: their walker, target, gl }
+const crewWalk = new Map();
+/** A builder's model and clips (tools/build-characters.mjs; green plays the blue one's clips). */
+const builderChar = (who) => ({ key: `mech-${who}`, model: `models/chars/mechanic-${who}.glb`, clips: `models/chars/mechanic-${who === 'green' ? 'blue' : who}-clips.glb` });
+
 // the walker on screen, and what the stage it's on looks like now (kept fresh on every render)
 const walk = { w: null, room: null, going: null, grid: null, redraw: null };
 // the room's level per room, as the stage last worked it out (the stash's pictures use it)
@@ -494,7 +500,8 @@ export function wireDiorama(root, ctx) {
   lastLevels = artOpts.levels;
   // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
   const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
-  const artOf = (it) => it.art({ ...artOpts, face: it.face });
+  // a building a builder's on shows its construction picture (placement.js `build`), once it's painted
+  const artOf = (it) => (it.build && buildingJob(it.id) ? it.build(it.face) : it.art({ ...artOpts, face: it.face }));
   let placements = resolvePlacements(stageLayout(), items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
@@ -636,7 +643,7 @@ export function wireDiorama(root, ctx) {
   const openItem = (it) => {
     if (it?.opens === 'missions') openMissionBoard(ctx);
     else if (it?.opens === 'trophies') openTrophyDisplay();
-    else if (it?.opens === 'gels') openGelStand();
+    else if (it?.opens === 'gels') openGelStand();   // each says so and stays shut while it's being upgraded
     else if (it?.opens === 'coffee') openCoffeeShop();
     if (it?.opens === 'drill' || it?.opens === 'recovery') athSave({ ...athSaved(), use: it.id });
     if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
@@ -707,12 +714,63 @@ export function wireDiorama(root, ctx) {
     }
     return a;
   };
+  /**
+   * The builders at work: each comes out of their hut (or the middle of the plot), walks to the building
+   * they're upgrading and keeps walking round it till the job's done. The locker room's builder walks
+   * the platform. Only drawn by three.js.
+   */
+  const ringOf = (id) => {
+    const it = itemAt(id); const p = placements[id];
+    if (!it || !p) return [];
+    const on = new Set(footprint(it, p.u, p.v).map(([a, b]) => `${a},${b}`));
+    const ring = new Map();
+    for (const k of on) {
+      const [a, b] = k.split(',').map(Number);
+      for (let du = -1; du <= 1; du++) for (let dv = -1; dv <= 1; dv++) {
+        const nb = [a + du, b + dv]; const nk = `${nb[0]},${nb[1]}`;
+        if (!on.has(nk)) ring.set(nk, nb);
+      }
+    }
+    return [...ring.values()];
+  };
+  const syncBuilders = (shown) => {
+    const now = serverNow();
+    const want = new Map();
+    if (shown && glOn() && room === 'locker') {
+      for (const j of myBuilds()) {
+        if (Date.parse(j.finishes_at) <= now) continue;
+        if (j.target === HALL || placements[j.target]?.room === room) want.set(j.builder, j.target);
+      }
+    }
+    for (const [who, c] of crewWalk) if (want.get(who) !== c.target || c.gl !== stage.gl) { c.w.dispose(); crewWalk.delete(who); }
+    for (const [who, target] of want) {
+      if (crewWalk.has(who)) continue;
+      const char = builderChar(who);
+      const body = stage.gl.worker(char);
+      if (!body) continue;
+      const g = gridFor(room);
+      const hut = builderId(who);
+      const start = (placements[hut]?.room === room && besideItem(g, itemAt(hut), placements[hut], null)) || entryTile(g);
+      if (!start) { body.dispose(); continue; }
+      const around = target === HALL
+        ? () => freeByDistance(gridFor(room), g.cols / 2, g.rows / 2).slice(0, 60)
+        : () => ringOf(target);
+      const w = mountWalker(worldEl.querySelector('.dg-items'), {
+        at: start, tile: tileVec(), char, still: reduced(), body, around,
+        toPx: (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))),
+        grid: () => gridFor(room),
+      });
+      if (reduced()) { const first = around().find(([a, b]) => g.free(a, b)); if (first) w.jump(first); }
+      crewWalk.set(who, { w, target, gl: stage.gl });
+    }
+  };
   const draw = () => {
     // the room's picture is up: its first picture, or the sharp one it swaps to once you zoom in
     // (sharpen). Checking only the first made the first tap after a zoom take every item away.
     const shown = [src, full].includes(roomImg.getAttribute('src'));
     const use = inUse();
     const ath = syncAthlete(shown, use);
+    syncBuilders(shown);
     const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];
     const chosen = shown && view.sel ? itemAt(view.sel) : null;
     worldEl.querySelector('.dg-cells').innerHTML = chosen ? footprint(chosen, placements[view.sel].u, placements[view.sel].v).map(([a, b]) => poly(boxCorners(geom, a, b), 'dg-cell is-ok')).join('') : '';
@@ -807,6 +865,8 @@ export function wireDiorama(root, ctx) {
         }
         const open = menu.querySelector('[data-dg-open]');
         open.hidden = !chosen.opens;
+        // being upgraded: its Open button is greyed (a tap still says why)
+        open.classList.toggle('is-off', !!(isTarget(chosen.id) && chosen.id !== HALL && buildingJob(chosen.id)));
         if (chosen.opens === 'drill' || chosen.opens === 'recovery') {
           const label = t(chosen.opens === 'drill' ? 'drill.menu' : 'drill.menuRec');
           open.querySelector('img').src = chosen.opens === 'drill' ? 'icons/UI/sports/sport-run.webp' : 'icons/UI/sports/sport-locker.webp';

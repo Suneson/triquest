@@ -38,6 +38,18 @@ export function buildingJob(target) {
 }
 
 /**
+ * A building can't be used while a builder's on it: says so and returns true (the gel stand and the
+ * coffee shop ask this before they open).
+ */
+export function underUpgrade(target, name) {
+  const j = buildingJob(target);
+  if (!j) return false;
+  haptic('refuse');
+  toast(esc(t('jobs.inUse', { name, t: timeLeft(j.left) })), { icon: svg('clock') });
+  return true;
+}
+
+/**
  * Open the upgrade sheet for a building.
  * @param {{ target: string, name: string, art: (level: number) => string }} o
  */

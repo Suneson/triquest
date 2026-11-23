@@ -25,11 +25,12 @@ const SPOT = { u: 1.5, v: 1.5, y: 0, scale: 2.52 };
  *   char    the character (runner3d.js mountRunner)
  *   still   reduced motion: it stands, never wanders, and goes to places at once
  *   onMove  (tile) → called each time it reaches a tile
+ *   around  () → the tiles it wanders between (a builder round the building it's on); else anywhere near
  *   body    the athlete drawn somewhere else (base-gl.js): { at(u, v), setYaw, play, dispose }; then
  *           there's no canvas of its own
  * @returns {{ goTo(tile, done), jump(tile), wander(on), tile(), model, dispose() }}
  */
-export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {}, body = null }) {
+export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {}, body = null, around = null }) {
   const host = document.createElement('div');
   host.className = 'dg-walker';
   if (!body) layer.append(host);
@@ -49,6 +50,12 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     if (host.style.zIndex !== z) host.style.zIndex = z;
   };
   const here = () => [Math.round(pos[0]), Math.round(pos[1])];
+  // one of its `around` tiles, not the one it's on
+  const aroundTile = (g) => {
+    const [u, v] = here();
+    const ts = around().filter(([a, b]) => g.free(a, b) && (a !== u || b !== v));
+    return ts.length ? ts[Math.floor(Math.random() * ts.length)] : null;
+  };
   const rest = () => { restUntil = performance.now() + (REST[0] + Math.random() * (REST[1] - REST[0])) * 1000; };
 
   const frame = (now) => {
@@ -70,7 +77,7 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     } else if (roam && now > restUntil) {
       // an item set down on its tile: step off to the nearest free one
       const g = grid();
-      const t = g.free(...here()) ? wanderTile(g, here()) : null;
+      const t = around ? aroundTile(g) : g.free(...here()) ? wanderTile(g, here()) : null;
       if (t) go(t); else rest();
     }
     // turn smoothly towards where it's going

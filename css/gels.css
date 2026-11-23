@@ -17,6 +17,8 @@
 .gs-bar h2 { flex: 1; margin: 0; font-size: 18px; font-weight: 900; }
 .gs-bar h2 small { font-size: 12px; font-weight: 800; opacity: .7; margin-left: 6px; }
 .gs-x { width: 44px; height: 44px; border-radius: 12px; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 26px; font-weight: 900; line-height: 1; }
+.gs-music { font-size: 22px; }
+.gs-music.is-off { opacity: .45; text-decoration: line-through; }
 .gs-carbs { display: flex; align-items: center; gap: 4px; padding: 4px 12px 4px 6px; border-radius: 999px; background: rgba(255,255,255,.12); font-weight: 800; font-size: 14px; }
 .gs-carbs img { width: 26px; height: 26px; object-fit: contain; }
 

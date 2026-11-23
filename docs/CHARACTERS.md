@@ -9,7 +9,7 @@ Your athlete in the wardrobe (`js/app/wardrobe3d.js`) and on the treadmill (`js/
 | `male.glb`, `female.glb` | The two bodies: a skinned mesh, 1.8 tall, feet on y = 0, facing +Z. |
 | `<outfit>-male.glb`, `<outfit>-female.glb` | An outfit: the whole dressed character, on that body's skeleton. |
 | `male-clips.glb`, `female-clips.glb` | That body's skeleton and every clip, no mesh. One file drives the body and every outfit made for it. |
-| `mechanic.glb`, `mechanic-clips.glb` | The mechanic (fixing on his knees; his walk and idle are the male's for now). |
+| `mechanic-<blue\|red\|green\|gold>.glb`, `mechanic-<blue\|red\|gold>-clips.glb` | The four builders, each rigged in Mixamo on its own OBJ (clips "With Skin": idle, talk, happy, sad, wave, drink, walk, stairs). Green has no clips of its own and plays blue's. |
 
 Clips: idle, walk, run-slow, run, run-fast, swim, squat, pushup, sit, taunt1, taunt2, victory (`CLIPS` in `js/core/wardrobe.js`). A clip finds its bones by name.
 

@@ -10,17 +10,16 @@
 // What it reads:
 //   Clips/Male/*.fbx      Mixamo clips. One of them must be "With Skin": that's the rigged male.
 //   Clips/Female/*.fbx    Mixamo clips for the female skeleton (skin or no skin).
-//   Clips/Mechanic/*.fbx  the mechanic's.
 //   Rigged/…fbx + png     the bodies as they were uploaded to Mixamo, for the textures and, when no
 //                         clip carries the skin, the mesh.
 //   GLB Assets/Outfits/<Male|Female>/<outfit>-<male|female>.glb   a whole dressed character each.
-//   GLB Assets/Mechanic/Mechanic.glb
+//   GLB Assets/Mechanic/Mechanic <n> <colour>/   each builder's OBJ + PNG, and its Mixamo clips "With Skin"
 //
 // What it writes, in models/chars/:
 //   <body>.glb            the body, skinned, feet on y = 0, 1.8 tall, facing +Z
 //   <outfit>-<body>.glb   the same character dressed: its own mesh on the same skeleton
 //   <body>-clips.glb      the skeleton and every clip, no mesh. A clip drives any model of that body.
-//   mechanic.glb, mechanic-clips.glb, and mechanic-red/-green/-orange.glb (his twins, recoloured)
+//   mechanic-<colour>.glb and mechanic-<colour>-clips.glb: the four builders (GLB Assets/Mechanic/Mechanic <n> <colour>/)
 //   boss-<name>.glb        a boss (GLB Assets/Bosses/<name>.glb). With clips made on him in Mixamo
 //                          (Clips/Bosses/<name>/*.fbx) he gets his own skeleton and boss-<name>-clips.glb;
 //                          without, he is on the male skeleton and male-clips.glb drives him.
@@ -44,7 +43,6 @@ import { ALL_EXTENSIONS, EXTMeshoptCompression } from '@gltf-transform/extension
 import { weld, dedup, prune, reorder, quantize, simplify, resample } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import { skinTexture } from './lib/skin-texture.mjs';
-import { recolour, MECH_TONES } from './lib/recolour.mjs';
 
 globalThis.self = globalThis;
 globalThis.window = { URL: { createObjectURL: () => 'blob:none' } };
@@ -74,9 +72,12 @@ const CLIP_NAMES = {
   armstretching: 'stretch', laughing: 'laugh', rumbadancing: 'dance', sillydancing: 'dance2', running: 'run',
   // the clan robot's (Clips/ClubRobot/)
   breathingidle: 'idle', sadidle: 'sad',
+  // the builders' own (GLB Assets/Mechanic/*)
+  happyidle: 'happy', disappointed: 'sad', talking: 'talk', standinggreeting: 'wave', drinking: 'drink',
+  happywalk: 'walk-happy', walkingupthestairs: 'stairs-up', descendingstairs: 'stairs-down', walkingdownstairs: 'stairs-down',
 };
 /** Clips that travel in Mixamo unless "In Place" was ticked: any drift is taken out here. */
-const IN_PLACE = ['walk', 'run', 'run-slow', 'run-fast'];
+const IN_PLACE = ['walk', 'run', 'run-slow', 'run-fast', 'walk-happy', 'stairs-up', 'stairs-down'];
 
 // ---- reading -----------------------------------------------------------------------------
 
@@ -444,10 +445,13 @@ async function writeChar(name, mesh, skin, rig, tex) {
   scene.addChild(doc.createNode(`${name}-mesh`).setMesh(doc.createMesh(name).addPrimitive(prim)).setSkin(sk));
   doc.getRoot().setDefaultScene(scene);
   doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
+  // a Mixamo skin comes at full detail: down to MAX_TRIS here, the joints and weights kept
+  const tris = mesh.idx.length / 3;
+  if (tris > MAX_TRIS * 1.2) await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: MAX_TRIS / tris, error: 0.002 }));
   await doc.transform(dedup(), prune({ keepLeaves: true }), reorder({ encoder: MeshoptEncoder }), quantize({ quantizePosition: 14 }));
   const file = path.join(OUT, `${name}.glb`);
   await io.write(file, doc);
-  console.log(`  wrote ${name}.glb ${(fs.statSync(file).size / 1024).toFixed(0)} KB, ${mesh.idx.length / 3} tris`);
+  console.log(`  wrote ${name}.glb ${(fs.statSync(file).size / 1024).toFixed(0)} KB, ${prim.getIndices().getCount() / 3} tris`);
 }
 
 async function writeClips(name, rig, clips) {
@@ -659,18 +663,79 @@ if (want('robot')) {
   }
 }
 
-// ---- the mechanic ---------------------------------------------------------------------------
+// ---- the four builders (mechanics): GLB Assets/Mechanic/Mechanic <n> <colour>/ ---------------------
+// Each one rigged in Mixamo on its own OBJ, the clips downloaded "With Skin": the skin in the FBX is the
+// builder, with Mixamo's weights, and the OBJ's PNG is its texture. One with no clips of its own (green)
+// is fitted to the blue one's skeleton and plays the blue one's clips.
+//   mechanic-<colour>.glb, and mechanic-<colour>-clips.glb for blue, red and gold.
 
-if (want('mechanic')) {
-  console.log('mechanic');
-  const mech = clipsIn(path.join(SRC, 'Clips', 'Mechanic'), new Set(maleRig.bones.map((b) => b.name)));
-  const g = await meshOfGlb(io, path.join(SRC, 'GLB Assets', 'Mechanic', 'Mechanic.glb'));
-  const rig = bind(maleRig, mech.rest, bindLike(mech.rest), g.mesh, 'mechanic');
-  const has = new Set(mech.rest.map((b) => b.name));
-  // what he has no clip for comes from the male's, on the joints he has
-  for (const name of ['idle', 'walk']) if (!mech.clips[name]) { mech.clips[name] = { ...male.clips[name], quats: Object.fromEntries(Object.entries(male.clips[name].quats).filter(([b]) => has.has(b))) }; console.log(`  ${name}: the male's clip`); }
-  await writeChar('mechanic', rig.mesh, rig.skin, rig, { base: g.base, normal: g.normal });
-  // his three twins, the blues of his outfit turned red, green and orange (mechanic.glb is the blue one)
-  for (const [tone, t] of Object.entries(MECH_TONES)) await writeChar(`mechanic-${tone}`, rig.mesh, rig.skin, rig, { base: await recolour(g.base, t), normal: g.normal });
-  await writeClips('mechanic-clips', rig, mech.clips);
+/** A Mixamo "With Skin" FBX as a rig, its size and height brought to the male's (`centre`). Returns { rig, s }. */
+function rigOfSkin(obj, sk) {
+  const bones = skeletonOf(obj);
+  const at = new Map(bones.map((b, i) => [b.name, i]));
+  const geo = mergeVertices(sk.geometry, 1e-6);
+  const pos = Float32Array.from(geo.attributes.position.array);
+  let hi = -Infinity, lo = Infinity; for (let i = 1; i < pos.length; i += 3) { hi = Math.max(hi, pos[i]); lo = Math.min(lo, pos[i]); }
+  // Mixamo keeps the size it was given: make it SRC_HEIGHT tall and centred on y = 0, as the male's is
+  const s = SRC_HEIGHT / (hi - lo); const mid = ((hi + lo) / 2) * s;
+  for (let i = 0; i < pos.length; i += 3) { pos[i] *= s; pos[i + 1] = pos[i + 1] * s - mid; pos[i + 2] *= s; }
+  for (const b of bones) b.pos.multiplyScalar(s);
+  bones[0].pos.y -= mid;
+  const remap = sk.skeleton.bones.map((b) => at.get(short(b.name)));
+  const joints = Uint16Array.from(geo.attributes.skinIndex.array, (j) => remap[j]);
+  const weights = Float32Array.from(geo.attributes.skinWeight.array);
+  for (let i = 0; i < weights.length; i += 4) { const t = weights[i] + weights[i + 1] + weights[i + 2] + weights[i + 3] || 1; for (let k = 0; k < 4; k++) weights[i + k] /= t; }
+  const quats = bones.map((b) => b.quat);
+  const mesh = { pos, nrm: Float32Array.from(geo.attributes.normal.array), uv: flipV(geo.attributes.uv.array), idx: Uint32Array.from(geo.index.array) };
+  return { rig: { bones, quats, mats: pose(bones, quats).mats, mesh, skin: { joints, weights }, lift: LIFT }, s };
+}
+
+/** A plain mesh from an OBJ, welded and simplified to MAX_TRIS: { pos, nrm, uv, idx }. */
+async function meshOfObj(file) {
+  const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader.js');
+  const obj = new OBJLoader().parse(fs.readFileSync(file, 'utf8'));
+  let geo = null; obj.traverse((o) => { if (o.isMesh && !geo) geo = o.geometry; });
+  geo.deleteAttribute('normal');
+  geo = mergeVertices(geo, 1e-6);
+  const doc = new Document(); const buffer = doc.createBuffer();
+  const acc = (type, arr) => doc.createAccessor().setType(type).setArray(arr).setBuffer(buffer);
+  const prim = doc.createPrimitive().setAttribute('POSITION', acc('VEC3', Float32Array.from(geo.attributes.position.array)))
+    .setAttribute('TEXCOORD_0', acc('VEC2', flipV(geo.attributes.uv.array))).setIndices(acc('SCALAR', Uint32Array.from(geo.index.array)));
+  doc.createScene().addChild(doc.createNode('m').setMesh(doc.createMesh('m').addPrimitive(prim)));
+  const tris = geo.index.count / 3;
+  await doc.transform(weld(), simplify({ simplifier: MeshoptSimplifier, ratio: Math.min(1, MAX_TRIS / tris), error: 0.002 }));
+  const pos = Float32Array.from(prim.getAttribute('POSITION').getArray());
+  const idx = Uint32Array.from(prim.getIndices().getArray());
+  return { pos, nrm: normalsOf(pos, idx), uv: Float32Array.from(prim.getAttribute('TEXCOORD_0').getArray()), idx };
+}
+
+if (want('mechanic') || want('mechanics')) {
+  const dir = path.join(SRC, 'GLB Assets', 'Mechanic');
+  const folders = fs.readdirSync(dir).filter((d) => /^mechanic \d/i.test(d)).sort();
+  const colourOf = (d) => d.replace(/^mechanic \d+\s*/i, '').toLowerCase() || 'blue';
+  const pngIn = (d) => find(d, /\.png$/i).sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)[0];
+  const rigs = {};
+  // the ones with clips first, so the rest can borrow a skeleton
+  for (const d of folders) {
+    const colour = colourOf(d); const at = path.join(dir, d);
+    const own = clipsIn(at);
+    if (!own.skinned) continue;
+    console.log(`mechanic-${colour}`);
+    const { rig, s } = rigOfSkin(own.skinned.obj, own.skinned.sk);
+    if (Math.abs(s - 1) > 0.01) console.log(`  came ${s.toFixed(1)} times too small: scaled up`);
+    for (const c of Object.values(own.clips)) if (c.hips) c.hips.values = c.hips.values.map((v) => v * s);
+    rigs[colour] = rig;
+    await writeChar(`mechanic-${colour}`, rig.mesh, rig.skin, rig, { base: fs.readFileSync(pngIn(at)) });
+    await writeClips(`mechanic-${colour}-clips`, rig, own.clips);
+  }
+  for (const d of folders) {
+    const colour = colourOf(d); const at = path.join(dir, d);
+    if (rigs[colour]) continue;
+    const from = rigs.blue || Object.values(rigs)[0];
+    const obj = find(at, /\.obj$/i)[0];
+    if (!from || !obj) continue;
+    console.log(`mechanic-${colour} (on the blue one's skeleton)`);
+    const r = bind(from, from.bones, from.quats, await meshOfObj(obj), `mechanic-${colour}`);
+    await writeChar(`mechanic-${colour}`, r.mesh, r.skin, r, { base: fs.readFileSync(pngIn(at)) });
+  }
 }

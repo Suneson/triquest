@@ -58,34 +58,88 @@
 .dg-sq .dg-sq-i { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; color: #fff; font: 30px/1 Georgia, 'Times New Roman', serif; font-weight: 700;
   -webkit-text-stroke: 0; text-shadow: 0 2px 0 #0B1222; background: radial-gradient(circle at 50% 30%, #6FB7F0, #1F5FBF); box-shadow: 0 0 0 3px #0B1222, inset 0 -4px 0 rgba(0, 0, 0, .2); }
 
-/* a builder's info sheet (builder-info.js): the builder on the grass by the hut, beside the ability */
-.mk-info.bi { width: min(720px, calc(100vw - 24px)); }
-.bi-role { display: block; font-size: 13px; font-weight: 800; color: #6B5E46; letter-spacing: .02em; }
-.bi-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 12px; padding: 12px; }
-@media (max-width: 560px) { .bi-body { grid-template-columns: 1fr; } }
-.bi-stage { position: relative; min-height: 300px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 3px #16264D, inset 0 0 0 3px rgba(255, 255, 255, .25);
+/* a builder's info sheet (builder-info.js), like a builder game's hero window: the builder framed in their hut's
+   scene on the left, stat tiles on the right, the ability's big button along the bottom. Navy, cream and tan,
+   each builder's colour only on their accents (--bc). */
+.mk-info.bi { width: min(760px, calc(100vw - 24px)); --bc: #2F7FE0; --bc2: #164D9E; }
+.mk-info.bi.is-red { --bc: #E0484E; --bc2: #9E1E26; }
+.mk-info.bi.is-green { --bc: #2FAE5C; --bc2: #17703A; }
+.mk-info.bi.is-gold { --bc: #E2A62C; --bc2: #9A6510; }
+.bi .mk-info-head { padding-bottom: 12px; }
+.bi-role { display: inline-block; margin-top: 4px; padding: 3px 12px; border-radius: 9999px; font-size: 13px; font-weight: 900; color: #fff; letter-spacing: .02em;
+  background: linear-gradient(var(--bc), var(--bc2)); box-shadow: 0 0 0 2px #0B1222, inset 0 1px 0 rgba(255, 255, 255, .35); }
+.bi-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 14px; padding: 14px; }
+@media (max-width: 600px) { .bi-body { grid-template-columns: 1fr; gap: 12px; padding: 12px; } }
+
+/* the portrait: a thick navy frame with a light inner rim and a floor shadow */
+.bi-stage { position: relative; margin: 0; min-height: 340px; border-radius: 18px; overflow: hidden; isolation: isolate;
+  box-shadow: 0 0 0 4px #16264D, 0 0 0 7px var(--bc), 0 0 0 9px #16264D, 0 8px 18px rgba(11, 18, 34, .35);
   background: radial-gradient(ellipse 80% 45% at 50% 88%, #7BC75A, transparent 70%), linear-gradient(#BFE3FF 0 38%, #6DBF4C 38%, #3F9A3A); }
-@media (max-width: 560px) { .bi-stage { min-height: 260px; } }
-.bi-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bi-stage::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35), inset 0 -60px 60px -40px rgba(11, 18, 34, .45); }
+@media (max-width: 600px) { .bi-stage { min-height: 0; aspect-ratio: 4 / 3; } }
+.bi-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 30%; }
 .bi-hut { position: absolute; left: 66%; top: 4%; width: 56%; translate: -50% 0; filter: saturate(.9) brightness(.92) blur(.6px); opacity: .95; pointer-events: none; }
 .bi-bg ~ .bi-hut { display: none; }
-.bi-face { position: absolute; left: 50%; bottom: 14px; width: 120px; height: 120px; translate: -50% 0; border-radius: 50%; object-fit: cover;
+.bi-face { position: absolute; left: 50%; bottom: 18px; width: 120px; height: 120px; translate: -50% 0; border-radius: 50%; object-fit: cover;
   background: radial-gradient(circle at 50% 35%, #EAF4FF, #9FC3E8); box-shadow: 0 0 0 3px #16264D; }
 .bi-stage.is-3d .bi-face { display: none; }
-.bi-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bi-stage canvas { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; }
+
+/* the stat tiles: icon, small label, big value; the ability's bar fills back up while it rests */
 .bi-info { display: grid; align-content: start; gap: 10px; }
-.bi-about { margin: 0; font-size: 14px; font-weight: 700; color: #16264D; line-height: 1.4; }
-.bi-card { display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(#FFFFFF, #F1ECE1); box-shadow: 0 0 0 2px #CFC4AE; }
-.bi-card h3 { margin: 0; font-size: 12px; font-weight: 900; color: #6B5E46; letter-spacing: .06em; text-transform: uppercase; }
+.bi-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.bi-stat { position: relative; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 8px 10px; border-radius: 14px;
+  background: linear-gradient(#FFFFFF, #EDE7DA); box-shadow: inset 0 -3px 0 rgba(120, 92, 40, .14), 0 0 0 2px #CFC4AE;
+  animation: bi-in 260ms cubic-bezier(.2, .8, .3, 1) both; animation-delay: calc(80ms + var(--i, 0) * 45ms); }
+.bi-stat.is-ability { padding-bottom: 16px; }
+@keyframes bi-in { from { opacity: 0; transform: translateY(8px); } }
+.bi-stat-ico { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; color: #fff;
+  background: linear-gradient(var(--bc), var(--bc2)); box-shadow: 0 0 0 2px #16264D, inset 0 1px 0 rgba(255, 255, 255, .35); }
+.bi-stat-ico svg { width: 22px; height: 22px; }
+.bi-stat-txt { display: grid; min-width: 0; line-height: 1.15; }
+.bi-stat-txt small { font-size: 12px; font-weight: 900; color: #5C5040; letter-spacing: .05em; text-transform: uppercase; }
+.bi-stat-txt b { font-size: 17px; font-weight: 900; color: #16264D; overflow-wrap: anywhere; }
+.bi-stat.is-effect .bi-stat-txt b, .bi-stat.is-rest .bi-stat-txt b { font-variant-numeric: tabular-nums; }
+.bi-stat[data-st] .bi-stat-txt b::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 2px;
+  background: #9AA6B8; box-shadow: 0 0 0 2px #16264D; }
+.bi-stat[data-st="busy"] .bi-stat-txt b::before { background: #FFB020; }
+.bi-stat[data-st="free"] .bi-stat-txt b::before { background: #3FB354; }
+.bi-bar { position: absolute; left: 60px; right: 12px; bottom: 7px; height: 6px; border-radius: 9999px; background: #D8CFBD; overflow: hidden; }
+.bi-bar::after { content: ''; position: absolute; inset: 0; border-radius: inherit; transform-origin: left; transform: scaleX(var(--f, 0));
+  background: linear-gradient(#8FD3FF, #2F7FE0); transition: transform 400ms ease-out; }
+.bi-stat.is-ready .bi-bar::after { background: linear-gradient(#7BE36A, #33A852); }
+.bi-stat.is-ready .bi-stat-ico { animation: bi-glow 1.8s ease-in-out infinite; }
+@keyframes bi-glow { 50% { box-shadow: 0 0 0 2px #16264D, 0 0 0 5px rgba(123, 227, 106, .55); } }
+.bi-stat.is-used { animation: bi-used 520ms cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes bi-used { 30% { transform: scale(1.06); } }
+
+/* the job: what, to which level, the time left, and its progress */
+.bi-job-card { position: relative; display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(#FFFFFF, #F1ECE1); box-shadow: 0 0 0 2px #CFC4AE;
+  animation: bi-in 260ms cubic-bezier(.2, .8, .3, 1) both; animation-delay: 260ms; }
+.bi-job-card h3 { margin: 0; font-size: 12px; font-weight: 900; color: #5C5040; letter-spacing: .06em; text-transform: uppercase; }
 .bi-job { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin: 0; font-size: 15px; color: #16264D; }
-.bi-job span { font-size: 13px; font-weight: 800; color: #6B5E46; }
-.bi-job i { margin-left: auto; font-style: normal; font-weight: 900; }
-.bi-note { margin: 0; font-size: 13px; font-weight: 700; color: #6B5E46; }
-.bi-ab { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: start; }
-.bi-ab-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: #fff; background: linear-gradient(#6FB7F0, #1F5FBF); box-shadow: 0 0 0 2px #16264D; }
-.bi-ab-ico svg { width: 24px; height: 24px; }
-.bi-ab b { font-size: 16px; color: #16264D; }
-.bi-ab p { margin: 2px 0; font-size: 13px; font-weight: 700; color: #16264D; }
-.bi-ab small { font-size: 12px; font-weight: 700; color: #6B5E46; }
-.bi-use { justify-self: stretch; }
-.bi-use:disabled { filter: grayscale(.8); opacity: .7; cursor: default; }
+.bi-job span { font-size: 13px; font-weight: 800; color: #5C5040; }
+.bi-job i { margin-left: auto; font-style: normal; font-weight: 900; font-variant-numeric: tabular-nums; }
+.bi-bar.is-job { position: relative; left: auto; right: auto; bottom: auto; display: block; height: 10px; box-shadow: 0 0 0 2px #16264D; background: #E5DDCB; }
+.bi-bar.is-job::after { background: linear-gradient(#9BEA7A, #3FB354); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .15); }
+.bi-note { margin: 0; font-size: 13px; font-weight: 700; color: #5C5040; }
+.bi-about { margin: 0; padding: 0 2px; font-size: 14px; font-weight: 700; font-style: italic; color: #16264D; line-height: 1.45; }
+
+/* the bottom bar: what the ability does, and its big button */
+.bi-foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 0 14px 16px; padding: 10px 12px; border-radius: 16px;
+  background: #E9E1D0; box-shadow: inset 0 2px 0 rgba(120, 92, 40, .12), 0 0 0 2px #CFC4AE; }
+@media (max-width: 600px) { .bi-foot { grid-template-columns: 1fr; margin: 0 12px 14px; } }
+.bi-does { margin: 0; font-size: 14px; font-weight: 700; color: #16264D; line-height: 1.4; }
+.bi-does span { display: block; font-size: 12px; font-weight: 800; color: #5C5040; }
+.bi-use-row { display: grid; justify-items: stretch; gap: 6px; }
+.bi-use { min-width: 200px; min-height: 52px; transition: transform 120ms ease-out, filter 120ms; }
+.bi-use:not(:disabled):active { transform: translateY(2px) scale(.97); }
+.bi-use:focus-visible, .bi .mk-x:focus-visible { outline: 3px solid #FFD34D; outline-offset: 3px; }
+.bi-use:disabled { filter: grayscale(.85); opacity: .75; cursor: default; }
+.bi-use.is-busy b { opacity: .6; }
+@media (prefers-reduced-motion: reduce) {
+  .bi-stat, .bi-job-card, .bi-stat.is-ready .bi-stat-ico, .bi-stat.is-used { animation: none; }
+  .bi-bar::after, .bi-use { transition: none; }
+}
+body.rm .bi-stat, body.rm .bi-job-card, body.rm .bi-stat.is-ready .bi-stat-ico, body.rm .bi-stat.is-used { animation: none; }

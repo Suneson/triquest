@@ -15,8 +15,8 @@ cp = importlib.util.module_from_spec(spec); spec.loader.exec_module(cp)
 
 OUT = os.path.join(cp.REPO, 'icons', 'Bottles')
 # the picture picked for each bottle
-PICK = {'build-brew': 'build-brew-1.jpg', 'electro-surge': 'electro-surge-clear.jpg', 'recovery-mix': 'recovery-mix-2.jpg',
-        'vo2-max': 'vo2-max-clear.jpg', 'chest-charge': 'chest-charge-1.jpg'}
+PICK = {'build-brew': 'build-brew-clear-2.jpg', 'electro-surge': 'electro-surge-clear.jpg', 'recovery-mix': 'recovery-mix-clear-1.jpg',
+        'vo2-max': 'vo2-max-clear.jpg', 'chest-charge': 'chest-charge-clear-1.jpg'}
 H = 384
 
 

@@ -5,14 +5,14 @@ export const PLOT_WALLS = {
   "theme": "scrap-yard",
   "back": [
    {
-    "src": "icons/Plot/walls-scrap-yard-bl-t1.webp",
+    "src": "icons/Plot/walls-scrap-yard-bl-t2.webp",
     "x": 1870.0,
     "y": 5815.7,
     "w": 1904.0,
     "h": 1313.3
    },
    {
-    "src": "icons/Plot/walls-scrap-yard-br-t1.webp",
+    "src": "icons/Plot/walls-scrap-yard-br-t2.webp",
     "x": 6881.0,
     "y": 5828.0,
     "w": 2002.7,
@@ -21,32 +21,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-scrap-yard-fl1-t1.webp",
+    "src": "icons/Plot/walls-scrap-yard-fl1-t2.webp",
     "x": 1813.5,
-    "y": 6591.4,
-    "w": 1809.3,
-    "h": 1237.3
+    "y": 6604.9,
+    "w": 1517.3,
+    "h": 1077.3
    },
    {
-    "src": "icons/Plot/walls-scrap-yard-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7470.3,
-    "w": 2026.7,
-    "h": 1340.0
+    "src": "icons/Plot/walls-scrap-yard-road-t2.webp",
+    "x": 2986.7,
+    "y": 7126.7,
+    "w": 1196.0,
+    "h": 982.7
    },
    {
-    "src": "icons/Plot/walls-scrap-yard-fr1-t1.webp",
+    "src": "icons/Plot/walls-scrap-yard-fl2-t2.webp",
+    "x": 3859.4,
+    "y": 7610.5,
+    "w": 1730.7,
+    "h": 1200.0
+   },
+   {
+    "src": "icons/Plot/walls-scrap-yard-fr2-t2.webp",
+    "x": 7487.8,
+    "y": 6624.4,
+    "w": 1305.3,
+    "h": 1006.7
+   },
+   {
+    "src": "icons/Plot/walls-scrap-yard-jetty-t2.webp",
+    "x": 6545.2,
+    "y": 7103.3,
+    "w": 1226.7,
+    "h": 996.0
+   },
+   {
+    "src": "icons/Plot/walls-scrap-yard-fr1-t2.webp",
     "x": 5187.8,
-    "y": 7490.3,
-    "w": 1862.7,
-    "h": 1294.7
-   },
-   {
-    "src": "icons/Plot/walls-scrap-yard-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6634.0,
-    "w": 1556.0,
-    "h": 1124.0
+    "y": 7635.6,
+    "w": 1610.7,
+    "h": 1149.3
    }
   ]
  },
@@ -54,14 +68,14 @@ export const PLOT_WALLS = {
   "theme": "painted-block",
   "back": [
    {
-    "src": "icons/Plot/walls-painted-block-bl-t1.webp",
+    "src": "icons/Plot/walls-painted-block-bl-t2.webp",
     "x": 1866.9,
     "y": 5826.3,
     "w": 1901.3,
     "h": 1296.0
    },
    {
-    "src": "icons/Plot/walls-painted-block-br-t1.webp",
+    "src": "icons/Plot/walls-painted-block-br-t2.webp",
     "x": 6881.0,
     "y": 5831.2,
     "w": 1946.7,
@@ -70,32 +84,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-painted-block-fl1-t1.webp",
+    "src": "icons/Plot/walls-painted-block-fl1-t2.webp",
     "x": 1857.4,
-    "y": 6640.9,
-    "w": 1750.7,
-    "h": 1181.3
+    "y": 6634.2,
+    "w": 1533.3,
+    "h": 1080.0
    },
    {
-    "src": "icons/Plot/walls-painted-block-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7473.3,
-    "w": 1966.7,
-    "h": 1309.3
+    "src": "icons/Plot/walls-painted-block-road-t2.webp",
+    "x": 3104.7,
+    "y": 7219.9,
+    "w": 908.0,
+    "h": 808.0
    },
    {
-    "src": "icons/Plot/walls-painted-block-fr1-t1.webp",
+    "src": "icons/Plot/walls-painted-block-fl2-t2.webp",
+    "x": 3785.3,
+    "y": 7603.0,
+    "w": 1746.7,
+    "h": 1180.0
+   },
+   {
+    "src": "icons/Plot/walls-painted-block-fr2-t2.webp",
+    "x": 7353.6,
+    "y": 6638.5,
+    "w": 1437.3,
+    "h": 1050.7
+   },
+   {
+    "src": "icons/Plot/walls-painted-block-jetty-t2.webp",
+    "x": 6676.3,
+    "y": 7202.6,
+    "w": 888.0,
+    "h": 806.7
+   },
+   {
+    "src": "icons/Plot/walls-painted-block-fr1-t2.webp",
     "x": 5184.6,
-    "y": 7500.9,
-    "w": 1861.3,
-    "h": 1276.0
-   },
-   {
-    "src": "icons/Plot/walls-painted-block-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6642.4,
-    "w": 1554.7,
-    "h": 1105.3
+    "y": 7583.5,
+    "w": 1742.7,
+    "h": 1193.3
    }
   ]
  },
@@ -103,14 +131,14 @@ export const PLOT_WALLS = {
   "theme": "steel-yard",
   "back": [
    {
-    "src": "icons/Plot/walls-steel-yard-bl-t1.webp",
+    "src": "icons/Plot/walls-steel-yard-bl-t2.webp",
     "x": 1873.2,
     "y": 5824.7,
     "w": 1894.7,
     "h": 1301.3
    },
    {
-    "src": "icons/Plot/walls-steel-yard-br-t1.webp",
+    "src": "icons/Plot/walls-steel-yard-br-t2.webp",
     "x": 6881.0,
     "y": 5828.9,
     "w": 1944.0,
@@ -119,32 +147,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-steel-yard-fl1-t1.webp",
+    "src": "icons/Plot/walls-steel-yard-fl1-t2.webp",
     "x": 1864.4,
-    "y": 6617.6,
-    "w": 1746.7,
-    "h": 1205.3
+    "y": 6616.0,
+    "w": 1680.0,
+    "h": 1173.3
    },
    {
-    "src": "icons/Plot/walls-steel-yard-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7471.0,
-    "w": 1964.0,
-    "h": 1309.3
+    "src": "icons/Plot/walls-steel-yard-road-t2.webp",
+    "x": 3225.7,
+    "y": 7442.5,
+    "w": 716.0,
+    "h": 541.3
    },
    {
-    "src": "icons/Plot/walls-steel-yard-fr1-t1.webp",
-    "x": 5191.0,
-    "y": 7499.4,
-    "w": 1854.7,
-    "h": 1282.7
+    "src": "icons/Plot/walls-steel-yard-fl2-t2.webp",
+    "x": 3636.7,
+    "y": 7504.7,
+    "w": 1892.0,
+    "h": 1274.7
    },
    {
-    "src": "icons/Plot/walls-steel-yard-fr2-t1.webp",
-    "x": 7236.2,
+    "src": "icons/Plot/walls-steel-yard-fr2-t2.webp",
+    "x": 7225.2,
     "y": 6644.0,
-    "w": 1545.3,
-    "h": 1109.3
+    "w": 1556.0,
+    "h": 1116.0
+   },
+   {
+    "src": "icons/Plot/walls-steel-yard-jetty-t2.webp",
+    "x": 6803.0,
+    "y": 7401.8,
+    "w": 557.3,
+    "h": 560.0
+   },
+   {
+    "src": "icons/Plot/walls-steel-yard-fr1-t2.webp",
+    "x": 5191.0,
+    "y": 7494.1,
+    "w": 1865.3,
+    "h": 1286.7
    }
   ]
  },
@@ -152,14 +194,14 @@ export const PLOT_WALLS = {
   "theme": "navy-club",
   "back": [
    {
-    "src": "icons/Plot/walls-navy-club-bl-t1.webp",
+    "src": "icons/Plot/walls-navy-club-bl-t2.webp",
     "x": 1862.8,
     "y": 5846.6,
     "w": 1892.0,
     "h": 1282.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-br-t1.webp",
+    "src": "icons/Plot/walls-navy-club-br-t2.webp",
     "x": 6881.0,
     "y": 5850.9,
     "w": 1956.0,
@@ -168,32 +210,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-navy-club-fl1-t1.webp",
+    "src": "icons/Plot/walls-navy-club-fl1-t2.webp",
     "x": 1849.4,
-    "y": 6659.8,
-    "w": 1761.3,
-    "h": 1162.7
+    "y": 6650.5,
+    "w": 1522.7,
+    "h": 1053.3
    },
    {
-    "src": "icons/Plot/walls-navy-club-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7493.0,
-    "w": 1980.0,
-    "h": 1296.0
+    "src": "icons/Plot/walls-navy-club-road-t2.webp",
+    "x": 3077.3,
+    "y": 7190.3,
+    "w": 982.7,
+    "h": 854.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-fr1-t1.webp",
+    "src": "icons/Plot/walls-navy-club-fl2-t2.webp",
+    "x": 3804.7,
+    "y": 7635.6,
+    "w": 1736.0,
+    "h": 1150.7
+   },
+   {
+    "src": "icons/Plot/walls-navy-club-fr2-t2.webp",
+    "x": 7384.7,
+    "y": 6657.0,
+    "w": 1396.0,
+    "h": 1022.7
+   },
+   {
+    "src": "icons/Plot/walls-navy-club-jetty-t2.webp",
+    "x": 6641.1,
+    "y": 7169.4,
+    "w": 970.7,
+    "h": 862.7
+   },
+   {
+    "src": "icons/Plot/walls-navy-club-fr1-t2.webp",
     "x": 5180.5,
-    "y": 7522.5,
-    "w": 1850.7,
-    "h": 1262.7
-   },
-   {
-    "src": "icons/Plot/walls-navy-club-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6663.6,
-    "w": 1544.0,
-    "h": 1090.7
+    "y": 7622.3,
+    "w": 1700.0,
+    "h": 1162.7
    }
   ]
  },
@@ -201,14 +257,14 @@ export const PLOT_WALLS = {
   "theme": "coastal-marble",
   "back": [
    {
-    "src": "icons/Plot/walls-coastal-marble-bl-t1.webp",
+    "src": "icons/Plot/walls-coastal-marble-bl-t2.webp",
     "x": 1871.1,
     "y": 5820.5,
     "w": 1898.7,
     "h": 1302.7
    },
    {
-    "src": "icons/Plot/walls-coastal-marble-br-t1.webp",
+    "src": "icons/Plot/walls-coastal-marble-br-t2.webp",
     "x": 6881.0,
     "y": 5821.0,
     "w": 1938.7,
@@ -217,32 +273,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-coastal-marble-fl1-t1.webp",
+    "src": "icons/Plot/walls-coastal-marble-fl1-t2.webp",
     "x": 1862.9,
-    "y": 6610.2,
-    "w": 1740.0,
-    "h": 1209.3
+    "y": 6629.5,
+    "w": 1554.7,
+    "h": 1097.3
    },
    {
-    "src": "icons/Plot/walls-coastal-marble-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7464.4,
-    "w": 1958.7,
-    "h": 1313.3
+    "src": "icons/Plot/walls-coastal-marble-road-t2.webp",
+    "x": 3142.6,
+    "y": 7199.0,
+    "w": 853.3,
+    "h": 813.3
    },
    {
-    "src": "icons/Plot/walls-coastal-marble-fr1-t1.webp",
+    "src": "icons/Plot/walls-coastal-marble-fl2-t2.webp",
+    "x": 3752.9,
+    "y": 7553.0,
+    "w": 1773.3,
+    "h": 1225.3
+   },
+   {
+    "src": "icons/Plot/walls-coastal-marble-fr2-t2.webp",
+    "x": 7327.5,
+    "y": 6636.4,
+    "w": 1457.3,
+    "h": 1069.3
+   },
+   {
+    "src": "icons/Plot/walls-coastal-marble-jetty-t2.webp",
+    "x": 6706.7,
+    "y": 7177.0,
+    "w": 838.7,
+    "h": 821.3
+   },
+   {
+    "src": "icons/Plot/walls-coastal-marble-fr1-t2.webp",
     "x": 5188.9,
-    "y": 7495.1,
-    "w": 1858.7,
-    "h": 1284.0
-   },
-   {
-    "src": "icons/Plot/walls-coastal-marble-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6639.0,
-    "w": 1548.0,
-    "h": 1112.0
+    "y": 7539.3,
+    "w": 1768.0,
+    "h": 1240.0
    }
   ]
  },
@@ -250,14 +320,14 @@ export const PLOT_WALLS = {
   "theme": "pro-arena",
   "back": [
    {
-    "src": "icons/Plot/walls-pro-arena-bl-t1.webp",
+    "src": "icons/Plot/walls-pro-arena-bl-t2.webp",
     "x": 1870.2,
     "y": 5826.8,
     "w": 1897.3,
     "h": 1298.7
    },
    {
-    "src": "icons/Plot/walls-pro-arena-br-t1.webp",
+    "src": "icons/Plot/walls-pro-arena-br-t2.webp",
     "x": 6881.0,
     "y": 5829.8,
     "w": 1945.3,
@@ -266,32 +336,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-pro-arena-fl1-t1.webp",
+    "src": "icons/Plot/walls-pro-arena-fl1-t2.webp",
     "x": 1861.6,
-    "y": 6617.1,
-    "w": 1746.7,
-    "h": 1204.0
+    "y": 6625.5,
+    "w": 1258.7,
+    "h": 952.0
    },
    {
-    "src": "icons/Plot/walls-pro-arena-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7471.8,
-    "w": 1965.3,
-    "h": 1309.3
+    "src": "icons/Plot/walls-pro-arena-road-t2.webp",
+    "x": 2838.2,
+    "y": 7010.1,
+    "w": 1549.3,
+    "h": 1196.0
    },
    {
-    "src": "icons/Plot/walls-pro-arena-fr1-t1.webp",
+    "src": "icons/Plot/walls-pro-arena-fl2-t2.webp",
+    "x": 4056.0,
+    "y": 7727.9,
+    "w": 1469.3,
+    "h": 1050.7
+   },
+   {
+    "src": "icons/Plot/walls-pro-arena-fr2-t2.webp",
+    "x": 7651.0,
+    "y": 6630.4,
+    "w": 1134.7,
+    "h": 914.7
+   },
+   {
+    "src": "icons/Plot/walls-pro-arena-jetty-t2.webp",
+    "x": 6382.2,
+    "y": 6977.2,
+    "w": 1568.0,
+    "h": 1222.7
+   },
+   {
+    "src": "icons/Plot/walls-pro-arena-fr1-t2.webp",
     "x": 5187.9,
-    "y": 7501.4,
-    "w": 1856.0,
-    "h": 1280.0
-   },
-   {
-    "src": "icons/Plot/walls-pro-arena-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6645.0,
-    "w": 1546.7,
-    "h": 1108.0
+    "y": 7723.1,
+    "w": 1438.7,
+    "h": 1057.3
    }
   ]
  },
@@ -299,14 +383,14 @@ export const PLOT_WALLS = {
   "theme": "glacier",
   "back": [
    {
-    "src": "icons/Plot/walls-glacier-bl-t1.webp",
+    "src": "icons/Plot/walls-glacier-bl-t2.webp",
     "x": 1857.7,
     "y": 5857.3,
     "w": 1880.0,
     "h": 1266.7
    },
    {
-    "src": "icons/Plot/walls-glacier-br-t1.webp",
+    "src": "icons/Plot/walls-glacier-br-t2.webp",
     "x": 6881.0,
     "y": 5857.4,
     "w": 1938.7,
@@ -315,32 +399,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-glacier-fl1-t1.webp",
+    "src": "icons/Plot/walls-glacier-fl1-t2.webp",
     "x": 1850.0,
-    "y": 6636.7,
-    "w": 1742.7,
-    "h": 1178.7
+    "y": 6662.6,
+    "w": 1558.7,
+    "h": 1060.0
    },
    {
-    "src": "icons/Plot/walls-glacier-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7499.5,
-    "w": 1956.0,
-    "h": 1278.7
+    "src": "icons/Plot/walls-glacier-road-t2.webp",
+    "x": 3137.4,
+    "y": 7193.8,
+    "w": 856.0,
+    "h": 824.0
    },
    {
-    "src": "icons/Plot/walls-glacier-fr1-t1.webp",
+    "src": "icons/Plot/walls-glacier-fl2-t2.webp",
+    "x": 3745.1,
+    "y": 7584.2,
+    "w": 1780.0,
+    "h": 1194.7
+   },
+   {
+    "src": "icons/Plot/walls-glacier-fr2-t2.webp",
+    "x": 7319.9,
+    "y": 6670.7,
+    "w": 1442.7,
+    "h": 1030.7
+   },
+   {
+    "src": "icons/Plot/walls-glacier-jetty-t2.webp",
+    "x": 6700.8,
+    "y": 7171.0,
+    "w": 860.0,
+    "h": 832.0
+   },
+   {
+    "src": "icons/Plot/walls-glacier-fr1-t2.webp",
     "x": 5175.4,
-    "y": 7531.7,
-    "w": 1838.7,
-    "h": 1248.0
-   },
-   {
-    "src": "icons/Plot/walls-glacier-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6674.6,
-    "w": 1525.3,
-    "h": 1068.0
+    "y": 7572.5,
+    "w": 1756.0,
+    "h": 1208.0
    }
   ]
  },
@@ -348,14 +446,14 @@ export const PLOT_WALLS = {
   "theme": "sapphire-citadel",
   "back": [
    {
-    "src": "icons/Plot/walls-sapphire-citadel-bl-t1.webp",
+    "src": "icons/Plot/walls-sapphire-citadel-bl-t2.webp",
     "x": 1870.4,
     "y": 5832.8,
     "w": 1888.0,
     "h": 1281.3
    },
    {
-    "src": "icons/Plot/walls-sapphire-citadel-br-t1.webp",
+    "src": "icons/Plot/walls-sapphire-citadel-br-t2.webp",
     "x": 6881.0,
     "y": 5833.9,
     "w": 1917.3,
@@ -364,32 +462,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-sapphire-citadel-fl1-t1.webp",
+    "src": "icons/Plot/walls-sapphire-citadel-fl1-t2.webp",
     "x": 1869.8,
-    "y": 6625.3,
-    "w": 1724.0,
-    "h": 1190.7
+    "y": 6617.9,
+    "w": 1452.0,
+    "h": 1060.0
    },
    {
-    "src": "icons/Plot/walls-sapphire-citadel-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7475.9,
-    "w": 1938.7,
-    "h": 1292.0
+    "src": "icons/Plot/walls-sapphire-citadel-road-t2.webp",
+    "x": 3058.1,
+    "y": 7138.6,
+    "w": 1066.7,
+    "h": 940.0
    },
    {
-    "src": "icons/Plot/walls-sapphire-citadel-fr1-t1.webp",
+    "src": "icons/Plot/walls-sapphire-citadel-fl2-t2.webp",
+    "x": 3844.3,
+    "y": 7608.3,
+    "w": 1662.7,
+    "h": 1161.3
+   },
+   {
+    "src": "icons/Plot/walls-sapphire-citadel-fr2-t2.webp",
+    "x": 7411.6,
+    "y": 6622.1,
+    "w": 1377.3,
+    "h": 1036.0
+   },
+   {
+    "src": "icons/Plot/walls-sapphire-citadel-jetty-t2.webp",
+    "x": 6621.8,
+    "y": 7116.5,
+    "w": 1073.3,
+    "h": 944.0
+   },
+   {
+    "src": "icons/Plot/walls-sapphire-citadel-fr1-t2.webp",
     "x": 5188.2,
-    "y": 7507.5,
-    "w": 1848.0,
-    "h": 1262.7
-   },
-   {
-    "src": "icons/Plot/walls-sapphire-citadel-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6625.6,
-    "w": 1549.3,
-    "h": 1118.7
+    "y": 7590.6,
+    "w": 1676.0,
+    "h": 1180.0
    }
   ]
  },
@@ -397,14 +509,14 @@ export const PLOT_WALLS = {
   "theme": "legend",
   "back": [
    {
-    "src": "icons/Plot/walls-legend-bl-t1.webp",
+    "src": "icons/Plot/walls-legend-bl-t2.webp",
     "x": 1876.6,
     "y": 5828.6,
     "w": 1892.0,
     "h": 1294.7
    },
    {
-    "src": "icons/Plot/walls-legend-br-t1.webp",
+    "src": "icons/Plot/walls-legend-br-t2.webp",
     "x": 6881.0,
     "y": 5831.6,
     "w": 1946.7,
@@ -413,32 +525,46 @@ export const PLOT_WALLS = {
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-legend-fl1-t1.webp",
+    "src": "icons/Plot/walls-legend-fl1-t2.webp",
     "x": 1864.5,
-    "y": 6620.3,
-    "w": 1748.0,
-    "h": 1202.7
+    "y": 6639.7,
+    "w": 1577.3,
+    "h": 1098.7
    },
    {
-    "src": "icons/Plot/walls-legend-fl2-t1.webp",
-    "x": 3566.0,
-    "y": 7473.6,
-    "w": 1965.3,
-    "h": 1306.7
+    "src": "icons/Plot/walls-legend-road-t2.webp",
+    "x": 3161.5,
+    "y": 7207.1,
+    "w": 793.3,
+    "h": 793.3
    },
    {
-    "src": "icons/Plot/walls-legend-fr1-t1.webp",
+    "src": "icons/Plot/walls-legend-fl2-t2.webp",
+    "x": 3735.6,
+    "y": 7554.2,
+    "w": 1797.3,
+    "h": 1228.0
+   },
+   {
+    "src": "icons/Plot/walls-legend-fr2-t2.webp",
+    "x": 7308.9,
+    "y": 6647.9,
+    "w": 1469.3,
+    "h": 1069.3
+   },
+   {
+    "src": "icons/Plot/walls-legend-jetty-t2.webp",
+    "x": 6730.7,
+    "y": 7185.7,
+    "w": 794.7,
+    "h": 798.7
+   },
+   {
+    "src": "icons/Plot/walls-legend-fr1-t2.webp",
     "x": 5194.3,
-    "y": 7504.6,
-    "w": 1850.7,
-    "h": 1274.7
-   },
-   {
-    "src": "icons/Plot/walls-legend-fr2-t1.webp",
-    "x": 7236.2,
-    "y": 6649.2,
-    "w": 1542.7,
-    "h": 1104.0
+    "y": 7539.1,
+    "w": 1778.7,
+    "h": 1240.0
    }
   ]
  }

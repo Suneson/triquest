@@ -1,9 +1,9 @@
 """cut-walls.py: the base's walls for each level of the hall, from the theme's wall kit (MOSKE APP/Island/THEMES.md).
 
-    python tools/cut-walls.py <themes dir> [<map v5.png>]
+    python tools/cut-walls.py <themes dir> [<preview.jpg>]
 
-  <themes dir>  MOSKE APP/Characters/Photos/Robots/Robots/Base/themes (<nn>-<slug>/walls-*.jpg)
-  <map v5.png>  optional: also writes a preview of every level's walls on the map to MOSKE APP/Island/walls-preview.jpg
+  <themes dir>   MOSKE APP/Characters/Photos/Robots/Robots/Base/themes (<nn>-<slug>/walls-*.jpg, gates-<k>.jpg|png)
+  <preview.jpg>  optional: also writes every level's walls on its platform and the ground, side by side
 
 A kit is two wall runs and a pillar on flat green. Its runs are told apart by their slope (one goes up to the right,
 the other down), not by where they are in the picture. Each run is copied end to end along a side of the lawn, its
@@ -11,7 +11,8 @@ end pillar on the next one's first, stretched a little so a whole number of runs
 the grass ring round the track, as on map v4: on its outer edge in front, just past the track at the back, with gaps
 for the road (front left), the jetty (front right) and the two paths from the plazas (the back corner is open).
 Each side is its own picture with a soft contact shadow: the back two go behind the room, the front ones over it
-(js/core/diorama.js plotEnv rail). Writes icons/Plot/walls-<slug>-<side>-t1.webp and js/core/plot-walls.js.
+(js/core/diorama.js plotEnv rail). The road and the jetty get the theme's gate (gates-<k>: the same entrance
+turned both ways), centred on the gap at its own size, the walls either side stopping under its stubs. Writes icons/Plot/walls-<slug>-<side>-t2.webp and js/core/plot-walls.js.
 """
 import json, os, sys
 import numpy as np
@@ -21,11 +22,15 @@ from scipy import ndimage as nd
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 OUT = os.path.join(REPO, 'icons', 'Plot')
-TAG = 't1'
+TAG = 't2'
 # level -> (theme dir, kit picture); levels with none take the one below (diorama.js wallsFor)
 LEVELS = {1: ('01-scrap-yard', 'walls-2.jpg'), 2: ('02-painted-block', 'walls-2_v2.jpg'), 3: ('03-steel-yard', 'walls-1.jpg'),
           4: ('05-navy-club', 'walls-1.jpg'), 5: ('06-coastal-marble', 'walls-2.jpg'), 7: ('07-pro-arena', 'walls-1.jpg'),
           8: ('08-glacier', 'walls-1_v2.jpg'), 9: ('09-sapphire-citadel', 'walls-2.jpg'), 10: ('10-legend', 'walls-1_v2.jpg')}
+# the gate picked for each theme (gates-<k>.jpg|png in its folder)
+GATE_PICK = {'01-scrap-yard': 1, '02-painted-block': 1, '03-steel-yard': 1, '05-navy-club': 1, '06-coastal-marble': 1,
+             '07-pro-arena': 1, '08-glacier': 1, '09-sapphire-citadel': 1, '10-legend': 1}
+GATE_H = 1.3      # a gate's top over a wall pillar's height
 
 # the lawn (plot-art.js), and a tile (u to the right corner, v to the left one)
 B = np.array([5239.9, 5627.0]); R = np.array([7701.3, 6855.3]); L = np.array([2795.8, 6852.7])
@@ -42,6 +47,8 @@ SIDES = [
     ('fr1', 'front', (FRONT, FRONT), (FRONT, 27.8), 'a'),    # front corner to the jetty
     ('fr2', 'front', (FRONT, 20.3), (FRONT, BACK), 'c'),     # the jetty to the right corner
 ]
+# the gates: (name, the side before it, the one after it); the gap between them is the way in
+GATES = [('road', 'fl1', 'fl2'), ('jetty', 'fr1', 'fr2')]
 SUN = (0.55, 0.22)  # the cast shadow's run per px of height (to the right, down), as the umbrellas' on the map
 PILLAR = 390      # world px from a pillar's cap to its foot, as on map v4
 STORE = 0.75      # the pictures are stored at 3/4 of their size in the world
@@ -98,6 +105,36 @@ def pieces(path):
                               x0=h['ox'] + W - 1 - (h['x1'] - h['ox']), x1=h['ox'] + W - 1 - (h['x0'] - h['ox']),
                               c=h['c'] + h['m'] * (2 * h['ox'] + W - 1))
     return runs
+
+
+def gates(path):
+    """A gate picture's two entrances, by slope like the runs, each with its baseline and full height."""
+    rgba = key(np.asarray(Image.open(path).convert('RGB')))
+    m = nd.binary_closing(rgba[..., 3] > 128, iterations=3)
+    lab, n = nd.label(m, structure=np.ones((3, 3)))
+    sizes = nd.sum(m, lab, range(1, n + 1))
+    big = [i + 1 for i in np.argsort(sizes)[::-1][:2]]
+    out = {}
+    for i in big:
+        ys, xs = nd.find_objects((lab == i).astype(int))[0]
+        sub = lab[ys, xs] == i
+        cols = np.where(sub.any(0))[0]
+        bot = np.array([np.where(sub[:, c])[0].max() for c in cols], float) + ys.start
+        top = np.array([np.where(sub[:, c])[0].min() for c in cols], float) + ys.start
+        xc = cols + xs.start
+        w = len(cols); mid = slice(int(w * 0.2), int(w * 0.8))
+        mk, ck = np.polyfit(xc[mid], bot[mid], 1)
+        hg = float(np.percentile(bot - top, 97))
+        img = Image.fromarray(rgba[ys, xs] * sub[..., None].astype(np.uint8))
+        out['up' if mk < 0 else 'down'] = dict(img=img, ox=xs.start, oy=ys.start, x0=float(xc[0]), x1=float(xc[-1]),
+                                                m=mk, c=ck, pw=0.0, ph=hg)
+    for want, have in (('up', 'down'), ('down', 'up')):
+        if want not in out and have in out:
+            h = out[have]; W = h['img'].width
+            out[want] = dict(h, img=h['img'].transpose(Image.FLIP_LEFT_RIGHT), m=-h['m'],
+                             x0=h['ox'] + W - 1 - (h['x1'] - h['ox']), x1=h['ox'] + W - 1 - (h['x0'] - h['ox']),
+                             c=h['c'] + h['m'] * (2 * h['ox'] + W - 1))
+    return out
 
 
 def side(run, A, C, s, corner=''):
@@ -166,42 +203,89 @@ def main():
     for lv, (folder, f) in LEVELS.items():
         slug = folder.split('-', 1)[1]
         runs = pieces(os.path.join(src, folder, f))
+        gp = [os.path.join(src, folder, f'gates-{GATE_PICK.get(folder, 1)}.{e}') for e in ('jpg', 'png')]
+        gp = next((q for q in gp if os.path.exists(q)), None)
+        gate = gates(gp) if gp else None
         info = {'theme': slug, 'back': [], 'front': []}
         previews[lv] = []
+        ends = {sid: [P(*a), P(*c)] for sid, _, a, c, _ in SIDES}
+        pics = {}
+        # each gate centred on its gap at its own size, the walls either side pulled back under its stubs
+        for gname, before, after in GATES if gate else []:
+            Pa, Pc = ends[before][1], ends[after][0]
+            if Pa[0] > Pc[0]: Pa, Pc = Pc, Pa
+            me = (Pc[1] - Pa[1]) / (Pc[0] - Pa[0])
+            g = gate['up' if me < 0 else 'down']
+            wall = runs['up' if me < 0 else 'down']
+            sg = GATE_H * PILLAR / g['ph']
+            half = sg * (g['x1'] - g['x0']) / 2
+            Q = (Pa + Pc) / 2
+            Ga, Gc = Q - half * np.array([1, me]), Q + half * np.array([1, me])
+            tuck = 0.5 * PILLAR / wall['ph'] * wall['pw']          # the wall's end pillar half under the stub
+            for sid in (before, after):
+                e = ends[sid]
+                # the end of this side that meets the gap
+                j = int(np.argmin([np.linalg.norm(e[0] - Q), np.linalg.norm(e[1] - Q)]))
+                tgt = Ga if np.linalg.norm(Ga - e[1 - j]) < np.linalg.norm(Gc - e[1 - j]) else Gc
+                inward = (Q - tgt) / np.linalg.norm(Q - tgt)
+                e[j] = tgt + inward * tuck * np.hypot(1, me)
+            pic, x, y, _ = side(g, Ga, Gc, sg)
+            pics[gname] = (pic, x, y, sg)
         for sid, layer, a, c, corner in SIDES:
-            A, C = P(*a), P(*c)
+            A, C = ends[sid]
             dirn = 'up' if (C[1] - A[1]) * (C[0] - A[0]) < 0 else 'down'
             run = runs[dirn]
             s = PILLAR / run['ph']
             pic, x, y, n = side(run, A, C, s, corner)
+            pics[sid] = (pic, x, y, s)
+            print(lv, slug, sid, dirn, 'runs', n, 'scale %.2f' % s, pic.size)
+        # back to front: on a side falling to the right the nearer end is the right one, so the gate goes over the
+        # wall before it and under the one after it
+        order = ['bl', 'br', 'fl1', 'road', 'fl2', 'fr2', 'jetty', 'fr1']
+        for sid in order:
+            if sid not in pics: continue
+            pic, x, y, _ = pics[sid]
+            layer = 'back' if sid in ('bl', 'br') else 'front'
             name = f'walls-{slug}-{sid}-{TAG}.webp'
             pic.save(os.path.join(OUT, name), quality=86, method=6)
             info[layer].append({'src': f'icons/Plot/{name}', 'x': round(x, 1), 'y': round(y, 1),
                                 'w': round(pic.width / STORE, 1), 'h': round(pic.height / STORE, 1)})
             previews[lv].append((pic, x, y))
-            print(lv, slug, sid, dirn, 'runs', n, 'scale %.2f' % s, pic.size)
         data[str(lv)] = info
     js = ('// plot-walls.js: the base\'s walls for each level of the hall (MOSKE APP/Island/THEMES.md), round the lawn of\n'
           '// plot-art.js: the back sides behind the room, the front ones over it. Written by tools/cut-walls.py. Don\'t edit by hand.\n'
           'export const PLOT_WALLS = ' + json.dumps(data, indent=1) + ';\n')
     open(os.path.join(REPO, 'js', 'core', 'plot-walls.js'), 'w', encoding='utf-8', newline='\n').write(js)
     if len(sys.argv) > 2:
-        Image.MAX_IMAGE_PIXELS = None
-        base = Image.open(sys.argv[2]).convert('RGBA')
-        x0, y0, x1, y1 = 1500, 4700, 9200, 9400
-        k = 0.2
-        crop = base.crop((x0, y0, x1, y1)).resize((round((x1 - x0) * k), round((y1 - y0) * k)))
+        # each level's walls on its platform and the ground, round the front (the gates)
+        import importlib.util
+        def load(name):
+            t = open(os.path.join(REPO, 'js', 'core', name), encoding='utf-8').read()
+            return json.loads(t[t.index('{'):t.rindex('}') + 1])
+        art, themes = load('plot-art.js'), load('plot-themes.js')
+        x0, y0, x1, y1 = 2300, 6600, 8300, 9300   # the front half, where the gates are
+        k = 0.22
+        ground = Image.new('RGBA', (round((x1 - x0) * k), round((y1 - y0) * k)), (60, 120, 60, 255))
+        for tl in art['tiles']:
+            if tl['x'] + tl['w'] < x0 or tl['x'] > x1 or tl['y'] + tl['h'] < y0 or tl['y'] > y1: continue
+            im = Image.open(os.path.join(REPO, tl['small'] if 'small' in tl else tl['src'])).convert('RGBA')
+            ground.alpha_composite(im.resize((round(tl['w'] * k) + 1, round(tl['h'] * k) + 1)), (round((tl['x'] - x0) * k), round((tl['y'] - y0) * k)))
         tiles = []
         for lv, ps in previews.items():
-            c = crop.copy()
-            for pic, x, y in ps:
+            c = ground.copy()
+            pf = themes.get(str(lv)) or art['platform']
+            im = Image.open(os.path.join(REPO, pf['src'])).convert('RGBA')
+            back = [q for q in ps[:2]]; front = ps[2:]
+            for pic, x, y in back:
+                c.alpha_composite(pic.resize((round(pic.width / STORE * k), round(pic.height / STORE * k))), (round((x - x0) * k), round((y - y0) * k)))
+            c.alpha_composite(im.resize((round(pf['w'] * k), round(pf['h'] * k))), (round((pf['x'] - x0) * k), round((pf['y'] - y0) * k)))
+            for pic, x, y in front:
                 c.alpha_composite(pic.resize((round(pic.width / STORE * k), round(pic.height / STORE * k))), (round((x - x0) * k), round((y - y0) * k)))
             tiles.append(c.convert('RGB'))
         tw, th = tiles[0].size
         sheet = Image.new('RGB', (tw * 3, th * 3), 'white')
         for i, t in enumerate(tiles): sheet.paste(t, ((i % 3) * tw, (i // 3) * th))
-        sheet.save(os.path.join(src, '..', '..', '..', '..', '..', '..', 'Island', 'walls-preview.jpg'), quality=85)
-
+        sheet.save(sys.argv[2], quality=85)
 
 if __name__ == '__main__':
     main()

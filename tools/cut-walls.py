@@ -10,7 +10,8 @@ the other down), not by where they are in the picture. Each run is copied end to
 end pillar on the next one's first, stretched a little so a whole number of runs fills the side. The walls stand on
 the grass ring round the track, as on map v4: on its outer edge in front, just past the track at the back, with gaps
 for the road (front left), the jetty (front right) and the two paths from the plazas (the back corner is open).
-Each side is its own picture with a soft contact shadow: the back two go behind the room, the front ones over it
+A level with a 3D wall kit is baked by tools/bake-walls.html instead (real shadows); its layout
+(icons/Plot/walls-<slug>-<tag>.json) is taken as it is. Each side is its own picture with a soft contact shadow: the back two go behind the room, the front ones over it
 (js/core/diorama.js plotEnv rail). The road and the jetty get the theme's gate (gates-<k>: the same entrance
 turned both ways), centred on the gap at its own size, the walls either side stopping under its stubs. Writes icons/Plot/walls-<slug>-<side>-t2.webp and js/core/plot-walls.js.
 """
@@ -202,6 +203,11 @@ def main():
     data, previews = {}, {}
     for lv, (folder, f) in LEVELS.items():
         slug = folder.split('-', 1)[1]
+        # a level baked from its 3D wall kit (tools/bake-walls.html) keeps those pictures and their layout
+        baked = sorted(n for n in os.listdir(OUT) if n.startswith(f'walls-{slug}-t') and n.endswith('.json'))
+        if baked:
+            data[str(lv)] = json.load(open(os.path.join(OUT, baked[-1]), encoding='utf-8'))
+            print(lv, slug, 'baked', baked[-1]); continue
         runs = pieces(os.path.join(src, folder, f))
         gp = [os.path.join(src, folder, f'gates-{GATE_PICK.get(folder, 1)}.{e}') for e in ('jpg', 'png')]
         gp = next((q for q in gp if os.path.exists(q)), None)

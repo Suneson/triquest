@@ -21,3 +21,6 @@ docs/gear/gen/
 __pycache__/
 models/bodies/*-base.png
 models/bodies/*-mask.png
+
+# 3D wall kits for tools/bake-walls.html (big Tripo GLBs; only the baked pictures ship)
+tools/bake/

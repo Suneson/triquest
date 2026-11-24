@@ -1,0 +1,63 @@
+{
+ "theme": "pro-arena",
+ "back": [
+  {
+   "src": "icons/Plot/walls-pro-arena-bl-t4.webp",
+   "x": 1845.2,
+   "y": 5771.5,
+   "w": 2000.0,
+   "h": 1369.3
+  },
+  {
+   "src": "icons/Plot/walls-pro-arena-br-t4.webp",
+   "x": 6849.1,
+   "y": 5774.6,
+   "w": 2013.3,
+   "h": 1369.3
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-pro-arena-fl1-t4.webp",
+   "x": 1831.7,
+   "y": 6556.7,
+   "w": 1477.3,
+   "h": 1112.0
+  },
+  {
+   "src": "icons/Plot/walls-pro-arena-road-t4.webp",
+   "x": 2964.7,
+   "y": 7147.1,
+   "w": 1258.7,
+   "h": 977.3
+  },
+  {
+   "src": "icons/Plot/walls-pro-arena-fl2-t4.webp",
+   "x": 3885.7,
+   "y": 7592.0,
+   "w": 1681.3,
+   "h": 1204.0
+  },
+  {
+   "src": "icons/Plot/walls-pro-arena-fr2-t4.webp",
+   "x": 7448.2,
+   "y": 6557.6,
+   "w": 1428.0,
+   "h": 1090.7
+  },
+  {
+   "src": "icons/Plot/walls-pro-arena-jetty-t4.webp",
+   "x": 6529.0,
+   "y": 7127.8,
+   "w": 1256.0,
+   "h": 974.7
+  },
+  {
+   "src": "icons/Plot/walls-pro-arena-fr1-t4.webp",
+   "x": 5150.8,
+   "y": 7567.2,
+   "w": 1730.7,
+   "h": 1234.7
+  }
+ ]
+}

@@ -1,0 +1,63 @@
+{
+ "theme": "steel-yard",
+ "back": [
+  {
+   "src": "icons/Plot/walls-steel-yard-bl-t4.webp",
+   "x": 1849.0,
+   "y": 5773.5,
+   "w": 1993.3,
+   "h": 1364.0
+  },
+  {
+   "src": "icons/Plot/walls-steel-yard-br-t4.webp",
+   "x": 6850.4,
+   "y": 5776.6,
+   "w": 2005.3,
+   "h": 1364.0
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-steel-yard-fl1-t4.webp",
+   "x": 1836.9,
+   "y": 6554.0,
+   "w": 1629.3,
+   "h": 1192.0
+  },
+  {
+   "src": "icons/Plot/walls-steel-yard-road-t4.webp",
+   "x": 3116.6,
+   "y": 7180.9,
+   "w": 885.3,
+   "h": 838.7
+  },
+  {
+   "src": "icons/Plot/walls-steel-yard-fl2-t4.webp",
+   "x": 3732.5,
+   "y": 7513.5,
+   "w": 1829.3,
+   "h": 1280.0
+  },
+  {
+   "src": "icons/Plot/walls-steel-yard-fr2-t4.webp",
+   "x": 7294.7,
+   "y": 6558.8,
+   "w": 1580.0,
+   "h": 1166.7
+  },
+  {
+   "src": "icons/Plot/walls-steel-yard-jetty-t4.webp",
+   "x": 6683.7,
+   "y": 7158.7,
+   "w": 881.3,
+   "h": 838.7
+  },
+  {
+   "src": "icons/Plot/walls-steel-yard-fr1-t4.webp",
+   "x": 5156.0,
+   "y": 7492.1,
+   "w": 1878.7,
+   "h": 1309.3
+  }
+ ]
+}

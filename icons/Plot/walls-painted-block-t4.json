@@ -1,0 +1,63 @@
+{
+ "theme": "painted-block",
+ "back": [
+  {
+   "src": "icons/Plot/walls-painted-block-bl-t4.webp",
+   "x": 1848.1,
+   "y": 5771.8,
+   "w": 1998.7,
+   "h": 1365.3
+  },
+  {
+   "src": "icons/Plot/walls-painted-block-br-t4.webp",
+   "x": 6848.4,
+   "y": 5775.0,
+   "w": 2010.7,
+   "h": 1368.0
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-painted-block-fl1-t4.webp",
+   "x": 1841.4,
+   "y": 6568.2,
+   "w": 1617.3,
+   "h": 1174.7
+  },
+  {
+   "src": "icons/Plot/walls-painted-block-road-t4.webp",
+   "x": 3112.0,
+   "y": 7178.6,
+   "w": 893.3,
+   "h": 842.7
+  },
+  {
+   "src": "icons/Plot/walls-painted-block-fl2-t4.webp",
+   "x": 3737.7,
+   "y": 7517.4,
+   "w": 1826.7,
+   "h": 1277.3
+  },
+  {
+   "src": "icons/Plot/walls-painted-block-fr2-t4.webp",
+   "x": 7303.0,
+   "y": 6559.7,
+   "w": 1570.7,
+   "h": 1160.0
+  },
+  {
+   "src": "icons/Plot/walls-painted-block-jetty-t4.webp",
+   "x": 6680.4,
+   "y": 7157.7,
+   "w": 886.7,
+   "h": 844.0
+  },
+  {
+   "src": "icons/Plot/walls-painted-block-fr1-t4.webp",
+   "x": 5157.8,
+   "y": 7496.3,
+   "w": 1870.7,
+   "h": 1304.0
+  }
+ ]
+}

@@ -1,0 +1,63 @@
+{
+ "theme": "sapphire-citadel",
+ "back": [
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-bl-t4.webp",
+   "x": 1864.2,
+   "y": 5784.5,
+   "w": 1960.0,
+   "h": 1338.7
+  },
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-br-t4.webp",
+   "x": 6855.2,
+   "y": 5785.0,
+   "w": 1973.3,
+   "h": 1341.3
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-fl1-t4.webp",
+   "x": 1861.6,
+   "y": 6573.0,
+   "w": 1528.0,
+   "h": 1134.7
+  },
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-road-t4.webp",
+   "x": 3077.2,
+   "y": 7132.5,
+   "w": 1061.3,
+   "h": 945.3
+  },
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-fl2-t4.webp",
+   "x": 3791.0,
+   "y": 7550.7,
+   "w": 1740.0,
+   "h": 1225.3
+  },
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-fr2-t4.webp",
+   "x": 7353.7,
+   "y": 6579.2,
+   "w": 1481.3,
+   "h": 1108.0
+  },
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-jetty-t4.webp",
+   "x": 6644.6,
+   "y": 7111.8,
+   "w": 1054.7,
+   "h": 944.0
+  },
+  {
+   "src": "icons/Plot/walls-sapphire-citadel-fr1-t4.webp",
+   "x": 5178.1,
+   "y": 7529.0,
+   "w": 1777.3,
+   "h": 1252.0
+  }
+ ]
+}

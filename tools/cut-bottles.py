@@ -15,8 +15,8 @@ cp = importlib.util.module_from_spec(spec); spec.loader.exec_module(cp)
 
 OUT = os.path.join(cp.REPO, 'icons', 'Bottles')
 # the picture picked for each bottle
-PICK = {'build-brew': 'build-brew-1.jpg', 'electro-surge': 'electro-surge-2.jpg', 'recovery-mix': 'recovery-mix-2.jpg',
-        'vo2-max': 'vo2-max-1.jpg', 'chest-charge': 'chest-charge-1.jpg'}
+PICK = {'build-brew': 'build-brew-1.jpg', 'electro-surge': 'electro-surge-clear.jpg', 'recovery-mix': 'recovery-mix-2.jpg',
+        'vo2-max': 'vo2-max-clear.jpg', 'chest-charge': 'chest-charge-1.jpg'}
 H = 384
 
 
@@ -25,8 +25,10 @@ def key(rgb):
     is pulled back only at the edge."""
     from scipy import ndimage as nd
     a = rgb.astype(float); r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    d = g - np.maximum(r, b)                           # the background is about 230 and up
-    alpha = np.clip((200 - d) / 50, 0, 1)
+    d = g - np.maximum(r, b)
+    # the background's own greenness, from the corners (pure #00FF00 is about 255, a shaded green less)
+    bg = float(np.median(np.r_[d[:20, :20].ravel(), d[:20, -20:].ravel(), d[-20:, :20].ravel(), d[-20:, -20:].ravel()]))
+    alpha = np.clip((bg * 0.8 - d) / (bg * 0.2), 0, 1)
     solid = nd.binary_fill_holes(alpha > 0.5)          # inside the bottle nothing is see-through
     alpha = np.where(solid, np.maximum(alpha, nd.binary_erosion(solid, iterations=3)), alpha)
     alpha = nd.gaussian_filter(alpha, 0.6)

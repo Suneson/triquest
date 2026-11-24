@@ -15,6 +15,7 @@
 // to put it down. The floor rules are js/core/placement.js; positions are kept
 // by placement-state.js. Under reduced motion nothing bounces, lifts or springs.
 
+import { chestFloat } from './chest-view.js';
 import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum } from '../core/i18n.js';
@@ -272,6 +273,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     : orb('gold', 'icons/Pixelart/GEAR/btn-inventory.png', `data-action="open-inventory" aria-label="${esc(t('gear.inventory'))}"`)}
     </div>
     ${club || plotMode() ? '' : `<div class="dg-side is-right">${liftPanel(room)}</div>`}
+    ${club ? '' : `<div class="cx-float-slot" data-cx-float>${chestFloat()}</div>`}
   </section>`;
 }
 
@@ -566,17 +568,23 @@ export function wireDiorama(root, ctx) {
   }
   // the railing round the slab: its back half behind the room, its front half in front of it
   // (over the room and what stands in it), so the room stands inside it
+  // (a part is one picture, or a list of them: the base's walls, a picture a side)
   for (const part of ['back', 'front']) {
-    let el = worldEl.querySelector(`.dg-rail.is-${part}`);
-    const r = env.rail?.[part];
-    if (!r) { el?.remove(); continue; }
-    if (!el) {
-      el = document.createElement('img');
-      el.className = `dg-rail is-${part}`; el.alt = ''; el.draggable = false; el.decoding = 'async';
-      if (part === 'back') worldEl.querySelector('.dg-room-art').before(el); else worldEl.querySelector('.dg-items').after(el);
-    }
-    if (el.getAttribute('src') !== r.src) el.src = r.src;
-    Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+    const want = [env.rail?.[part]].flat().filter(Boolean);
+    const els = [...worldEl.querySelectorAll(`.dg-rail.is-${part}`)];
+    els.slice(want.length).forEach((e) => e.remove());
+    want.forEach((r, i) => {
+      let el = els[i];
+      if (!el) {
+        el = document.createElement('img');
+        el.className = `dg-rail is-${part}`; el.alt = ''; el.draggable = false; el.decoding = 'async';
+        const prev = worldEl.querySelectorAll(`.dg-rail.is-${part}`);
+        if (prev.length) prev[prev.length - 1].after(el);
+        else if (part === 'back') worldEl.querySelector('.dg-room-art').before(el); else worldEl.querySelector('.dg-items').after(el);
+      }
+      if (el.getAttribute('src') !== r.src) el.src = r.src;
+      Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+    });
   }
   // the delivery sign's tap target (the sign itself is a picture, city2d.js)
   let signHit = worldEl.querySelector('.dg-sign-hit');

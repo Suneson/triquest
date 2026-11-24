@@ -11,6 +11,7 @@ import { ROOM_GEOMETRY, ROOM_SIZE } from './placement.js';
 import { ISLAND_ART } from './island-art.js';
 import { PLOT_ART } from './plot-art.js';
 import { PLOT_THEMES } from './plot-themes.js';
+import { PLOT_WALLS } from './plot-walls.js';
 
 export const ENV = {
   src: 'icons/Pixelart/NEW/env-ground-sky.webp',
@@ -97,6 +98,11 @@ export function platformFor(level) {
   for (let n = Math.min(level, 99); n >= 1; n--) if (PLOT_THEMES[n]) return { ...PLOT_ART.platform, ...PLOT_THEMES[n] };
   return PLOT_ART.platform;
 }
+/** The walls round the lawn for a level of the hall (plot-walls.js): { back: [...], front: [...] } pictures. */
+export function wallsFor(level) {
+  for (let n = Math.min(level, 99); n >= 1; n--) if (PLOT_WALLS[n]) return PLOT_WALLS[n];
+  return null;
+}
 const PLOT_TILES = [...PLOT_ART.tiles].sort((p, q) => {
   const [cx, cy] = PLOT_ART.lawn.front;
   return Math.hypot(p.x + p.w / 2 - cx, p.y + p.h / 2 - cy) - Math.hypot(q.x + q.w / 2 - cx, q.y + q.h / 2 - cy);
@@ -109,7 +115,7 @@ const plotEnv = () => {
   const pieces = [...club.map((c) => c.pic), platform];
   return { src: PLOT_TILES[0].src, tiles: PLOT_TILES, w: world.w, h: world.h,
     plot: { top: lawn.back, right: lawn.right, bottom: lawn.front, left: lawn.left }, floorShare: 1, slabView: 1.02,
-    fitW: (lawn.right[0] - lawn.left[0]) * 1.12, maxS: TILE_ZOOM / tileW, tower: pieces, rail: null, plotBase: true };
+    fitW: (lawn.right[0] - lawn.left[0]) * 1.12, maxS: TILE_ZOOM / tileW, tower: pieces, rail: wallsFor(plotLevel), plotBase: true };
 };
 export const envFor = (room, geom = stageGeom(room)) => (geom === 'plot-48' ? plotEnv() : room === 'club' ? clubEnv(geom) : room in FLOOR_OF ? cityEnv(FLOOR_OF[room], geom) : ENV);
 

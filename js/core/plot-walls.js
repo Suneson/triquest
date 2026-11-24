@@ -194,62 +194,62 @@ export const PLOT_WALLS = {
   "theme": "navy-club",
   "back": [
    {
-    "src": "icons/Plot/walls-navy-club-bl-t3.webp",
-    "x": 1830.4,
-    "y": 5769.3,
-    "w": 2022.7,
-    "h": 1378.7
+    "src": "icons/Plot/walls-navy-club-bl-t4.webp",
+    "x": 1829.0,
+    "y": 5766.7,
+    "w": 2024.0,
+    "h": 1381.3
    },
    {
-    "src": "icons/Plot/walls-navy-club-br-t3.webp",
-    "x": 6843.5,
-    "y": 5769.8,
-    "w": 2032,
-    "h": 1380
+    "src": "icons/Plot/walls-navy-club-br-t4.webp",
+    "x": 6839.5,
+    "y": 5767.1,
+    "w": 2036.0,
+    "h": 1382.7
    }
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-navy-club-fl1-t3.webp",
-    "x": 1821.2,
-    "y": 6549.5,
-    "w": 1576,
-    "h": 1164
+    "src": "icons/Plot/walls-navy-club-fl1-t4.webp",
+    "x": 1818.6,
+    "y": 6546.8,
+    "w": 1578.7,
+    "h": 1166.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-road-t3.webp",
-    "x": 3059.8,
-    "y": 7121.9,
-    "w": 1025.3,
-    "h": 936
+    "src": "icons/Plot/walls-navy-club-road-t4.webp",
+    "x": 3057.2,
+    "y": 7119.2,
+    "w": 1028.0,
+    "h": 938.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-fl2-t3.webp",
+    "src": "icons/Plot/walls-navy-club-fl2-t4.webp",
     "x": 3798.4,
-    "y": 7547,
+    "y": 7544.4,
     "w": 1782.7,
-    "h": 1254.7
+    "h": 1257.3
    },
    {
-    "src": "icons/Plot/walls-navy-club-fr2-t3.webp",
-    "x": 7361.6,
-    "y": 6553,
-    "w": 1529.3,
-    "h": 1138.7
+    "src": "icons/Plot/walls-navy-club-fr2-t4.webp",
+    "x": 7360.3,
+    "y": 6550.3,
+    "w": 1530.7,
+    "h": 1141.3
    },
    {
-    "src": "icons/Plot/walls-navy-club-jetty-t3.webp",
-    "x": 6628.8,
-    "y": 7099.8,
-    "w": 1020,
-    "h": 937.3
+    "src": "icons/Plot/walls-navy-club-jetty-t4.webp",
+    "x": 6626.1,
+    "y": 7097.1,
+    "w": 1022.7,
+    "h": 940.0
    },
    {
-    "src": "icons/Plot/walls-navy-club-fr1-t3.webp",
-    "x": 5139,
-    "y": 7527.1,
+    "src": "icons/Plot/walls-navy-club-fr1-t4.webp",
+    "x": 5139.0,
+    "y": 7524.4,
     "w": 1830.7,
-    "h": 1282.7
+    "h": 1285.3
    }
   ]
  },

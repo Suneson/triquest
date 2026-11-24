@@ -1,0 +1,63 @@
+{
+ "theme": "navy-club",
+ "back": [
+  {
+   "src": "icons/Plot/walls-navy-club-bl-t4.webp",
+   "x": 1829.0,
+   "y": 5766.7,
+   "w": 2024.0,
+   "h": 1381.3
+  },
+  {
+   "src": "icons/Plot/walls-navy-club-br-t4.webp",
+   "x": 6839.5,
+   "y": 5767.1,
+   "w": 2036.0,
+   "h": 1382.7
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-navy-club-fl1-t4.webp",
+   "x": 1818.6,
+   "y": 6546.8,
+   "w": 1578.7,
+   "h": 1166.7
+  },
+  {
+   "src": "icons/Plot/walls-navy-club-road-t4.webp",
+   "x": 3057.2,
+   "y": 7119.2,
+   "w": 1028.0,
+   "h": 938.7
+  },
+  {
+   "src": "icons/Plot/walls-navy-club-fl2-t4.webp",
+   "x": 3798.4,
+   "y": 7544.4,
+   "w": 1782.7,
+   "h": 1257.3
+  },
+  {
+   "src": "icons/Plot/walls-navy-club-fr2-t4.webp",
+   "x": 7360.3,
+   "y": 6550.3,
+   "w": 1530.7,
+   "h": 1141.3
+  },
+  {
+   "src": "icons/Plot/walls-navy-club-jetty-t4.webp",
+   "x": 6626.1,
+   "y": 7097.1,
+   "w": 1022.7,
+   "h": 940.0
+  },
+  {
+   "src": "icons/Plot/walls-navy-club-fr1-t4.webp",
+   "x": 5139.0,
+   "y": 7524.4,
+   "w": 1830.7,
+   "h": 1285.3
+  }
+ ]
+}

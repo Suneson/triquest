@@ -763,6 +763,9 @@ export function wireDiorama(root, ctx) {
       }
     }
     for (const [who, c] of crewWalk) if (want.get(who) !== c.target || c.gl !== stage.gl) { c.w.dispose(); crewWalk.delete(who); }
+    // a building moved while it's being worked on: its builder goes after it
+    const spotOf = (target) => { const p = placements[target]; return target === HALL || !p ? '' : `${p.u},${p.v},${p.face ?? 0}`; };
+    for (const [, c] of crewWalk) { const k = spotOf(c.target); if (k !== c.spot) { c.spot = k; c.w.follow(); } }
     for (const [who, target] of want) {
       if (crewWalk.has(who)) continue;
       const char = builderChar(who);
@@ -781,7 +784,7 @@ export function wireDiorama(root, ctx) {
         grid: () => gridFor(room),
       });
       if (reduced()) { const first = around().find(([a, b]) => g.free(a, b)); if (first) w.jump(first); }
-      crewWalk.set(who, { w, target, gl: stage.gl });
+      crewWalk.set(who, { w, target, gl: stage.gl, spot: spotOf(target) });
     }
   };
   const draw = () => {

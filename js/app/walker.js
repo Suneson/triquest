@@ -8,7 +8,7 @@ import { mountRunner } from './runner3d.js';
 import { findPath, wanderTile, facing } from '../core/walk.js';
 
 /** Tiles a second: about the walk clip's own pace at this size. */
-const SPEED = 2.5;
+const SPEED = 2.5;   // (a smaller body walks slower, so its feet don't slide: body.size)
 /** How long it stands before wandering again (seconds). */
 const REST = [4, 10];
 /** The canvas round the tile: 3 tiles each way, so the whole (twice-size) character fits above it. */
@@ -30,7 +30,7 @@ const SPOT = { u: 1.5, v: 1.5, y: 0, scale: 2.52 };
  *           its `work` clip (kneeling at it) for a while, then walks on to another side
  *   body    the athlete drawn somewhere else (base-gl.js): { at(u, v), setYaw, play, dispose }; then
  *           there's no canvas of its own
- * @returns {{ goTo(tile, done), jump(tile), wander(on), tile(), model, dispose() }}
+ * @returns {{ goTo(tile, done), jump(tile), wander(on), follow(), tile(), model, dispose() }}
  */
 export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {}, body = null, around = null, workAt = null }) {
   const host = document.createElement('div');
@@ -42,6 +42,7 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
   let yaw = 0.6; let want = yaw;   // a three-quarter turn to the camera to begin with
   let roam = !still; let restUntil = performance.now() + 1500;
   let raf = 0; let last = performance.now(); let gone = false;
+  const speed = SPEED * (body?.size ?? 1);
 
   const place = () => {
     if (body) { body.at(pos[0] + 0.5, pos[1] + 0.5); return; }
@@ -58,6 +59,16 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     const ts = around().filter(([a, b]) => g.free(a, b) && (a !== u || b !== v));
     return ts.length ? ts[Math.floor(Math.random() * ts.length)] : null;
   };
+  // at a stop: at work, it faces the building and kneels at it, longer than a rest
+  const arrive = (now) => {
+    const job = workAt?.();
+    if (job) {
+      want = facing(job[0] - pos[0] - 0.5, job[1] - pos[1] - 0.5);
+      if (still) { yaw = want; r3d.setYaw(yaw); }
+      r3d.play('work', { fade: 0.3 });
+      restUntil = now + (6 + Math.random() * 6) * 1000;
+    } else { r3d.play('idle', { fade: 0.25 }); rest(); }
+  };
   const rest = () => { restUntil = performance.now() + (REST[0] + Math.random() * (REST[1] - REST[0])) * 1000; };
 
   const frame = (now) => {
@@ -69,20 +80,11 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
       const [tu, tv] = path[0];
       const du = tu - pos[0]; const dv = tv - pos[1];
       const d = Math.hypot(du, dv);
-      const step = SPEED * dt;
+      const step = speed * dt;
       if (d > 1e-6) want = facing(du, dv);
       if (d <= step) {
         pos = [tu, tv]; path.shift(); onMove(here());
-        if (!path.length) {
-          const job = workAt?.();
-          if (job) {
-            // at work: face the building and kneel at it, longer than a rest
-            want = facing(job[0] - pos[0] - 0.5, job[1] - pos[1] - 0.5);
-            r3d.play('work', { fade: 0.3 });
-            restUntil = now + (6 + Math.random() * 6) * 1000;
-          } else { r3d.play('idle', { fade: 0.25 }); rest(); }
-          const cb = done; done = null; cb?.();
-        }
+        if (!path.length) { arrive(now); const cb = done; done = null; cb?.(); }
       } else pos = [pos[0] + (du / d) * step, pos[1] + (dv / d) * step];
       place();
     } else if (roam && now > restUntil) {
@@ -104,6 +106,16 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     path = p.slice(1); done = cb;
     if (path.length) r3d.play('walk', { fade: 0.2 }); else { done = null; cb?.(); }
   }
+  /** What it works on has moved: off to the nearest free tile round it at once, and back to work there. */
+  function follow() {
+    if (!around) return;
+    const g = grid(); const [u, v] = here();
+    const ts = around().filter(([a, b]) => g.free(a, b)).sort((p, q) => Math.hypot(p[0] - u, p[1] - v) - Math.hypot(q[0] - u, q[1] - v));
+    if (!ts.length) return;
+    // standing where the building now is: straight out to the side of it
+    if (still || !g.free(u, v)) { jump(ts[0]); arrive(performance.now()); return; }
+    go(ts[0]);
+  }
   /** Stand on a tile at once. */
   function jump(t) {
     path = []; done = null; pos = [t[0], t[1]]; place(); onMove(here()); r3d.play('idle', { fade: 0 }); rest();
@@ -117,6 +129,7 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
     jump,
     /** Let it wander between rests, or keep it still (it's waiting at a machine). */
     wander: (on) => { roam = on && !still; rest(); },
+    follow,
     tile: here,
     walking: () => path.length > 0,
     model: char.key || char.model,

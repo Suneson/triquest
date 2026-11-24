@@ -1,7 +1,7 @@
 // serve.mjs — tiny zero-dependency static file server for local preview.
 // Usage: node tools/serve.mjs [port]
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, normalize, extname } from 'node:path';
 
@@ -23,10 +23,19 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
   '.md': 'text/markdown; charset=utf-8',
   '.ico': 'image/x-icon',
+  '.glb': 'model/gltf-binary',
 };
 
 createServer(async (req, res) => {
   try {
+    // tools/bake-walls.html saves what it bakes here: only wall pictures and their layout, into icons/Plot
+    if (req.method === 'PUT' && req.url.startsWith('/__bake/')) {
+      const name = decodeURIComponent(req.url.slice(8));
+      if (!/^walls-[a-z0-9-]+\.(webp|json)$/.test(name)) { res.writeHead(400).end('bad name'); return; }
+      const chunks = []; for await (const c of req) chunks.push(c);
+      await writeFile(join(ROOT, 'icons', 'Plot', name), Buffer.concat(chunks));
+      res.writeHead(200).end('ok'); return;
+    }
     let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (path === '/' || path.endsWith('/')) path += 'index.html';
     const file = normalize(join(ROOT, path));

@@ -194,62 +194,62 @@ export const PLOT_WALLS = {
   "theme": "navy-club",
   "back": [
    {
-    "src": "icons/Plot/walls-navy-club-bl-t2.webp",
-    "x": 1862.8,
-    "y": 5846.6,
-    "w": 1892.0,
-    "h": 1282.7
+    "src": "icons/Plot/walls-navy-club-bl-t3.webp",
+    "x": 1830.4,
+    "y": 5769.3,
+    "w": 2022.7,
+    "h": 1378.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-br-t2.webp",
-    "x": 6881.0,
-    "y": 5850.9,
-    "w": 1956.0,
-    "h": 1284.0
+    "src": "icons/Plot/walls-navy-club-br-t3.webp",
+    "x": 6843.5,
+    "y": 5769.8,
+    "w": 2032,
+    "h": 1380
    }
   ],
   "front": [
    {
-    "src": "icons/Plot/walls-navy-club-fl1-t2.webp",
-    "x": 1849.4,
-    "y": 6650.5,
-    "w": 1522.7,
-    "h": 1053.3
+    "src": "icons/Plot/walls-navy-club-fl1-t3.webp",
+    "x": 1821.2,
+    "y": 6549.5,
+    "w": 1576,
+    "h": 1164
    },
    {
-    "src": "icons/Plot/walls-navy-club-road-t2.webp",
-    "x": 3077.3,
-    "y": 7190.3,
-    "w": 982.7,
-    "h": 854.7
+    "src": "icons/Plot/walls-navy-club-road-t3.webp",
+    "x": 3059.8,
+    "y": 7121.9,
+    "w": 1025.3,
+    "h": 936
    },
    {
-    "src": "icons/Plot/walls-navy-club-fl2-t2.webp",
-    "x": 3804.7,
-    "y": 7635.6,
-    "w": 1736.0,
-    "h": 1150.7
+    "src": "icons/Plot/walls-navy-club-fl2-t3.webp",
+    "x": 3798.4,
+    "y": 7547,
+    "w": 1782.7,
+    "h": 1254.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-fr2-t2.webp",
-    "x": 7384.7,
-    "y": 6657.0,
-    "w": 1396.0,
-    "h": 1022.7
+    "src": "icons/Plot/walls-navy-club-fr2-t3.webp",
+    "x": 7361.6,
+    "y": 6553,
+    "w": 1529.3,
+    "h": 1138.7
    },
    {
-    "src": "icons/Plot/walls-navy-club-jetty-t2.webp",
-    "x": 6641.1,
-    "y": 7169.4,
-    "w": 970.7,
-    "h": 862.7
+    "src": "icons/Plot/walls-navy-club-jetty-t3.webp",
+    "x": 6628.8,
+    "y": 7099.8,
+    "w": 1020,
+    "h": 937.3
    },
    {
-    "src": "icons/Plot/walls-navy-club-fr1-t2.webp",
-    "x": 5180.5,
-    "y": 7622.3,
-    "w": 1700.0,
-    "h": 1162.7
+    "src": "icons/Plot/walls-navy-club-fr1-t3.webp",
+    "x": 5139,
+    "y": 7527.1,
+    "w": 1830.7,
+    "h": 1282.7
    }
   ]
  },

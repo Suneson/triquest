@@ -1,0 +1,63 @@
+{
+ "theme": "glacier",
+ "back": [
+  {
+   "src": "icons/Plot/walls-glacier-bl-t4.webp",
+   "x": 1821.0,
+   "y": 5777.6,
+   "w": 2017.3,
+   "h": 1364.0
+  },
+  {
+   "src": "icons/Plot/walls-glacier-br-t4.webp",
+   "x": 6840.1,
+   "y": 5778.1,
+   "w": 2028.0,
+   "h": 1366.7
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-glacier-fl1-t4.webp",
+   "x": 1814.2,
+   "y": 6553.3,
+   "w": 1666.7,
+   "h": 1198.7
+  },
+  {
+   "src": "icons/Plot/walls-glacier-road-t4.webp",
+   "x": 3129.5,
+   "y": 7162.0,
+   "w": 876.0,
+   "h": 858.7
+  },
+  {
+   "src": "icons/Plot/walls-glacier-fl2-t4.webp",
+   "x": 3705.5,
+   "y": 7507.3,
+   "w": 1870.7,
+   "h": 1290.7
+  },
+  {
+   "src": "icons/Plot/walls-glacier-fr2-t4.webp",
+   "x": 7264.0,
+   "y": 6555.5,
+   "w": 1617.3,
+   "h": 1177.3
+  },
+  {
+   "src": "icons/Plot/walls-glacier-jetty-t4.webp",
+   "x": 6695.3,
+   "y": 7141.2,
+   "w": 873.3,
+   "h": 858.7
+  },
+  {
+   "src": "icons/Plot/walls-glacier-fr1-t4.webp",
+   "x": 5134.6,
+   "y": 7488.8,
+   "w": 1909.3,
+   "h": 1314.7
+  }
+ ]
+}

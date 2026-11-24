@@ -73,6 +73,16 @@ def main():
             if not f: print(side, 'no repaint', k, '- the render for now')
         rgb, ap = key(paint)
         iou, dx, dy = fit(ar > 0.5, ap > 0.5)
+        if iou < 0.9:
+            # Gemini moved or zoomed it: scale the repaint's outline box onto the render's, then fit again
+            def bbox(m):
+                ys, xs = np.nonzero(m); return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+            rb, pb = bbox(ar > 0.5), bbox(ap > 0.5)
+            piece = Image.fromarray(np.asarray(paint)[pb[1]:pb[3], pb[0]:pb[2]]).resize((rb[2] - rb[0], rb[3] - rb[1]), Image.LANCZOS)
+            canvas = Image.new('RGB', (r['w'], r['h']), (0, 255, 0)); canvas.paste(piece, (rb[0], rb[1]))
+            rgb, ap = key(np.asarray(canvas))
+            iou, dx, dy = fit(ar > 0.5, ap > 0.5)
+            print(side, 'refit by its outline box')
         rgb = np.roll(np.roll(rgb, dy, 0), dx, 1); ap = np.roll(np.roll(ap, dy, 0), dx, 1)
         # cut to the render's outline, a hair wider so the painted edge stays soft
         out_r = nd.binary_dilation(ar > 0.5, iterations=2)

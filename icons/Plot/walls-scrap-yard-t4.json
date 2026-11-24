@@ -1,0 +1,63 @@
+{
+ "theme": "scrap-yard",
+ "back": [
+  {
+   "src": "icons/Plot/walls-scrap-yard-bl-t4.webp",
+   "x": 1842.9,
+   "y": 5770.8,
+   "w": 2004.0,
+   "h": 1370.7
+  },
+  {
+   "src": "icons/Plot/walls-scrap-yard-br-t4.webp",
+   "x": 6850.3,
+   "y": 5775.2,
+   "w": 2013.3,
+   "h": 1369.3
+  }
+ ],
+ "front": [
+  {
+   "src": "icons/Plot/walls-scrap-yard-fl1-t4.webp",
+   "x": 1823.2,
+   "y": 6547.8,
+   "w": 1522.7,
+   "h": 1138.7
+  },
+  {
+   "src": "icons/Plot/walls-scrap-yard-road-t4.webp",
+   "x": 3013.2,
+   "y": 7138.0,
+   "w": 1205.3,
+   "h": 968.0
+  },
+  {
+   "src": "icons/Plot/walls-scrap-yard-fl2-t4.webp",
+   "x": 3851.2,
+   "y": 7576.7,
+   "w": 1718.7,
+   "h": 1220.0
+  },
+  {
+   "src": "icons/Plot/walls-scrap-yard-fr2-t4.webp",
+   "x": 7413.1,
+   "y": 6551.3,
+   "w": 1477.3,
+   "h": 1114.7
+  },
+  {
+   "src": "icons/Plot/walls-scrap-yard-jetty-t4.webp",
+   "x": 6545.2,
+   "y": 7117.3,
+   "w": 1202.7,
+   "h": 966.7
+  },
+  {
+   "src": "icons/Plot/walls-scrap-yard-fr1-t4.webp",
+   "x": 5142.3,
+   "y": 7551.5,
+   "w": 1776.0,
+   "h": 1257.3
+  }
+ ]
+}

@@ -167,7 +167,7 @@ export const chestArt = (tier) => {
     webm: `icons/AnimatedRewards/WEBM/${name}.webm`,
     mp3: `icons/AnimatedRewards/mp3/${name}.mp3`,
     still: `icons/AnimatedRewards/still/${name}.webp`,
-    open: `icons/AnimatedRewards/still/${name}-open.webp`,
+    open: `icons/AnimatedRewards/still/${name}-open-2.webp`,
     anim: `icons/AnimatedRewards/WEBP/${name}.webp`,
     // the same clip for iPhone: H.264, colour on top and transparency below (alpha-video.js)
     mp4: `icons/AnimatedRewards/MP4/${name}.mp4`,

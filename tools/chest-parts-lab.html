@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Chest parts</title>
+<style>
+  body { margin: 0; background: #16264D; color: #fff; font: 13px system-ui; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 6px; }
+  .cell { position: relative; aspect-ratio: 1; background: radial-gradient(#2a3e6e, #0B1222); border-radius: 10px; }
+  .cell canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cell b { position: absolute; left: 6px; top: 4px; z-index: 2; }
+</style></head>
+<body><div class="grid" id="g"></div>
+<script type="module">
+// tools/chest-parts-lab.html: every chest model as it comes from tools/build-chests.mjs, from the chest camera,
+// with axes (red +X, green +Y, blue +Z), to see which way each part faces.
+import * as THREE from '../vendor/three/three.module.min.js';
+import { GLTFLoader } from '../vendor/three/GLTFLoader.js';
+import { MeshoptDecoder } from '../vendor/three/meshopt_decoder.module.js';
+const names = ['common', 'common-open', 'uncommon', 'uncommon-box', 'uncommon-lid', 'rare', 'rare-open', 'legendary', 'legendary-box', 'legendary-lid', 'mythic', 'mythic-box', 'mythic-lid'];
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+for (const n of names) {
+  const cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = `<b>${n}</b>`; document.getElementById('g').append(cell);
+  const canvas = document.createElement('canvas'); cell.append(canvas);
+  const r = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true }); r.setSize(300, 300, false); r.outputColorSpace = THREE.SRGBColorSpace;
+  const scene = new THREE.Scene(); scene.add(new THREE.HemisphereLight(0xffffff, 0x445, 2), new THREE.AxesHelper(1.2));
+  const d = new THREE.DirectionalLight(0xffffff, 2); d.position.set(-1, 3, 2); scene.add(d);
+  const g = await loader.loadAsync(`../models/chests/${n}.glb`); scene.add(g.scene);
+  const s = 1.5; const cam = new THREE.OrthographicCamera(-s, s, s, -s, 0.1, 50);
+  cam.position.set(Math.sin(-0.62) * Math.cos(0.55), Math.sin(0.55), Math.cos(-0.62) * Math.cos(0.55)).multiplyScalar(10).add(new THREE.Vector3(0, 0.5, 0)); cam.lookAt(0, 0.5, 0);
+  r.render(scene, cam);
+}
+</script></body></html>

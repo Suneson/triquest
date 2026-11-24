@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v216';
+const CACHE = 'triquest-v217';
 // pictures, models, fonts and the 3D library: kept across versions (see the fetch handler)
 const ASSETS_CACHE = 'triquest-assets';
 const checked = new Set();   // assets checked with the server while this worker runs
@@ -105,11 +105,11 @@ const ASSETS = [
   './icons/AnimatedRewards/still/Rare.webp',
   './icons/AnimatedRewards/still/Legendary.webp',
   './icons/AnimatedRewards/still/Mythic.webp',
-  './icons/AnimatedRewards/still/Common-open.webp',
-  './icons/AnimatedRewards/still/Uncommon-open.webp',
-  './icons/AnimatedRewards/still/Rare-open.webp',
-  './icons/AnimatedRewards/still/Legendary-open.webp',
-  './icons/AnimatedRewards/still/Mythic-open.webp',
+  './icons/AnimatedRewards/still/Common-open-2.webp',
+  './icons/AnimatedRewards/still/Uncommon-open-2.webp',
+  './icons/AnimatedRewards/still/Rare-open-2.webp',
+  './icons/AnimatedRewards/still/Legendary-open-2.webp',
+  './icons/AnimatedRewards/still/Mythic-open-2.webp',
   './js/app/missions-view.js',
   './js/app/clubs-view.js',
   './js/app/clubs-state.js',

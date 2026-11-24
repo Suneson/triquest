@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Chest lab</title>
+<style>
+  body { margin: 0; background: #16264D; color: #fff; font: 13px system-ui; }
+  .grid { display: grid; grid-template-columns: repeat(var(--cols, 5), 1fr); gap: 6px; padding: 6px; }
+  .cell { position: relative; aspect-ratio: 1; background: radial-gradient(#2a3e6e, #0B1222); border-radius: 10px; overflow: hidden; }
+  .cell .in { position: absolute; inset: 22%; outline: 1px dashed #fff3; }
+  .cell b { position: absolute; left: 6px; top: 4px; z-index: 2; }
+  .cx-3d { position: absolute; inset: -40%; width: 180%; height: 180%; }
+  nav { padding: 6px; display: flex; gap: 6px; }
+</style></head>
+<body>
+<nav><button id="shut">shut</button><button id="tap">tap</button><button id="charge">charge</button><button id="open">open</button><button id="quick">open (settled)</button></nav>
+<div class="grid" id="g"></div>
+<script type="module">
+// tools/chest-lab.html: the five chests through js/app/chest3d.js side by side, to tune the opening.
+// The dashed square is the chest's still-picture square in the chest screen. ?open starts them open, ?both shows them shut and open, ?cols=n, ?tiers=a,b.
+import { mountChest3d } from '../js/app/chest3d.js';
+const TIERS = { common: '#C9CED6', uncommon: '#5BD17A', rare: '#4FA3FF', legendary: '#FFC23D', mythic: '#B57BFF' };
+const q = new URLSearchParams(location.search);
+if (q.get('cols')) document.body.style.setProperty('--cols', q.get('cols'));
+let chests = [];
+let taps = 0;
+const mount = () => {
+  chests.forEach((c) => c.dispose()); chests = []; taps = 0;
+  const g = document.getElementById('g'); g.innerHTML = '';
+  // ?both: a row shut, a row open under it
+  const rows = q.has('both') ? [false, true] : [q.has('open')];
+  for (const opened of rows) for (const [tier, color] of Object.entries(TIERS).filter(([t]) => !q.get('tiers') || q.get('tiers').split(',').includes(t))) {
+    const cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = `<b>${tier}</b><div class="in"></div>`; g.append(cell);
+    const c = mountChest3d(cell.querySelector('.in'), tier, color); chests.push(c);
+    c.ready.then((ok) => { if (ok) (opened ? c.open(true) : c.drop()); });
+  }
+};
+mount();
+document.getElementById('shut').onclick = mount;
+document.getElementById('tap').onclick = () => { taps = taps % 3 + 1; chests.forEach((c) => c.tap(taps)); };
+document.getElementById('charge').onclick = () => chests.forEach((c) => c.charge(1400));
+document.getElementById('open').onclick = () => chests.forEach((c) => c.open());
+document.getElementById('quick').onclick = () => chests.forEach((c) => c.open(true));
+</script></body></html>

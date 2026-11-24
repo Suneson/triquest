@@ -42,6 +42,7 @@ SIDES = [
     ('fr1', 'front', (FRONT, FRONT), (FRONT, 27.8), 'a'),    # front corner to the jetty
     ('fr2', 'front', (FRONT, 20.3), (FRONT, BACK), 'c'),     # the jetty to the right corner
 ]
+SUN = (0.55, 0.22)  # the cast shadow's run per px of height (to the right, down), as the umbrellas' on the map
 PILLAR = 390      # world px from a pillar's cap to its foot, as on map v4
 STORE = 0.75      # the pictures are stored at 3/4 of their size in the world
 
@@ -119,18 +120,13 @@ def side(run, A, C, s, corner=''):
         dx = x - run['x0']
         return X0 + a * dx, Y0 + (me * a - s * run['m']) * dx + s * (y - y0)
     pts = [fwd(X0, Y0, x, y) for X0, Y0 in copies for x in (ox, ox + img.width) for y in (oy, oy + img.height)]
-    pad = 60
+    pad = 280           # room for the cast shadow
     x_lo = min(p[0] for p in pts) - pad; y_lo = min(p[1] for p in pts) - pad
     x_hi = max(p[0] for p in pts) + pad; y_hi = max(p[1] for p in pts) + pad
     W, H = round((x_hi - x_lo) * STORE), round((y_hi - y_lo) * STORE)
-    # the shadow: a soft band along the foot, thrown a little to the lower right (light from the upper left)
-    sh = Image.new('L', (W, H)); d = ImageDraw.Draw(sh)
     to = lambda X, Y: ((X - x_lo) * STORE, (Y - y_lo) * STORE)
-    t = 0.55 * np.hypot(*EU)                               # the wall's depth, about half a tile
-    d.polygon([to(A[0] - 10, A[1] - 6), to(C[0] + 10, C[1] - 6), to(C[0] + 36, C[1] + t * 0.5 + 18), to(A[0] + 36, A[1] + t * 0.5 + 18)], fill=120)
-    sh = sh.filter(ImageFilter.GaussianBlur(16 * STORE))
-    canvas = Image.new('RGBA', (W, H), (20, 30, 20, 0)); canvas.putalpha(sh)
     # the runs, the far ones first
+    walls = Image.new('RGBA', (W, H))
     order = range(n - 1, -1, -1) if me < 0 else range(n)
     for i in order:
         X0, Y0 = copies[i]
@@ -140,7 +136,26 @@ def side(run, A, C, s, corner=''):
         # y = y0 + (Y - Y0 - k*dx)/s, with X = x_lo + px/STORE, Y = y_lo + py/STORE, dx = (X - X0)/a
         c1 = -k / (s * a * STORE); c2 = 1 / (s * STORE); c0 = y0 + (y_lo - Y0 - k * (x_lo - X0) / a) / s
         warped = img.transform((W, H), Image.AFFINE, (A11, 0, bx - ox, c1, c2, c0 - oy), resample=Image.BICUBIC)
-        canvas = Image.alpha_composite(canvas, warped)
+        walls = Image.alpha_composite(walls, warped)
+    # its cast shadow, as the map's (the umbrellas' fall to the lower right): each point of the wall, so high over
+    # its foot line, lands that far times (SUN) from the foot, on the ground
+    ax, ay = to(*A)
+    pb = ay - me * ax                                    # the foot line in the picture: y = pb + me x
+    kx, ky = SUN
+    M = np.array([[1 + kx * me, -kx], [(1 + ky) * me, -ky]]); t = np.array([kx * pb, (1 + ky) * pb])
+    Mi = np.linalg.inv(M); ti = -Mi @ t
+    cast = walls.getchannel('A').transform((W, H), Image.AFFINE, (Mi[0, 0], Mi[0, 1], ti[0], Mi[1, 0], Mi[1, 1], ti[1]), resample=Image.BILINEAR)
+    cast = cast.filter(ImageFilter.GaussianBlur(5 * STORE)).point(lambda v: v * 0.42)
+    # and a dark line where it meets the ground, so it sits in the grass rather than on it
+    ao = Image.new('L', (W, H)); d = ImageDraw.Draw(ao)
+    d.polygon([to(A[0] - 6, A[1] - 10), to(C[0] + 6, C[1] - 10), to(C[0] + 18, C[1] + 14), to(A[0] + 18, A[1] + 14)], fill=150)
+    ao = ao.filter(ImageFilter.GaussianBlur(7 * STORE))
+    shade = Image.fromarray(np.maximum(np.asarray(cast), np.asarray(ao)))
+    canvas = Image.new('RGBA', (W, H), (18, 28, 24, 0)); canvas.putalpha(shade)
+    canvas = Image.alpha_composite(canvas, walls)
+    # trimmed to what's drawn
+    bb = canvas.getchannel('A').point(lambda v: 255 if v > 3 else 0).getbbox()
+    canvas = canvas.crop(bb); x_lo += bb[0] / STORE; y_lo += bb[1] / STORE
     return canvas, x_lo, y_lo, n
 
 

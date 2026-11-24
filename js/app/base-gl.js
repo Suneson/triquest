@@ -776,6 +776,8 @@ function build(L, canvas, layer, reduced) {
   const workers = new Set();
   // a clip the builder hasn't got: the nearest one they have (the blue builder only has a happy walk)
   const clipFor = (f, name) => (f.has(name) ? name : name === 'walk' && f.has('walk-happy') ? 'walk-happy' : name);
+  // builders are drawn smaller than your athlete: their size beside their hut's door and the build's fence
+  const WORKER = 0.6;
   function worker(char) {
     const w = { rig: new THREE.Group(), sh: new THREE.Mesh(shadow.geometry, shadow.material), fig: null, u: 0, v: 0, yaw: 0, clip: 'idle', gone: false };
     w.rig.visible = false; w.sh.visible = false; w.sh.renderOrder = -6;
@@ -783,9 +785,9 @@ function build(L, canvas, layer, reduced) {
     workers.add(w);
     const put = () => {
       const up = riseAt && G ? riseAt(w.u, w.v) / pxPerUp() : 0;
-      w.rig.position.set(w.u, up, w.v); w.rig.rotation.y = w.yaw; w.rig.scale.setScalar(2.52 / CHAR_HEIGHT);
+      w.rig.position.set(w.u, up, w.v); w.rig.rotation.y = w.yaw; w.rig.scale.setScalar(WORKER * 2.52 / CHAR_HEIGHT);
       w.rig.visible = w.sh.visible = !!w.fig;
-      w.sh.position.set(w.u, 0.01 + up, w.v); w.sh.scale.set(1.8, 1, 1.8);
+      w.sh.position.set(w.u, 0.01 + up, w.v); w.sh.scale.set(WORKER * 1.8, 1, WORKER * 1.8);
       dirty = true; wake();
     };
     (async () => {
@@ -797,6 +799,7 @@ function build(L, canvas, layer, reduced) {
       put();
     })().catch((e) => console.warn('builder', e));
     return {
+      size: WORKER,
       at: (u, v) => { w.u = u; w.v = v; put(); },
       setYaw: (r) => { w.yaw = r; put(); },
       play: (name, o) => { w.clip = name; if (w.fig) { w.fig.play(clipFor(w.fig, name), o); if (reduced()) w.fig.update(0.2); } dirty = true; wake(); },

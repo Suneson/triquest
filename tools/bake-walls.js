@@ -120,8 +120,19 @@ const bandX = band('x'), bandZ = band('z');
 // ---- the kit ----
 const loader = new GLTFLoader();
 const load = (name) => new Promise((ok, bad) => loader.load(`bake/${THEME}/${name}.glb`, (g) => ok(g.scene), undefined, bad));
-const [pillar0, run0, gate0] = await Promise.all([load('pillar'), load('wall-run'), load('gate')]);
 const box = (o) => new THREE.Box3().setFromObject(o);
+/** A kit piece turned so its length runs along Z (Tripo lays some along X), and a further `turn` quarter turns
+ *  (?turn=2 for a theme whose face looks the wrong way; ?pturn= for its pillar). */
+function upright(o, long, turn) {
+  const s = box(o).getSize(new THREE.Vector3());
+  const g = new THREE.Group(); g.add(o);
+  g.rotation.y = ((long && s.x > s.z ? 1 : 0) + turn) * Math.PI / 2;
+  g.updateMatrixWorld(true);
+  return g;
+}
+const TURN = Number(q.get('turn') || 0), PTURN = Number(q.get('pturn') || 0);
+const [pillar0, run0, gate0] = await Promise.all([load('pillar'), load('wall-run'), load('gate')])
+  .then(([p, r, g]) => [upright(p, false, PTURN), upright(r, true, TURN), upright(g, true, Number(q.get('gturn') ?? TURN))]);
 for (const o of [pillar0, run0, gate0]) o.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
 const bp = box(pillar0), br = box(run0), bg = box(gate0);
 log(`pillar ${bp.getSize(new THREE.Vector3()).toArray().map((v) => v.toFixed(2))}, run ${br.getSize(new THREE.Vector3()).toArray().map((v) => v.toFixed(2))}, gate ${bg.getSize(new THREE.Vector3()).toArray().map((v) => v.toFixed(2))}`);
@@ -157,7 +168,10 @@ function wallSide(A, C, corner) {
   if (corner.includes('c')) a1 += pilW / 2;
   const S = a1 - a0;
   const step = runLen - pilW;
-  const n = Math.max(1, Math.round((S - pilW) / step));
+  // as many runs as stretch them least (squashed or pulled, the same)
+  const fitOf = (m) => Math.abs(Math.log(S / (m * step + pilW)));
+  let n = Math.max(1, Math.floor((S - pilW) / step));
+  if (fitOf(n + 1) < fitOf(n)) n += 1;
   const s = S / (n * step + pilW);
   const g = new THREE.Group();
   for (let i = 0; i < n; i++) {

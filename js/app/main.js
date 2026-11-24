@@ -69,7 +69,7 @@ import { settleText } from './challenges-view.js';
 import { openGear, openInventory, openShop } from './gear-view.js';
 import { openWardrobe } from './wardrobe-view.js';
 import { refreshChests, onChests, isChestAdmin, chestsEnabled } from './chests-state.js';
-import { showChestBanner, openChestQueue, adminChestTools, wireAdminTools } from './chest-view.js';
+import { showChestBanner, openChestQueue, adminChestTools, wireAdminTools, refreshChestFloat } from './chest-view.js';
 import { startGelTicker } from './gel-chip.js';
 
 
@@ -1220,7 +1220,7 @@ async function boot() {
   });
   startGelTicker(() => render());
   // a finished session left a chest: the banner slides down once, the Home card keeps it
-  onChests(() => { showChestBanner(); if (appState.tab === 'home') render(); });
+  onChests(() => { showChestBanner(); refreshChestFloat(); if (appState.tab === 'home') render(); });
   // back in the app (a ride synced while it was closed): ask again, at most once a minute
   let chestsAsked = 0;
   document.addEventListener('visibilitychange', () => {

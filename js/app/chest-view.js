@@ -92,6 +92,28 @@ export function homeChestCard() {
   </section>`;
 }
 
+// ---- the chest on the base ------------------------------------------------------------------
+
+/** The waiting chest, floating at the bottom middle of the base (renderDiorama): it bobs, now and
+ *  then it rattles as if something inside wants out, and a tap opens the queue. Updated in place
+ *  when the chests change (main.js onChests), so the base isn't drawn again. */
+export function chestFloat() {
+  const p = pendingChests();
+  if (!p.length) return '';
+  const top = topTier(p);
+  return `<button type="button" class="cx-float" data-action="open-chests" style="--tc:${TIER_COLOR[top]}"
+      aria-label="${esc(t('chest.home.aria', { n: p.length }))}">
+    <span class="cx-float-glow" aria-hidden="true"></span>
+    <span class="cx-float-art" aria-hidden="true"><img src="${chestArt(top).still}" width="448" height="448" alt="" draggable="false"></span>
+    <b class="cx-float-go">${t('chest.open')}</b>
+    ${p.length > 1 ? `<i class="cx-float-n" aria-hidden="true">${p.length}</i>` : ''}
+  </button>`;
+}
+/** Put the floating chest right after the chests changed (it's only drawn with the base). */
+export function refreshChestFloat() {
+  document.querySelectorAll('[data-cx-float]').forEach((el) => { el.innerHTML = chestFloat(); });
+}
+
 // ---- the banner --------------------------------------------------------------------------------
 
 let bannerTimer = null;

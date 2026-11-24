@@ -167,3 +167,32 @@ body.rm :is(.cx-row, .cx-bonus, .cx-box) { transition: none !important; }
 .cx-admin-row b { grid-column: 2 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-admin-row .btn.tiny:first-of-type { grid-column: 2; justify-self: start; }
 .cx-admin-row .btn.tiny { padding-inline: 10px; }
+
+/* ---- the chest on the base (chest-view.js chestFloat) ----------------------------------------
+   Bottom middle, over the base: it bobs, rattles every few seconds (something inside wants out),
+   a soft glow in the chest's colour breathes behind it, and a press squashes it before it opens. */
+.cx-float-slot { position: absolute; left: 50%; bottom: calc(var(--tabs-h) + var(--dg-nav-h) + 14px); z-index: 5; transform: translateX(-50%); pointer-events: none; }
+.cx-float { pointer-events: auto; position: relative; display: grid; justify-items: center; width: 112px; padding: 0; border: 0; background: none;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; animation: cx-float-in .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+.cx-float-glow { position: absolute; left: 50%; top: 46px; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tc) 70%, white) 0%, color-mix(in srgb, var(--tc) 45%, transparent) 45%, transparent 100%);
+  animation: cx-float-glow 2.4s ease-in-out infinite; }
+.cx-float-art { display: block; width: 104px; height: 104px; animation: cx-float-bob 2.4s ease-in-out infinite; }
+.cx-float-art img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 4px rgba(10, 18, 34, .45));
+  transform-origin: 50% 85%; animation: cx-float-rattle 4.2s ease-in-out 1.2s infinite; transition: transform .12s ease-out; }
+.cx-float-go { margin-top: -10px; padding: 5px 16px 6px; border-radius: 999px; font: 800 15px/1 var(--font-display, inherit); letter-spacing: .04em; text-transform: uppercase;
+  color: #fff; -webkit-text-stroke: 3px #0B1222; paint-order: stroke fill; background: linear-gradient(#5FD068, #2E9A3E); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .45), 0 3px 0 #1B5E26, 0 5px 10px rgba(0, 0, 0, .3); }
+.cx-float-n { position: absolute; top: 2px; right: 6px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; display: grid; place-items: center;
+  font: 800 14px/1 var(--font-display, inherit); font-style: normal; color: #fff; background: #E5373F; box-shadow: 0 0 0 2px #fff, 0 2px 4px rgba(0, 0, 0, .3); }
+.cx-float:active .cx-float-art img { transform: scale(.88, .84); animation-play-state: paused; }
+.cx-float:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: 16px; }
+@keyframes cx-float-in { from { opacity: 0; transform: translateY(30px) scale(.6); } }
+@keyframes cx-float-bob { 50% { transform: translateY(-6px); } }
+@keyframes cx-float-glow { 0%, 100% { opacity: .55; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.08); } }
+/* still most of the time, then a quick shake: it reads as "open me" without nagging */
+@keyframes cx-float-rattle {
+  0%, 70%, 100% { transform: none; }
+  74% { transform: rotate(-7deg) scale(1.04); } 78% { transform: rotate(6deg) scale(1.04); }
+  82% { transform: rotate(-5deg); } 86% { transform: rotate(3deg); } 90% { transform: rotate(0) scale(1.06, .95); } 94% { transform: scale(.98, 1.03); }
+}
+@media (prefers-reduced-motion: reduce) { .cx-float, .cx-float-glow, .cx-float-art, .cx-float-art img { animation: none; } }

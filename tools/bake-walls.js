@@ -4,6 +4,10 @@
 // (icons/Plot/walls-<slug>-<side>-<tag>.webp) with their layout (walls-<slug>-<tag>.json) for plot-walls.js.
 //
 //   tools/bake-walls.html?theme=05-navy-club&tag=t3     (the kit in tools/bake/<theme>/{pillar,wall-run,gate}.glb)
+//   tools/bake-walls.html?theme=05-navy-club&repaint=1  each side for repainting instead: the walls alone on flat
+//       #00FF00 (<side>-render.png, padded to a picture shape Gemini keeps), their shadow alone (<side>-shade.png) and
+//       where both go (layout.json), into the theme's repaint folder in MOSKE APP; tools/cut-wall-repaints.py puts the
+//       repaints back over the shadows
 //
 // The scene: one unit is one lawn tile, X along u, Z along v, Y up, so a ground point (u, 0, v) lands on the map at
 // B + u·EU + v·EV, as cut-walls.py's P(u, v).
@@ -16,6 +20,7 @@ const THEME = q.get('theme') || '05-navy-club';
 const SLUG = THEME.split('-').slice(1).join('-');
 const TAG = q.get('tag') || 't3';
 const SAVE = q.get('save') !== '0';
+const REPAINT = q.get('repaint') === '1';
 const log = (m) => { document.querySelector('#log').textContent += `${m}\n`; console.log(m); };
 
 // ---- the lawn and the walls' lines, as cut-walls.py ----
@@ -225,8 +230,9 @@ async function bake(k) {
   const x0 = Math.min(...pts.map((p) => p[0])) - pad, x1 = Math.max(...pts.map((p) => p[0])) + pad;
   const y0 = Math.min(...pts.map((p) => p[1])) - pad, y1 = Math.max(...pts.map((p) => p[1])) + pad;
   const W = Math.round((x1 - x0) * STORE), H = Math.round((y1 - y0) * STORE);
-  renderer.setPixelRatio(1); renderer.setSize(W * SS, H * SS, false);
   frame(x0, y0, x1 - x0, y1 - y0);
+  if (REPAINT) return forRepaint(k, g, { x0, y0, ww: x1 - x0, wh: y1 - y0, W, H });
+  renderer.setPixelRatio(1); renderer.setSize(W * SS, H * SS, false);
   renderer.render(scene, camera);
   // down to its stored size, trimmed to what's drawn
   const out = document.createElement('canvas'); out.width = W; out.height = H;
@@ -246,11 +252,51 @@ async function bake(k) {
   return { src: `icons/Plot/${name}`, x: +(x0 + l / STORE).toFixed(1), y: +(y0 + t / STORE).toFixed(1), w: +(tw / STORE).toFixed(1), h: +(th / STORE).toFixed(1) };
 }
 
-const info = { theme: SLUG, back: [], front: [] };
-for (const k of ORDER) {
-  const r = await bake(k);
-  info[['bl', 'br'].includes(k) ? 'back' : 'front'].push(r);
+// the picture shapes Gemini gives back as they went in
+const SHAPES = [1, 4 / 3, 3 / 2, 16 / 9, 3 / 4, 2 / 3];
+const png = (cv) => new Promise((ok) => cv.toBlob(ok, 'image/png'));
+const put = (name, body) => fetch(`/__bake/repaint/${THEME}/${name}`, { method: 'PUT', body });
+/** A side for repainting: the walls alone on green (twice the stored size), and their shadow alone. */
+async function forRepaint(k, g, f) {
+  const RS = 2;                                   // the render to repaint, at twice the stored size
+  const sw = f.W * RS, sh = f.H * RS;
+  // 1. the walls on flat green, lit and self-shadowed as in the game, nothing on the ground
+  catcher.visible = false; contacts[k].visible = false;
+  renderer.setClearColor(0x00ff00, 1);
+  renderer.setPixelRatio(1); renderer.setSize(sw, sh, false);
+  renderer.render(scene, camera);
+  const shape = SHAPES.reduce((a, b) => (Math.abs(Math.log(b * sh / sw)) < Math.abs(Math.log(a * sh / sw)) ? b : a));
+  const pw = Math.max(sw, Math.round(sh * shape)), ph = Math.max(sh, Math.round(pw / shape));
+  const ox = Math.round((pw - sw) / 2), oy = Math.round((ph - sh) / 2);
+  const src = document.createElement('canvas'); src.width = pw; src.height = ph;
+  const sx = src.getContext('2d'); sx.fillStyle = '#00FF00'; sx.fillRect(0, 0, pw, ph); sx.drawImage(canvas, ox, oy);
+  // 2. their shadow alone: the walls drawn into depth only, so they still throw it
+  renderer.setClearColor(0x000000, 0);
+  catcher.visible = true; contacts[k].visible = true;
+  const mats = []; g.traverse((m) => { if (m.isMesh) for (const mt of [m.material].flat()) { mats.push(mt); mt.colorWrite = false; } });
+  renderer.setSize(f.W * SS, f.H * SS, false);
+  renderer.render(scene, camera);
+  for (const mt of mats) mt.colorWrite = true;
+  const shade = document.createElement('canvas'); shade.width = f.W; shade.height = f.H;
+  const cx = shade.getContext('2d'); cx.imageSmoothingQuality = 'high'; cx.drawImage(canvas, 0, 0, f.W, f.H);
+  if (SAVE) { await put(`${k}-render.png`, await png(src)); await put(`${k}-shade.png`, await png(shade)); }
+  const thumb = src.cloneNode(); thumb.getContext('2d').drawImage(src, 0, 0); thumb.style.cssText = 'max-width:30%;margin:4px'; document.body.append(thumb);
+  log(`${k}: render ${pw}×${ph} (walls ${sw}×${sh} at ${ox},${oy}), shade ${f.W}×${f.H}`);
+  return { side: k, layer: ['bl', 'br'].includes(k) ? 'back' : 'front', x0: f.x0, y0: f.y0, ww: f.ww, wh: f.wh, W: f.W, H: f.H, render: { w: pw, h: ph, ox, oy, sw, sh } };
 }
-if (SAVE) await fetch(`/__bake/walls-${SLUG}-${TAG}.json`, { method: 'PUT', body: JSON.stringify(info, null, 1) });
-window.BAKED = info;
-log('done');
+
+if (REPAINT) {
+  const sides = [];
+  for (const k of ORDER) sides.push(await bake(k));
+  if (SAVE) await put('layout.json', JSON.stringify({ theme: THEME, slug: SLUG, store: STORE, sides }, null, 1));
+  log('done');
+} else {
+  const info = { theme: SLUG, back: [], front: [] };
+  for (const k of ORDER) {
+    const r = await bake(k);
+    info[['bl', 'br'].includes(k) ? 'back' : 'front'].push(r);
+  }
+  if (SAVE) await fetch(`/__bake/walls-${SLUG}-${TAG}.json`, { method: 'PUT', body: JSON.stringify(info, null, 1) });
+  window.BAKED = info;
+  log('done');
+}

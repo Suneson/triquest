@@ -13,6 +13,7 @@
 // Boosts are for your own levels and scenes only. Ranks uses base XP.
 
 import { SLOTS, GEAR_RULES, ownedTier } from './gear.js';
+import { BOTTLE_RULES } from './bottles.js';
 import { PRESTIGE } from './collections.js';
 import { earnsXp, xpLedger, proofOf } from './xp-rules.js';
 
@@ -47,7 +48,8 @@ function starBp(inventory, sport, at) {
   return n * PRESTIGE.bonusBp;
 }
 
-const FUEL = GEAR_RULES.fuel.items;
+// fuel, and the bottles that boost like it (Electrolyte Surge: a timed boost, js/core/bottles.js)
+const FUEL = { ...GEAR_RULES.fuel.items, 'electro-surge': BOTTLE_RULES.bottles['electro-surge'] };
 const isFuel = (b) => !!(b && FUEL[b.kind]);
 /** A gel waiting for your next workout (taken, not yet used up by a session). */
 export const isWaiting = (b) => !!(isFuel(b) && b.until_next && !b.workout_id);

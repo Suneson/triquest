@@ -9,11 +9,14 @@ import { SYNC_ENABLED } from './config.js';
 import { isDemo } from './demo.js';
 import { refreshGear, demoCredit } from './gear-state.js';
 import { chestBonus, rollChestTier, CHEST_RULES } from '../core/rewards.js';
+import { rollBottles, bottlesHeld, BOTTLE_IDS } from '../core/bottles.js';
 import { todayISO } from '../core/dates.js';
 
 const KEY = 'moske-chests';
 const SEEN = 'moske-chests-seen';
-const EMPTY = { uid: null, chests: [], admin: false, at: 0 };
+// bottles: bottles_for() (0042): { held: { id: n }, active: { id: until|true|null }, fuel_on, jobs_running }
+const NO_BOTTLES = { held: Object.fromEntries(BOTTLE_IDS.map((id) => [id, 0])), active: {}, fuel_on: false, jobs_running: 0 };
+const EMPTY = { uid: null, chests: [], admin: false, bottles: NO_BOTTLES, at: 0 };
 const listeners = new Set();
 
 const read = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
@@ -30,9 +33,12 @@ export const chestsEnabled = () => isDemo() || (SYNC_ENABLED && !!currentUser())
 function demoState() {
   const at = (h) => new Date(Date.now() - h * 36e5).toISOString();
   const mk = (id, tier, type, difficulty, xp, h) => ({
-    id, source: 'workout', workout_id: null, type, day: todayISO(), difficulty, tier, xp, ...chestBonus(tier, xp), created_at: at(h), opened_at: null,
+    id, source: 'workout', workout_id: null, type, day: todayISO(), difficulty, tier, xp, ...chestBonus(tier, xp), bottles: rollBottles(tier), charged: false, created_at: at(h), opened_at: null,
   });
-  return { uid: 'demo', admin: true, at: Date.now(), chests: [mk(-1, 'legendary', 'run', 'brutal', 190, 1), mk(-2, 'rare', 'bike', 'hard', 120, 5)] };
+  // and one of each bottle to try (a demo has no builders at work, so its Build Brew says so)
+  const held = Object.fromEntries(BOTTLE_IDS.map((id) => [id, id === 'vo2-max' ? 0 : 1]));
+  return { uid: 'demo', admin: true, at: Date.now(), chests: [mk(-1, 'legendary', 'run', 'brutal', 190, 1), mk(-2, 'rare', 'bike', 'hard', 120, 5)],
+    bottles: { held, active: {}, fuel_on: false, jobs_running: 0 } };
 }
 
 function raw() {
@@ -60,7 +66,7 @@ export async function refreshChests() {
     const c = await client();
     const { data, error } = await c.rpc('my_chests');
     if (error) throw error;
-    state = { uid, chests: data?.chests || [], admin: !!data?.admin, at: Date.now() };
+    state = { uid, chests: data?.chests || [], admin: !!data?.admin, bottles: data?.bottles || NO_BOTTLES, at: Date.now() };
     write(KEY, state);
     emit();
   } catch (e) {
@@ -85,7 +91,10 @@ export async function openChest(id) {
   if (isDemo()) {
     const c = raw().chests.find((x) => x.id === id);
     if (!c) throw new Error('gear:chest_unknown');
-    if (!c.opened_at) { c.opened_at = new Date().toISOString(); demoCredit(c.coins, c.carbs); }
+    if (!c.opened_at) {
+      c.opened_at = new Date().toISOString(); demoCredit(c.coins, c.carbs);
+      for (const b of c.bottles || []) raw().bottles.held[b] = (raw().bottles.held[b] || 0) + 1;
+    }
     emit();
     return c;
   }
@@ -95,6 +104,7 @@ export async function openChest(id) {
   replace(data.chest);
   emit();
   refreshGear(); // the wallet now counts it
+  if (data.chest?.bottles?.length) refreshChests(); // and you hold its bottles
   return data.chest;
 }
 
@@ -103,7 +113,7 @@ export async function giftChest(tier) {
   if (isDemo()) {
     const d = raw();
     const id = Math.min(0, ...d.chests.map((c) => c.id)) - 1;
-    const chest = { id, source: 'gift', workout_id: null, day: todayISO(), difficulty: null, tier, xp: 0, ...chestBonus(tier, 0), created_at: new Date().toISOString(), opened_at: null };
+    const chest = { id, source: 'gift', workout_id: null, day: todayISO(), difficulty: null, tier, xp: 0, ...chestBonus(tier, 0), bottles: rollBottles(tier), charged: false, created_at: new Date().toISOString(), opened_at: null };
     d.chests.unshift(chest);
     emit();
     return chest;
@@ -119,8 +129,42 @@ export async function giftChest(tier) {
 /** A chest that isn't real (the admin preview and the simulated workout): nothing is paid. */
 export function previewChest(tier, { difficulty = 'hard', xp = 120 } = {}) {
   const t = tier || rollChestTier(difficulty);
-  return { id: `preview-${Date.now()}`, preview: true, source: 'workout', workout_id: null, type: 'bike', day: todayISO(), difficulty, tier: t, xp, ...chestBonus(t, xp), created_at: new Date().toISOString(), opened_at: null };
+  return { id: `preview-${Date.now()}`, preview: true, source: 'workout', workout_id: null, type: 'bike', day: todayISO(), difficulty, tier: t, xp, ...chestBonus(t, xp), bottles: rollBottles(t), charged: false, created_at: new Date().toISOString(), opened_at: null };
 }
+
+// ---- bottles (0042_bottles.sql) -------------------------------------------------------------------
+
+/** { held, active, fuel_on, jobs_running }: your bottles, as my_chests() last said. */
+export const bottlesState = () => raw().bottles || NO_BOTTLES;
+
+/**
+ * Drink a bottle. The server checks you hold it and that it isn't already working, then does it (the Surge's
+ * boost, the brew on your builders, the charge waiting for a chest). Recovery Mix's stamina is the device's:
+ * the caller fills it. Resolves to the new bottles state.
+ */
+export async function drinkBottle(id) {
+  if (isDemo()) {
+    const b = raw().bottles;
+    if (!(b.held[id] > 0)) throw new Error('gear:bottle_none');
+    if (b.active[id]) throw new Error('gear:bottle_active');
+    if (id === 'build-brew' && !b.jobs_running) throw new Error('gear:idle');
+    b.held[id] -= 1;
+    if (id === 'chest-charge') b.active[id] = true;
+    if (id === 'electro-surge') b.active[id] = new Date(Date.now() + 24 * 3600e3).toISOString();
+    if (id === 'build-brew') b.active[id] = new Date(Date.now() + 3600e3).toISOString();
+    emit();
+    return b;
+  }
+  const c = await client();
+  const { data, error } = await c.rpc('drink_bottle', { p_bottle: id });
+  if (error) throw error;
+  if (state.uid === currentUser()?.id) { state = { ...state, bottles: data }; write(KEY, state); }
+  emit();
+  if (id === 'electro-surge' || id === 'build-brew') refreshGear(); // the Surge is a fuel (the chips), the brew moved the jobs
+  return data;
+}
+
+export { bottlesHeld };
 
 // ---- the banner: each chest is announced once per device ---------------------------------
 

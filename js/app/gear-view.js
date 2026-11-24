@@ -36,6 +36,7 @@ import { jobPhase, jobFor, cancelRefund, fitMinutes, quadrantLevel, WORKSHOP_RUL
 import { propsFor, propById, rareById, RARE_PROPS } from '../core/scenes.js';
 import { collectionsFor, blueprintState, COLLECTION_RULES } from '../core/collections.js';
 import { gelChip, pctBp } from './gel-chip.js';
+import { bottlesSection, bottleInfo, bottleClick, onBottles } from './bottles-view.js';
 import { SWITCH } from './profile-game.js';
 import * as store from './store.js';
 import { shopCard, cardButton, actionButton, tapButton, denyTap, walletBar, openShopInfo, priceText } from './shop-ui.js';
@@ -586,6 +587,7 @@ function cardInfo(btn, draw, stallBuy) {
     case 'feat': featInfo(featItemById(id), featItems().find((i) => i.id === id), worn === id, redraw); break;
     case 'skit': seasonKitInfo(SEASON_KITS.find((k) => k.id === id), s.inventory.some((r) => r.item_id === id), worn === id, redraw); break;
     case 'stall': stallInfo(stallFor(stallDay(serverNow())), s, w, stallBuy); break;
+    case 'bottle': bottleInfo(id, redraw); break;
     default: break;
   }
 }
@@ -793,6 +795,7 @@ export function openInventory({ tab = 'fuel', club = false } = {}) {
     if (view === 'fuel') {
       const fuels = FUELS.filter((f) => (w.held[f.id] || 0) > 0);
       panel = `${gelChip(s.boosts, { cls: 'gw-gel-top' })}
+        ${bottlesSection()}
         ${fuels.length ? `<div class="sc-grid">${fuels.map((f) => fuelInvCard(f, s, w)).join('')}</div>` : empty(t('gear.invNoFuel'), 'fuel')}`;
     } else if (view === 'clothes') {
       const worn = store.getSettings().kit || null;
@@ -827,9 +830,12 @@ export function openInventory({ tab = 'fuel', club = false } = {}) {
       body: `${tabs}<div id="inv-panel" role="tabpanel" aria-labelledby="inv-tab-${view}">${panel}</div>`,
     });
   };
-  off = onGear(() => { if (root.isConnected) draw(); });
+  const offGear = onGear(() => { if (root.isConnected) draw(); });
+  const offBottles = onBottles(() => { if (root.isConnected) draw(); });
+  off = () => { offGear(); offBottles(); };
   root.onclick = async (e) => {
     if (denyTap(e)) return;
+    if (await bottleClick(e, draw)) return;
     const tb = e.target.closest('[data-inv-tab]');
     if (tb) { view = tb.dataset.invTab; draw(); root.querySelector(`[data-inv-tab="${view}"]`)?.focus({ preventScroll: true }); return; }
     const go = e.target.closest('[data-inv-shop]');

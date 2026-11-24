@@ -25,6 +25,7 @@ import { pendingChests, openChest, giftChest, previewChest, markAnnounced, unann
 import { gearError } from './gear-state.js';
 import { CUR_ART } from './shop-ui.js';
 import { makeChestFx } from './chest-fx.js';
+import { bottleArt } from '../core/bottles.js';
 
 export const TIER_COLOR = { common: '#E6D7BD', uncommon: '#4CC38A', rare: '#5B9BFF', epic: '#B57BFF', legendary: '#FFC94A', mythic: '#6FF0FF' };
 const ENABLED = TIERS.filter((x) => CHEST_RULES.enabled[x]);
@@ -227,7 +228,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
   root.innerHTML = `<div class="cx tier-${chest.tier}${calm ? ' is-calm' : ''}" role="dialog" aria-modal="true" aria-labelledby="cx-title" style="--tc:${color}">
     <div class="cx-bg" aria-hidden="true"><i class="cx-rays"></i><i class="cx-glow"></i><i class="cx-flash"></i></div>
     <header class="cx-head">
-      <p class="cx-from">${esc(fromLine(chest))}${chest.preview ? ` · <b>${t('chest.preview')}</b>` : ''}</p>
+      <p class="cx-from">${esc(fromLine(chest))}${chest.charged ? ` · <b class="cx-charged">${t('chest.charged')}</b>` : ''}${chest.preview ? ` · <b>${t('chest.preview')}</b>` : ''}</p>
       <h2 id="cx-title" class="cx-tier"><span>${esc(tierName(chest.tier))}</span><small>${esc(boxName(chest.tier))}</small></h2>
     </header>
     <div class="cx-box">
@@ -376,6 +377,28 @@ export function openChestModal(chest, { queue = [] } = {}) {
     fx.burst(x, y, 0.45);
     haptic('tick');
   };
+  // the bottles it held, one row: each bottle pops onto it in turn
+  const bottleRow = (list) => {
+    const n = {}; list.forEach((id) => { n[id] = (n[id] || 0) + 1; });
+    const names = Object.entries(n).map(([id, k]) => `${k > 1 ? `${k}× ` : ''}${t(`bottle.${id}.name`)}`).join(', ');
+    return `<div class="cx-row is-bottles">
+      <span class="cx-bottles">${list.map((id, i) => `<img src="${bottleArt(id, true)}" width="96" height="96" alt="" style="--i:${i}">`).join('')}</span>
+      <span class="cx-amt"><b class="cx-bottle-names">${esc(names)}</b><small>${t(list.length > 1 ? 'chest.bottles' : 'chest.bottle')} · ${t('chest.bottlesWhere')}</small></span>
+    </div>`;
+  };
+  const revealBottles = async ({ quick = false } = {}) => {
+    const c = await openOnServer();
+    const list = c.bottles || [];
+    if (!list.length || loot.querySelector('.is-bottles')) return;
+    loot.insertAdjacentHTML('beforeend', bottleRow(list));
+    const el = loot.lastElementChild;
+    if (quick) { el.classList.add('is-in'); return; }
+    requestAnimationFrame(() => el.classList.add('is-in'));
+    const [x, y] = mid(-0.15);
+    fx.burst(x, y, 0.6);
+    haptic('record');
+  };
+  const hasBottles = () => !!(chest.bottles || []).length;
   const finish = () => {
     phase = 'done';
     fx.stopDrift();
@@ -388,7 +411,12 @@ export function openChestModal(chest, { queue = [] } = {}) {
   const advance = async () => {
     if (phase === 'shut') { tap(); return; }
     if (phase === 'ready') { phase = 'coins'; stage.classList.add('is-open'); hint.textContent = t('chest.hint.more'); await reveal('coins'); return; }
-    if (phase === 'coins') { phase = 'carbs'; await reveal('carbs'); later(finish, 700); }
+    if (phase === 'coins') {
+      phase = 'carbs'; await reveal('carbs');
+      if (hasBottles()) hint.textContent = t('chest.hint.more'); else later(finish, 700);
+      return;
+    }
+    if (phase === 'carbs' && hasBottles()) { phase = 'bottles'; await revealBottles(); later(finish, 700); }
   };
   const skip = async () => {
     if (phase === 'done') return;
@@ -402,6 +430,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     stage.classList.add('is-open');
     if (!loot.querySelector('.is-coins')) await reveal('coins', { quick: true });
     if (!loot.querySelector('.is-carbs')) await reveal('carbs', { quick: true });
+    await revealBottles({ quick: true });
     finish();
   };
   root.addEventListener('click', (e) => {

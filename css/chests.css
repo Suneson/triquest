@@ -229,3 +229,17 @@ body.rm :is(.cx-row, .cx-bonus, .cx-box) { transition: none !important; }
 }
 body.rm :is(.cx-glow, .cx-box .cx-squash, .cx-wiggle) { animation: none !important; }
 body.rm .cx-fx { display: none; }
+
+/* the 3D chest (chest3d.js): its canvas 1.8× the chest's square (ROOM) so hops and flips stay inside it, lit from
+   inside as you tap and as it charges. Its own motion replaces the stills' wiggle and squash. */
+.cx-3d { position: absolute; inset: -40%; width: 180%; height: 180%; pointer-events: none;
+  filter: drop-shadow(0 0 calc((var(--lit, 0) * .6 + var(--lit3d, 0)) * 30px) var(--tc)); transition: filter 200ms ease; }
+.cx.has-3d :is(.cx-still, .cx-open) { opacity: 0 !important; }
+.cx.has-3d .cx-wiggle, .cx.has-3d .cx-wiggle.is-hit, .cx.has-3d.is-charging .cx-wiggle { animation: none; }
+.cx.has-3d .cx-squash, .cx-box.is-burst .cx-squash:is(.cx.has-3d *) { transform: none; animation: none; transition: none; }
+/* the white-out that hides the shut chest giving way to the open one: in at the end of the charge, out after */
+.cx-white { position: absolute; inset: 0; z-index: 4; background: #fff; opacity: 0; pointer-events: none; }
+.cx.has-3d.is-charging .cx-white { animation: cx-white-in var(--charge-ms, 700ms) ease-in both; }
+.cx.has-3d.is-burst .cx-white { animation: cx-white-out 560ms ease-out both; }
+@keyframes cx-white-in { 0%, 50% { opacity: 0; } 100% { opacity: .95; } }
+@keyframes cx-white-out { 0%, 15% { opacity: .95; } 100% { opacity: 0; } }

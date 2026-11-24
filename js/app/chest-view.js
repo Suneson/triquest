@@ -14,6 +14,7 @@ import { esc } from './ui.js';
 import { svg } from '../core/icons.js';
 import { t, fmtNum, fmtDate } from '../core/i18n.js';
 import { DISCIPLINES } from '../core/disciplines.js';
+import { mountChest3d } from './chest3d.js';
 import { chestArt, topTier, sessionBase, TIERS, CHEST_RULES } from '../core/rewards.js';
 import { GEAR_RULES } from '../core/gear.js';
 import { earnedBySession } from '../core/wallet.js';
@@ -221,7 +222,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
   audio?.load();
   const root = openLayer('chest', {
     className: 'cx-layer', instant: true, reuse: false,
-    onClose: () => { audio?.pause(); fx?.stop(); timers.forEach(clearTimeout); },
+    onClose: () => { audio?.pause(); fx?.stop(); c3d?.dispose(); timers.forEach(clearTimeout); },
   });
   root.innerHTML = `<div class="cx tier-${chest.tier}${calm ? ' is-calm' : ''}" role="dialog" aria-modal="true" aria-labelledby="cx-title" style="--tc:${color}">
     <div class="cx-bg" aria-hidden="true"><i class="cx-rays"></i><i class="cx-glow"></i><i class="cx-flash"></i></div>
@@ -236,6 +237,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
       </div></div>
     </div>
     <canvas class="cx-fx" aria-hidden="true"></canvas>
+    <i class="cx-white" aria-hidden="true"></i>
     <div class="cx-loot" aria-live="polite"></div>
     <p class="cx-hint"><span>${t('chest.hint.open')}</span><i class="cx-pips" aria-hidden="true">${'<b></b>'.repeat(TAPS)}</i></p>
     <footer class="cx-foot">
@@ -255,6 +257,15 @@ export function openChestModal(chest, { queue = [] } = {}) {
   const skipBtn = root.querySelector('[data-cx-skip]');
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
   fx = makeChestFx(root.querySelector('.cx-fx'), color, { calm });
+  // the chest in 3D where the phone draws it (chest3d.js): it drops in, flips on each tap, and opens under a
+  // white flash; the stills stay under it till it's drawn, and take over where it can't be
+  const c3d = calm ? null : mountChest3d(wiggle, chest.tier, color);
+  let has3d = false;
+  c3d?.ready.then((ok) => {
+    if (!ok || !stage.isConnected) return;
+    has3d = true; stage.classList.add('has-3d');
+    if (phase === 'shut' && !taps) c3d.drop(); else if (phase !== 'shut') c3d.open(true);
+  });
   // a point of the chest, in the stage's px (where the sparks come from): dy up from its middle, in its heights
   const mid = (dy = 0) => {
     const a = stage.getBoundingClientRect(); const b = box.getBoundingClientRect();
@@ -288,6 +299,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     stage.classList.add('is-burst');
     openStill.hidden = false; wiggle.classList.add('is-ended');
     box.classList.remove('is-pop'); void box.offsetWidth; box.classList.add('is-burst');
+    if (has3d) c3d.open();
     const [x, y] = mid(-0.05);
     fx.burst(x, y, BURST[chest.tier] || 1);
     haptic(['epic', 'legendary', 'mythic'].includes(chest.tier) ? 'levelUp' : 'record');
@@ -300,6 +312,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     const ms = CHARGE_MS[chest.tier] || 700;
     stage.style.setProperty('--charge-ms', `${ms}ms`);
     stage.classList.add('is-charging');
+    if (has3d) c3d.charge(ms);
     const [x, y] = mid();
     fx.charge(x, y, ms);
     // the shakes quicken: a tick at a half and three quarters of the wait
@@ -317,11 +330,12 @@ export function openChestModal(chest, { queue = [] } = {}) {
     phase = 'arming';
     pips.hidden = true;
     hint.textContent = '';
-    if (!calm) await settle(wiggle, 'animationend', 450);
+    if (has3d) await new Promise((res) => later(res, 640));   // its last flip lands
+    else if (!calm) await settle(wiggle, 'animationend', 450);
     if (phase !== 'arming') return;
     box.classList.add('is-pop');
     squash.style.removeProperty('--sq');
-    if (!calm) await settle(squash, 'transitionend', 360);
+    if (!calm && !has3d) await settle(squash, 'transitionend', 360);
     if (phase !== 'arming') return;
     play();
   };
@@ -335,6 +349,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     void wiggle.offsetWidth; // restart the wiggle
     wiggle.classList.add('is-hit');
     stage.style.setProperty('--lit', String(taps / TAPS));
+    if (has3d) c3d.tap(taps);
     const [x, y] = mid(-0.2);
     fx.puff(x, y, 6 + taps * 4);
     haptic('tick');
@@ -382,6 +397,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     phase = 'play';
     pips.hidden = true;
     squash.style.removeProperty('--sq');
+    if (has3d) c3d.open(true);
     toReady();
     stage.classList.add('is-open');
     if (!loot.querySelector('.is-coins')) await reveal('coins', { quick: true });

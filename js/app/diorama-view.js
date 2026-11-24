@@ -22,7 +22,7 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, liftPctAt, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf, setPlotMode, plotMode } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf, setPlotMode, plotMode, setPlotLevel } from '../core/diorama.js';
 import { expandedSize, EXPANDED_ART, bigArt, midArt, needsFull, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
@@ -30,12 +30,13 @@ import { drillOfItem, recoveryOfItem, drillNow, recoveryNow } from '../core/dril
 import { openDrill, openRecovery, staminaNow, settleDrills, tellResult, runnerClip, drillsSaved } from './drill-view.js';
 import { openGelStand, standLevel } from './gel-stand-view.js';
 import { openCoffeeShop, shopLevel } from './coffee-view.js';
-import { openUpgrade, buildingJob, buildsChanged, timeLeft } from './upgrade-sheet.js';
-import { isTarget } from '../core/jobs.js';
+import { openUpgrade, buildingJob, buildingLevel, buildsChanged, timeLeft, face } from './upgrade-sheet.js';
+import { isTarget, HALL } from '../core/jobs.js';
 import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
-import { floorGrid, entryTile, besideItem } from '../core/walk.js';
+import { floorGrid, entryTile, besideItem, freeByDistance } from '../core/walk.js';
+import { builderId, builderById } from '../core/builders.js';
 import { mountWalker } from './walker.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -43,7 +44,7 @@ import { featsFor } from '../core/feats.js';
 import { gearById } from '../core/gear.js';
 import { building } from '../core/base.js';
 import { quadrantLevel } from '../core/workshop.js';
-import { gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow, myExpansions } from './gear-state.js';
+import { myBuilds, gearState, gearEnabled, serverNow, sportLevelOf, refreshGear, unseenFinished, walletNow, myExpansions } from './gear-state.js';
 import { featAwards } from './feats-state.js';
 import { clockLeft } from './gear-view.js';
 import { savedPlacements, savePlacement, stashPlacement, baseItemRows } from './placement-state.js';
@@ -176,12 +177,20 @@ function hud(ctx, avatarBtn) {
   </header>`;
 }
 
+/**
+ * The locker room's plate: its level (the hall's, from its builders' jobs: it caps every other
+ * building, jobs.js HALL_CAPS) and its Upgrade button, or the builder on it and their clock.
+ */
+function hallPill() {
+  const lvl = buildingLevel(HALL); const job = buildingJob(HALL);
+  return `<button class="dg-pill-name" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}"><b>${esc(roomName('locker'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></button>
+    <button class="dg-pill-chip is-up${job ? ' is-job' : ''}" data-dg-hall aria-label="${esc(job ? t('jobs.hallBusyAria', { n: job.to }) : t('jobs.hallUpAria', { n: lvl }))}"><img src="${face(job?.who || 'blue')}" alt="" width="64" height="64" draggable="false"><b data-dg-hall-t>${esc(job ? timeLeft(job.left) : t('jobs.upgrade'))}</b></button>`;
+}
+
 /** The room's own plate: name and level, its trophies, and what's building for it. */
 function roomPill(room, ctx) {
   const lvl = levelOf(room, ctx);
-  if (room === 'locker') {
-    return `<div class="dg-pill"><button class="dg-pill-name" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}"><b>${esc(roomName('locker'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></button></div>`;
-  }
+  if (room === 'locker') return `<div class="dg-pill" data-dg-hallpill>${hallPill()}</div>`;
   if (room === 'club') {
     return `<div class="dg-pill"><span class="dg-pill-name" aria-label="${esc(t('cp.roomAlt', { room: roomName('club'), n: lvl }))}"><b>${esc(roomName('club'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></span></div>`;
   }
@@ -242,6 +251,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <div class="dg-menu" data-dg-menu hidden>
       <h3 class="dg-menu-name" data-dg-menu-name></h3>
       <div class="dg-menu-btns">
+        <button class="dg-sq" data-dg-info hidden><span class="dg-sq-i" aria-hidden="true">i</span><span>${esc(t('crewInfo.info'))}</span></button>
         <button class="dg-sq" data-dg-open hidden><img alt="" width="64" height="64" draggable="false"><span></span><b class="dg-sq-n"></b></button>
         <button class="dg-sq" data-dg-up hidden><img src="icons/Builders/face-blue.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('jobs.upgrade'))}</span><b class="dg-sq-n"></b></button>
         <button class="dg-sq" data-dg-rot hidden aria-label="${esc(t('cp.rotate'))}"><img src="icons/UI/rotate.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.rotate'))}</span></button>
@@ -337,6 +347,11 @@ const athSaved = () => {
 // a treadmill is got on from the back of its belt: away from where the runner faces
 const getOnSide = (it) => { const y = it?.runner?.[it.face]?.yaw; return y == null ? null : [-Math.round(Math.sin(y)), -Math.round(Math.cos(y))]; };
 const athSave = (a) => { try { localStorage.setItem(ATH_KEY, JSON.stringify(a)); } catch { /* private mode */ } };
+// the builders at work on the base (syncBuilders): who → { w: their walker, target, gl }
+const crewWalk = new Map();
+/** A builder's model and clips (tools/build-characters.mjs; green plays the blue one's clips). */
+const builderChar = (who) => ({ key: `mech-${who}`, model: `models/chars/mechanic-${who}.glb`, clips: `models/chars/mechanic-${who === 'green' ? 'blue' : who}-clips.glb` });
+
 // the walker on screen, and what the stage it's on looks like now (kept fresh on every render)
 const walk = { w: null, room: null, going: null, grid: null, redraw: null };
 // the room's level per room, as the stage last worked it out (the stash's pictures use it)
@@ -486,10 +501,14 @@ export function wireDiorama(root, ctx) {
   lastLevels = artOpts.levels;
   // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
   const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
-  const artOf = (it) => it.art({ ...artOpts, face: it.face });
+  // a building a builder's on shows its construction picture (placement.js `build`), once it's painted
+  const artOf = (it) => (it.build && buildingJob(it.id) ? it.build(it.face) : it.art({ ...artOpts, face: it.face }));
   let placements = resolvePlacements(stageLayout(), items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
+  // the platform's theme follows the hall's level (?theme=N shows level N's, to compare them)
+  const themeQ = Number(new URLSearchParams(location.search).get('theme'));
+  setPlotLevel(themeQ || buildingLevel(HALL));
   const env = envFor(room, geom);
   stage.env = env;
   const M = roomPlacement(geom, env);
@@ -628,7 +647,7 @@ export function wireDiorama(root, ctx) {
   const openItem = (it) => {
     if (it?.opens === 'missions') openMissionBoard(ctx);
     else if (it?.opens === 'trophies') openTrophyDisplay();
-    else if (it?.opens === 'gels') openGelStand();
+    else if (it?.opens === 'gels') openGelStand();   // each says so and stays shut while it's being upgraded
     else if (it?.opens === 'coffee') openCoffeeShop();
     if (it?.opens === 'drill' || it?.opens === 'recovery') athSave({ ...athSaved(), use: it.id });
     if (it?.opens === 'drill') openDrill(drillOfItem(it.id), machineTier(it));
@@ -699,12 +718,71 @@ export function wireDiorama(root, ctx) {
     }
     return a;
   };
+  /**
+   * The builders at work: each comes out of their hut (or the middle of the plot), walks to the building
+   * they're upgrading and keeps walking round it till the job's done. The locker room's builder walks
+   * the platform. Only drawn by three.js.
+   */
+  // the middle of what a builder's working on, in tiles (the hall's: the middle of the floor)
+  const workMid = (target) => {
+    if (target === HALL) { const g = gridFor(room); return [g.cols / 2, g.rows / 2]; }
+    const it = itemAt(target); const p = placements[target];
+    if (!it || !p) return null;
+    const fp = footprint(it, p.u, p.v);
+    return [fp.reduce((s, [a]) => s + a, 0) / fp.length + 0.5, fp.reduce((s, [, b]) => s + b, 0) / fp.length + 0.5];
+  };
+  const ringOf = (id) => {
+    const it = itemAt(id); const p = placements[id];
+    if (!it || !p) return [];
+    const on = new Set(footprint(it, p.u, p.v).map(([a, b]) => `${a},${b}`));
+    const ring = new Map();
+    for (const k of on) {
+      const [a, b] = k.split(',').map(Number);
+      for (let du = -1; du <= 1; du++) for (let dv = -1; dv <= 1; dv++) {
+        const nb = [a + du, b + dv]; const nk = `${nb[0]},${nb[1]}`;
+        if (!on.has(nk)) ring.set(nk, nb);
+      }
+    }
+    return [...ring.values()];
+  };
+  const syncBuilders = (shown) => {
+    const now = serverNow();
+    const want = new Map();
+    if (shown && glOn() && room === 'locker') {
+      for (const j of myBuilds()) {
+        if (Date.parse(j.finishes_at) <= now) continue;
+        if (j.target === HALL || placements[j.target]?.room === room) want.set(j.builder, j.target);
+      }
+    }
+    for (const [who, c] of crewWalk) if (want.get(who) !== c.target || c.gl !== stage.gl) { c.w.dispose(); crewWalk.delete(who); }
+    for (const [who, target] of want) {
+      if (crewWalk.has(who)) continue;
+      const char = builderChar(who);
+      const body = stage.gl.worker(char);
+      if (!body) continue;
+      const g = gridFor(room);
+      const hut = builderId(who);
+      const start = (placements[hut]?.room === room && besideItem(g, itemAt(hut), placements[hut], null)) || entryTile(g);
+      if (!start) { body.dispose(); continue; }
+      const around = target === HALL
+        ? () => freeByDistance(gridFor(room), g.cols / 2, g.rows / 2).slice(0, 60)
+        : () => ringOf(target);
+      const w = mountWalker(worldEl.querySelector('.dg-items'), {
+        at: start, tile: tileVec(), char, still: reduced(), body, around, workAt: () => workMid(target),
+        toPx: (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))),
+        grid: () => gridFor(room),
+      });
+      if (reduced()) { const first = around().find(([a, b]) => g.free(a, b)); if (first) w.jump(first); }
+      crewWalk.set(who, { w, target, gl: stage.gl });
+    }
+  };
   const draw = () => {
     // the room's picture is up: its first picture, or the sharp one it swaps to once you zoom in
     // (sharpen). Checking only the first made the first tap after a zoom take every item away.
     const shown = [src, full].includes(roomImg.getAttribute('src'));
     const use = inUse();
     const ath = syncAthlete(shown, use);
+    syncBuilders(shown);
     const here = shown ? items.filter((it) => placements[it.id]?.room === room) : [];
     const chosen = shown && view.sel ? itemAt(view.sel) : null;
     worldEl.querySelector('.dg-cells').innerHTML = chosen ? footprint(chosen, placements[view.sel].u, placements[view.sel].v).map(([a, b]) => poly(boxCorners(geom, a, b), 'dg-cell is-ok')).join('') : '';
@@ -790,6 +868,11 @@ export function wireDiorama(root, ctx) {
       if (chosen) {
         menu.querySelector('[data-dg-menu-name]').textContent = itemName(chosen.id);
         menu.querySelector('[data-dg-rot]').hidden = !chosen.faces;
+        // a builder's hut: the builder's info sheet (who they are, their ability)
+        const infoBtn = menu.querySelector('[data-dg-info]');
+        const crewWho = builderById(chosen.id)?.who;
+        infoBtn.hidden = !crewWho;
+        if (crewWho) infoBtn.setAttribute('aria-label', t('crewInfo.infoAria', { who: t(`jobs.who.${crewWho}`) }));
         const upBtn = menu.querySelector('[data-dg-up]');
         upBtn.hidden = !isTarget(chosen.id);
         if (isTarget(chosen.id)) {
@@ -799,6 +882,8 @@ export function wireDiorama(root, ctx) {
         }
         const open = menu.querySelector('[data-dg-open]');
         open.hidden = !chosen.opens;
+        // being upgraded: its Open button is greyed (a tap still says why)
+        open.classList.toggle('is-off', !!(isTarget(chosen.id) && chosen.id !== HALL && buildingJob(chosen.id)));
         if (chosen.opens === 'drill' || chosen.opens === 'recovery') {
           const label = t(chosen.opens === 'drill' ? 'drill.menu' : 'drill.menuRec');
           open.querySelector('img').src = chosen.opens === 'drill' ? 'icons/UI/sports/sport-run.webp' : 'icons/UI/sports/sport-locker.webp';
@@ -1216,11 +1301,23 @@ export function wireDiorama(root, ctx) {
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
   root.querySelector('[data-dg-open]').onclick = (e) => { e.stopPropagation(); haptic('tick'); openItem(view.sel && itemAt(view.sel)); };
+  root.querySelector('[data-dg-info]').onclick = (e) => {
+    e.stopPropagation(); haptic('tick');
+    const who = view.sel && builderById(view.sel)?.who;
+    if (who) import('./builder-info.js').then((m) => m.openBuilderInfo(who));
+  };
   // a building's next level: the builders' upgrade sheet
   root.querySelector('[data-dg-up]').onclick = (e) => {
     e.stopPropagation(); haptic('tick');
     const it = view.sel && itemAt(view.sel); if (!it || !isTarget(it.id)) return;
     openUpgrade({ target: it.id, name: itemName(it.id), art: (n) => it.art({ ...artOpts, levels: { ...artOpts.levels, gels: n, coffee: n }, face: 'a' }) });
+  };
+  // the locker room's level: the hall's upgrade sheet
+  const hallEl = root.querySelector('[data-dg-hallpill]');
+  if (hallEl) hallEl.onclick = (e) => {
+    if (!e.target.closest('[data-dg-hall]')) return;
+    e.stopPropagation(); haptic('tick');
+    openUpgrade({ target: HALL, name: roomName('locker'), art: () => 'icons/UI/sports/sport-locker.webp' });
   };
   // put the picked-up item away in the inventory's Stash tab
   root.querySelector('[data-dg-stash]').onclick = (e) => {
@@ -1385,12 +1482,17 @@ export function wireDiorama(root, ctx) {
     draw();   // the athlete walks to the machine, or steps off it
   };
   // the gel stand went up a level: its new picture
-  const onGels = () => { artOpts.levels.gels = standLevel(); artOpts.levels.coffee = shopLevel(); draw(); };
+  const onGels = () => {
+    artOpts.levels.gels = standLevel(); artOpts.levels.coffee = shopLevel();
+    const hp = root.querySelector('[data-dg-hallpill]'); if (hp) hp.innerHTML = hallPill();
+    draw();
+  };
   // a builder's job started or finished: the clocks and the pictures
   document.removeEventListener('builds-changed', view.onBuilds || (() => {}));
   view.onBuilds = onGels;
   document.addEventListener('builds-changed', onGels);
-  let jobLevels = `${standLevel()}:${shopLevel()}`;
+  const levelsNow = () => `${standLevel()}:${shopLevel()}:${buildingLevel(HALL)}`;
+  let jobLevels = levelsNow();
   document.removeEventListener('gels-changed', view.onGels || (() => {}));
   view.onGels = onGels;
   document.addEventListener('gels-changed', onGels);
@@ -1410,7 +1512,9 @@ export function wireDiorama(root, ctx) {
       const b = buildingJob(tag.dataset.dgBuild);
       if (b) tag.querySelector('span').textContent = timeLeft(b.left); else tag.remove();
     });
-    const lv = `${standLevel()}:${shopLevel()}`;
+    const hallJob = buildingJob(HALL); const hallT = root.querySelector('[data-dg-hall-t]');
+    if (hallT && hallJob) hallT.textContent = timeLeft(hallJob.left);
+    const lv = levelsNow();
     if (lv !== jobLevels) { jobLevels = lv; haptic('levelUp'); buildsChanged(); }
     // and on the picked-up machine's Train / Recover button
     const sel = view.sel && itemAt(view.sel);

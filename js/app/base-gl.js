@@ -80,6 +80,8 @@ export function mountBaseGL(layer, { reduced = () => false } = {}) {
     setView: (...a) => { pending.view = a; api?.setView(...a); },
     /** The athlete for walker.js: { at(u, v), setYaw(r), play(name, o), dispose() }. */
     body: (char) => api.body(char),
+    /** A builder at work, another figure like the athlete: { at, setYaw, play, dispose } for walker.js, or null. */
+    worker: (char) => api?.worker(char) ?? null,
     /** The athlete on a machine ({ u, v, y, yaw, scale } in tiles), or off it (null). */
     machine: (spot, clip, char) => api?.machine(spot, clip, char),
     /** The id of the item drawn at world px (x, y), or null. */
@@ -770,6 +772,38 @@ function build(L, canvas, layer, reduced) {
     putAthlete();
   }
 
+  // ---- the builders at work (diorama-view.js): more figures on the floor, each walked by walker.js ----
+  const workers = new Set();
+  // a clip the builder hasn't got: the nearest one they have (the blue builder only has a happy walk)
+  const clipFor = (f, name) => (f.has(name) ? name : name === 'walk' && f.has('walk-happy') ? 'walk-happy' : name);
+  function worker(char) {
+    const w = { rig: new THREE.Group(), sh: new THREE.Mesh(shadow.geometry, shadow.material), fig: null, u: 0, v: 0, yaw: 0, clip: 'idle', gone: false };
+    w.rig.visible = false; w.sh.visible = false; w.sh.renderOrder = -6;
+    scene.add(w.rig, w.sh);
+    workers.add(w);
+    const put = () => {
+      const up = riseAt && G ? riseAt(w.u, w.v) / pxPerUp() : 0;
+      w.rig.position.set(w.u, up, w.v); w.rig.rotation.y = w.yaw; w.rig.scale.setScalar(2.52 / CHAR_HEIGHT);
+      w.rig.visible = w.sh.visible = !!w.fig;
+      w.sh.position.set(w.u, 0.01 + up, w.v); w.sh.scale.set(1.8, 1, 1.8);
+      dirty = true; wake();
+    };
+    (async () => {
+      const { spawnChar } = await import('./char3d.js');
+      const f = await spawnChar(L, { model: char.model, clips: char.clips });
+      if (w.gone) { f.dispose(); return; }
+      w.fig = f; w.rig.add(f.root);
+      f.play(clipFor(f, w.clip), { fade: 0 }); if (reduced()) f.update(0.2);
+      put();
+    })().catch((e) => console.warn('builder', e));
+    return {
+      at: (u, v) => { w.u = u; w.v = v; put(); },
+      setYaw: (r) => { w.yaw = r; put(); },
+      play: (name, o) => { w.clip = name; if (w.fig) { w.fig.play(clipFor(w.fig, name), o); if (reduced()) w.fig.update(0.2); } dirty = true; wake(); },
+      dispose: () => { if (w.gone) return; w.gone = true; workers.delete(w); scene.remove(w.rig, w.sh); w.fig?.dispose(); dirty = true; wake(); },
+    };
+  }
+
   // ---- drawing: at once when the view moves, and FPS times a second while something moves ----
   let dirty = true; let raf = 0; let last = 0; let lastT = 0; let onscreen = true;
   const covered = () => document.body.classList.contains('base-covered');
@@ -795,7 +829,7 @@ function build(L, canvas, layer, reduced) {
     dirty = false;
   }
   function drawNow() { if (paused()) { dirty = true; return; } render(); }
-  const live = () => !!figure && !!mode && !reduced();
+  const live = () => ((!!figure && !!mode) || [...workers].some((w) => w.fig)) && !reduced();
   function wake() { if (!raf && !paused()) raf = requestAnimationFrame(loop); }
   function loop(now) {
     raf = 0;
@@ -807,7 +841,9 @@ function build(L, canvas, layer, reduced) {
     if (busy) dirty = true;
     const moving = live();
     if (moving && (!last || now - last >= 1000 / FPS - 2)) {
-      figure.update(last ? Math.min(0.1, (now - last) / 1000) : 0);
+      const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
+      if (figure && mode) figure.update(dt);
+      for (const w of workers) w.fig?.update(dt);
       last = now;
       dirty = true;
     }
@@ -862,7 +898,7 @@ function build(L, canvas, layer, reduced) {
   }
 
   return {
-    setRoom, setView, body, machine, pick,
+    setRoom, setView, body, machine, worker, pick,
     dispose() {
       cancelAnimationFrame(raf); mo.disconnect(); floorObs.disconnect(); cityObs.disconnect();
       for (const p of pics.values()) p.mesh.material.dispose();
@@ -873,6 +909,7 @@ function build(L, canvas, layer, reduced) {
       for (const m of Object.values(M)) m.dispose(); io.disconnect(); bodyObs.disconnect();
       document.removeEventListener('visibilitychange', onVis);
       for (const c of [...byId.values()]) remove(c);
+      for (const w of [...workers]) { w.gone = true; w.fig?.dispose(); }
       figure?.dispose(); blob.dispose(); shadow.geometry.dispose(); shadow.material.dispose(); cardGeo.dispose();
       renderer.dispose();
     },

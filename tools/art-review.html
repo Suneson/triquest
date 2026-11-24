@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art Review</title>
+<style>
+  /* art-review.html: every picture the base's items can show (js/core/placement.js), to mark which match the
+     new style and which need repainting. Marks stay on this device; Copy list gives them as CSV. */
+  :root { --bg: #F4F1EA; --card: #fff; --ink: #16264D; --mute: #5b6680; --line: #d9d3c4;
+          --keep: #2E7D4F; --repaint: #C26A00; --retire: #B3261E; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1626; --card: #19223a; --ink: #eef1f8; --mute: #9aa6c2; --line: #2b3656; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 system-ui, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+  h1 { margin: 0 0 8px; font-size: 20px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .bar button, .bar select { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+  .bar .n { color: var(--mute); font-size: 13px; }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; padding: 16px; }
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 14px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .card.is-keep { border-color: var(--keep); } .card.is-repaint { border-color: var(--repaint); } .card.is-retire { border-color: var(--retire); opacity: .7; }
+  .pic { aspect-ratio: 1; display: grid; place-items: center; background: repeating-conic-gradient(#0000 0 25%, #8881 0 50%) 0 0 / 16px 16px; border-radius: 10px; cursor: zoom-in; }
+  .pic img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .id { font-weight: 700; font-size: 13px; word-break: break-all; }
+  .src { color: var(--mute); font-size: 11px; word-break: break-all; }
+  .marks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .marks button { min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink); font: 600 12px system-ui; }
+  .marks button[aria-pressed="true"][data-m="keep"] { background: var(--keep); color: #fff; border-color: var(--keep); }
+  .marks button[aria-pressed="true"][data-m="repaint"] { background: var(--repaint); color: #fff; border-color: var(--repaint); }
+  .marks button[aria-pressed="true"][data-m="retire"] { background: var(--retire); color: #fff; border-color: var(--retire); }
+  dialog { border: 0; border-radius: 14px; padding: 0; max-width: 94vw; max-height: 94vh; background: var(--card); }
+  dialog img { display: block; max-width: 94vw; max-height: 86vh; }
+  dialog p { margin: 8px 12px; color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Base item pictures</h1>
+  <div class="bar">
+    <select id="show" aria-label="Show">
+      <option value="all">All</option><option value="none">Not marked</option>
+      <option value="keep">Keep</option><option value="repaint">Repaint</option><option value="retire">Retire</option>
+    </select>
+    <button id="copy">Copy list</button>
+    <span class="n" id="n"></span>
+  </div>
+</header>
+<main id="grid"></main>
+<dialog id="big"><img alt=""><p></p></dialog>
+<script type="module">
+import { PLACEABLES } from '../js/core/placement.js';
+
+const KEY = 'moske-art-review';
+let marks = {};
+try { marks = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { marks = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch { /* private mode */ } };
+
+// every picture an item can show: each face, at every level that changes it
+const pics = [];
+const seen = new Set();
+for (const it of PLACEABLES) {
+  for (const face of ['a', 'b', 'c', 'd']) {
+    for (let lv = 1; lv <= 10; lv++) {
+      let src = null;
+      const levels = { locker: lv, run: lv, bike: lv, gym: lv, pool: lv, gels: lv, coffee: lv };
+      try { src = it.art({ levels, face, inventory: [], rider: '' }); } catch { src = null; }
+      if (!src || typeof src !== 'string' || seen.has(src)) continue;
+      seen.add(src);
+      pics.push({ id: it.id, src });
+    }
+  }
+}
+
+const grid = document.getElementById('grid');
+// a face or level an item hasn't got a picture for: it isn't one of its pictures
+const gone = new Set();
+window.gone = (img) => { const card = img.closest('.card'); gone.add(card.dataset.src); card.remove(); count(); };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function draw() {
+  const show = document.getElementById('show').value;
+  const list = pics.filter((p) => !gone.has(p.src)).filter((p) => show === 'all' || (show === 'none' ? !marks[p.src] : marks[p.src] === show));
+  grid.innerHTML = list.map((p) => {
+    const m = marks[p.src] || '';
+    const btn = (k, label) => `<button data-m="${k}" aria-pressed="${m === k}">${label}</button>`;
+    return `<div class="card ${m ? 'is-' + m : ''}" data-src="${esc(p.src)}">
+      <div class="pic" data-zoom><img src="../${esc(p.src)}" alt="${esc(p.id)}" loading="lazy" onerror="window.gone(this)"></div>
+      <div class="id">${esc(p.id)}</div><div class="src">${esc(p.src.split('/').pop())}</div>
+      <div class="marks">${btn('keep', 'Keep')}${btn('repaint', 'Repaint')}${btn('retire', 'Retire')}</div>
+    </div>`;
+  }).join('');
+  count();
+}
+function count() {
+  const c = (k) => Object.values(marks).filter((v) => v === k).length;
+  document.getElementById('n').textContent = `${pics.length - gone.size} pictures · ${c('keep')} keep · ${c('repaint')} repaint · ${c('retire')} retire`;
+}
+grid.addEventListener('click', (e) => {
+  const card = e.target.closest('.card'); if (!card) return;
+  const src = card.dataset.src;
+  const b = e.target.closest('[data-m]');
+  if (b) { marks[src] = marks[src] === b.dataset.m ? undefined : b.dataset.m; if (!marks[src]) delete marks[src]; save(); draw(); return; }
+  if (e.target.closest('[data-zoom]')) {
+    const d = document.getElementById('big');
+    d.querySelector('img').src = '../' + src; d.querySelector('p').textContent = src;
+    d.showModal();
+  }
+});
+document.getElementById('big').addEventListener('click', (e) => e.currentTarget.close());
+document.getElementById('show').addEventListener('change', draw);
+document.getElementById('copy').addEventListener('click', async () => {
+  const rows = ['id,file,verdict', ...pics.filter((p) => marks[p.src]).map((p) => `${p.id},${p.src},${marks[p.src]}`)];
+  try { await navigator.clipboard.writeText(rows.join('\n')); document.getElementById('copy').textContent = 'Copied'; }
+  catch { prompt('Copy this:', rows.join('\n')); }
+  setTimeout(() => { document.getElementById('copy').textContent = 'Copy list'; }, 1500);
+});
+draw();
+</script>
+</body>
+</html>

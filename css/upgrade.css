@@ -42,3 +42,50 @@
 @media (prefers-reduced-motion: reduce) { .up-bar i, .up-b { transition: none; } }
 /* the item menu's Upgrade button: the builder's face in a round frame */
 .dg-sq[data-dg-up] img { border-radius: 50%; background: radial-gradient(circle at 50% 35%, #EAF4FF, #9FC3E8); box-shadow: 0 0 0 3px #16264D; }
+
+/* the locker room's Upgrade button, on its plate (diorama-view.js hallPill) */
+.dg-pill-chip.is-up { cursor: pointer; padding-left: 4px; font: inherit; }
+.dg-pill-chip.is-up img { width: 28px; height: 28px; border-radius: 9999px; object-fit: cover; }
+.dg-pill-chip.is-up b { font-size: 14px; }
+.dg-pill-chip.is-up:active { transform: scale(0.96); }
+.up-gives { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 4px 0 0; font-weight: 700; color: #2E7D4F; }
+.up-gives svg { width: 16px; height: 16px; }
+
+/* an item's Open button while a builder upgrades it (diorama-view.js) */
+.dg-sq.is-off { filter: grayscale(1); opacity: 0.6; }
+
+/* a hut's Info button: a round blue "i" */
+.dg-sq .dg-sq-i { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; color: #fff; font: 30px/1 Georgia, 'Times New Roman', serif; font-weight: 700;
+  -webkit-text-stroke: 0; text-shadow: 0 2px 0 #0B1222; background: radial-gradient(circle at 50% 30%, #6FB7F0, #1F5FBF); box-shadow: 0 0 0 3px #0B1222, inset 0 -4px 0 rgba(0, 0, 0, .2); }
+
+/* a builder's info sheet (builder-info.js): the builder on the grass by the hut, beside the ability */
+.mk-info.bi { width: min(720px, calc(100vw - 24px)); }
+.bi-role { display: block; font-size: 13px; font-weight: 800; color: #6B5E46; letter-spacing: .02em; }
+.bi-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 12px; padding: 12px; }
+@media (max-width: 560px) { .bi-body { grid-template-columns: 1fr; } }
+.bi-stage { position: relative; min-height: 300px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 3px #16264D, inset 0 0 0 3px rgba(255, 255, 255, .25);
+  background: radial-gradient(ellipse 80% 45% at 50% 88%, #7BC75A, transparent 70%), linear-gradient(#BFE3FF 0 38%, #6DBF4C 38%, #3F9A3A); }
+@media (max-width: 560px) { .bi-stage { min-height: 260px; } }
+.bi-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bi-hut { position: absolute; left: 66%; top: 4%; width: 56%; translate: -50% 0; filter: saturate(.9) brightness(.92) blur(.6px); opacity: .95; pointer-events: none; }
+.bi-bg ~ .bi-hut { display: none; }
+.bi-face { position: absolute; left: 50%; bottom: 14px; width: 120px; height: 120px; translate: -50% 0; border-radius: 50%; object-fit: cover;
+  background: radial-gradient(circle at 50% 35%, #EAF4FF, #9FC3E8); box-shadow: 0 0 0 3px #16264D; }
+.bi-stage.is-3d .bi-face { display: none; }
+.bi-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bi-info { display: grid; align-content: start; gap: 10px; }
+.bi-about { margin: 0; font-size: 14px; font-weight: 700; color: #16264D; line-height: 1.4; }
+.bi-card { display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px; background: linear-gradient(#FFFFFF, #F1ECE1); box-shadow: 0 0 0 2px #CFC4AE; }
+.bi-card h3 { margin: 0; font-size: 12px; font-weight: 900; color: #6B5E46; letter-spacing: .06em; text-transform: uppercase; }
+.bi-job { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin: 0; font-size: 15px; color: #16264D; }
+.bi-job span { font-size: 13px; font-weight: 800; color: #6B5E46; }
+.bi-job i { margin-left: auto; font-style: normal; font-weight: 900; }
+.bi-note { margin: 0; font-size: 13px; font-weight: 700; color: #6B5E46; }
+.bi-ab { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: start; }
+.bi-ab-ico { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: #fff; background: linear-gradient(#6FB7F0, #1F5FBF); box-shadow: 0 0 0 2px #16264D; }
+.bi-ab-ico svg { width: 24px; height: 24px; }
+.bi-ab b { font-size: 16px; color: #16264D; }
+.bi-ab p { margin: 2px 0; font-size: 13px; font-weight: 700; color: #16264D; }
+.bi-ab small { font-size: 12px; font-weight: 700; color: #6B5E46; }
+.bi-use { justify-self: stretch; }
+.bi-use:disabled { filter: grayscale(.8); opacity: .7; cursor: default; }

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { JOB_RULES, TARGETS } from '../js/core/jobs.js';
+import { JOB_RULES, TARGETS, ABILITIES, useAbility } from '../js/core/jobs.js';
 
 let PGlite = null;
 try { ({ PGlite } = await import('@electric-sql/pglite')); } catch { /* not installed */ }
@@ -40,6 +40,9 @@ const fails = async (db, sql, code) => {
 };
 
 const start = (db, target, who) => db.query(`select public.start_builder_job($1, $2)`, [target, who]);
+// the locker room (the hall) already at a level, for free: finished jobs at no cost
+const hallAt = (db, level) => db.query(`insert into public.builder_jobs (user_id, builder, target, to_level, cost, started_at, finishes_at)
+  select $1, 'blue', 'locker', n, 0, now() - interval '3 days', now() - interval '2 days' from generate_series(2, $2::int) n`, [UID, level]);
 const finishAll = (db) => db.query(`update public.builder_jobs set started_at = now() - interval '2 days', finishes_at = now() - interval '1 second'`);
 
 test('builder_rules() is JOB_RULES', { skip }, async () => {
@@ -59,8 +62,9 @@ test('a job: paid when it starts, the level goes up when it finishes', { skip },
   await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:busy_target');
   await fails(db, `select public.start_builder_job('coffee-shop', 'blue')`, 'gear:builder_busy');
   await finishAll(db);
+  await hallAt(db, 2);
   await start(db, 'gel-stand', 'blue');
-  assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs`)).rows[0].n, 3);
+  assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs where target = 'gel-stand'`)).rows[0].n, 3);
 });
 
 test('only hired builders work, and not past the top', { skip }, async () => {
@@ -70,6 +74,8 @@ test('only hired builders work, and not past the top', { skip }, async () => {
   await db.query(`select public.buy_builder('builder-red')`);
   await start(db, 'coffee-shop', 'red');
   await start(db, 'gel-stand', 'blue');
+  // the locker room first, to its top, so nothing else is capped
+  await hallAt(db, TARGETS.locker.levels.length - 1);
   for (let n = 3; n <= TARGETS['gel-stand'].levels.length - 1; n++) { await finishAll(db); await start(db, 'gel-stand', 'blue'); }
   await finishAll(db);
   await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:top');
@@ -80,4 +86,38 @@ test('no coins, no job', { skip }, async () => {
   await db.query(`insert into public.builder_jobs (user_id, builder, target, to_level, cost, started_at, finishes_at)
     values ($1, 'blue', 'coffee-shop', 2, 1000000, now() - interval '1 day', now() - interval '1 hour')`, [UID]);
   await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:insufficient');
+});
+
+test('the locker room caps the others: gear:hall_low', { skip }, async () => {
+  const db = await freshDb(200000);
+  await start(db, 'gel-stand', 'blue');
+  await finishAll(db);
+  await fails(db, `select public.start_builder_job('gel-stand', 'blue')`, 'gear:hall_low');
+  await start(db, 'locker', 'blue');
+  await finishAll(db);
+  await start(db, 'gel-stand', 'blue');
+  assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs where target = 'gel-stand'`)).rows[0].n, 3);
+});
+
+test('ability_rules() is ABILITIES', { skip }, async () => {
+  const db = await freshDb();
+  const r = (await db.query(`select public.ability_rules() as r`)).rows[0].r;
+  const mine = Object.fromEntries(Object.entries(ABILITIES).map(([who, { id, ...a }]) => [who, a]));
+  assert.deepEqual(r, mine);
+});
+
+test('a builder ability: only on a job, takes the time off, then rests', { skip }, async () => {
+  const db = await freshDb(200000);
+  await fails(db, `select public.use_builder_ability('blue')`, 'gear:idle');
+  await fails(db, `select public.use_builder_ability('red')`, 'gear:not_hired');
+  await start(db, 'gel-stand', 'blue');
+  const fin = async () => Date.parse((await db.query(`select finishes_at from public.builder_jobs where finishes_at > now()`)).rows[0].finishes_at);
+  const before = await fin();
+  await db.query(`select public.use_builder_ability('blue')`);
+  assert.ok(Math.abs(before - (await fin()) - ABILITIES.blue.cut * 60e3) < 2000);
+  await fails(db, `select public.use_builder_ability('blue')`, 'gear:cooldown');
+  // the client works it out the same way
+  const now = Date.now();
+  const job = { builder: 'red', target: 'x', started_at: new Date(now - 1e3).toISOString(), finishes_at: new Date(now + 4 * 3600e3).toISOString() };
+  assert.equal(Date.parse(useAbility([job], 'red', now)[0].finishes_at), now + 3 * 3600e3);
 });

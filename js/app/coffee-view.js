@@ -5,7 +5,7 @@
 // (icons/Coffee/bg-*.webp, 900 x 1600): everything in it is placed in % of the scene, sized in cqw of it.
 // v1 for testing: coins and builder bonuses are kept on this device (settings.coffeeShop).
 
-import { openUpgrade, buildingLevel } from './upgrade-sheet.js';
+import { openUpgrade, buildingLevel, buildingJob, underUpgrade } from './upgrade-sheet.js';
 import { openLayer, closeLayer } from './nav.js';
 import { esc } from './ui.js';
 import { t } from '../core/i18n.js';
@@ -75,6 +75,7 @@ const shopArt = (n) => `icons/Items/coffee-shop-t${Math.max(1, Math.min(C.MAX_LE
  * @param {{ level?: number }} opts  show it at this level (the ?coffee=1&lvl= preview); else the shop's own
  */
 export function openCoffeeShop({ level = null } = {}) {
+  if (!level && underUpgrade('coffee-shop', t('coffee.title'))) return null;   // closed while a builder's on it
   let customer = null;   // coffee3d.js, once mounted
   const root = openLayer('coffee-shop', { className: 'cf-layer', onClose: () => { sfx.stopMusic(); customer?.dispose(); customer = null; } });
   let st = load();
@@ -546,6 +547,7 @@ export function openCoffeeShop({ level = null } = {}) {
   const onBuilds = () => {
     if (!root.isConnected) { document.removeEventListener('builds-changed', onBuilds); return; }
     if (pinned) return;
+    if (buildingJob('coffee-shop')) { closeLayer(root); return; }   // an upgrade started: the shop closes
     const n = shopLevel();
     if (n === st.level) return;
     st.level = n;

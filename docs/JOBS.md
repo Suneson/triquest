@@ -28,3 +28,36 @@ Every upgrade on the base is a builder's job, as in a castle-builder game. Deliv
 - Finishing a job early.
 - The locker room as the Town Hall: its level caps everything else.
 - Upgrades for the huts, the pool, the stadium and the club house.
+
+## The locker room is the hall (0040)
+
+The locker room is a builder's job like the others (levels 2–6), and its level caps every other
+building's: `HALL_CAPS` in js/core/jobs.js (hall level → the others' top level: 1→2, 2→3, 3→4, 4→5,
+5→6). The server refuses a level past the cap with `gear:hall_low`; the upgrade sheet says which
+locker level is needed, and the locker's own sheet says what its next level opens up. Its Upgrade
+button sits on the locker room's plate at the top of the base.
+
+## While a builder works (PR 128)
+
+- The builder walks out of their hut (or from the middle of the plot) to the building and keeps walking
+  round it till the job's done (diorama-view.js syncBuilders, base-gl.js worker, walker.js `around`).
+  The locker room's builder walks the platform. Only with the three.js base.
+- The gel stand and the coffee shop can't be opened while they're being upgraded (upgrade-sheet.js
+  underUpgrade); starting an upgrade from inside one closes it.
+- A building being upgraded shows the fenced build site in its place (icons/Items/build-site-<a|b>.webp,
+  placement.js `build`), and the builder walks round it.
+
+## Reviewing the item art
+
+tools/art-review.html lists every picture the base's items can show, to mark Keep / Repaint / Retire.
+Marks stay on the device; Copy list gives them as CSV.
+
+## The builders at work and their abilities (PR 130)
+
+- At each stop round the building, a builder turns to it and kneels at work (the `work` clip, Clips/Mechanic/
+  FixingItemOnKnees.fbx, added to every builder by tools/build-characters.mjs), then walks on (walker.js `workAt`).
+- A hut's menu has an Info button: builder-info.js, the builder in 3D in front of their hut, the job they're on,
+  and their active ability (jobs.js ABILITIES): Rush Job (blue, 1 h off his job), Overdrive (red, a quarter of
+  what's left), Teamwork (green, 30 min off every job), Master's Touch (gold, 3 h off his job). Used only while on
+  a job, then rests 24 h (gold 48 h). Server: 0041_builder_abilities.sql, use_builder_ability().
+- The platform's look follows the locker room's level (js/core/plot-themes.js, tools/cut-themes.py).

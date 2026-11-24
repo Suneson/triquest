@@ -22,7 +22,7 @@ import {
   roomArt, ROOM_SIZE, SPORT_OF, tileToPct, liftPctAt, pctToTile, boxCorners, footprint, canPlace, placeablesFor, placeableById, orient, turned,
   resolvePlacements, ROOM_GEOMETRY, firstFree, displaySlots,
 } from '../core/placement.js';
-import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf, setPlotMode, plotMode } from '../core/diorama.js';
+import { STAGE_ROOMS, stageGeom, roomPlacement, roomPctToWorld, worldToRoomPct, clampView, homeView, minZoom, maxZoom, envFor, FLOOR_OF, towerPieces, slabOf, setPlotMode, plotMode, setPlotLevel } from '../core/diorama.js';
 import { expandedSize, EXPANDED_ART, bigArt, midArt, needsFull, tapedRoom } from '../core/expansions.js';
 import { ROOM32 } from '../core/room32-art.js';
 import { STAMINA } from '../core/stamina.js';
@@ -36,7 +36,7 @@ import { loadLook, ownedIds } from './wardrobe-view.js';
 import { modelFor, clipsFor, skinTint, eyeColour, gearFor, hairColour } from '../core/wardrobe.js';
 import { tierFor, TREADMILL_BANDS } from '../core/placement.js';
 import { floorGrid, entryTile, besideItem, freeByDistance } from '../core/walk.js';
-import { builderId } from '../core/builders.js';
+import { builderId, builderById } from '../core/builders.js';
 import { mountWalker } from './walker.js';
 import { fitOf } from '../core/item-fit.js';
 import { sceneFor, propById } from '../core/scenes.js';
@@ -251,6 +251,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <div class="dg-menu" data-dg-menu hidden>
       <h3 class="dg-menu-name" data-dg-menu-name></h3>
       <div class="dg-menu-btns">
+        <button class="dg-sq" data-dg-info hidden><span class="dg-sq-i" aria-hidden="true">i</span><span>${esc(t('crewInfo.info'))}</span></button>
         <button class="dg-sq" data-dg-open hidden><img alt="" width="64" height="64" draggable="false"><span></span><b class="dg-sq-n"></b></button>
         <button class="dg-sq" data-dg-up hidden><img src="icons/Builders/face-blue.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('jobs.upgrade'))}</span><b class="dg-sq-n"></b></button>
         <button class="dg-sq" data-dg-rot hidden aria-label="${esc(t('cp.rotate'))}"><img src="icons/UI/rotate.webp" alt="" width="64" height="64" draggable="false"><span>${esc(t('cp.menu.rotate'))}</span></button>
@@ -505,6 +506,9 @@ export function wireDiorama(root, ctx) {
   let placements = resolvePlacements(stageLayout(), items, savedPlacements());
   if (view.sel && placements[view.sel]?.room !== room) view.sel = null;
   const [rw, rh] = ROOM_SIZE[geom];
+  // the platform's theme follows the hall's level (?theme=N shows level N's, to compare them)
+  const themeQ = Number(new URLSearchParams(location.search).get('theme'));
+  setPlotLevel(themeQ || buildingLevel(HALL));
   const env = envFor(room, geom);
   stage.env = env;
   const M = roomPlacement(geom, env);
@@ -719,6 +723,14 @@ export function wireDiorama(root, ctx) {
    * they're upgrading and keeps walking round it till the job's done. The locker room's builder walks
    * the platform. Only drawn by three.js.
    */
+  // the middle of what a builder's working on, in tiles (the hall's: the middle of the floor)
+  const workMid = (target) => {
+    if (target === HALL) { const g = gridFor(room); return [g.cols / 2, g.rows / 2]; }
+    const it = itemAt(target); const p = placements[target];
+    if (!it || !p) return null;
+    const fp = footprint(it, p.u, p.v);
+    return [fp.reduce((s, [a]) => s + a, 0) / fp.length + 0.5, fp.reduce((s, [, b]) => s + b, 0) / fp.length + 0.5];
+  };
   const ringOf = (id) => {
     const it = itemAt(id); const p = placements[id];
     if (!it || !p) return [];
@@ -756,7 +768,7 @@ export function wireDiorama(root, ctx) {
         ? () => freeByDistance(gridFor(room), g.cols / 2, g.rows / 2).slice(0, 60)
         : () => ringOf(target);
       const w = mountWalker(worldEl.querySelector('.dg-items'), {
-        at: start, tile: tileVec(), char, still: reduced(), body, around,
+        at: start, tile: tileVec(), char, still: reduced(), body, around, workAt: () => workMid(target),
         toPx: (u, v) => toWorld_(geom, ...Object.values(tileToPct(geom, u, v))),
         grid: () => gridFor(room),
       });
@@ -856,6 +868,11 @@ export function wireDiorama(root, ctx) {
       if (chosen) {
         menu.querySelector('[data-dg-menu-name]').textContent = itemName(chosen.id);
         menu.querySelector('[data-dg-rot]').hidden = !chosen.faces;
+        // a builder's hut: the builder's info sheet (who they are, their ability)
+        const infoBtn = menu.querySelector('[data-dg-info]');
+        const crewWho = builderById(chosen.id)?.who;
+        infoBtn.hidden = !crewWho;
+        if (crewWho) infoBtn.setAttribute('aria-label', t('crewInfo.infoAria', { who: t(`jobs.who.${crewWho}`) }));
         const upBtn = menu.querySelector('[data-dg-up]');
         upBtn.hidden = !isTarget(chosen.id);
         if (isTarget(chosen.id)) {
@@ -1284,6 +1301,11 @@ export function wireDiorama(root, ctx) {
   worldEl.onclick = (e) => { const it = e.target.closest('[data-item]'); if (it && e.detail === 0) select(it.dataset.item); };
 
   root.querySelector('[data-dg-open]').onclick = (e) => { e.stopPropagation(); haptic('tick'); openItem(view.sel && itemAt(view.sel)); };
+  root.querySelector('[data-dg-info]').onclick = (e) => {
+    e.stopPropagation(); haptic('tick');
+    const who = view.sel && builderById(view.sel)?.who;
+    if (who) import('./builder-info.js').then((m) => m.openBuilderInfo(who));
+  };
   // a building's next level: the builders' upgrade sheet
   root.querySelector('[data-dg-up]').onclick = (e) => {
     e.stopPropagation(); haptic('tick');

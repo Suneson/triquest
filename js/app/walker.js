@@ -26,11 +26,13 @@ const SPOT = { u: 1.5, v: 1.5, y: 0, scale: 2.52 };
  *   still   reduced motion: it stands, never wanders, and goes to places at once
  *   onMove  (tile) → called each time it reaches a tile
  *   around  () → the tiles it wanders between (a builder round the building it's on); else anywhere near
+ *   workAt  () → the middle of what it's working on, [u, v] in tiles: at each stop it turns to it and plays
+ *           its `work` clip (kneeling at it) for a while, then walks on to another side
  *   body    the athlete drawn somewhere else (base-gl.js): { at(u, v), setYaw, play, dispose }; then
  *           there's no canvas of its own
  * @returns {{ goTo(tile, done), jump(tile), wander(on), tile(), model, dispose() }}
  */
-export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {}, body = null, around = null }) {
+export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, onMove = () => {}, body = null, around = null, workAt = null }) {
   const host = document.createElement('div');
   host.className = 'dg-walker';
   if (!body) layer.append(host);
@@ -71,7 +73,16 @@ export function mountWalker(layer, { at, toPx, tile, grid, char, still = false, 
       if (d > 1e-6) want = facing(du, dv);
       if (d <= step) {
         pos = [tu, tv]; path.shift(); onMove(here());
-        if (!path.length) { r3d.play('idle', { fade: 0.25 }); rest(); const cb = done; done = null; cb?.(); }
+        if (!path.length) {
+          const job = workAt?.();
+          if (job) {
+            // at work: face the building and kneel at it, longer than a rest
+            want = facing(job[0] - pos[0] - 0.5, job[1] - pos[1] - 0.5);
+            r3d.play('work', { fade: 0.3 });
+            restUntil = now + (6 + Math.random() * 6) * 1000;
+          } else { r3d.play('idle', { fade: 0.25 }); rest(); }
+          const cb = done; done = null; cb?.();
+        }
       } else pos = [pos[0] + (du / d) * step, pos[1] + (dv / d) * step];
       place();
     } else if (roam && now > restUntil) {

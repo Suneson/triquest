@@ -101,3 +101,42 @@ export const JOB_RULES = {
   hall: HALL,
   caps: Object.fromEntries(Object.entries(HALL_CAPS).map(([k, v]) => [String(k), v])),
 };
+
+// ---- the builders' abilities (docs/JOBS.md) ---------------------------------------------------------
+// Each builder has one active ability, used while they're on a job, then resting for `cooldown` hours.
+// It takes time off a running job (never past now): `cut` minutes off their own job, `share` of what's
+// left of it, or `all` minutes off every builder's job. The server holds the same (0041, ability_rules()).
+const MIN = 60e3;
+export const ABILITIES = {
+  blue: { id: 'rush', cut: 60, cooldown: 24 },          // Rush Job: an hour off his job
+  red: { id: 'overdrive', share: 0.25, cooldown: 24 },  // Overdrive: a quarter of what's left, off
+  green: { id: 'teamwork', all: 30, cooldown: 24 },     // Teamwork: half an hour off every job running
+  gold: { id: 'master', cut: 180, cooldown: 48 },       // Master's Touch: three hours off his job
+};
+/** When a builder can use their ability again (ms), from their uses ({ builder, used_at }); 0 = now. */
+export function abilityReadyAt(uses, who, now) {
+  const a = ABILITIES[who]; if (!a) return Infinity;
+  const last = Math.max(0, ...(uses || []).filter((u) => u?.builder === who).map((u) => at(u.used_at)));
+  const ready = last ? last + a.cooldown * HOUR : 0;
+  return ready > now ? ready : 0;
+}
+/** Can a builder use their ability now? null when they can, or why not: not_hired, idle, cooldown. */
+export function abilityWhyNot({ jobs, inventory, uses, who, now }) {
+  const b = BUILDERS.find((x) => x.who === who);
+  if (!b || !ABILITIES[who] || !hasBuilder(b, inventory)) return 'gear:not_hired';
+  if (!jobOf(jobs, who, now)) return 'gear:idle';
+  if (abilityReadyAt(uses, who, now)) return 'gear:cooldown';
+  return null;
+}
+/** The jobs after a builder's ability: the same rows, the ones it shortens with a new finishes_at. */
+export function useAbility(jobs, who, now) {
+  const a = ABILITIES[who]; const mine = jobOf(jobs, who, now);
+  return (jobs || []).map((j) => {
+    if (done(j, now)) return j;
+    let off = 0;
+    if (a.all) off = a.all * MIN;
+    else if (j === mine) off = a.cut ? a.cut * MIN : left(j, now) * a.share;
+    if (!off) return j;
+    return { ...j, finishes_at: new Date(Math.max(now, at(j.finishes_at) - off)).toISOString() };
+  });
+}

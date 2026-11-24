@@ -724,6 +724,9 @@ if (want('mechanic') || want('mechanics')) {
     const { rig, s } = rigOfSkin(own.skinned.obj, own.skinned.sk);
     if (Math.abs(s - 1) > 0.01) console.log(`  came ${s.toFixed(1)} times too small: scaled up`);
     for (const c of Object.values(own.clips)) if (c.hips) c.hips.values = c.hips.values.map((v) => v * s);
+    // the shared builder clip (Clips/Mechanic: kneeling at work), already at Mixamo's own size, if it hasn't one
+    const shared = clipsIn(path.join(SRC, 'Clips', 'Mechanic')).clips;
+    if (shared.work && !own.clips.work) own.clips.work = shared.work;
     rigs[colour] = rig;
     await writeChar(`mechanic-${colour}`, rig.mesh, rig.skin, rig, { base: fs.readFileSync(pngIn(at)) });
     await writeClips(`mechanic-${colour}-clips`, rig, own.clips);

@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { JOB_RULES, TARGETS } from '../js/core/jobs.js';
+import { JOB_RULES, TARGETS, ABILITIES, useAbility } from '../js/core/jobs.js';
 
 let PGlite = null;
 try { ({ PGlite } = await import('@electric-sql/pglite')); } catch { /* not installed */ }
@@ -97,4 +97,27 @@ test('the locker room caps the others: gear:hall_low', { skip }, async () => {
   await finishAll(db);
   await start(db, 'gel-stand', 'blue');
   assert.equal((await db.query(`select max(to_level) as n from public.builder_jobs where target = 'gel-stand'`)).rows[0].n, 3);
+});
+
+test('ability_rules() is ABILITIES', { skip }, async () => {
+  const db = await freshDb();
+  const r = (await db.query(`select public.ability_rules() as r`)).rows[0].r;
+  const mine = Object.fromEntries(Object.entries(ABILITIES).map(([who, { id, ...a }]) => [who, a]));
+  assert.deepEqual(r, mine);
+});
+
+test('a builder ability: only on a job, takes the time off, then rests', { skip }, async () => {
+  const db = await freshDb(200000);
+  await fails(db, `select public.use_builder_ability('blue')`, 'gear:idle');
+  await fails(db, `select public.use_builder_ability('red')`, 'gear:not_hired');
+  await start(db, 'gel-stand', 'blue');
+  const fin = async () => Date.parse((await db.query(`select finishes_at from public.builder_jobs where finishes_at > now()`)).rows[0].finishes_at);
+  const before = await fin();
+  await db.query(`select public.use_builder_ability('blue')`);
+  assert.ok(Math.abs(before - (await fin()) - ABILITIES.blue.cut * 60e3) < 2000);
+  await fails(db, `select public.use_builder_ability('blue')`, 'gear:cooldown');
+  // the client works it out the same way
+  const now = Date.now();
+  const job = { builder: 'red', target: 'x', started_at: new Date(now - 1e3).toISOString(), finishes_at: new Date(now + 4 * 3600e3).toISOString() };
+  assert.equal(Date.parse(useAbility([job], 'red', now)[0].finishes_at), now + 3 * 3600e3);
 });

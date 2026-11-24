@@ -51,3 +51,13 @@ button sits on the locker room's plate at the top of the base.
 
 tools/art-review.html lists every picture the base's items can show, to mark Keep / Repaint / Retire.
 Marks stay on the device; Copy list gives them as CSV.
+
+## The builders at work and their abilities (PR 130)
+
+- At each stop round the building, a builder turns to it and kneels at work (the `work` clip, Clips/Mechanic/
+  FixingItemOnKnees.fbx, added to every builder by tools/build-characters.mjs), then walks on (walker.js `workAt`).
+- A hut's menu has an Info button: builder-info.js, the builder in 3D in front of their hut, the job they're on,
+  and their active ability (jobs.js ABILITIES): Rush Job (blue, 1 h off his job), Overdrive (red, a quarter of
+  what's left), Teamwork (green, 30 min off every job), Master's Touch (gold, 3 h off his job). Used only while on
+  a job, then rests 24 h (gold 48 h). Server: 0041_builder_abilities.sql, use_builder_ability().
+- The platform's look follows the locker room's level (js/core/plot-themes.js, tools/cut-themes.py).

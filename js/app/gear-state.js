@@ -18,7 +18,7 @@ import { builderById, hasBuilder } from '../core/builders.js';
 import { stallItemById, stallFor, stallDay } from '../core/stall.js';
 import { weekOf, missionsToClaim, MISSION_RULES } from '../core/missions.js';
 import { addDays, todayISO } from '../core/dates.js';
-import { whyNot, startRow as jobRow } from '../core/jobs.js';
+import { whyNot, startRow as jobRow, abilityWhyNot, useAbility as useAbilityOn } from '../core/jobs.js';
 import { ISLAND_RULES, isIslandPiece, isStandSpot, islandRow, pieceState, standOf, startRow } from '../core/island.js';
 import { MARKET_RULES, marketIn, marketStock, marketCollect, isMarketSlot, marketNext, marketUpgrade } from '../core/markets.js';
 import { EXPANSION_RULES, expandedSize, nextExpansion } from '../core/expansions.js';
@@ -204,7 +204,7 @@ export async function refreshGear() {
     const t0 = Date.now();
     const ws = await c.rpc('workshop');
     const t1 = Date.now();
-    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex, il, sh, ss, st, sm, rc, bj] = await Promise.all([
+    const [inv, sp, bo, qc, wa, bp, pr, mc, mk, mx, mu, ex, il, sh, ss, st, sm, rc, bj, ab] = await Promise.all([
       c.from('user_gear').select('item_id, acquired_at'),
       c.from('coin_spends').select('id, item_id, coins, currency, created_at'),
       c.from('user_boosts').select('id, kind, started_at, expires_at, multiplier, until_next, workout_id'),
@@ -224,6 +224,7 @@ export async function refreshGear() {
       c.from('shop_moves').select('id, kind, spot, coins, day, at'),
       c.from('reward_chests').select('opened_at').not('opened_at', 'is', null),
       c.from('builder_jobs').select('id, builder, target, to_level, cost, started_at, finishes_at'),
+      c.from('builder_ability_uses').select('builder, used_at').order('used_at', { ascending: false }).limit(40),
     ]);
     const err = inv.error || sp.error || bo.error || qc.error || wa.error;
     if (err) throw err;
@@ -247,7 +248,9 @@ export async function refreshGear() {
       shops: sh.error ? [] : sh.data || [], shopsLive: !sh.error, shopSlots: ss.error ? [] : ss.data || [],
       shopStock: st.error ? [] : st.data || [], shopMoves: sm.error ? [] : sm.data || [], shopChests: rc.error ? [] : rc.data || [],
       // before 0039 is live nothing can be upgraded by a builder
-      builds: bj.error ? [] : bj.data || [], buildsLive: !bj.error };
+      builds: bj.error ? [] : bj.data || [], buildsLive: !bj.error,
+      // before 0041 is live the builders have no abilities
+      abilityUses: ab.error ? [] : ab.data || [], abilitiesLive: !ab.error };
     save(state);
     emit();
   } catch (e) {
@@ -346,6 +349,15 @@ function demoCall(fn, args) {
     s.wallet = { ...s.wallet, coins: s.wallet.coins - row.cost };
     listeners.forEach((f) => f(s));
     return { coins: 0 };
+  }
+  if (fn === 'use_builder_ability') {
+    const now = serverNow();
+    const why = abilityWhyNot({ jobs: s.builds || [], inventory: s.inventory, uses: s.abilityUses || [], who: args.p_builder, now });
+    if (why) throw new Error(why);
+    s.builds = useAbilityOn(s.builds || [], args.p_builder, now);
+    (s.abilityUses ||= []).unshift({ builder: args.p_builder, used_at: new Date(now).toISOString() });
+    listeners.forEach((f) => f(s));
+    return { ok: true };
   }
   if (fn === 'start_island_build') {
     const piece = args.p_piece;
@@ -486,6 +498,16 @@ export async function startBuild(target, builder) {
   if (isDemo()) return demoCall('start_builder_job', { p_target: target, p_builder: builder });
   await call('start_builder_job', { p_target: target, p_builder: builder });
   return { coins: 0 };
+}
+/** When each builder last used their ability: [{ builder, used_at }], newest first. */
+export const myAbilityUses = () => rawState().abilityUses || [];
+/** Can builders use their abilities here? (Demo, or a server with 0041 live.) */
+export const abilitiesOpen = () => isDemo() || (gearEnabled() && rawState().abilitiesLive === true && rawState().uid != null);
+/** A builder's ability (jobs.js ABILITIES). Throws with a `gear:` code. */
+export async function useBuilderAbility(who) {
+  if (isDemo()) return demoCall('use_builder_ability', { p_builder: who });
+  await call('use_builder_ability', { p_builder: who });
+  return { ok: true };
 }
 /** What's been rebuilt on the island, and its stall (island.js). */
 export const myIsland = () => rawState().island || [];

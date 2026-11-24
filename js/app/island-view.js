@@ -154,8 +154,9 @@ export function mountPlotClub(worldEl, front, club, { workouts, screen }) {
     if (!p) continue;
     if (!front.querySelector(`.dg-isl-tag[data-isl="${p}"]`)) {
       const tag = document.createElement('div');
-      tag.className = 'dg-isl-tag'; tag.dataset.isl = p; tag.setAttribute('aria-hidden', 'true');
-      tag.textContent = name(p);
+      // its name shows only when it's tapped, as plain outlined words over it (styles.css .is-plot)
+      tag.className = 'dg-isl-tag is-plot'; tag.dataset.isl = p; tag.setAttribute('aria-hidden', 'true');
+      tag.innerHTML = `<b>${esc(name(p))}</b>`;
       Object.assign(tag.style, { left: `${a.x + a.w / 2}px`, top: `${a.y + a.h * 0.08}px` });
       front.append(tag);
     }
@@ -166,12 +167,21 @@ export function mountPlotClub(worldEl, front, club, { workouts, screen }) {
     Object.assign(hit.style, { left: `${a.x}px`, top: `${a.y}px`, width: `${a.w}px`, height: `${a.h}px` });
     hit.addEventListener('click', (e) => {
       e.stopPropagation();
+      showTag(p);
       if (p === 'stadium') { haptic('tick'); import('./stadium-view.js').then((m) => m.openStadium()); } else tap(p);
     });
     worldEl.querySelector('.dg-items').before(hit);
   }
   import('./stadium-view.js').then((m) => m.warmupNotice()).catch(() => {});
   if (!mountPlotClub.watching) { mountPlotClub.watching = true; onGear(() => refreshBar()); }
+}
+
+// a club building's name over it for a few seconds after a tap (the other's goes)
+let tagTimer = 0;
+function showTag(p) {
+  ctx.front?.querySelectorAll('.dg-isl-tag.is-plot').forEach((el) => el.classList.toggle('is-shown', el.dataset.isl === p));
+  clearTimeout(tagTimer);
+  tagTimer = setTimeout(() => ctx.front?.querySelectorAll('.dg-isl-tag.is-plot.is-shown').forEach((el) => el.classList.remove('is-shown')), 3200);
 }
 
 function paint() {

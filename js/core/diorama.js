@@ -10,6 +10,7 @@
 import { ROOM_GEOMETRY, ROOM_SIZE } from './placement.js';
 import { ISLAND_ART } from './island-art.js';
 import { PLOT_ART } from './plot-art.js';
+import { PLOT_THEMES } from './plot-themes.js';
 
 export const ENV = {
   src: 'icons/Pixelart/NEW/env-ground-sky.webp',
@@ -88,12 +89,21 @@ const clubEnv = (geom) => {
 let plotOn = false;
 export const setPlotMode = (on) => { plotOn = !!on; };
 export const plotMode = () => plotOn;
+// the hall's level picks the platform's theme (plot-themes.js); a level with no theme of its own has the one below
+let plotLevel = 4;
+export const setPlotLevel = (n) => { plotLevel = Math.max(1, Number(n) || 1); };
+/** The platform for a level of the hall: its theme's picture, on the same floor as PLOT_ART.platform. */
+export function platformFor(level) {
+  for (let n = Math.min(level, 99); n >= 1; n--) if (PLOT_THEMES[n]) return { ...PLOT_ART.platform, ...PLOT_THEMES[n] };
+  return PLOT_ART.platform;
+}
 const PLOT_TILES = [...PLOT_ART.tiles].sort((p, q) => {
   const [cx, cy] = PLOT_ART.lawn.front;
   return Math.hypot(p.x + p.w / 2 - cx, p.y + p.h / 2 - cy) - Math.hypot(q.x + q.w / 2 - cx, q.y + q.h / 2 - cy);
 });
 const plotEnv = () => {
-  const { world, lawn, platform, club = [], tileW } = PLOT_ART;
+  const { world, lawn, club = [], tileW } = PLOT_ART;
+  const platform = platformFor(plotLevel);
   // the club's buildings stand behind the lawn, so they go first: the platform's walls are drawn over them
   // (the builders' huts are items now: builders.js, placement.js)
   const pieces = [...club.map((c) => c.pic), platform];

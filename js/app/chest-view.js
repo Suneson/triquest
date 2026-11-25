@@ -26,6 +26,14 @@ import { gearError } from './gear-state.js';
 import { CUR_ART } from './shop-ui.js';
 import { makeChestFx } from './chest-fx.js';
 import { bottleArt } from '../core/bottles.js';
+import { sfxBank } from './sfx-bank.js';
+
+// the chest screen's sounds (audio/chests/, chest-base-sounds.csv): every tap has one
+const sfx = sfxBank('audio/chests', {
+  'chest-land': 0.7, 'chest-wiggle': 0.65, 'chest-spin': 0.6, 'chest-spinup': 0.7, 'chest-burst': 0.75, 'chest-burst-big': 0.8,
+  'reward-coins': 0.55, 'reward-carbs': 0.55, 'reward-bottles': 0.55, 'reward-collect': 0.5,
+});
+const BIG_BURST = new Set(['epic', 'legendary', 'mythic']);
 
 export const TIER_COLOR = { common: '#E6D7BD', uncommon: '#4CC38A', rare: '#5B9BFF', epic: '#B57BFF', legendary: '#FFC94A', mythic: '#6FF0FF' };
 const ENABLED = TIERS.filter((x) => CHEST_RULES.enabled[x]);
@@ -45,7 +53,6 @@ export function alphaVideo() {
   return !(ios || safari);
 }
 
-const soundOn = () => !!store.getSettings()?.sound;
 const workoutOf = (c) => (c.workout_id ? store.getWorkouts().find((w) => w.id === c.workout_id) : null);
 const tierName = (tier) => t(`chest.tier.${tier}`);
 const boxName = (tier) => t(`chest.box.${tier}`);
@@ -186,8 +193,10 @@ function shower(stage, from, to, src, n = 14) {
   }
 }
 
-/** How long the build-up before the burst runs, by tier: the rarer, the longer the wait (ms). */
-const CHARGE_MS = { common: 480, uncommon: 600, rare: 760, epic: 960, legendary: 1200, mythic: 1450 };
+/** How long the last spin-up runs before the burst, by tier: the bigger the chest, the longer (ms). */
+const CHARGE_MS = { common: 1100, uncommon: 1300, rare: 1550, epic: 1800, legendary: 2150, mythic: 2600 };
+/** How hard it spins up and how flat the speed squashes it, by tier (0-1). */
+const SPIN_BIG = { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.6, legendary: 0.8, mythic: 1 };
 /** How big the burst is, by tier. */
 const BURST = { common: 0.8, uncommon: 1, rare: 1.2, epic: 1.45, legendary: 1.8, mythic: 2.1 };
 /** Taps it takes to break a chest open. */
@@ -218,12 +227,12 @@ export function openChestModal(chest, { queue = [] } = {}) {
   let opened = null;
   let fx = null;
   const timers = [];
-  // the sound is made ready now, inside the tap that opened this, so the third tap can start it
-  const audio = soundOn() ? Object.assign(new Audio(art.mp3), { preload: 'auto' }) : null;
-  audio?.load();
+  // the sounds are made ready now, inside the tap that opened this
+  sfx.warm();
+  let riser = null;
   const root = openLayer('chest', {
     className: 'cx-layer', instant: true, reuse: false,
-    onClose: () => { audio?.pause(); fx?.stop(); c3d?.dispose(); timers.forEach(clearTimeout); },
+    onClose: () => { riser?.stop(); fx?.stop(); c3d?.dispose(); timers.forEach(clearTimeout); },
   });
   root.innerHTML = `<div class="cx tier-${chest.tier}${calm ? ' is-calm' : ''}" role="dialog" aria-modal="true" aria-labelledby="cx-title" style="--tc:${color}">
     <div class="cx-bg" aria-hidden="true"><i class="cx-rays"></i><i class="cx-glow"></i><i class="cx-flash"></i></div>
@@ -265,7 +274,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
   c3d?.ready.then((ok) => {
     if (!ok || !stage.isConnected) return;
     has3d = true; stage.classList.add('has-3d');
-    if (phase === 'shut' && !taps) c3d.drop(); else if (phase !== 'shut') c3d.open(true);
+    if (phase === 'shut' && !taps) { c3d.drop(); sfx.play('chest-land', { delay: 0.38 }); } else if (phase !== 'shut') c3d.open(true);
   });
   // a point of the chest, in the stage's px (where the sparks come from): dy up from its middle, in its heights
   const mid = (dy = 0) => {
@@ -301,6 +310,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     openStill.hidden = false; wiggle.classList.add('is-ended');
     box.classList.remove('is-pop'); void box.offsetWidth; box.classList.add('is-burst');
     if (has3d) c3d.open();
+    sfx.play(BIG_BURST.has(chest.tier) ? 'chest-burst-big' : 'chest-burst');
     const [x, y] = mid(-0.05);
     fx.burst(x, y, BURST[chest.tier] || 1);
     haptic(['epic', 'legendary', 'mythic'].includes(chest.tier) ? 'levelUp' : 'record');
@@ -308,16 +318,16 @@ export function openChestModal(chest, { queue = [] } = {}) {
   };
   const play = () => {
     phase = 'play';
-    audio?.play().catch(() => {});
     if (calm) { burst(); return; }
-    const ms = CHARGE_MS[chest.tier] || 700;
+    const ms = CHARGE_MS[chest.tier] || 1300;
+    riser = sfx.play('chest-spinup', { end: ms / 1000 });
     stage.style.setProperty('--charge-ms', `${ms}ms`);
     stage.classList.add('is-charging');
-    if (has3d) c3d.charge(ms);
+    if (has3d) c3d.charge(ms, SPIN_BIG[chest.tier] ?? 0.4);
     const [x, y] = mid();
     fx.charge(x, y, ms);
-    // the shakes quicken: a tick at a half and three quarters of the wait
-    later(() => haptic('tick'), ms * 0.5); later(() => haptic('tick'), ms * 0.78);
+    // the spin quickens: ticks closer and closer together
+    [0.35, 0.58, 0.74, 0.85, 0.93].forEach((k) => later(() => haptic('tick'), ms * k));
     later(burst, ms);
   };
 
@@ -331,8 +341,8 @@ export function openChestModal(chest, { queue = [] } = {}) {
     phase = 'arming';
     pips.hidden = true;
     hint.textContent = '';
-    if (has3d) await new Promise((res) => later(res, 640));   // its last flip lands
-    else if (!calm) await settle(wiggle, 'animationend', 450);
+    if (has3d) { play(); return; }   // the third tap is the spin-up itself
+    if (!calm) await settle(wiggle, 'animationend', 450);
     if (phase !== 'arming') return;
     box.classList.add('is-pop');
     squash.style.removeProperty('--sq');
@@ -350,7 +360,8 @@ export function openChestModal(chest, { queue = [] } = {}) {
     void wiggle.offsetWidth; // restart the wiggle
     wiggle.classList.add('is-hit');
     stage.style.setProperty('--lit', String(taps / TAPS));
-    if (has3d) c3d.tap(taps);
+    if (has3d && taps < TAPS) c3d.tap(taps);
+    if (taps < TAPS) sfx.play(taps === 1 ? 'chest-wiggle' : 'chest-spin');
     const [x, y] = mid(-0.2);
     fx.puff(x, y, 6 + taps * 4);
     haptic('tick');
@@ -373,6 +384,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     tween(el.querySelector('.cx-total'), r.base + r.bonus, 900);
     later(() => el.classList.add('has-bonus'), 520);
     shower(stage, box, el.querySelector('.cx-ico'), CUR_ART[cur]);
+    sfx.play(cur === 'coins' ? 'reward-coins' : 'reward-carbs');
     const [x, y] = mid(-0.15);
     fx.burst(x, y, 0.45);
     haptic('tick');
@@ -394,6 +406,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
     const el = loot.lastElementChild;
     if (quick) { el.classList.add('is-in'); return; }
     requestAnimationFrame(() => el.classList.add('is-in'));
+    sfx.play('reward-bottles');
     const [x, y] = mid(-0.15);
     fx.burst(x, y, 0.6);
     haptic('record');
@@ -421,7 +434,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
   const skip = async () => {
     if (phase === 'done') return;
     timers.forEach(clearTimeout);
-    audio?.pause();
+    riser?.stop();
     phase = 'play';
     pips.hidden = true;
     squash.style.removeProperty('--sq');
@@ -436,6 +449,7 @@ export function openChestModal(chest, { queue = [] } = {}) {
   root.addEventListener('click', (e) => {
     if (e.target.closest('[data-cx-skip]')) { skip(); return; }
     if (e.target.closest('[data-cx-collect]')) {
+      sfx.play('reward-collect');
       closeLayer(root);
       if (queue.length) setTimeout(() => openChestModal(queue.shift(), { queue }), 120);
       return;

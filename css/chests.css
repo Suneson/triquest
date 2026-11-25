@@ -241,7 +241,7 @@ body.rm .cx-fx { display: none; }
 .cx-white { position: absolute; inset: 0; z-index: 4; background: #fff; opacity: 0; pointer-events: none; }
 .cx.has-3d.is-charging .cx-white { animation: cx-white-in var(--charge-ms, 700ms) ease-in both; }
 .cx.has-3d.is-burst .cx-white { animation: cx-white-out 560ms ease-out both; }
-@keyframes cx-white-in { 0%, 50% { opacity: 0; } 100% { opacity: .95; } }
+@keyframes cx-white-in { 0%, 58% { opacity: 0; } 100% { opacity: .95; } }
 @keyframes cx-white-out { 0%, 15% { opacity: .95; } 100% { opacity: 0; } }
 
 /* ---- bottles in a chest (0042): one row, each bottle popping onto it in turn ---- */

@@ -14,6 +14,7 @@ import * as store from './store.js';
 import * as C from '../core/coffee-shop.js';
 import * as sfx from './gel-sounds.js';
 import { mountCustomer } from './coffee3d.js';
+import { isChestAdmin } from './chests-state.js';
 
 const ART = 'icons/Coffee';
 const KEY = 'coffeeShop';
@@ -77,6 +78,12 @@ function load() {
   return { ...s, level: buildingLevel('coffee-shop'), open: !!s.open };
 }
 const save = (s) => store.setSetting(KEY, s);
+/** Admin, for testing: every builder can have a coffee again and today's boss count starts over. */
+export function resetCoffeeForTesting() {
+  const s = { ...(store.getSettings()[KEY] || {}) };
+  delete s.builders; delete s.day;
+  save(s);
+}
 
 /** The coffee shop's level, as the base draws it. */
 export const shopLevel = () => buildingLevel('coffee-shop');
@@ -108,6 +115,7 @@ export function openCoffeeShop({ level = null } = {}) {
       <button class="cf-x" data-cf-back aria-label="${esc(t('coffee.close'))}">×</button>
       <h2>${esc(t('coffee.title'))} <small data-cf-lvl>${esc(t('coffee.level', { n: st.level }))}</small></h2>
       ${pinned ? '' : `<button class="cf-up" data-cf-up>${esc(t('jobs.upgrade'))}</button>`}
+      ${isChestAdmin() ? `<button class="cf-reset" data-cf-reset aria-label="${esc(t('coffee.adminReset'))}" title="${esc(t('coffee.adminReset'))}">↺</button>` : ''}
       <span class="cf-coins" title="${esc(t('coffee.preview'))}">${img('tip-jar')}<b class="data-num">${Number(st.coins) || 0}</b></span>
     </header>
     <div class="cf-body"><div class="cf-track">
@@ -684,6 +692,10 @@ export function openCoffeeShop({ level = null } = {}) {
       sfx.play('ui-tap');
       if (screen > 0) { go(screen - 1); return; }
       closeLayer(root); return;
+    }
+    if (b('[data-cf-reset]')) {
+      if (order) { haptic('refuse'); sfx.play('refuse'); return; }
+      resetCoffeeForTesting(); st = { ...load(), level: st.level }; result = null; haptic('tick'); sfx.play('ui-tap'); drawCounter(); return;
     }
     if (b('[data-cf-sign]')) {
       if (order) { haptic('refuse'); sfx.play('refuse'); return; }   // not with someone at the counter

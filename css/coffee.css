@@ -226,3 +226,6 @@
   .cf-guide.is-drag .cf-hand { animation: none; left: var(--x1); top: var(--y1); }
   .cf-guide.is-tap .cf-hand, .cf-guide-ring, .cf-guide-line line { animation: none; }
 }
+
+/* admin only: reset the builders' coffee and today's customers (testing) */
+.cf-reset { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 2px dashed rgba(241, 236, 225, .6); background: rgba(0, 0, 0, .2); color: #F1ECE1; font: 900 18px/1 inherit; cursor: pointer; }

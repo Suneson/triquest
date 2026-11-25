@@ -109,11 +109,11 @@
 .cf-cup { transform: translate(-50%, -100%); width: auto; transition: left .3s ease-out, top .3s ease-out; filter: drop-shadow(0 1cqw .8cqw rgba(0,0,0,.25)); z-index: 2; }
 .cf-cup.is-held { transition: none; z-index: 6; transform: translate(-50%, -100%) scale(1.05); }
 .cf-cup.is-served { transition: top .45s ease-in, opacity .45s ease-in, transform .45s ease-in; top: -10% !important; opacity: 0; transform: translate(-50%, -100%) scale(.7); }
-.cf-carton { height: 12cqw; width: auto; transform: translate(-50%, -100%) rotate(var(--rot, 0deg)); transform-origin: 50% 30%; filter: drop-shadow(0 1cqw 1cqw rgba(0,0,0,.25)); transition: transform .15s; }
+.cf-carton { height: 9.5cqw; width: auto; transform: translate(-50%, -100%) rotate(var(--rot, 0deg)); transform-origin: 50% 30%; filter: drop-shadow(0 1cqw 1cqw rgba(0,0,0,.25)); transition: transform .15s; }
 .cf-carton.is-now { animation: cf-bob 1.1s ease-in-out infinite; }
 .cf-carton.is-held { animation: none; z-index: 6; }
 @keyframes cf-bob { 50% { transform: translate(-50%, -104%); } }
-.cf-pitcher { height: 15cqw; width: auto; transform: translate(-50%, -100%) rotate(var(--rot, 0deg)); transform-origin: 40% 40%; filter: drop-shadow(0 1cqw 1cqw rgba(0,0,0,.25)); transition: transform .15s; z-index: 3; }
+.cf-pitcher { height: 13.5cqw; width: auto; transform: translate(-50%, -100%) rotate(var(--rot, 0deg)); transform-origin: 40% 40%; filter: drop-shadow(0 1cqw 1cqw rgba(0,0,0,.25)); transition: transform .15s; z-index: 3; }
 .cf-pitcher.is-held { z-index: 6; }
 .cf-flow { display: none; transform: translateX(-50%); background: 50% 0 / 100% 100% no-repeat; z-index: 4; pointer-events: none; }
 .cf-flow.is-on { display: block; }
@@ -152,4 +152,55 @@
 @media (prefers-reduced-motion: reduce) {
   .cf-track, .cf-pf, .cf-cup { transition: none; }
   .cf-steps i.is-now, .cf-carton.is-now, .cf-syrup.is-now, .cf-serve-hint img, .cf-steam, .cf-grounds.is-on { animation: none; }
+}
+
+/* the long press on a picture never opens the phone's image menu */
+.cf img, .gs img { -webkit-touch-callout: none; -webkit-user-drag: none; }
+
+/* the thing to use next: a strong orange outline that pulses (the same as the gel stand, gels.css gs-glow) */
+.cf .is-hint { animation: cf-glow 1.2s ease-in-out infinite; }
+.cf .cf-carton.is-now.is-hint, .cf .cf-syrup.is-now.is-hint { animation: cf-bob 1.1s ease-in-out infinite, cf-glow 1.2s ease-in-out infinite; }
+.cf .is-held.is-hint, .cf-carton.is-held.is-hint { animation: none; }
+@keyframes cf-glow { 0%, 100% { filter: drop-shadow(0 0 .22cqw #FF7A00) drop-shadow(0 0 .22cqw #FF7A00) drop-shadow(0 0 .4cqw rgba(255, 140, 20, .5)); }
+  50% { filter: drop-shadow(0 0 .3cqw #FF7A00) drop-shadow(0 0 .3cqw #FF7A00) drop-shadow(0 0 1.6cqw rgba(255, 150, 30, .95)); } }
+
+/* the grind: a close look at the basket, the grounds rising to the dashed line */
+.cf-lens { width: 30cqw; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; overflow: hidden; z-index: 6; pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, #FBF4EA, #E3D6C4); box-shadow: 0 0 0 1.3cqw #C9CED3, 0 0 0 1.7cqw #6B4A33, 0 1.5cqw 3cqw rgba(0,0,0,.35); }
+.cf-lens-pf { position: absolute; left: 50%; top: 58%; width: 58cqw; max-width: none; transform: translate(-72%, -38%); }
+.cf-lens-mound { position: absolute; left: 50%; top: 44%; width: 20cqw; transform: translate(-50%, calc((1 - min(var(--f), 1.35)) * 70% + 0%)); transform-origin: 50% 100%;
+  clip-path: inset(0 0 calc(100% - 100% * min(1, var(--f) * 1.4)) 0); transition: transform .08s linear; }
+.cf-lens-line { position: absolute; left: 14%; right: 14%; top: 44%; border-top: .7cqw dashed #fff; filter: drop-shadow(0 0 .4cqw rgba(0,0,0,.45)); }
+.cf-holdbtn { transform: translate(-50%, -50%); z-index: 7; padding: 1.6cqw 7cqw; border: .7cqw solid #2B5A1E; border-radius: 3.5cqw; cursor: pointer;
+  background: linear-gradient(#B4DE6A, #7DBA3C); color: #fff; font: 900 5cqw/1 inherit; text-shadow: 0 .4cqw 0 #2B5A1E; box-shadow: 0 1cqw 0 #3F7A2A, 0 1.6cqw 2cqw rgba(0,0,0,.3);
+  touch-action: none; -webkit-tap-highlight-color: transparent; }
+.cf-holdbtn.is-down { transform: translate(-50%, calc(-50% + .8cqw)); box-shadow: 0 .2cqw 0 #3F7A2A, 0 .6cqw 1cqw rgba(0,0,0,.3); }
+
+/* the machine's green button: tap to start the shot, tap again to stop it */
+.cf-brewbtn { width: 10cqw; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 7; padding: 0; border: .7cqw solid #F1ECE1; border-radius: 50%; cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, #9BE07A, #3FA33A 60%, #2A7A28); box-shadow: 0 0 0 .5cqw #2A5A26, 0 .8cqw 1.4cqw rgba(0,0,0,.35); -webkit-tap-highlight-color: transparent; }
+.cf-brewbtn i { position: absolute; inset: 28%; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #fff; clip-path: polygon(50% 0, 100% 60%, 85% 100%, 15% 100%, 0 60%); }
+.cf-brewbtn.is-on { background: radial-gradient(circle at 35% 30%, #FF9A8A, #D9483A 60%, #A3271E); box-shadow: 0 0 0 .5cqw #7A1F18, 0 .3cqw .6cqw rgba(0,0,0,.35); }
+.cf-brewbtn.is-on i { inset: 32%; border-radius: .8cqw; clip-path: none; }
+
+/* the hand that shows what to do (the first three times you make a drink) */
+.cf-guide { inset: 0; z-index: 8; pointer-events: none; }
+.cf-scene.is-acting .cf-guide { display: none; }
+.cf-guide-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cf-guide-line line { stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 2 12; filter: drop-shadow(0 0 3px rgba(90, 58, 34, .8)); animation: cf-ants .8s linear infinite; }
+@keyframes cf-ants { to { stroke-dashoffset: -14; } }
+.cf-hand { position: absolute; width: 11cqw; height: 11cqw; margin: -1cqw 0 0 -3.5cqw; filter: drop-shadow(0 .8cqw 1cqw rgba(0,0,0,.35)); }
+.cf-guide.is-drag .cf-hand { animation: cf-hand-drag 1.8s ease-in-out infinite; }
+@keyframes cf-hand-drag { 0%, 12% { left: var(--x0); top: var(--y0); opacity: 0; transform: scale(1.1); } 20% { opacity: 1; transform: scale(1); }
+  75% { left: var(--x1); top: var(--y1); opacity: 1; } 90%, 100% { left: var(--x1); top: var(--y1); opacity: 0; } }
+.cf-guide.is-tap .cf-hand { left: var(--x1); top: var(--y1); animation: cf-hand-tap 1s ease-in-out infinite; }
+.cf-guide.is-hold .cf-hand { animation-duration: 1.6s; }
+@keyframes cf-hand-tap { 0%, 100% { transform: translate(1cqw, 1cqw); } 45%, 60% { transform: translate(0, 0) scale(.92); } }
+.cf-guide-ring { position: absolute; left: var(--x1); top: var(--y1); width: 9cqw; height: 9cqw; margin: -4.5cqw 0 0 -4.5cqw; border-radius: 50%; border: .6cqw solid #fff; animation: cf-ring 1s ease-out infinite; }
+@keyframes cf-ring { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.4); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cf .is-hint, .cf .cf-carton.is-now.is-hint, .cf .cf-syrup.is-now.is-hint { animation: none; filter: drop-shadow(0 0 .25cqw #FF7A00) drop-shadow(0 0 .25cqw #FF7A00); }
+  .cf-guide.is-drag .cf-hand { animation: none; left: var(--x1); top: var(--y1); }
+  .cf-guide.is-tap .cf-hand, .cf-guide-ring, .cf-guide-line line { animation: none; }
 }

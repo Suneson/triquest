@@ -131,7 +131,7 @@
 .gs-jar-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%;
   filter: drop-shadow(0 .8cqw .6cqw rgba(10,18,40,.35)); transition: opacity .15s, filter .15s; }
 .gs-jar .gs-stockbar { top: calc(100% + .6cqw); bottom: auto; left: 8%; right: 22%; }
-.gs-jar.is-now .gs-jar-art { filter: drop-shadow(0 0 1.4cqw #fff) drop-shadow(0 0 .7cqw var(--sky)); }
+.gs-jar.is-now .gs-jar-art { animation: gs-glow 1.2s ease-in-out infinite; }
 .gs-jar.is-pouring .gs-jar-art { animation: gs-tap .3s ease-out; }
 .gs-jar.is-short .gs-jar-art { opacity: .5; filter: grayscale(.8); }
 
@@ -180,7 +180,7 @@
 /* its liquid, over its picture (multiply, so the glass's lines show through): the inside is about 13-90% across, 8-94% down */
 .gs-gliq { position: absolute; left: 14%; right: 10%; bottom: 6%; height: calc(var(--g) * 70%); background: var(--c); mix-blend-mode: multiply;
   clip-path: polygon(0 0, 100% 0, 96% 100%, 4% 100%); border-radius: 0 0 1.4cqw 1.4cqw; }
-.gs-glass.is-now .gs-glass-art { filter: drop-shadow(0 0 1.2cqw #fff) drop-shadow(0 0 .6cqw var(--sky)); }
+.gs-glass.is-now .gs-glass-art { animation: gs-glow 1.2s ease-in-out infinite; }
 
 .gs-jug { position: absolute; left: 36.5%; top: 41.2%; width: 22%; aspect-ratio: 307 / 320; z-index: 4; }
 .gs-jug > img:first-child { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1.2cqw 1cqw rgba(22,38,77,.25)); }
@@ -288,8 +288,10 @@
 .gs-stars img { width: 100%; height: 100%; object-fit: contain; }
 .gs-carbs.is-on { animation: gs-shake .35s ease-in-out; }
 
-@keyframes gs-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); } 50% { filter: drop-shadow(0 0 1.4cqw #fff) drop-shadow(0 0 .7cqw #5BB4E5); } }
-@keyframes gs-ring-glow { 0%, 100% { box-shadow: 0 0 0 .5cqw rgba(255,255,255,.5); } 50% { box-shadow: 0 0 0 .9cqw #fff, 0 0 2.4cqw .6cqw #5BB4E5; } }
+/* the thing to use next: a strong orange outline that pulses (the same in the coffee shop, coffee.css) */
+@keyframes gs-glow { 0%, 100% { filter: drop-shadow(0 0 .22cqw #FF7A00) drop-shadow(0 0 .22cqw #FF7A00) drop-shadow(0 0 .4cqw rgba(255, 140, 20, .5)); }
+  50% { filter: drop-shadow(0 0 .3cqw #FF7A00) drop-shadow(0 0 .3cqw #FF7A00) drop-shadow(0 0 1.6cqw rgba(255, 150, 30, .95)); } }
+@keyframes gs-ring-glow { 0%, 100% { box-shadow: 0 0 0 .6cqw #FF7A00; } 50% { box-shadow: 0 0 0 .9cqw #FF7A00, 0 0 2.4cqw .6cqw rgba(255, 150, 30, .9); } }
 @keyframes gs-dock-in { 0% { opacity: 0; transform: translate(-50%, 20%) scale(.9); } 100% { opacity: 1; transform: translateX(-50%); } }
 @keyframes gs-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes gs-bag-in { 0% { opacity: 0; transform: translateY(12%) scale(.6); } 100% { opacity: 1; transform: none; } }

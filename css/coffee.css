@@ -105,7 +105,8 @@
 .cf-pf { width: 25cqw; height: auto; transform: translate(-72%, -38%); transition: left .25s ease-out, top .25s ease-out, transform .2s; filter: drop-shadow(0 1cqw 1cqw rgba(0,0,0,.3)); }
 .cf-pf.is-held { transition: none; transform: translate(-72%, -38%) scale(1.06); z-index: 5; }
 .cf-pf.is-locked { transform: translate(-72%, -38%) rotate(-4deg); }
-.cf-tamper { height: 12cqw; width: auto; transform: translate(-50%, calc(-100% + var(--p, 0) * 3cqw - 1cqw)); }
+.cf-tamper { height: 12cqw; width: auto; transform: translate(-50%, calc(-100% + var(--p, 0) * 3cqw - 1cqw)); pointer-events: auto !important; transition: left .2s ease-out, top .2s ease-out; z-index: 5; filter: drop-shadow(0 1cqw 1cqw rgba(0,0,0,.3)); }
+.cf-tamper.is-held { transition: none; z-index: 7; }
 .cf-cup { transform: translate(-50%, -100%); width: auto; transition: left .3s ease-out, top .3s ease-out; filter: drop-shadow(0 1cqw .8cqw rgba(0,0,0,.25)); z-index: 2; }
 .cf-cup.is-held { transition: none; z-index: 6; transform: translate(-50%, -100%) scale(1.05); }
 .cf-cup.is-served { transition: top .45s ease-in, opacity .45s ease-in, transform .45s ease-in; top: -10% !important; opacity: 0; transform: translate(-50%, -100%) scale(.7); }

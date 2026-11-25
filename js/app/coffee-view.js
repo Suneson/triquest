@@ -25,6 +25,8 @@ const GRINDER = { l: 11, r: 30, t: 20, b: 50 };       // hold it to grind
 const UNDER_GRINDER = { x: 20.5, y: 47.5 };           // the portafilter's basket, in the grinder's fork
 const MAT = { x: 21, y: 59.5 };                       // on the tamping mat
 const MAT_ZONE = { l: 3, r: 40, t: 52, b: 66 };
+const TAMPER_REST = { x: 8.5, y: 62.5 };              // the tamper waits on the mat's left end
+const TAMP_PRESS = 4.5;                               // % of the scene pushed down for a full press
 const GROUP = { x: 66, y: 39.8 };                     // locked in the group head
 const GROUP_ZONE = { l: 52, r: 82, t: 33, b: 50 };
 const SCALE = { x: 66.3, y: 47.8 };                   // the cup on the drip tray's scale (its foot)
@@ -204,7 +206,7 @@ export function openCoffeeShop({ level = null } = {}) {
   function guideFor(s) {
     switch (s?.kind) {
       case 'grind': return { at: HOLD_BTN, hold: true };
-      case 'tamp': return order.pf === 'mat' ? { at: { x: MAT.x, y: MAT.y - 4 }, hold: true } : { from: UNDER_GRINDER, to: MAT };
+      case 'tamp': return order.pf === 'mat' ? { from: { x: TAMPER_REST.x, y: TAMPER_REST.y - 6 }, to: { x: MAT.x, y: MAT.y - 2 } } : { from: UNDER_GRINDER, to: MAT };
       case 'lock': return { from: MAT, to: GROUP };
       case 'brew': return { at: BREW_BTN };
       case 'water': return { at: { x: SPOUT.x, y: SPOUT.y + 2 }, hold: true };
@@ -259,7 +261,7 @@ export function openCoffeeShop({ level = null } = {}) {
       ${order.fridge ? Object.entries(CARTONS).map(([k, p]) => img(k === 'milk' ? 'milk' : 'oat-milk', `cf-carton${s?.milk === k ? ' is-now is-hint' : ''}`, `left:${p.x}%;top:${p.y}%`).replace('<img', `<img data-cf-carton="${k}"`)).join('') : ''}
       ${grindUi}${brewUi}
       <img class="cf-pf${order.pf === 'group' ? ' is-locked' : ''}${hintPf ? ' is-hint' : ''}" data-cf-pf src="${ART}/${pfFile}.webp" alt="" draggable="false" style="left:${pfAt.x}%;top:${pfAt.y}%">
-      ${kind === 'tamp' && order.pf === 'mat' ? img('tamper', 'cf-tamper', `left:${MAT.x}%;top:${MAT.y}%;--p:${m.tamp}`) : ''}
+      ${kind === 'tamp' && order.pf === 'mat' ? `<img class="cf-tamper is-hint" data-cf-tamper src="${ART}/tamper.webp" alt="" draggable="false" style="left:${TAMPER_REST.x}%;top:${TAMPER_REST.y}%;--p:0">` : ''}
       ${cup}
       ${d.milk ? `<img class="cf-pitcher${kind === 'steam' || kind === 'pour' ? ' is-hint' : ''}" data-cf-pitcher src="${ART}/${pitcherFile}.webp" alt="" draggable="false" style="left:${SHELF.x}%;top:${SHELF.y}%">` : ''}
       <i class="cf-flow" data-cf-flow></i>
@@ -427,10 +429,36 @@ export function openCoffeeShop({ level = null } = {}) {
         if (!inside(q, MAT_ZONE)) return false;
         order.pf = 'mat'; sfx.play('put-down'); drawBar(); return true;
       } });
-    } else if (s.kind === 'tamp' && order.pf === 'mat' && inside(p, MAT_ZONE)) {
-      const tamper = barEl.querySelector('.cf-tamper');
-      g = hold(barEl, e, 'tamp', 'tamp', 0.75, { score: C.scoreTamp, fx: (on, v) => tamper?.style.setProperty('--p', v.toFixed(3)) });
-      const up = g.up; g.up = () => { up(); if (order.made.tamp) { sfx.play('seal-press', { gain: 0.6 }); } };
+    } else if (s.kind === 'tamp' && order.pf === 'mat' && e.target.closest('[data-cf-tamper]')) {
+      // pick the tamper up, bring it over the basket, and push it down: how far you push is how hard you tamp
+      const el = e.target.closest('[data-cf-tamper]');
+      const basket = { l: MAT.x - 9, r: MAT.x + 9, t: MAT.y - 16, b: MAT.y + 8 };
+      let over = false; let top = null;   // top: the finger's height when it came over the basket
+      el.classList.add('is-held'); sfx.play('pick-up');
+      const move = (ev) => {
+        const q = at(barEl, ev);
+        const nowOver = inside(q, basket);
+        // the press counts from the top of the coffee down (or from lower, if the finger came in lower)
+        const rim = MAT.y - 4;
+        if (nowOver && !over) top = Math.max(rim, q.y);
+        over = nowOver;
+        if (over) {
+          top = Math.max(rim, Math.min(top, q.y));   // lifting back up resets where the press starts
+          m.tamp = Math.max(m.tamp, Math.min(1, (q.y - top) / TAMP_PRESS));
+          el.style.left = `${MAT.x}%`; el.style.top = `${MAT.y}%`;
+          el.style.setProperty('--p', m.tamp.toFixed(3));
+          setMeter(barEl, m.tamp);
+        } else {
+          el.style.left = `${q.x}%`; el.style.top = `${q.y + 4}%`; el.style.setProperty('--p', '0');
+        }
+      };
+      move(e);
+      g = { move, up() {
+        el.classList.remove('is-held');
+        if (m.tamp > 0.02) { sfx.play('seal-press', { gain: 0.6 }); finishStep(C.scoreTamp(m.tamp), m.tamp, 0.75); return; }
+        el.style.left = `${TAMPER_REST.x}%`; el.style.top = `${TAMPER_REST.y}%`; el.style.setProperty('--p', '0');
+        sfx.play('put-down', { gain: 0.5 });
+      } };
     } else if (s.kind === 'lock' && e.target.closest('[data-cf-pf]')) {
       g = drag(barEl, pfEl, e, { drop: (q) => {
         if (!inside(q, GROUP_ZONE)) return false;

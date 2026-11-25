@@ -1,6 +1,6 @@
 // chest3d.js: a reward chest as 3D models for the chest screen (chest-view.js), opened the way the big chest
-// games do it: it drops in, each tap throws it into a flip, the last charge spins it up while the screen goes
-// white, and under the white the shut model gives way to its open parts: a box whose lid swings back on its
+// games do it: it drops in, the first tap wiggles it, the second spins it round, the third spins it up faster
+// and faster, squashed flat by the speed, while the screen goes white, and under the white the shut model gives way to its open parts: a box whose lid swings back on its
 // hinge, or an open bag that pops in, with the tier's light pouring out of it.
 //
 // Models (tools/build-chests.mjs): models/chests/<tier>.glb shut, and <tier>-box.glb + <tier>-lid.glb, or
@@ -9,14 +9,14 @@
 //
 //   const c = mountChest3d(host, tier, color)   c.ready → true once drawn (false: keep the stills)
 //   c.drop()        it falls in and lands
-//   c.tap(n)        tap n (1…3): a hop and a flip, a different one each time
-//   c.charge(ms)    it lifts and spins up, shaking harder, for ms
+//   c.tap(n)        tap 1 a wiggle, tap 2 a full turn round (upright: it never flips)
+//   c.charge(ms, big)  tap 3: it spins up faster and faster for ms, squashing from the speed (big 0-1: how hard)
 //   c.open(quick)   the shut chest gives way to the open one (quick: already open, no motion)
 //   c.dispose()
 
 import { loadThree, webglOk } from './runner3d.js';
 
-/** Per tier: the open parts, how far it's zoomed out, how wild its flips are, and for boxes the quarter turns
+/** Per tier: the open parts, how far it's zoomed out, how wild its moves are, and for boxes the quarter turns
  *  that face the box and the lid the shut chest's way. */
 export const CHESTS = {
   common: { open: 'bag', zoom: 1, wild: 0.8 },
@@ -194,8 +194,6 @@ export function mountChest3d(host, tier, color) {
     const lidA = spring(0, 170, 11);            // the lid's swing
     let shake = 0;                               // camera shake, dying away
     const land = (amount) => { sq.x = 1 - 0.28 * amount; sq.v = 0; shake = Math.max(shake, 0.6 * amount); };
-    // the three taps' flips: [axis, turns, hop]
-    const FLIPS = [['y', 1, 0.45], ['z', -1, 0.6], ['x', 1, 0.75]];
     let lit = 0; let litOut = 0;
     const jitter = new THREE.Vector3();
     const resize = () => {
@@ -221,26 +219,37 @@ export function mountChest3d(host, tier, color) {
           if (k >= 1 && !act.landed) { act.landed = true; land(1.1); }
           break;
         }
-        case 'flip': {
-          const [axis, turns, hop] = FLIPS[(act.n - 1) % 3];
-          const dur = 0.5 + 0.06 * w;
+        case 'wiggle': {
+          // tap 1: a hard wiggle on the spot, side to side, dying away
+          const k = clamp01(t / 0.55);
+          const amp = (1 - k) * (1 - k) * 0.32 * w;
+          rz = Math.sin(k * Math.PI * 7) * amp;
+          ry = Math.sin(k * Math.PI * 5 + 0.6) * amp * 0.5;
+          y = 0.08 * w * Math.sin(Math.min(1, k * 3) * Math.PI);
+          if (!act.landed) { act.landed = true; sq.x = 0.86; sq.v = 0; }
+          break;
+        }
+        case 'spin': {
+          // tap 2: a full turn round, upright (it never flips), with a little hop
+          const dur = 0.55 + 0.05 * w;
           const k = clamp01(t / dur);
-          y = 4 * hop * w * k * (1 - k);
-          const a = easeInOut(k) * Math.PI * 2 * turns * (act.n === 3 && w > 1.1 ? 2 : 1);
-          if (axis === 'x') rx = a; else if (axis === 'y') ry = a; else rz = a;
-          if (k >= 1 && !act.landed) { act.landed = true; land(0.7 + 0.2 * act.n); }
+          y = 4 * 0.3 * w * k * (1 - k);
+          ry = easeInOut(k) * Math.PI * 2;
+          if (k >= 1 && !act.landed) { act.landed = true; land(0.8); }
           break;
         }
         case 'charge': {
+          // tap 3: spinning round faster and faster till the white; the speed squashes it flat and wide, and the
+          // bigger the chest the faster, flatter and longer it goes
           const k = clamp01(t / act.s);
-          y = 0.28 * easeOut(k);
-          // spinning up, shaking harder
-          act.spin = (act.spin || 0) + dt * (2 + 26 * k * k) * w;
+          const big = act.big;
+          y = (0.18 + 0.12 * big) * easeOut(Math.min(1, k * 2.5));
+          act.spin = (act.spin || 0) + dt * (3 + (34 + 30 * big) * k * k * k);
           ry = act.spin;
-          const j = 0.02 + 0.12 * k * k;
-          rx = Math.sin(now * 0.09) * j; rz = Math.cos(now * 0.11) * j;
-          sq.to = 1 + 0.08 * k;
-          lit = 0.4 + 0.6 * k;
+          const j = 0.015 + 0.03 * k;
+          rx = Math.sin(now * 0.07) * j; rz = Math.cos(now * 0.09) * j;
+          sq.to = 1 - (0.18 + 0.2 * big) * k * k;
+          lit = 0.3 + 0.7 * k;
           break;
         }
         case 'open': {
@@ -277,8 +286,8 @@ export function mountChest3d(host, tier, color) {
       camera.position.copy(at).add(eye);
       if (shake > 0.002) camera.position.add(jitter.set((Math.random() - 0.5) * shake * 0.12, (Math.random() - 0.5) * shake * 0.12, 0));
       renderer.render(scene, camera);
-      // a finished drop or flip settles into the idle bob
-      if ((act.kind === 'drop' && t > 0.9) || (act.kind === 'flip' && t > 0.8)) act = { kind: 'idle', t0: now };
+      // a finished drop, wiggle or spin settles into the idle bob
+      if ((act.kind === 'drop' && t > 0.9) || (act.kind === 'wiggle' && t > 0.6) || (act.kind === 'spin' && t > 0.8)) act = { kind: 'idle', t0: now };
     };
     raf = requestAnimationFrame(frame);
     host.append(canvas);
@@ -291,8 +300,8 @@ export function mountChest3d(host, tier, color) {
   return {
     ready,
     drop: () => start('drop'),
-    tap: (n) => start('flip', { n }),
-    charge: (ms) => start('charge', { s: ms / 1000 }),
+    tap: (n) => start(n === 1 ? 'wiggle' : 'spin', { n }),
+    charge: (ms, big = 0) => start('charge', { s: ms / 1000, big }),
     open: (quick = false) => { if (act.kind !== 'open') start('open', { quick }); },
     dispose() { gone = true; cancelAnimationFrame(raf); api?.dispose(); canvas.remove(); },
   };

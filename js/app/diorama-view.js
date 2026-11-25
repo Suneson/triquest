@@ -53,6 +53,12 @@ import { openTrophyDisplay, trophiesShown } from './trophy-display-view.js';
 import { currentUser } from './auth.js';
 import { haptic } from './haptics.js';
 import { playPlace, prefersReducedMotion } from './effects.js';
+import { sfxBank } from './sfx-bank.js';
+
+// moving things round the base (audio/base/, chest-base-sounds.csv): a heavy lift and a heavy drop; the old
+// synth blip stands in till the files are there
+const baseSfx = sfxBank('audio/base', { 'item-lift': 0.55, 'item-drop': 0.8, 'item-drop-small': 0.7, 'item-turn': 0.55, 'item-refuse': 0.5 });
+const dropSound = (it) => baseSfx.play(it && it.w * it.h >= 4 ? 'item-drop' : 'item-drop-small', {}, playPlace);
 import * as store from './store.js';
 import { boardCount, openMissionBoard, BOARD_ART } from './missions-view.js';
 import { mountRunner, webglOk, RUNNER_SPOT } from './runner3d.js';
@@ -179,19 +185,23 @@ function hud(ctx, avatarBtn) {
 }
 
 /**
- * The locker room's plate: its level (the hall's, from its builders' jobs: it caps every other
- * building, jobs.js HALL_CAPS) and its Upgrade button, or the builder on it and their clock.
+ * The locker room's upgrade orb in the row under the avatar (where the room expansions were): the platform's
+ * level (the hall's, from its builders' jobs: it caps every other building, jobs.js HALL_CAPS), or the builder
+ * on it and their clock. A tap opens the hall's upgrade sheet.
  */
-function hallPill() {
+function hallOrb() {
   const lvl = buildingLevel(HALL); const job = buildingJob(HALL);
-  return `<button class="dg-pill-name" data-action="open-inventory" aria-label="${esc(t('cp.lockerAria', { n: lvl }))}"><b>${esc(roomName('locker'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></button>
-    <button class="dg-pill-chip is-up${job ? ' is-job' : ''}" data-dg-hall aria-label="${esc(job ? t('jobs.hallBusyAria', { n: job.to }) : t('jobs.hallUpAria', { n: lvl }))}"><img src="${face(job?.who || 'blue')}" alt="" width="64" height="64" draggable="false"><b data-dg-hall-t>${esc(job ? timeLeft(job.left) : t('jobs.upgrade'))}</b></button>`;
+  const badge = job
+    ? `<b class="dg-orb-n is-job"><img src="${face(job.who || 'blue')}" alt="" width="64" height="64" draggable="false"><span data-dg-hall-t>${esc(timeLeft(job.left))}</span></b>`
+    : `<b class="dg-orb-n is-lv">${esc(t('loop.quad.lv', { n: lvl }))}</b>`;
+  return orb('navy', 'icons/UI/side/side-expand.webp',
+    `data-dg-hall aria-label="${esc(job ? t('jobs.hallBusyAria', { n: job.to }) : t('jobs.hallUpAria', { n: lvl }))}"`, badge);
 }
 
 /** The room's own plate: name and level, its trophies, and what's building for it. */
 function roomPill(room, ctx) {
   const lvl = levelOf(room, ctx);
-  if (room === 'locker') return `<div class="dg-pill" data-dg-hallpill>${hallPill()}</div>`;
+  if (room === 'locker') return '';   // its level and upgrade are on the hall orb (hallOrb)
   if (room === 'club') {
     return `<div class="dg-pill"><span class="dg-pill-name" aria-label="${esc(t('cp.roomAlt', { room: roomName('club'), n: lvl }))}"><b>${esc(roomName('club'))}</b><i>${t('loop.quad.lv', { n: lvl })}</i></span></div>`;
   }
@@ -263,8 +273,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     <div class="dg-row"${club ? ' hidden' : ''}>
       ${orb('navy', 'icons/UI/side/side-target.webp', `data-action="open-next" aria-label="${esc(t('loop.base.next'))}"`)}
       ${trophyOrb(room)}
-      ${orb('navy', 'icons/UI/side/side-expand.webp', `data-action="open-expansions" aria-label="${esc(t('cp.expand.aria'))}"`,
-        expansionSize(room) < 32 ? `<b class="dg-orb-n is-grow" aria-hidden="true">${expansionSize(room) * 2}²</b>` : '')}
+      <span class="dg-hall-slot" data-dg-hallslot>${hallOrb()}</span>
     </div>
     <div class="dg-side is-left">
       ${orb('gold', 'icons/Pixelart/GEAR/btn-shop.png', `data-action="open-gear" aria-label="${esc(t('gear.shop'))}"`, ready ? `<i class="pg-dot" aria-label="${esc(t('loop.ws.readyN', { n: ready }))}">${ready}</i>` : '')}
@@ -1100,6 +1109,8 @@ export function wireDiorama(root, ctx) {
     }
     if (el && !reduced()) { el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }
     haptic('select');
+    baseSfx.warm();
+    baseSfx.play('item-lift');
     say(t('cp.selHint', { name: itemName(id) }));
     el?.focus({ preventScroll: true });
   };
@@ -1123,19 +1134,19 @@ export function wireDiorama(root, ctx) {
     const g = worldEl.querySelector('.dg-cells');
     if (g) g.innerHTML = it ? footprint(it, u, v).map(([a, b]) => poly(boxCorners(geom, a, b), `dg-cell ${ok ? 'is-ok' : 'is-bad'}`)).join('') : '';
   };
-  const place = (id, to0) => {
+  const place = (id, to0, turn = false) => {
     const face = to0.face || placements[id]?.face;
     const to = face ? { ...to0, face } : to0;
     placements = { ...placements, [id]: to };
     savePlacement(id, to);
     haptic('place');
-    playPlace();
+    if (turn) baseSfx.play('item-turn', {}, playPlace); else dropSound(itemAt(id));
     draw();
     const el = worldEl.querySelector(`[data-item="${id}"]`);
     if (el && !reduced()) el.classList.add('landed');
     say(t('cp.placed', { name: itemName(id), room: roomName(room) }));
   };
-  const refuse = (reason) => { haptic('refuse'); say(t(`cp.why.${reason || 'bounds'}`)); };
+  const refuse = (reason) => { haptic('refuse'); baseSfx.play('item-refuse'); say(t(`cp.why.${reason || 'bounds'}`)); };
   const nudge = (dir) => {
     const id = view.sel; if (!id) return;
     const it = itemAt(id); const p = placements[id];
@@ -1324,7 +1335,7 @@ export function wireDiorama(root, ctx) {
     openUpgrade({ target: it.id, name: itemName(it.id), art: (n) => it.art({ ...artOpts, levels: { ...artOpts.levels, gels: n, coffee: n }, face: 'a' }) });
   };
   // the locker room's level: the hall's upgrade sheet
-  const hallEl = root.querySelector('[data-dg-hallpill]');
+  const hallEl = root.querySelector('[data-dg-hallslot]');
   if (hallEl) hallEl.onclick = (e) => {
     if (!e.target.closest('[data-dg-hall]')) return;
     e.stopPropagation(); haptic('tick');
@@ -1339,7 +1350,7 @@ export function wireDiorama(root, ctx) {
     placements = rest;
     view.sel = null;
     haptic('place');
-    playPlace();
+    baseSfx.play('item-lift', {}, playPlace);
     draw();
     say(t('cp.stashed', { name: itemName(id) }));
   };
@@ -1351,7 +1362,7 @@ export function wireDiorama(root, ctx) {
     const next = orient(placeableById(id), turned(itemAt(id).face, itemAt(id).sides));
     const c = canPlace(geom, room, next, p.u, p.v, placements);
     if (!c.ok) { refuse(c.reason); return; }
-    place(id, { room, u: p.u, v: p.v, face: next.face });
+    place(id, { room, u: p.u, v: p.v, face: next.face }, true);
     if (!reduced()) { rotBtn.classList.remove('spin'); void rotBtn.offsetWidth; rotBtn.classList.add('spin'); }
   };
 
@@ -1495,7 +1506,7 @@ export function wireDiorama(root, ctx) {
   // the gel stand went up a level: its new picture
   const onGels = () => {
     artOpts.levels.gels = standLevel(); artOpts.levels.coffee = shopLevel();
-    const hp = root.querySelector('[data-dg-hallpill]'); if (hp) hp.innerHTML = hallPill();
+    const hp = root.querySelector('[data-dg-hallslot]'); if (hp) hp.innerHTML = hallOrb();
     draw();
   };
   // a builder's job started or finished: the clocks and the pictures

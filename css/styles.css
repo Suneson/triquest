@@ -3171,3 +3171,10 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
 .dg-screen.is-plot, .dg-screen.is-plot .dg-viewport { background: #e6dccb; }
 .dg-screen.is-club .dg-row { display: none; }
 .app:has(.dg-screen.is-club) .tabs { display: none; }   /* a screen of its own, like the stadium */
+
+/* the locker room's upgrade orb (diorama-view.js hallOrb): its level, or the builder on it and the clock */
+.dg-hall-slot { display: contents; }
+.dg-orb-n.is-lv { white-space: nowrap; }
+.dg-orb-n.is-job { height: 22px; padding: 0 7px 0 2px; gap: 3px; grid-auto-flow: column; white-space: nowrap; color: #16264D;
+  background: linear-gradient(#FFE27A, #F4BE2E); font-variant-numeric: tabular-nums; }
+.dg-orb-n.is-job img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }

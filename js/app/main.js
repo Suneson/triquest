@@ -697,6 +697,7 @@ function openSettings() {
         <label class="field"><span>${t('main.weekStarts')}</span><select data-set="weekStart"><option value="1" ${s.weekStart === 1 ? 'selected' : ''}>${t('main.monday')}</option><option value="0" ${s.weekStart === 0 ? 'selected' : ''}>${t('main.sunday')}</option></select></label>
 
         ${isChestAdmin() ? adminChestTools() : ''}
+        ${isChestAdmin() ? `<button class="btn ghost block" data-coffee-reset>↺ ${t('coffee.adminReset')}</button><p class="muted small">${t('coffee.adminResetNote')}</p>` : ''}
         <hr>
         <h3>${t('main.backup')}</h3>
         <p class="muted small">${auth.currentUser() ? t('main.backupSignedIn') : t('main.backupLocal')}</p>
@@ -751,6 +752,9 @@ function openSettings() {
     store.setSetting('packing', packing);
   }));
   wireAdminTools(root);
+  root.querySelector('[data-coffee-reset]')?.addEventListener('click', () => import('./coffee-view.js').then((m) => {
+    m.resetCoffeeForTesting(); toast(t('coffee.adminResetDone'));
+  }));
   root.querySelectorAll('[data-set-do]').forEach((b) => b.addEventListener('click', () => {
     const act = b.dataset.setDo;
     if (act === 'export') doExport();

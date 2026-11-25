@@ -401,6 +401,15 @@ function build(L, canvas, layer, reduced) {
     okFill: flatMat(0x0c4cae, 0.45), okLine: flatMat(0x6ea8ff, 1), badFill: flatMat(0xd9443b, 0.6), badLine: flatMat(0xd9443b, 1),
     arrow: flatMat(0x6ea8ff, 1), arrowLine: flatMat(0x0b1222, 1), arrowShade: flatMat(0x000000, 0.45),
   };
+  // the floor paint's textures, one material each, kept
+  const paintMats = {};
+  const floorPaintMat = (mat) => paintMats[mat] ||= (() => {
+    const tx = new THREE.TextureLoader().load(`icons/Tiles/${mat}.webp`, () => { dirty = true; wake(); });
+    tx.colorSpace = THREE.SRGBColorSpace; tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
+    tx.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    return flatMat(0xffffff, 1, tx);
+  })();
+  M.paintEdge = flatMat(0x1c160e, 0.32); M.paintGrid = flatMat(0xffffff, 0.45);
   let builtAt = 1;   // the zoom the lines were built at (they're a fixed width on screen)
   function buildFloor() {
     readArt();
@@ -420,6 +429,39 @@ function build(L, canvas, layer, reduced) {
         const [a, b, c, d, e, f] = m[1].split(',').map(Number);
         const pts = [[0, 0], [w, 0], [w, h], [0, h]].map(([x, y]) => artToWorld(a * x + c * y + e, b * x + d * y + f));
         add(quadGeo(pts, [0, 1, w / 256, 1, w / 256, 0, 0, 0]), M.tape, 2);
+      }
+    }
+    // the floor's painted squares (floor-paint-view.js): each material's tiles as one mesh with its texture
+    // repeating every few tiles, the dark line where a patch meets another floor, and the grid while painting
+    const paint = artEl.querySelector('.dg-paint');
+    if (paint?.dataset.m) {
+      const [a, b, c, d, e, f] = paint.dataset.m.split(' ').map(Number);
+      const rep = Number(paint.dataset.repeat) || 4;
+      const tw = (u, v) => artToWorld(a * u + c * v + e, b * u + d * v + f);
+      const quads = (list) => {   // list of [[u, v] x 4] in tiles, uv from the tile position
+        const pos = []; const uv = []; const idx = [];
+        list.forEach((q, i) => {
+          for (const [u, v] of q) { const [x, y] = tw(u, v); pos.push(x, y, FAR_Z); uv.push(u / rep, 1 - v / rep); }
+          idx.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+        });
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+        return g;
+      };
+      for (const p of paint.querySelectorAll('path[data-mat]')) {
+        const sq = [...(p.getAttribute('d') || '').matchAll(/M(-?\d+) (-?\d+)h1v1h-1z/g)].map(([, u, v]) => [+u, +v]);
+        if (sq.length) add(quads(sq.map(([u, v]) => [[u, v], [u + 1, v], [u + 1, v + 1], [u, v + 1]])), floorPaintMat(p.dataset.mat), 0.5);
+      }
+      const bar = (u, v, dir, w) => (dir === 'h' ? [[u, v - w], [u + 1, v - w], [u + 1, v + w], [u, v + w]] : [[u - w, v], [u + w, v], [u + w, v + 1], [u - w, v + 1]]);
+      const edges = [...(paint.querySelector('.fp-edge')?.getAttribute('d') || '').matchAll(/M(-?\d+) (-?\d+)([hv])1/g)].map(([, u, v, dir]) => bar(+u, +v, dir, 0.035));
+      if (edges.length) add(quads(edges), M.paintEdge, 0.6);
+      const grid = paint.querySelector('.fp-grid');
+      if (grid) {
+        const cols = Number(grid.getAttribute('width')); const rows = Number(grid.getAttribute('height'));
+        const lines = [];
+        for (let u = 0; u <= cols; u += 1) lines.push([[u - 0.02, 0], [u + 0.02, 0], [u + 0.02, rows], [u - 0.02, rows]]);
+        for (let v = 0; v <= rows; v += 1) lines.push([[0, v - 0.02], [cols, v - 0.02], [cols, v + 0.02], [0, v + 0.02]]);
+        add(quads(lines), M.paintGrid, 0.7);
       }
     }
     // the footprint of what's held, and the four arrows round it

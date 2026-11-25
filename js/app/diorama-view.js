@@ -49,6 +49,7 @@ import { myBuilds, gearState, gearEnabled, serverNow, sportLevelOf, refreshGear,
 import { featAwards } from './feats-state.js';
 import { clockLeft } from './gear-view.js';
 import { savedPlacements, savePlacement, stashPlacement, baseItemRows } from './placement-state.js';
+import { drawPaint, painting, openPaint, trayHtml, wireTray, strokeStart, strokeMove, strokeEnd, strokeCancel } from './floor-paint-view.js';
 import { openTrophyDisplay, trophiesShown } from './trophy-display-view.js';
 import { currentUser } from './auth.js';
 import { haptic } from './haptics.js';
@@ -252,7 +253,8 @@ export function renderDiorama(ctx, avatarBtn = '') {
   const room = activeRoom();
   const ready = unseenFinished().length;
   const club = room === 'club';
-  return `<section class="dg-screen${club ? ' is-club' : ''}${plotMode() && !club ? ' is-plot' : ''}" data-dg>
+  const paintOn = painting(geomOf(room));
+  return `<section class="dg-screen${club ? ' is-club' : ''}${plotMode() && !club ? ' is-plot' : ''}${paintOn ? ' is-painting' : ''}" data-dg>
     <div class="dg-viewport" data-dg-vp tabindex="0" role="application" aria-roledescription="${esc(t('cp.roledesc'))}" aria-label="${esc(t('cp.vpAria'))}">
       <div class="dg-world" data-dg-world style="width:${envFor(room).w}px;height:${envFor(room).h}px"></div>
     </div>
@@ -283,6 +285,8 @@ export function renderDiorama(ctx, avatarBtn = '') {
     </div>
     ${club || plotMode() ? '' : `<div class="dg-side is-right">${liftPanel(room)}</div>`}
     ${club ? '' : `<div class="cx-float-slot" data-cx-float>${chestFloat()}</div>`}
+    ${paintOn ? '' : `<button class="dg-paint-btn" data-dg-paint aria-label="${esc(t('floorPaint.open'))}"><img src="icons/Tiles/${club ? 'club-parquet' : 'stone-paving'}-s.webp" alt="" width="56" height="56" draggable="false"><span>${esc(t('floorPaint.short'))}</span></button>`}
+    ${trayHtml(geomOf(room))}
   </section>`;
 }
 
@@ -1067,6 +1071,7 @@ export function wireDiorama(root, ctx) {
     artEl.style.width = `${rw}px`; artEl.style.height = `${rh}px`;
     artEl.style.transform = `matrix(${M.map((n) => +n.toFixed(5)).join(',')})`;
     drawTape(artEl, geom, rw, rh);
+    drawPaint(artEl, geom, rw, rh);
     roomImg.alt = t('cp.roomAlt', { room: roomName(room), n: levelOf(room, ctx) });
   };
   if (roomImg.getAttribute('src') !== src) {
@@ -1075,6 +1080,8 @@ export function wireDiorama(root, ctx) {
     (next.decode ? next.decode() : Promise.resolve()).then(swap, swap);
     if (!roomImg.getAttribute('src')) swap();
   } else showRoom();
+  root.querySelector('[data-dg-paint]')?.addEventListener('click', () => { view.sel = null; openPaint(geom); });
+  wireTray(root);
 
   draw();
   apply();
@@ -1117,6 +1124,13 @@ export function wireDiorama(root, ctx) {
   const deselect = () => { if (!view.sel) return; view.sel = null; draw(); say(''); };
 
   const toWorld = (cx, cy) => { const r = box(); return { x: (cx - r.left - view.v.tx) / view.v.s, y: (cy - r.top - view.v.ty) / view.v.s }; };
+  // the whole tile under a finger, for painting (null on the platform, which has its own floor)
+  const paintTile = (e) => {
+    const p = toWorld(e.clientX, e.clientY);
+    const q = worldToRoomPct(geom, p.x, p.y, env);
+    const f = pctToTile(geom, q.x, q.y);
+    return f.raised ? null : { u: Math.floor(f.u), v: Math.floor(f.v) };
+  };
   const tileAt = (cx, cy, it) => {
     const p = toWorld(cx, cy);
     const q = worldToRoomPct(geom, p.x, p.y, env);
@@ -1211,11 +1225,18 @@ export function wireDiorama(root, ctx) {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 2) {
       if (g?.mode === 'drag') cancelDrag();
+      if (g?.mode === 'paint') strokeCancel();
       const [a, b] = [...pts.values()];
       g = { mode: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y), from: { ...view.v }, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
       return;
     }
     if (pts.size > 2) return;
+    if (painting(geom) && !e.target.closest('.fp-tray')) {
+      try { vp.setPointerCapture?.(e.pointerId); } catch { /* a pointer that's already gone */ }
+      g = { mode: 'paint' };
+      strokeStart(geom, paintTile(e));
+      return;
+    }
     const nud = e.target.closest('[data-nudge]');
     if (nud) { g = { mode: 'nudge', dir: nud.dataset.nudge, x0: e.clientX, y0: e.clientY }; return; }
     const itemEl = itemUnder(e);
@@ -1235,6 +1256,7 @@ export function wireDiorama(root, ctx) {
     if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse' && isGl()) vp.style.cursor = itemUnder(e) ? 'pointer' : ''; return; }
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (!g) return;
+    if (g.mode === 'paint') { strokeMove(paintTile(e)); return; }
     if (g.mode === 'pinch' && pts.size === 2) {
       const [a, b] = [...pts.values()];
       zoomAt(g.from.s * (Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, g.d0)), g.mx, g.my, g.from);
@@ -1284,6 +1306,7 @@ export function wireDiorama(root, ctx) {
     if (!g) return;
     if (g.mode === 'pinch') { if (pts.size < 2) g = null; return; }
     const done = g; g = null;
+    if (done.mode === 'paint') { strokeEnd(); return; }
     if (done.edgeLoop) cancelAnimationFrame(done.edgeLoop);
     if (done.mode === 'nudge') { nudge(done.dir); return; }
     if (done.mode === 'drag') {

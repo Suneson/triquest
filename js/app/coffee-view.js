@@ -27,14 +27,17 @@ const MAT = { x: 21, y: 59.5 };                       // on the tamping mat
 const MAT_ZONE = { l: 3, r: 40, t: 52, b: 66 };
 const GROUP = { x: 66, y: 39.8 };                     // locked in the group head
 const GROUP_ZONE = { l: 52, r: 82, t: 33, b: 50 };
-const BREW_ZONE = { l: 52, r: 82, t: 24, b: 50 };     // hold the machine to brew
 const SCALE = { x: 66.3, y: 47.8 };                   // the cup on the drip tray's scale (its foot)
 const SPOUT = { x: 49.4, y: 41, zone: { l: 44, r: 56, t: 35, b: 46 } };   // hot water
 const WAND = { x: 85.5, y: 47.5, zone: { l: 76, r: 96, t: 42, b: 62 } };
 const FRIDGE = { l: 1.3, t: 72.38, w: 47.85, h: 27.55 };   // patch-fridge-closed.webp
 const FRIDGE_ZONE = { l: 2, r: 48, t: 72, b: 99 };
-const CARTONS = { milk: { x: 25, y: 93.5 }, oat: { x: 38, y: 93.5 } };
-const SHELF = { x: 76, y: 83.6 };                     // the pitcher's place
+const CARTONS = { milk: { x: 27.5, y: 79.8 }, oat: { x: 38.5, y: 79.8 } };   // on the fridge's upper wire shelf
+const SHELF = { x: 77, y: 82.6 };                     // the pitcher's place, pushed back on its shelf
+const HOLD_BTN = { x: 20.5, y: 44 };                  // the grinder's Hold button
+const LENS = { x: 25, y: 30 };                        // the close look at the basket filling
+const BREW_BTN = { x: 66, y: 33.6 };                  // the machine's green button, on its gauge
+const TEACH = 3;                                      // a drink's first makes show the hand
 // ---- the finish (bg-finish.webp) ----
 const COASTER = { x: 21, y: 70.2 };
 const ICE = { l: 6.5, r: 38, t: 54.5, b: 64.5 };
@@ -77,7 +80,7 @@ const shopArt = (n) => `icons/Items/coffee-shop-t${Math.max(1, Math.min(C.MAX_LE
 export function openCoffeeShop({ level = null } = {}) {
   if (!level && underUpgrade('coffee-shop', t('coffee.title'))) return null;   // closed while a builder's on it
   let customer = null;   // coffee3d.js, once mounted
-  const root = openLayer('coffee-shop', { className: 'cf-layer', onClose: () => { sfx.stopMusic(); customer?.dispose(); customer = null; } });
+  const root = openLayer('coffee-shop', { className: 'cf-layer', onClose: () => { if (brewing) { cancelAnimationFrame(brewing.raf); brewing.sound.stop(); brewing = null; } sfx.stopMusic(); customer?.dispose(); customer = null; } });
   let st = load();
   const pinned = !!level;   // ?coffee=1&lvl=: shown at that level, no upgrading
   if (level) st.level = Math.max(1, Math.min(C.MAX_LEVEL, Math.floor(level) || 1));
@@ -89,6 +92,7 @@ export function openCoffeeShop({ level = null } = {}) {
   let result = null;     // { stars, coins, cut }
   let busy = false;
   let g = null;          // the gesture going on: { move, up }
+  let brewing = null;    // the shot running from the green button: { raf, sound, since, to }
 
   root.innerHTML = `<div class="cf">
     <header class="cf-bar">
@@ -194,6 +198,40 @@ export function openCoffeeShop({ level = null } = {}) {
   };
   const setMeter = (scene, v) => scene.querySelector('.cf-meter')?.style.setProperty('--v', Math.min(1, v).toFixed(4));
 
+  // ---- the hand that shows what to do: the first TEACH times you make each drink ----
+  const teaching = () => order && (Number(st.taught?.[order.drink.id]) || 0) < TEACH;
+  /** Where the hand goes for the step now: { at } a tap or hold there, or { from, to } a drag. */
+  function guideFor(s) {
+    switch (s?.kind) {
+      case 'grind': return { at: HOLD_BTN, hold: true };
+      case 'tamp': return order.pf === 'mat' ? { at: { x: MAT.x, y: MAT.y - 4 }, hold: true } : { from: UNDER_GRINDER, to: MAT };
+      case 'lock': return { from: MAT, to: GROUP };
+      case 'brew': return { at: BREW_BTN };
+      case 'water': return { at: { x: SPOUT.x, y: SPOUT.y + 2 }, hold: true };
+      case 'carton': {
+        const c = CARTONS[s.milk || 'milk'];
+        return order.fridge ? { from: { x: c.x, y: c.y - 4 }, to: { x: SHELF.x, y: SHELF.y - 12 } } : { at: { x: 25, y: 84 } };
+      }
+      case 'steam': return { from: { x: SHELF.x, y: SHELF.y - 6 }, to: { x: WAND.x, y: WAND.y + 6 } };
+      case 'pour': return { from: { x: SHELF.x, y: SHELF.y - 6 }, to: { x: SCALE.x + 6, y: SCALE.y - 8 } };
+      case 'ice': return { at: { x: (ICE.l + ICE.r) / 2, y: (ICE.t + ICE.b) / 2 } };
+      case 'syrup': return { at: { x: SYRUP_X[C.SYRUPS.indexOf(s.syrup)], y: 38 } };
+      case 'top': { const z = TOP_ZONES[s.top]; return { at: { x: (z.l + z.r) / 2, y: (z.t + z.b) / 2 } }; }
+      case 'serve': return { from: { x: COASTER.x, y: COASTER.y - 6 }, to: { x: COASTER.x, y: HATCH_Y } };
+      default: return null;
+    }
+  }
+  const HAND = `<svg class="cf-hand" viewBox="0 0 64 64" aria-hidden="true"><path d="M24 6c3.3 0 6 2.7 6 6v15.5l2.6-.9c2.7-.9 5.6.5 6.6 3.1l.3.8 1.6-.5c2.7-.8 5.6.6 6.5 3.3l.3.9 1.2-.3c2.8-.6 5.5 1.2 6.1 4l2.3 11c1.7 8.2-3.6 16.2-11.8 17.8l-6.6 1.3c-6 1.2-12.2-1.3-15.7-6.4L10.8 41c-1.6-2.4-1-5.6 1.4-7.2 2.2-1.5 5.2-1 6.8 1.1l.9 1.2V12c0-3.3 2.7-6 6-6z" fill="#FFF8EE" stroke="#5A3A22" stroke-width="3" stroke-linejoin="round"/></svg>`;
+  function guide() {
+    if (!teaching()) return '';
+    const gd = guideFor(step());
+    if (!gd) return '';
+    if (gd.at) return `<div class="cf-guide is-tap${gd.hold ? ' is-hold' : ''}" style="--x1:${gd.at.x}%;--y1:${gd.at.y}%" aria-hidden="true"><i class="cf-guide-ring"></i>${HAND}</div>`;
+    const { from: a, to: b } = gd;
+    return `<div class="cf-guide is-drag" style="--x0:${a.x}%;--y0:${a.y}%;--x1:${b.x}%;--y1:${b.y}%" aria-hidden="true">
+      <svg class="cf-guide-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" vector-effect="non-scaling-stroke"/></svg>${HAND}</div>`;
+  }
+
   // ---- the bar ----
   function drawBar() {
     if (!order) { barEl.innerHTML = ''; return; }
@@ -209,16 +247,25 @@ export function openCoffeeShop({ level = null } = {}) {
     const cup = order.cupAt ? `<img class="cf-cup" data-cf-cup src="${ART}/${m.pour ? `drink-${d.id}` : d.cup}.webp" alt="" draggable="false"
       style="left:${order.cupAt.x}%;top:${order.cupAt.y}%;height:${m.pour ? CUP_H[d.cup] * 1.25 : CUP_H[d.cup]}cqw">` : '';
     const pitcherFile = m.steam ? 'pitcher-steamed' : 'pitcher';
+    // the grind: a close look at the basket, the grounds rising to the dashed line, and the Hold button
+    const grindUi = kind === 'grind' ? `<div class="cf-lens" style="left:${LENS.x}%;top:${LENS.y}%;--f:${(m.grind / s.to).toFixed(3)}" aria-hidden="true">
+        ${img('pf-empty', 'cf-lens-pf')}${img('grounds', 'cf-lens-mound')}<i class="cf-lens-line"></i></div>
+      <button class="cf-holdbtn is-hint" data-cf-hold style="left:${HOLD_BTN.x}%;top:${HOLD_BTN.y}%">${esc(t('coffee.hold'))}</button>` : '';
+    const brewUi = kind === 'brew' ? `<button class="cf-brewbtn${brewing ? ' is-on' : ' is-hint'}" data-cf-brew style="left:${BREW_BTN.x}%;top:${BREW_BTN.y}%"
+        aria-label="${esc(t(brewing ? 'coffee.brewStop' : 'coffee.brewStart'))}" aria-pressed="${!!brewing}"><i></i></button>` : '';
+    const hintPf = (kind === 'tamp' && order.pf !== 'mat') || kind === 'lock';
     barEl.innerHTML = `${ticket()}${meterHtml}
-      ${order.fridge ? '' : img('patch-fridge-closed', 'cf-fridge', `left:${FRIDGE.l}%;top:${FRIDGE.t}%;width:${FRIDGE.w}%`)}
-      ${order.fridge ? Object.entries(CARTONS).map(([k, p]) => img(k === 'milk' ? 'milk' : 'oat-milk', `cf-carton${s?.milk === k ? ' is-now' : ''}`, `left:${p.x}%;top:${p.y}%`).replace('<img', `<img data-cf-carton="${k}"`)).join('') : ''}
-      <img class="cf-pf${order.pf === 'group' ? ' is-locked' : ''}" data-cf-pf src="${ART}/${pfFile}.webp" alt="" draggable="false" style="left:${pfAt.x}%;top:${pfAt.y}%">
+      ${order.fridge ? '' : img('patch-fridge-closed', `cf-fridge${kind === 'carton' ? ' is-hint' : ''}`, `left:${FRIDGE.l}%;top:${FRIDGE.t}%;width:${FRIDGE.w}%`)}
+      ${order.fridge ? Object.entries(CARTONS).map(([k, p]) => img(k === 'milk' ? 'milk' : 'oat-milk', `cf-carton${s?.milk === k ? ' is-now is-hint' : ''}`, `left:${p.x}%;top:${p.y}%`).replace('<img', `<img data-cf-carton="${k}"`)).join('') : ''}
+      ${grindUi}${brewUi}
+      <img class="cf-pf${order.pf === 'group' ? ' is-locked' : ''}${hintPf ? ' is-hint' : ''}" data-cf-pf src="${ART}/${pfFile}.webp" alt="" draggable="false" style="left:${pfAt.x}%;top:${pfAt.y}%">
       ${kind === 'tamp' && order.pf === 'mat' ? img('tamper', 'cf-tamper', `left:${MAT.x}%;top:${MAT.y}%;--p:${m.tamp}`) : ''}
       ${cup}
-      ${d.milk ? `<img class="cf-pitcher" data-cf-pitcher src="${ART}/${pitcherFile}.webp" alt="" draggable="false" style="left:${SHELF.x}%;top:${SHELF.y}%">` : ''}
+      ${d.milk ? `<img class="cf-pitcher${kind === 'steam' || kind === 'pour' ? ' is-hint' : ''}" data-cf-pitcher src="${ART}/${pitcherFile}.webp" alt="" draggable="false" style="left:${SHELF.x}%;top:${SHELF.y}%">` : ''}
       <i class="cf-flow" data-cf-flow></i>
       <img class="cf-steam" data-cf-steam src="${ART}/fx-billow.webp" alt="">
       <img class="cf-grounds" data-cf-grounds src="${ART}/fx-grounds.webp" alt="">
+      ${guide()}
       <div class="cf-pop" aria-live="polite"></div>`;
   }
 
@@ -228,11 +275,12 @@ export function openCoffeeShop({ level = null } = {}) {
     const d = order.drink;
     const m = order.made;
     finishEl.innerHTML = `${ticket()}
-      ${C.SYRUPS.map((sy, i) => `<img class="cf-syrup${step()?.syrup === sy ? ' is-now' : ''}" data-cf-syrup="${sy}" src="${ART}/syrup-${sy}.webp" alt="${esc(t(`coffee.syrup.${sy}`))}" draggable="false" style="left:${SYRUP_X[i]}%">`).join('')}
-      <img class="cf-cup is-final" data-cf-cup src="${ART}/drink-${d.id}.webp" alt="${esc(drinkName(d))}" draggable="false" style="left:${COASTER.x}%;top:${COASTER.y}%;height:${CUP_H[d.cup] * 1.25}cqw">
+      ${C.SYRUPS.map((sy, i) => `<img class="cf-syrup${step()?.syrup === sy ? ' is-now is-hint' : ''}" data-cf-syrup="${sy}" src="${ART}/syrup-${sy}.webp" alt="${esc(t(`coffee.syrup.${sy}`))}" draggable="false" style="left:${SYRUP_X[i]}%">`).join('')}
+      <img class="cf-cup is-final${step()?.kind === 'serve' ? ' is-hint' : ''}" data-cf-cup src="${ART}/drink-${d.id}.webp" alt="${esc(drinkName(d))}" draggable="false" style="left:${COASTER.x}%;top:${COASTER.y}%;height:${CUP_H[d.cup] * 1.25}cqw">
       <div class="cf-made">${m.ice ? `<i>${img('ice')}${m.ice}</i>` : ''}${Object.entries(m.syrup).map(([k, n]) => `<i>${img(`syrup-${k}`)}${n}</i>`).join('')}${m.tops.map((k) => `<i>${img(TOP_ICON[k])}</i>`).join('')}</div>
       <img class="cf-fx" data-cf-fx src="${ART}/fx-sparkle.webp" alt="">
       <p class="cf-serve-hint">${img('step-serve')}${esc(t('coffee.swipeUp'))}</p>
+      ${guide()}
       <div class="cf-pop" aria-live="polite"></div>`;
   }
 
@@ -322,18 +370,58 @@ export function openCoffeeShop({ level = null } = {}) {
     };
   }
 
+  // the brew: one tap on the green button starts the shot, it runs by itself, and a second tap stops it
+  function startBrew(s) {
+    const m = order.made;
+    const btn = barEl.querySelector('[data-cf-brew]');
+    btn?.classList.add('is-on'); btn?.classList.remove('is-hint'); btn?.setAttribute('aria-pressed', 'true');
+    btn?.setAttribute('aria-label', t('coffee.brewStop'));
+    barEl.querySelector('.cf-guide')?.remove();
+    haptic('select'); sfx.play('ui-tap');
+    const sound = sfx.loop('glass-pour', { level: 1 });
+    stream(true, order.drink.shots === 2 ? 'str-double' : 'str-espresso', GROUP.x, GROUP.y + 2.6, cupTop() + 2, 3);
+    brewing = { sound, since: performance.now(), raf: 0, to: s.to };
+    const f = (now) => {
+      if (!brewing) return;
+      m.brew = Math.min(1, m.brew + Math.max(0, now - brewing.since) / 1000 * RATE.brew);
+      brewing.since = now;
+      setMeter(barEl, m.brew);
+      if (m.brew >= 1) { stopBrew(); return; }   // the cup's full: it stops itself
+      brewing.raf = requestAnimationFrame(f);
+    };
+    brewing.raf = requestAnimationFrame(f);
+  }
+  function stopBrew() {
+    if (!brewing) return;
+    const b = brewing; brewing = null;
+    cancelAnimationFrame(b.raf); b.sound.stop(); stream(false);
+    // the time since the last frame counts too (time-based, so a slow or paused frame can't cheat it)
+    order.made.brew = Math.min(1, order.made.brew + Math.max(0, performance.now() - b.since) / 1000 * RATE.brew);
+    haptic('select');
+    const v = order.made.brew;
+    if (v > 0.01) finishStep(C.scoreLevel(v, b.to), v, b.to); else drawBar();
+  }
+
   barEl.addEventListener('pointerdown', (e) => {
     if (busy || g || !order || e.button > 0) return;
     const s = step(); if (!s) return;
     const p = at(barEl, e);
     const m = order.made;
     const pfEl = barEl.querySelector('[data-cf-pf]');
-    if (s.kind === 'grind' && inside(p, GRINDER)) {
+    if (s.kind === 'grind' && (e.target.closest('[data-cf-hold]') || inside(p, GRINDER))) {
       const grounds = barEl.querySelector('[data-cf-grounds]');
+      const lens = barEl.querySelector('.cf-lens'); const btn = barEl.querySelector('[data-cf-hold]');
+      btn?.classList.add('is-down');
+      // held anywhere once started: a finger sliding off the button doesn't stop it
       g = hold(barEl, e, 'grind', 'grind', s.to, {
-        ok: (q) => inside(q, GRINDER), loop: 'powder-shake',
-        fx: (on, v) => { grounds.classList.toggle('is-on', on); if (v > 0.25 && pfEl.src.includes('pf-empty')) pfEl.src = `${ART}/pf-heaped.webp`; },
+        loop: 'powder-shake',
+        fx: (on, v) => {
+          grounds.classList.toggle('is-on', on);
+          lens?.style.setProperty('--f', (v / s.to).toFixed(3));
+          if (v > 0.25 && pfEl.src.includes('pf-empty')) pfEl.src = `${ART}/pf-heaped.webp`;
+        },
       });
+      const up = g.up; g.up = () => { btn?.classList.remove('is-down'); up(); };
     } else if (s.kind === 'tamp' && e.target.closest('[data-cf-pf]') && order.pf !== 'mat') {
       g = drag(barEl, pfEl, e, { drop: (q) => {
         if (!inside(q, MAT_ZONE)) return false;
@@ -348,11 +436,10 @@ export function openCoffeeShop({ level = null } = {}) {
         if (!inside(q, GROUP_ZONE)) return false;
         order.pf = 'group'; order.cupAt = { ...SCALE }; sfx.play('seal-press', { gain: 0.4 }); finishStep(1); drawBar(); return true;
       } });
-    } else if (s.kind === 'brew' && inside(p, BREW_ZONE)) {
-      g = hold(barEl, e, 'brew', 'brew', s.to, {
-        ok: (q) => inside(q, BREW_ZONE), loop: 'glass-pour',
-        fx: (on) => stream(on, order.drink.shots === 2 ? 'str-double' : 'str-espresso', GROUP.x, GROUP.y + 2.6, cupTop() + 2, 3),
-      });
+    } else if (s.kind === 'brew' && e.target.closest('[data-cf-brew]')) {
+      e.preventDefault();
+      if (brewing) stopBrew(); else startBrew(s);
+      return;
     } else if (s.kind === 'water' && inside(p, SPOUT.zone)) {
       g = hold(barEl, e, 'water', 'water', s.to, {
         ok: (q) => inside(q, SPOUT.zone), loop: 'glass-pour',
@@ -422,6 +509,7 @@ export function openCoffeeShop({ level = null } = {}) {
     }
     if (!g) return;
     e.preventDefault();
+    barEl.classList.add('is-acting');
     try { barEl.setPointerCapture(e.pointerId); } catch { /* not tracked */ }
   });
 
@@ -454,6 +542,8 @@ export function openCoffeeShop({ level = null } = {}) {
     for (const top of d.tops) order.scores.push(m.tops.includes(top) ? 1 : 0);
     extras += m.tops.filter((k) => !d.tops.includes(k)).length;
     const n = C.stars(order.scores, extras);
+    const taught = { ...(st.taught || {}) }; taught[d.id] = (Number(taught[d.id]) || 0) + 1;
+    set({ taught });
     const r = C.served(st, order.who.kind === 'boss' ? { kind: 'boss', id: order.who.id } : { kind: 'builder', id: order.who.id }, n, Date.now());
     set(r.saved); coins();
     result = { stars: n, coins: r.coins, cut: r.cut };
@@ -506,12 +596,15 @@ export function openCoffeeShop({ level = null } = {}) {
       return;
     }
     e.preventDefault();
+    finishEl.classList.add('is-acting');
     try { finishEl.setPointerCapture(e.pointerId); } catch { /* not tracked */ }
   });
 
   for (const el of [barEl, finishEl]) {
     el.addEventListener('pointermove', (e) => { if (g) g.move(e); });
-    const end = (e) => { const d = g; g = null; d?.up(e); };
+    const end = (e) => { const d = g; g = null; el.classList.remove('is-acting'); d?.up(e); };
+    // a long press on a picture mustn't open the phone's image menu (it cancelled the hold)
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
   }

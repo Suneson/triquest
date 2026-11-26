@@ -23,10 +23,15 @@ export const DEFAULT_POSE = {
   rpm: 75,                         // pedalling speed, turns a minute
 };
 
-// Not set yet: the editor's first fits go here.
+// Set in the bike fit editor, 26 November 2026 (the female body on lv9; the male is still the default).
 export const BIKE_FIT = {
-  pose: {},
-  bikes: {},
+  pose: {
+    female: { seatU: 0.14, lean: 54.5, shDown: 0.015, shFwd: 0.055, handW: 0.035, elbowOut: 0.51, elbowDown: 0.08,
+      wristB: -21, wristT: -90, wristS: -22.5, grip: 0.38, thumb: 0.31, rpm: 80 },
+  },
+  bikes: {
+    9: { x: -0.005 },
+  },
 };
 
 /** A fit tidied for keeping: numbers only, rounded, keys at their default dropped. */

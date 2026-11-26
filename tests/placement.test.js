@@ -135,7 +135,7 @@ test('facings: turning an item turns its footprint, and a saved facing is kept',
   assert.match(sofa.art({ face: 'd' }), /clan-chesterfield-sofa-d\.webp$/);
   assert.equal(orient(placeableById('smart-trainer'), 'b').w, 3, 'one facing: as it is');
   assert.equal(tierFor(1, [4, 7]), 1); assert.equal(tierFor(4, [4, 7]), 2); assert.equal(tierFor(9, [4, 7]), 3);
-  assert.match(tm.art({ face: 'a', levels: { run: 6 } }), /treadmill-t2-a\.webp$/);
+  assert.match(tm.art({ face: 'a', levels: { run: 6 } }), /treadmill-lv6-a\.webp$/);
   const full = compoundLayout(DISCIPLINES);
   const items = placeablesFor([]);
   const at = resolvePlacements(full, items, { treadmill: { room: 'run', u: 2, v: 2, face: 'b' } });
@@ -145,11 +145,13 @@ test('facings: turning an item turns its footprint, and a saved facing is kept',
   assert.deepEqual(cells, ['2,2', '2,3', '2,4', '3,2', '3,3', '3,4', '4,2', '4,3', '4,4', '5,2', '5,3', '5,4']);
 });
 
-test('the treadmill steps up to tier 4 with the run room', () => {
+test('the treadmill takes the run room level, or its own test level', () => {
   const tm = placeableById('treadmill');
-  for (const [level, tier] of [[1, 1], [3, 1], [4, 2], [6, 2], [7, 3], [9, 3], [10, 4]]) {
-    assert.match(tm.art({ face: 'b', levels: { run: level } }), new RegExp(`treadmill-t${tier}-b\\.webp$`), `level ${level}`);
+  for (const level of [1, 4, 10]) {
+    assert.match(tm.art({ face: 'b', levels: { run: level } }), new RegExp(`treadmill-lv${level}-b\\.webp$`), `level ${level}`);
   }
+  assert.match(tm.art({ face: 'a', levels: { run: 2, items: { treadmill: 8 } } }), /treadmill-lv8-a\.webp$/);
+  assert.match(tm.art({ face: 'a', levels: { run: 14 } }), /treadmill-lv10-a\.webp$/, 'no higher than painted');
 });
 
 test('the stash: bought items wait there, a stashed item stands nowhere, and comes back', () => {

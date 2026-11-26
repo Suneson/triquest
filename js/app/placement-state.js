@@ -7,6 +7,7 @@ import { client, currentUser } from './auth.js';
 import { SYNC_ENABLED } from './config.js';
 import { isDemo } from './demo.js';
 import { PLACEABLES } from '../core/placement.js';
+import { testerItemRows } from './level-tester.js';
 
 const KEY = 'moske-placements';
 const OWNED = 'moske-base-items';
@@ -44,7 +45,11 @@ export const stashPlacement = (itemId, p) => savePlacement(itemId, { ...p, stash
 /** The base items you own (user_base_items, 0031_base_items.sql), as inventory rows; demo mode has them all. */
 export function baseItemRows() {
   if (isDemo()) return PLACEABLES.filter((p) => p.stashFirst).map((p) => ({ item_id: p.id }));
-  try { return (JSON.parse(localStorage.getItem(OWNED)) || {})[uid()] || []; } catch { return []; }
+  let rows = [];
+  try { rows = (JSON.parse(localStorage.getItem(OWNED)) || {})[uid()] || []; } catch { /* private mode */ }
+  // testers (level-tester.js) own every levelled item, to set them down and look at their levels
+  const extra = testerItemRows().filter((r) => !rows.some((x) => x.item_id === r.item_id));
+  return extra.length ? [...rows, ...extra] : rows;
 }
 
 /** Read the server's copy (the newer device wins nothing: the server is the record). */

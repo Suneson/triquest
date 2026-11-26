@@ -49,6 +49,7 @@ import { myBuilds, gearState, gearEnabled, serverNow, sportLevelOf, refreshGear,
 import { featAwards } from './feats-state.js';
 import { clockLeft } from './gear-view.js';
 import { savedPlacements, savePlacement, stashPlacement, baseItemRows } from './placement-state.js';
+import { isTester, testBaseLevel, testItemLevels, openTestLevels } from './level-tester.js';
 import { drawPaint, painting, openPaint, trayHtml, wireTray, strokeStart, strokeMove, strokeEnd, strokeCancel } from './floor-paint-view.js';
 import { openTrophyDisplay, trophiesShown } from './trophy-display-view.js';
 import { currentUser } from './auth.js';
@@ -285,6 +286,7 @@ export function renderDiorama(ctx, avatarBtn = '') {
     </div>
     ${club || plotMode() ? '' : `<div class="dg-side is-right">${liftPanel(room)}</div>`}
     ${club ? '' : `<div class="cx-float-slot" data-cx-float>${chestFloat()}</div>`}
+    ${paintOn || club || !isTester() ? '' : `<button class="dg-paint-btn dg-levels-btn" data-dg-levels aria-label="${esc(t('testLevels.title'))}"><b>${esc(t('testLevels.badge'))}</b><span>${esc(t('testLevels.short'))}</span></button>`}
     ${paintOn ? '' : `<button class="dg-paint-btn" data-dg-paint aria-label="${esc(t('floorPaint.open'))}"><img src="icons/Tiles/${club ? 'club-parquet' : 'stone-paving'}-s.webp" alt="" width="56" height="56" draggable="false"><span>${esc(t('floorPaint.short'))}</span></button>`}
     ${trayHtml(geomOf(room))}
   </section>`;
@@ -512,7 +514,7 @@ export function wireDiorama(root, ctx) {
   const inv = s.inventory;
   const items = itemsOwned();
   const artOpts = { inventory: inv, rider: sceneFor('bike', levelOf('bike', ctx))?.entry?.char || '',
-    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx), gels: standLevel(), coffee: shopLevel() } };
+    levels: { locker: levelOf('locker', ctx), run: levelOf('run', ctx), bike: levelOf('bike', ctx), gels: standLevel(), coffee: shopLevel(), items: testItemLevels() } };
   lastLevels = artOpts.levels;
   // an item as it stands now: in its facing (placement.js orient), its footprint turned with it
   const itemAt = (id) => orient(placeableById(id), placements[id]?.face);
@@ -523,7 +525,7 @@ export function wireDiorama(root, ctx) {
   const [rw, rh] = ROOM_SIZE[geom];
   // the platform's theme follows the hall's level (?theme=N shows level N's, to compare them)
   const themeQ = Number(new URLSearchParams(location.search).get('theme'));
-  setPlotLevel(themeQ || buildingLevel(HALL));
+  setPlotLevel(themeQ || testBaseLevel() || buildingLevel(HALL));
   const env = envFor(room, geom);
   stage.env = env;
   const M = roomPlacement(geom, env);
@@ -1081,6 +1083,7 @@ export function wireDiorama(root, ctx) {
     if (!roomImg.getAttribute('src')) swap();
   } else showRoom();
   root.querySelector('[data-dg-paint]')?.addEventListener('click', () => { view.sel = null; openPaint(geom); });
+  root.querySelector('[data-dg-levels]')?.addEventListener('click', () => { view.sel = null; openTestLevels(); });
   wireTray(root);
 
   draw();

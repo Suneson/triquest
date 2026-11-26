@@ -164,6 +164,26 @@ export const ITEM_FIT = {
     "mid": 0.559,
     "pad": 0.021
   },
+  "icons/Items/agility-ladder-lv1-a.webp": {
+    "w": 0.957,
+    "mid": 0.499,
+    "pad": 0.015
+  },
+  "icons/Items/agility-ladder-lv1-b.webp": {
+    "w": 0.917,
+    "mid": 0.533,
+    "pad": 0.015
+  },
+  "icons/Items/antigrav-treadmill-lv1-a.webp": {
+    "w": 0.838,
+    "mid": 0.427,
+    "pad": 0.018
+  },
+  "icons/Items/antigrav-treadmill-lv1-b.webp": {
+    "w": 0.836,
+    "mid": 0.427,
+    "pad": 0.018
+  },
   "icons/Items/bike-workstand-a.webp": {
     "w": 0.763,
     "mid": 0.602,
@@ -173,6 +193,16 @@ export const ITEM_FIT = {
     "w": 0.76,
     "mid": 0.608,
     "pad": 0.022
+  },
+  "icons/Items/boots-lv1-a.webp": {
+    "w": 0.907,
+    "mid": 0.538,
+    "pad": 0.014
+  },
+  "icons/Items/boots-lv1-b.webp": {
+    "w": 0.904,
+    "mid": 0.46,
+    "pad": 0.07
   },
   "icons/Items/build-site-a.webp": {
     "w": 0.93,
@@ -223,6 +253,16 @@ export const ITEM_FIT = {
     "w": 0.917,
     "mid": 0.536,
     "pad": 0.014
+  },
+  "icons/Items/buoy-bin-lv1-a.webp": {
+    "w": 0.876,
+    "mid": 0.446,
+    "pad": 0.032
+  },
+  "icons/Items/buoy-bin-lv1-b.webp": {
+    "w": 0.871,
+    "mid": 0.444,
+    "pad": 0.029
   },
   "icons/Items/clan-arcade-cabinet-a.webp": {
     "w": 0.926,
@@ -1194,6 +1234,136 @@ export const ITEM_FIT = {
     "mid": 0.5,
     "pad": 0.006
   },
+  "icons/Items/cone-stack-lv1-a.webp": {
+    "w": 0.896,
+    "mid": 0.455,
+    "pad": 0.057
+  },
+  "icons/Items/cone-stack-lv1-b.webp": {
+    "w": 0.877,
+    "mid": 0.446,
+    "pad": 0.088
+  },
+  "icons/Items/contrast-plunge-lv1-a.webp": {
+    "w": 0.939,
+    "mid": 0.476,
+    "pad": 0.07
+  },
+  "icons/Items/contrast-plunge-lv1-b.webp": {
+    "w": 0.883,
+    "mid": 0.493,
+    "pad": 0.053
+  },
+  "icons/Items/contrast-plunge-lv2-a.webp": {
+    "w": 0.953,
+    "mid": 0.483,
+    "pad": 0.048
+  },
+  "icons/Items/contrast-plunge-lv2-b.webp": {
+    "w": 0.904,
+    "mid": 0.491,
+    "pad": 0.044
+  },
+  "icons/Items/contrast-plunge-lv3-a.webp": {
+    "w": 0.897,
+    "mid": 0.51,
+    "pad": 0.06
+  },
+  "icons/Items/contrast-plunge-lv3-b.webp": {
+    "w": 0.9,
+    "mid": 0.493,
+    "pad": 0.046
+  },
+  "icons/Items/contrast-plunge-lv4-a.webp": {
+    "w": 0.946,
+    "mid": 0.478,
+    "pad": 0.059
+  },
+  "icons/Items/contrast-plunge-lv4-b.webp": {
+    "w": 0.899,
+    "mid": 0.497,
+    "pad": 0.047
+  },
+  "icons/Items/contrast-plunge-lv5-a.webp": {
+    "w": 0.942,
+    "mid": 0.476,
+    "pad": 0.068
+  },
+  "icons/Items/contrast-plunge-lv5-b.webp": {
+    "w": 0.886,
+    "mid": 0.493,
+    "pad": 0.051
+  },
+  "icons/Items/cryo-lv1-a.webp": {
+    "w": 0.794,
+    "mid": 0.409,
+    "pad": 0.01
+  },
+  "icons/Items/cryo-lv1-b.webp": {
+    "w": 0.801,
+    "mid": 0.408,
+    "pad": 0.015
+  },
+  "icons/Items/cryo-lv1-in-use-a.webp": {
+    "w": 0.848,
+    "mid": 0.439,
+    "pad": 0.004
+  },
+  "icons/Items/cryo-lv1-in-use-b.webp": {
+    "w": 0.804,
+    "mid": 0.405,
+    "pad": 0.007
+  },
+  "icons/Items/cryo-lv2-a.webp": {
+    "w": 0.79,
+    "mid": 0.407,
+    "pad": 0.011
+  },
+  "icons/Items/cryo-lv2-b.webp": {
+    "w": 0.796,
+    "mid": 0.407,
+    "pad": 0.015
+  },
+  "icons/Items/cryo-lv2-in-use-a.webp": {
+    "w": 0.83,
+    "mid": 0.424,
+    "pad": 0.014
+  },
+  "icons/Items/cryo-lv2-in-use-b.webp": {
+    "w": 0.797,
+    "mid": 0.405,
+    "pad": 0.015
+  },
+  "icons/Items/cryo-lv3-a.webp": {
+    "w": 0.818,
+    "mid": 0.418,
+    "pad": 0.014
+  },
+  "icons/Items/cryo-lv3-b.webp": {
+    "w": 0.74,
+    "mid": 0.503,
+    "pad": 0.024
+  },
+  "icons/Items/cryo-lv3-in-use-a.webp": {
+    "w": 0.83,
+    "mid": 0.424,
+    "pad": 0.018
+  },
+  "icons/Items/cryo-lv3-in-use-b.webp": {
+    "w": 0.743,
+    "mid": 0.499,
+    "pad": 0.026
+  },
+  "icons/Items/diving-board-lv1-a.webp": {
+    "w": 0.967,
+    "mid": 0.508,
+    "pad": 0.015
+  },
+  "icons/Items/diving-board-lv1-b.webp": {
+    "w": 0.981,
+    "mid": 0.501,
+    "pad": 0.038
+  },
   "icons/Items/drinks-fridge-a.webp": {
     "w": 0.848,
     "mid": 0.569,
@@ -1213,6 +1383,146 @@ export const ITEM_FIT = {
     "w": 0.94,
     "mid": 0.526,
     "pad": 0.011
+  },
+  "icons/Items/finish-arch-lv1-a.webp": {
+    "w": 0.985,
+    "mid": 0.501,
+    "pad": 0.008
+  },
+  "icons/Items/finish-arch-lv1-b.webp": {
+    "w": 0.964,
+    "mid": 0.492,
+    "pad": 0.01
+  },
+  "icons/Items/fins-rack-lv1-a.webp": {
+    "w": 0.822,
+    "mid": 0.419,
+    "pad": 0.011
+  },
+  "icons/Items/fins-rack-lv1-b.webp": {
+    "w": 0.825,
+    "mid": 0.42,
+    "pad": 0.011
+  },
+  "icons/Items/float-pod-lv1-a.webp": {
+    "w": 0.905,
+    "mid": 0.461,
+    "pad": 0.028
+  },
+  "icons/Items/float-pod-lv1-b.webp": {
+    "w": 0.889,
+    "mid": 0.452,
+    "pad": 0.058
+  },
+  "icons/Items/float-pod-lv1-in-use-a.webp": {
+    "w": 0.869,
+    "mid": 0.442,
+    "pad": 0.035
+  },
+  "icons/Items/float-pod-lv1-in-use-b.webp": {
+    "w": 0.885,
+    "mid": 0.449,
+    "pad": 0.079
+  },
+  "icons/Items/float-pod-lv2-a.webp": {
+    "w": 0.948,
+    "mid": 0.482,
+    "pad": 0.028
+  },
+  "icons/Items/float-pod-lv2-b.webp": {
+    "w": 0.895,
+    "mid": 0.455,
+    "pad": 0.06
+  },
+  "icons/Items/float-pod-lv2-in-use-a.webp": {
+    "w": 0.949,
+    "mid": 0.481,
+    "pad": 0.034
+  },
+  "icons/Items/float-pod-lv2-in-use-b.webp": {
+    "w": 0.892,
+    "mid": 0.453,
+    "pad": 0.069
+  },
+  "icons/Items/float-pod-lv3-a.webp": {
+    "w": 0.898,
+    "mid": 0.457,
+    "pad": 0.028
+  },
+  "icons/Items/float-pod-lv3-b.webp": {
+    "w": 0.884,
+    "mid": 0.45,
+    "pad": 0.058
+  },
+  "icons/Items/float-pod-lv3-in-use-a.webp": {
+    "w": 0.865,
+    "mid": 0.44,
+    "pad": 0.038
+  },
+  "icons/Items/float-pod-lv3-in-use-b.webp": {
+    "w": 0.882,
+    "mid": 0.448,
+    "pad": 0.077
+  },
+  "icons/Items/float-pod-lv4-a.webp": {
+    "w": 0.9,
+    "mid": 0.456,
+    "pad": 0.028
+  },
+  "icons/Items/float-pod-lv4-b.webp": {
+    "w": 0.887,
+    "mid": 0.45,
+    "pad": 0.058
+  },
+  "icons/Items/float-pod-lv4-in-use-a.webp": {
+    "w": 0.861,
+    "mid": 0.439,
+    "pad": 0.036
+  },
+  "icons/Items/float-pod-lv4-in-use-b.webp": {
+    "w": 0.879,
+    "mid": 0.447,
+    "pad": 0.076
+  },
+  "icons/Items/float-pod-lv5-a.webp": {
+    "w": 0.878,
+    "mid": 0.447,
+    "pad": 0.007
+  },
+  "icons/Items/float-pod-lv5-b.webp": {
+    "w": 0.905,
+    "mid": 0.459,
+    "pad": 0.01
+  },
+  "icons/Items/float-pod-lv5-in-use-a.webp": {
+    "w": 0.879,
+    "mid": 0.447,
+    "pad": 0.013
+  },
+  "icons/Items/float-pod-lv5-in-use-b.webp": {
+    "w": 0.903,
+    "mid": 0.457,
+    "pad": 0.014
+  },
+  "icons/Items/float-pod-lv6-a.webp": {
+    "w": 0.904,
+    "mid": 0.46,
+    "pad": 0.026
+  },
+  "icons/Items/float-pod-lv6-b.webp": {
+    "w": 0.89,
+    "mid": 0.453,
+    "pad": 0.057
+  },
+  "icons/Items/float-pod-lv6-in-use-a.webp": {
+    "w": 0.86,
+    "mid": 0.438,
+    "pad": 0.029
+  },
+  "icons/Items/float-pod-lv6-in-use-b.webp": {
+    "w": 0.884,
+    "mid": 0.449,
+    "pad": 0.064
   },
   "icons/Items/gel-stand-t1-a.webp": {
     "w": 0.828,
@@ -1274,6 +1584,196 @@ export const ITEM_FIT = {
     "mid": 0.501,
     "pad": 0.006
   },
+  "icons/Items/hot-tub-lv1-a.webp": {
+    "w": 0.95,
+    "mid": 0.481,
+    "pad": 0.085
+  },
+  "icons/Items/hot-tub-lv1-b.webp": {
+    "w": 0.903,
+    "mid": 0.493,
+    "pad": 0.089
+  },
+  "icons/Items/hot-tub-lv2-a.webp": {
+    "w": 0.949,
+    "mid": 0.481,
+    "pad": 0.008
+  },
+  "icons/Items/hot-tub-lv2-b.webp": {
+    "w": 0.906,
+    "mid": 0.494,
+    "pad": 0.007
+  },
+  "icons/Items/hot-tub-lv3-a.webp": {
+    "w": 0.949,
+    "mid": 0.481,
+    "pad": 0.08
+  },
+  "icons/Items/hot-tub-lv3-b.webp": {
+    "w": 0.903,
+    "mid": 0.493,
+    "pad": 0.083
+  },
+  "icons/Items/hot-tub-lv4-a.webp": {
+    "w": 0.949,
+    "mid": 0.481,
+    "pad": 0.081
+  },
+  "icons/Items/hot-tub-lv4-b.webp": {
+    "w": 0.899,
+    "mid": 0.492,
+    "pad": 0.089
+  },
+  "icons/Items/hot-tub-lv5-a.webp": {
+    "w": 0.949,
+    "mid": 0.48,
+    "pad": 0.082
+  },
+  "icons/Items/hot-tub-lv5-b.webp": {
+    "w": 0.938,
+    "mid": 0.474,
+    "pad": 0.093
+  },
+  "icons/Items/hot-tub-lv6-a.webp": {
+    "w": 0.951,
+    "mid": 0.483,
+    "pad": 0.065
+  },
+  "icons/Items/hot-tub-lv6-b.webp": {
+    "w": 0.94,
+    "mid": 0.476,
+    "pad": 0.084
+  },
+  "icons/Items/hot-tub-lv7-a.webp": {
+    "w": 0.95,
+    "mid": 0.481,
+    "pad": 0.074
+  },
+  "icons/Items/hot-tub-lv7-b.webp": {
+    "w": 0.904,
+    "mid": 0.494,
+    "pad": 0.08
+  },
+  "icons/Items/hot-tub-lv8-a.webp": {
+    "w": 0.953,
+    "mid": 0.483,
+    "pad": 0.071
+  },
+  "icons/Items/hot-tub-lv8-b.webp": {
+    "w": 0.907,
+    "mid": 0.492,
+    "pad": 0.079
+  },
+  "icons/Items/hot-tub-lv9-a.webp": {
+    "w": 0.957,
+    "mid": 0.484,
+    "pad": 0.009
+  },
+  "icons/Items/hot-tub-lv9-b.webp": {
+    "w": 0.957,
+    "mid": 0.485,
+    "pad": 0.008
+  },
+  "icons/Items/hurdles-lv1-a.webp": {
+    "w": 0.865,
+    "mid": 0.442,
+    "pad": 0.077
+  },
+  "icons/Items/hurdles-lv1-b.webp": {
+    "w": 0.886,
+    "mid": 0.452,
+    "pad": 0.045
+  },
+  "icons/Items/hydration-table-lv1-a.webp": {
+    "w": 0.824,
+    "mid": 0.42,
+    "pad": 0.007
+  },
+  "icons/Items/hydration-table-lv1-b.webp": {
+    "w": 0.82,
+    "mid": 0.419,
+    "pad": 0.008
+  },
+  "icons/Items/hydro-treadmill-lv1-a.webp": {
+    "w": 0.899,
+    "mid": 0.456,
+    "pad": 0.055
+  },
+  "icons/Items/hydro-treadmill-lv1-b.webp": {
+    "w": 0.875,
+    "mid": 0.446,
+    "pad": 0.071
+  },
+  "icons/Items/hydro-treadmill-lv2-a.webp": {
+    "w": 0.904,
+    "mid": 0.459,
+    "pad": 0.05
+  },
+  "icons/Items/hydro-treadmill-lv2-b.webp": {
+    "w": 0.821,
+    "mid": 0.497,
+    "pad": 0.069
+  },
+  "icons/Items/hydro-treadmill-lv3-a.webp": {
+    "w": 0.919,
+    "mid": 0.467,
+    "pad": 0.022
+  },
+  "icons/Items/hydro-treadmill-lv3-b.webp": {
+    "w": 0.871,
+    "mid": 0.506,
+    "pad": 0.042
+  },
+  "icons/Items/hydro-treadmill-lv4-a.webp": {
+    "w": 0.958,
+    "mid": 0.486,
+    "pad": 0.007
+  },
+  "icons/Items/hydro-treadmill-lv4-b.webp": {
+    "w": 0.918,
+    "mid": 0.466,
+    "pad": 0.007
+  },
+  "icons/Items/hyperbaric-lv1-a.webp": {
+    "w": 0.894,
+    "mid": 0.454,
+    "pad": 0.101
+  },
+  "icons/Items/hyperbaric-lv1-b.webp": {
+    "w": 0.892,
+    "mid": 0.547,
+    "pad": 0.074
+  },
+  "icons/Items/hyperbaric-lv1-in-use-a.webp": {
+    "w": 0.867,
+    "mid": 0.442,
+    "pad": 0.07
+  },
+  "icons/Items/hyperbaric-lv1-in-use-b.webp": {
+    "w": 0.764,
+    "mid": 0.496,
+    "pad": 0.073
+  },
+  "icons/Items/hyperbaric-lv2-a.webp": {
+    "w": 0.94,
+    "mid": 0.476,
+    "pad": 0.071
+  },
+  "icons/Items/hyperbaric-lv2-b.webp": {
+    "w": 0.935,
+    "mid": 0.526,
+    "pad": 0.068
+  },
+  "icons/Items/hyperbaric-lv2-in-use-a.webp": {
+    "w": 0.922,
+    "mid": 0.469,
+    "pad": 0.069
+  },
+  "icons/Items/hyperbaric-lv2-in-use-b.webp": {
+    "w": 0.808,
+    "mid": 0.468,
+    "pad": 0.066
+  },
   "icons/Items/ice-bath-a.webp": {
     "w": 0.915,
     "mid": 0.537,
@@ -1284,6 +1784,106 @@ export const ITEM_FIT = {
     "mid": 0.565,
     "pad": 0.008
   },
+  "icons/Items/ice-bath-lv1-a.webp": {
+    "w": 0.84,
+    "mid": 0.498,
+    "pad": 0.101
+  },
+  "icons/Items/ice-bath-lv1-b.webp": {
+    "w": 0.831,
+    "mid": 0.503,
+    "pad": 0.068
+  },
+  "icons/Items/ice-bath-lv10-a.webp": {
+    "w": 0.925,
+    "mid": 0.469,
+    "pad": 0.107
+  },
+  "icons/Items/ice-bath-lv10-b.webp": {
+    "w": 0.846,
+    "mid": 0.494,
+    "pad": 0.127
+  },
+  "icons/Items/ice-bath-lv2-a.webp": {
+    "w": 0.892,
+    "mid": 0.512,
+    "pad": 0.007
+  },
+  "icons/Items/ice-bath-lv2-b.webp": {
+    "w": 0.947,
+    "mid": 0.519,
+    "pad": 0.008
+  },
+  "icons/Items/ice-bath-lv3-a.webp": {
+    "w": 0.962,
+    "mid": 0.487,
+    "pad": 0.009
+  },
+  "icons/Items/ice-bath-lv3-b.webp": {
+    "w": 0.928,
+    "mid": 0.497,
+    "pad": 0.01
+  },
+  "icons/Items/ice-bath-lv4-a.webp": {
+    "w": 0.888,
+    "mid": 0.541,
+    "pad": 0.011
+  },
+  "icons/Items/ice-bath-lv4-b.webp": {
+    "w": 0.972,
+    "mid": 0.506,
+    "pad": 0.009
+  },
+  "icons/Items/ice-bath-lv5-a.webp": {
+    "w": 0.929,
+    "mid": 0.472,
+    "pad": 0.008
+  },
+  "icons/Items/ice-bath-lv5-b.webp": {
+    "w": 0.856,
+    "mid": 0.492,
+    "pad": 0.018
+  },
+  "icons/Items/ice-bath-lv6-a.webp": {
+    "w": 0.949,
+    "mid": 0.481,
+    "pad": 0.043
+  },
+  "icons/Items/ice-bath-lv6-b.webp": {
+    "w": 0.906,
+    "mid": 0.496,
+    "pad": 0.037
+  },
+  "icons/Items/ice-bath-lv7-a.webp": {
+    "w": 0.968,
+    "mid": 0.491,
+    "pad": 0.083
+  },
+  "icons/Items/ice-bath-lv7-b.webp": {
+    "w": 0.894,
+    "mid": 0.472,
+    "pad": 0.075
+  },
+  "icons/Items/ice-bath-lv8-a.webp": {
+    "w": 0.919,
+    "mid": 0.467,
+    "pad": 0.069
+  },
+  "icons/Items/ice-bath-lv8-b.webp": {
+    "w": 0.847,
+    "mid": 0.497,
+    "pad": 0.056
+  },
+  "icons/Items/ice-bath-lv9-a.webp": {
+    "w": 0.911,
+    "mid": 0.538,
+    "pad": 0.009
+  },
+  "icons/Items/ice-bath-lv9-b.webp": {
+    "w": 0.95,
+    "mid": 0.518,
+    "pad": 0.007
+  },
   "icons/Items/kettlebell-set-a.webp": {
     "w": 0.878,
     "mid": 0.554,
@@ -1293,6 +1893,26 @@ export const ITEM_FIT = {
     "w": 0.871,
     "mid": 0.558,
     "pad": 0.113
+  },
+  "icons/Items/kickboards-lv1-a.webp": {
+    "w": 0.917,
+    "mid": 0.536,
+    "pad": 0.018
+  },
+  "icons/Items/kickboards-lv1-b.webp": {
+    "w": 0.867,
+    "mid": 0.439,
+    "pad": 0.012
+  },
+  "icons/Items/legend-statue-lv1-a.webp": {
+    "w": 0.849,
+    "mid": 0.433,
+    "pad": 0.032
+  },
+  "icons/Items/legend-statue-lv1-b.webp": {
+    "w": 0.848,
+    "mid": 0.433,
+    "pad": 0.032
   },
   "icons/Items/lockers-t1-a.webp": {
     "w": 0.835,
@@ -1314,6 +1934,16 @@ export const ITEM_FIT = {
     "mid": 0.573,
     "pad": 0.01
   },
+  "icons/Items/massage-gun-lv1-a.webp": {
+    "w": 0.877,
+    "mid": 0.445,
+    "pad": 0.015
+  },
+  "icons/Items/massage-gun-lv1-b.webp": {
+    "w": 0.877,
+    "mid": 0.445,
+    "pad": 0.015
+  },
   "icons/Items/massage-table-a.webp": {
     "w": 0.885,
     "mid": 0.552,
@@ -1323,6 +1953,246 @@ export const ITEM_FIT = {
     "w": 0.911,
     "mid": 0.538,
     "pad": 0.01
+  },
+  "icons/Items/massage-table-lv1-a.webp": {
+    "w": 0.914,
+    "mid": 0.464,
+    "pad": 0.08
+  },
+  "icons/Items/massage-table-lv1-b.webp": {
+    "w": 0.842,
+    "mid": 0.503,
+    "pad": 0.056
+  },
+  "icons/Items/massage-table-lv2-a.webp": {
+    "w": 0.933,
+    "mid": 0.478,
+    "pad": 0.067
+  },
+  "icons/Items/massage-table-lv2-b.webp": {
+    "w": 0.883,
+    "mid": 0.496,
+    "pad": 0.055
+  },
+  "icons/Items/massage-table-lv3-a.webp": {
+    "w": 0.939,
+    "mid": 0.475,
+    "pad": 0.072
+  },
+  "icons/Items/massage-table-lv3-b.webp": {
+    "w": 0.874,
+    "mid": 0.494,
+    "pad": 0.046
+  },
+  "icons/Items/massage-table-lv4-a.webp": {
+    "w": 0.928,
+    "mid": 0.471,
+    "pad": 0.074
+  },
+  "icons/Items/massage-table-lv4-b.webp": {
+    "w": 0.885,
+    "mid": 0.509,
+    "pad": 0.049
+  },
+  "icons/Items/massage-table-lv5-a.webp": {
+    "w": 0.914,
+    "mid": 0.464,
+    "pad": 0.076
+  },
+  "icons/Items/massage-table-lv5-b.webp": {
+    "w": 0.843,
+    "mid": 0.503,
+    "pad": 0.051
+  },
+  "icons/Items/massage-table-lv6-a.webp": {
+    "w": 0.932,
+    "mid": 0.479,
+    "pad": 0.065
+  },
+  "icons/Items/massage-table-lv6-b.webp": {
+    "w": 0.882,
+    "mid": 0.497,
+    "pad": 0.041
+  },
+  "icons/Items/massage-table-lv7-a.webp": {
+    "w": 0.936,
+    "mid": 0.475,
+    "pad": 0.062
+  },
+  "icons/Items/massage-table-lv7-b.webp": {
+    "w": 0.893,
+    "mid": 0.503,
+    "pad": 0.035
+  },
+  "icons/Items/massage-table-lv8-a.webp": {
+    "w": 0.915,
+    "mid": 0.465,
+    "pad": 0.078
+  },
+  "icons/Items/massage-table-lv8-b.webp": {
+    "w": 0.844,
+    "mid": 0.503,
+    "pad": 0.048
+  },
+  "icons/Items/podium-lv1-a.webp": {
+    "w": 0.839,
+    "mid": 0.508,
+    "pad": 0.07
+  },
+  "icons/Items/podium-lv1-b.webp": {
+    "w": 0.781,
+    "mid": 0.501,
+    "pad": 0.059
+  },
+  "icons/Items/pool-bench-lv1-a.webp": {
+    "w": 0.889,
+    "mid": 0.451,
+    "pad": 0.088
+  },
+  "icons/Items/pool-bench-lv1-b.webp": {
+    "w": 0.883,
+    "mid": 0.45,
+    "pad": 0.088
+  },
+  "icons/Items/pool-lv1-a.webp": {
+    "w": 0.951,
+    "mid": 0.483,
+    "pad": 0.056
+  },
+  "icons/Items/pool-lv1-b.webp": {
+    "w": 0.901,
+    "mid": 0.492,
+    "pad": 0.056
+  },
+  "icons/Items/pool-lv10-a.webp": {
+    "w": 0.957,
+    "mid": 0.485,
+    "pad": 0.054
+  },
+  "icons/Items/pool-lv10-b.webp": {
+    "w": 0.907,
+    "mid": 0.49,
+    "pad": 0.054
+  },
+  "icons/Items/pool-lv2-a.webp": {
+    "w": 0.962,
+    "mid": 0.488,
+    "pad": 0.051
+  },
+  "icons/Items/pool-lv2-b.webp": {
+    "w": 0.912,
+    "mid": 0.487,
+    "pad": 0.051
+  },
+  "icons/Items/pool-lv3-a.webp": {
+    "w": 0.961,
+    "mid": 0.488,
+    "pad": 0.014
+  },
+  "icons/Items/pool-lv3-b.webp": {
+    "w": 0.906,
+    "mid": 0.485,
+    "pad": 0.013
+  },
+  "icons/Items/pool-lv4-a.webp": {
+    "w": 0.964,
+    "mid": 0.489,
+    "pad": 0.036
+  },
+  "icons/Items/pool-lv4-b.webp": {
+    "w": 0.921,
+    "mid": 0.49,
+    "pad": 0.037
+  },
+  "icons/Items/pool-lv5-a.webp": {
+    "w": 0.96,
+    "mid": 0.487,
+    "pad": 0.028
+  },
+  "icons/Items/pool-lv5-b.webp": {
+    "w": 0.935,
+    "mid": 0.501,
+    "pad": 0.029
+  },
+  "icons/Items/pool-lv6-a.webp": {
+    "w": 0.954,
+    "mid": 0.484,
+    "pad": 0.046
+  },
+  "icons/Items/pool-lv6-b.webp": {
+    "w": 0.924,
+    "mid": 0.501,
+    "pad": 0.047
+  },
+  "icons/Items/pool-lv7-a.webp": {
+    "w": 0.961,
+    "mid": 0.488,
+    "pad": 0.009
+  },
+  "icons/Items/pool-lv7-b.webp": {
+    "w": 0.912,
+    "mid": 0.49,
+    "pad": 0.011
+  },
+  "icons/Items/pool-lv8-a.webp": {
+    "w": 0.961,
+    "mid": 0.486,
+    "pad": 0.047
+  },
+  "icons/Items/pool-lv8-b.webp": {
+    "w": 0.914,
+    "mid": 0.492,
+    "pad": 0.048
+  },
+  "icons/Items/pool-lv9-a.webp": {
+    "w": 0.962,
+    "mid": 0.488,
+    "pad": 0.047
+  },
+  "icons/Items/pool-lv9-b.webp": {
+    "w": 0.912,
+    "mid": 0.488,
+    "pad": 0.045
+  },
+  "icons/Items/pool-pace-clock-lv1-a.webp": {
+    "w": 0.811,
+    "mid": 0.414,
+    "pad": 0.051
+  },
+  "icons/Items/pool-pace-clock-lv1-b.webp": {
+    "w": 0.811,
+    "mid": 0.414,
+    "pad": 0.035
+  },
+  "icons/Items/pool-shower-lv1-a.webp": {
+    "w": 0.909,
+    "mid": 0.537,
+    "pad": 0.011
+  },
+  "icons/Items/pool-shower-lv1-b.webp": {
+    "w": 0.895,
+    "mid": 0.458,
+    "pad": 0.015
+  },
+  "icons/Items/pool-start-block-lv1-a.webp": {
+    "w": 0.984,
+    "mid": 0.5,
+    "pad": 0.007
+  },
+  "icons/Items/pool-start-block-lv1-b.webp": {
+    "w": 0.896,
+    "mid": 0.456,
+    "pad": 0.06
+  },
+  "icons/Items/pool-start-block-lv1-c.webp": {
+    "w": 0.984,
+    "mid": 0.5,
+    "pad": 0.007
+  },
+  "icons/Items/pool-start-block-lv1-d.webp": {
+    "w": 0.896,
+    "mid": 0.456,
+    "pad": 0.061
   },
   "icons/Items/punching-bag-a.webp": {
     "w": 0.836,
@@ -1394,6 +2264,156 @@ export const ITEM_FIT = {
     "mid": 0.552,
     "pad": 0.009
   },
+  "icons/Items/run-pace-clock-lv1-a.webp": {
+    "w": 0.785,
+    "mid": 0.407,
+    "pad": 0.112
+  },
+  "icons/Items/run-pace-clock-lv1-b.webp": {
+    "w": 0.79,
+    "mid": 0.409,
+    "pad": 0.078
+  },
+  "icons/Items/sauna-lv1-a.webp": {
+    "w": 0.832,
+    "mid": 0.423,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv1-b.webp": {
+    "w": 0.821,
+    "mid": 0.582,
+    "pad": 0.008
+  },
+  "icons/Items/sauna-lv1-in-use-a.webp": {
+    "w": 0.825,
+    "mid": 0.419,
+    "pad": 0.008
+  },
+  "icons/Items/sauna-lv1-in-use-b.webp": {
+    "w": 0.823,
+    "mid": 0.582,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv2-a.webp": {
+    "w": 0.936,
+    "mid": 0.476,
+    "pad": 0.006
+  },
+  "icons/Items/sauna-lv2-b.webp": {
+    "w": 0.937,
+    "mid": 0.525,
+    "pad": 0.006
+  },
+  "icons/Items/sauna-lv2-in-use-a.webp": {
+    "w": 0.933,
+    "mid": 0.473,
+    "pad": 0.006
+  },
+  "icons/Items/sauna-lv2-in-use-b.webp": {
+    "w": 0.933,
+    "mid": 0.527,
+    "pad": 0.006
+  },
+  "icons/Items/sauna-lv3-a.webp": {
+    "w": 0.857,
+    "mid": 0.436,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv3-b.webp": {
+    "w": 0.849,
+    "mid": 0.568,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv3-in-use-a.webp": {
+    "w": 0.864,
+    "mid": 0.438,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv3-in-use-b.webp": {
+    "w": 0.863,
+    "mid": 0.562,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv4-a.webp": {
+    "w": 0.877,
+    "mid": 0.446,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv4-b.webp": {
+    "w": 0.882,
+    "mid": 0.551,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv4-in-use-a.webp": {
+    "w": 0.868,
+    "mid": 0.442,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv4-in-use-b.webp": {
+    "w": 0.882,
+    "mid": 0.551,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv5-a.webp": {
+    "w": 0.836,
+    "mid": 0.424,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv5-b.webp": {
+    "w": 0.828,
+    "mid": 0.579,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv5-in-use-a.webp": {
+    "w": 0.826,
+    "mid": 0.419,
+    "pad": 0.006
+  },
+  "icons/Items/sauna-lv5-in-use-b.webp": {
+    "w": 0.828,
+    "mid": 0.579,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv6-a.webp": {
+    "w": 0.847,
+    "mid": 0.431,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv6-b.webp": {
+    "w": 0.834,
+    "mid": 0.577,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv6-in-use-a.webp": {
+    "w": 0.839,
+    "mid": 0.428,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv6-in-use-b.webp": {
+    "w": 0.833,
+    "mid": 0.577,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv7-a.webp": {
+    "w": 0.832,
+    "mid": 0.423,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv7-b.webp": {
+    "w": 0.821,
+    "mid": 0.582,
+    "pad": 0.008
+  },
+  "icons/Items/sauna-lv7-in-use-a.webp": {
+    "w": 0.818,
+    "mid": 0.417,
+    "pad": 0.007
+  },
+  "icons/Items/sauna-lv7-in-use-b.webp": {
+    "w": 0.818,
+    "mid": 0.583,
+    "pad": 0.007
+  },
   "icons/Items/shoe-rack-a.webp": {
     "w": 0.842,
     "mid": 0.571,
@@ -1404,6 +2424,16 @@ export const ITEM_FIT = {
     "mid": 0.553,
     "pad": 0.031
   },
+  "icons/Items/shoe-wall-lv1-a.webp": {
+    "w": 0.817,
+    "mid": 0.419,
+    "pad": 0.075
+  },
+  "icons/Items/shoe-wall-lv1-b.webp": {
+    "w": 0.817,
+    "mid": 0.42,
+    "pad": 0.072
+  },
   "icons/Items/start-block-a.webp": {
     "w": 0.866,
     "mid": 0.546,
@@ -1412,6 +2442,126 @@ export const ITEM_FIT = {
   "icons/Items/start-block-b.webp": {
     "w": 0.968,
     "mid": 0.51,
+    "pad": 0.008
+  },
+  "icons/Items/start-blocks-lv1-a.webp": {
+    "w": 0.888,
+    "mid": 0.449,
+    "pad": 0.01
+  },
+  "icons/Items/start-blocks-lv1-b.webp": {
+    "w": 0.853,
+    "mid": 0.55,
+    "pad": 0.015
+  },
+  "icons/Items/towel-cart-lv1-a.webp": {
+    "w": 0.854,
+    "mid": 0.435,
+    "pad": 0.028
+  },
+  "icons/Items/towel-cart-lv1-b.webp": {
+    "w": 0.835,
+    "mid": 0.426,
+    "pad": 0.025
+  },
+  "icons/Items/treadmill-lv1-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.009
+  },
+  "icons/Items/treadmill-lv1-b.webp": {
+    "w": 0.865,
+    "mid": 0.441,
+    "pad": 0.034
+  },
+  "icons/Items/treadmill-lv10-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.007
+  },
+  "icons/Items/treadmill-lv10-b.webp": {
+    "w": 0.864,
+    "mid": 0.439,
+    "pad": 0.032
+  },
+  "icons/Items/treadmill-lv2-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.009
+  },
+  "icons/Items/treadmill-lv2-b.webp": {
+    "w": 0.865,
+    "mid": 0.44,
+    "pad": 0.034
+  },
+  "icons/Items/treadmill-lv3-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.009
+  },
+  "icons/Items/treadmill-lv3-b.webp": {
+    "w": 0.865,
+    "mid": 0.441,
+    "pad": 0.033
+  },
+  "icons/Items/treadmill-lv4-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.007
+  },
+  "icons/Items/treadmill-lv4-b.webp": {
+    "w": 0.864,
+    "mid": 0.44,
+    "pad": 0.032
+  },
+  "icons/Items/treadmill-lv5-a.webp": {
+    "w": 0.994,
+    "mid": 0.497,
+    "pad": 0.007
+  },
+  "icons/Items/treadmill-lv5-b.webp": {
+    "w": 0.867,
+    "mid": 0.44,
+    "pad": 0.034
+  },
+  "icons/Items/treadmill-lv6-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.009
+  },
+  "icons/Items/treadmill-lv6-b.webp": {
+    "w": 0.868,
+    "mid": 0.441,
+    "pad": 0.034
+  },
+  "icons/Items/treadmill-lv7-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.007
+  },
+  "icons/Items/treadmill-lv7-b.webp": {
+    "w": 0.864,
+    "mid": 0.44,
+    "pad": 0.034
+  },
+  "icons/Items/treadmill-lv8-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.007
+  },
+  "icons/Items/treadmill-lv8-b.webp": {
+    "w": 0.864,
+    "mid": 0.44,
+    "pad": 0.032
+  },
+  "icons/Items/treadmill-lv9-a.webp": {
+    "w": 0.993,
+    "mid": 0.497,
+    "pad": 0.007
+  },
+  "icons/Items/treadmill-lv9-b.webp": {
+    "w": 0.872,
+    "mid": 0.443,
     "pad": 0.008
   },
   "icons/Items/treadmill-t1-a.webp": {
@@ -1483,6 +2633,26 @@ export const ITEM_FIT = {
     "w": 0.939,
     "mid": 0.529,
     "pad": 0.001
+  },
+  "icons/Items/watch-dock-lv1-a.webp": {
+    "w": 0.888,
+    "mid": 0.451,
+    "pad": 0.074
+  },
+  "icons/Items/watch-dock-lv1-b.webp": {
+    "w": 0.793,
+    "mid": 0.498,
+    "pad": 0.076
+  },
+  "icons/Items/water-fountain-lv1-a.webp": {
+    "w": 0.816,
+    "mid": 0.417,
+    "pad": 0.061
+  },
+  "icons/Items/water-fountain-lv1-b.webp": {
+    "w": 0.807,
+    "mid": 0.413,
+    "pad": 0.064
   }
 };
 

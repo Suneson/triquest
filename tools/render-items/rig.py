@@ -36,7 +36,11 @@ def camera_dir():
     c = math.cos(TILT)
     return Vector((c * math.sqrt(0.5), c * math.sqrt(0.5), math.sin(TILT)))
 
-def setup(meshes, px_per_unit=600, margin=0.06, samples=64, shadow=True):
+# the base map's sun (tools/bake-walls.js SUN): shadows fall to the picture's right and a little towards the camera,
+# about 0.6 of an object's height long; MAP_SUN is where that light comes from (x, y, up)
+MAP_SUN = Vector((0.07, -0.6, 1.0))
+
+def setup(meshes, px_per_unit=600, margin=0.06, samples=64, shadow=True, map_sun=False):
     sc = bpy.context.scene
     lo, hi = bounds(meshes)
     d = camera_dir()
@@ -51,6 +55,9 @@ def setup(meshes, px_per_unit=600, margin=0.06, samples=64, shadow=True):
     # frame: project the bounding box (and its shadow's reach) into the camera
     inv = cam.matrix_world.inverted()
     corners = [Vector((x, y, z)) for x in (lo.x, hi.x) for y in (lo.y, hi.y) for z in (lo.z, hi.z)]
+    if map_sun:   # and where the shadow of the top reaches on the ground, so it isn't cut off
+        g = Vector((-MAP_SUN.x, -MAP_SUN.y, 0)) * ((hi.z - lo.z) / MAP_SUN.z)
+        corners += [Vector((x + g.x, y + g.y, lo.z)) for x in (lo.x, hi.x) for y in (lo.y, hi.y)]
     cs = [inv @ p for p in corners]
     xs = [p.x for p in cs]; ys = [p.y for p in cs]
     w = max(xs) - min(xs); h = max(ys) - min(ys)
@@ -73,11 +80,12 @@ def setup(meshes, px_per_unit=600, margin=0.06, samples=64, shadow=True):
     # key: warm sun from the top left (the room's left, behind the camera's left shoulder)
     key = bpy.data.objects.new('key', bpy.data.lights.new('key', 'SUN')); sc.collection.objects.link(key)
     key.data.energy = 3.8; key.data.color = (1.0, 1.0, 1.0); key.data.angle = math.radians(8)
-    key.rotation_euler = (Vector((-0.2, 1.0, 1.25))).normalized().to_track_quat('Z', 'Y').to_euler()
+    key.rotation_euler = (MAP_SUN if map_sun else Vector((-0.2, 1.0, 1.25))).normalized().to_track_quat('Z', 'Y').to_euler()
     # rim: cool, from behind on the right
     rim = bpy.data.objects.new('rim', bpy.data.lights.new('rim', 'SUN')); sc.collection.objects.link(rim)
     rim.data.energy = 1.4; rim.data.color = (1.0, 1.0, 1.0); rim.data.angle = math.radians(15)
-    rim.rotation_euler = (Vector((-1.0, -0.6, 0.8))).normalized().to_track_quat('Z', 'Y').to_euler()
+    rim.rotation_euler = (Vector((-1.0, 0.3, 0.8)) if map_sun else Vector((-1.0, -0.6, 0.8))).normalized().to_track_quat('Z', 'Y').to_euler()
+    if map_sun: rim.data.energy = 0.9
     if shadow:
         bpy.ops.mesh.primitive_plane_add(size=50, location=(0, 0, 0))
         p = bpy.context.object; p.name = 'floor'; p.is_shadow_catcher = True

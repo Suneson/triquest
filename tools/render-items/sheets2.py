@@ -4,7 +4,8 @@
 
 <renders dir> holds <item>-a.png and -b.png (RGBA, render-levels.py). The sheet is 2048 x 1024: a on the left,
 b on the right, each centred in its half and both standing on the same line. <out>/<item>-sheet.jpg, plus
-<item>-sheet.json with where each view sits, so the repainted sheet can be cut back apart. Pillow, numpy.
+<item>-sheet.json with where each view sits, so the repainted sheet can be cut back apart. Items with -c/-d too
+(all four sides) get a second sheet, <item>-back-sheet. Pillow, numpy.
 """
 import glob, json, os, sys
 import numpy as np
@@ -22,9 +23,13 @@ def on_green(im):
     a = np.asarray(im).astype(float) / 255; al = a[..., 3:4]
     return Image.fromarray(((a[..., :3] * al + np.array([0, 1, 0.0]) * (1 - al)) * 255).astype(np.uint8))
 
+pairs = []
 for f in sorted(glob.glob(os.path.join(src, '*-a.png'))):
     n = os.path.basename(f)[:-6]
-    b = os.path.join(src, f'{n}-b.png')
+    pairs.append((n, f, os.path.join(src, f'{n}-b.png')))
+    if os.path.exists(os.path.join(src, f'{n}-c.png')):   # four-sided items: the other two sides on a second sheet
+        pairs.append((n + '-back', os.path.join(src, f'{n}-c.png'), os.path.join(src, f'{n}-d.png')))
+for n, f, b in pairs:
     if not os.path.exists(b): continue
     views = {'a': trim(Image.open(f)), 'b': trim(Image.open(b))}
     # one scale for both, so the item is the same size in each

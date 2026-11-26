@@ -1,7 +1,7 @@
 // sw.js — offline-first service worker. Precaches the app shell and serves
 // cache-first, falling back to the network (and to index.html for navigations).
 
-const CACHE = 'triquest-v223';
+const CACHE = 'triquest-v224';
 // pictures, models, fonts and the 3D library: kept across versions (see the fetch handler)
 const ASSETS_CACHE = 'triquest-assets';
 const checked = new Set();   // assets checked with the server while this worker runs
@@ -61,6 +61,9 @@ const ASSETS = [
   './js/app/gear3d.js',
   './js/core/gear-fit.js',
   './js/app/fit-editor.js',
+  './js/core/bike-fit.js',
+  './js/app/bike-fit.js',
+  './js/app/bike-rider.js',
   './js/app/stadium-view.js',
   './js/app/base-gl.js',
   './js/app/stadium3d.js',

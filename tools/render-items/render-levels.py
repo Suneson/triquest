@@ -1,10 +1,11 @@
-"""render-levels.py: the levelled base items (MOSKE APP/Island/ITEM-LEVELS.md) from all four sides, as render-club4.py.
+"""render-levels.py: the levelled base items (MOSKE APP/Island/ITEM-LEVELS.md) from the two sides that show its front (the base turns items two ways, not four).
 
     node tools/decode-glb.mjs "<MOSKE APP>/Items/z_GLB MODELS/levels" <dec>
     GPU=1 ARGS="tools/render-items/rig.py|<dec>|<out>" blender -b --python tools/render-items/render-levels.py
-    python tools/render-items/sheets4.py <out> <sheets dir>
+    python tools/render-items/sheets2.py <out> <sheets dir>
 
-Models are <item>-lv1.glb (MOSKE APP/Items/z_GLB MODELS/levels), renders <item>-lv1-a.png .. -d.png. Run by MOSKE APP/Island/run-item-renders.ps1.
+Models are <item>-lv1.glb (MOSKE APP/Items/z_GLB MODELS/levels), renders <item>-lv1-a.png (the concept's angle) and -b.png (a quarter turn, the front still showing). Lit by the
+map's sun, so the shadow falls as on the base. Run by MOSKE APP/Island/run-item-renders.ps1.
 """
 import os, math
 A = os.environ["ARGS"].split("|"); exec(open(A[0]).read())
@@ -39,7 +40,7 @@ ITEMS = {
     'pool-bench-lv1': (1.6, 'h', 0),
     'fins-rack-lv1': (1.2, 'z', 0),
     'pool-shower-lv1': (2.3, 'z', 0),
-    'diving-board-lv1': (2.8, 'h', 0),
+    'diving-board-lv1': (2.8, 'h', 180),   # its concept is the other way round from the rest
     'pool-pace-clock-lv1': (1.8, 'z', 0),
     'watch-dock-lv1': (1.2, 'z', 0),
     'run-pace-clock-lv1': (2.0, 'z', 0),
@@ -58,20 +59,23 @@ def use_gpu():
             for d in prefs.devices: d.use = d.type == kind
             bpy.context.scene.cycles.device = 'GPU'
             return kind
+# items whose front is on the concept's other visible side: their second view turns the other way
+OTHER_WAY = {'sauna', 'fins-rack', 'float-pod', 'hyperbaric', 'boots', 'diving-board'}
 only = os.environ.get('ONLY')
 os.makedirs(OUT, exist_ok=True)
 for name, (size, axis, yaw_a) in ITEMS.items():
     if only and name not in only.split(','): continue
     src = f'{DEC}/{name}.glb'
     if not os.path.exists(src): continue
-    for face, turn in (('a', 0), ('b', 90), ('c', 180), ('d', 270)):
+    # b turns whichever way keeps the item's front (door, shelves, clock face) in view
+    for face, turn in (('a', 180), ('b', 270 if name[:-4] in OTHER_WAY else 90)):
         if os.path.exists(f'{OUT}/{name}-{face}.png'): continue
         reset(); root, ms = load(src)
         lo, hi = bounds(ms); ext = hi - lo
         s = size / (ext.z if axis == 'z' else max(ext.x, ext.y))
         root.scale = (s, s, s); bpy.context.view_layer.update()
         root.rotation_euler[2] = math.radians(yaw_a + turn); ground(root, ms)
-        setup(ms, px_per_unit=PPM, samples=64)
+        setup(ms, px_per_unit=PPM, samples=64, map_sun=True)
         if os.environ.get('GPU'): use_gpu()
         render(f'{OUT}/{name}-{face}.png')
         print('rendered', name, face, flush=True)

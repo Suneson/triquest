@@ -76,6 +76,8 @@
 .fe-open { display: block; width: calc(100% - 24px); margin: 12px 12px 0; padding: 12px; border-radius: 14px; border: 2px dashed rgba(110, 168, 255, .45);
   background: transparent; color: var(--text-white); font: inherit; font-weight: 800; }
 .fe-stage { height: min(42vh, 400px); }
+.bf-stage { height: min(46vh, 440px); }
+.fe-open + .fe-open { margin-top: 8px; }
 .fe-views { position: absolute; z-index: 2; left: 8px; right: 8px; top: 8px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .fe-views .wr-chip { padding: 6px 12px; font-size: 13px; background: rgba(5, 12, 30, .6); }
 .fe-pick { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--text-white); font-weight: 700; }

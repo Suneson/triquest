@@ -174,8 +174,26 @@ def wall_hist(ms, fold):
     return np.array([np.dot(np.take(h, np.arange(i - 8, i + 9), mode='wrap'), k) for i in range(nb)])
 
 # models Tripo built with crooked walls that are straightened (unskew); others measured a little crooked too
-# (agility ladder, hydration table, watch dock, start blocks) but look right, so they're left as they are
-UNSKEW = {'hot-tub', 'massage-gun', 'kickboards', 'hydro-treadmill'}
+# (hydration table, start blocks) but look right, so they're left as they are
+UNSKEW = {'hot-tub', 'massage-gun', 'kickboards', 'hydro-treadmill', 'hurdles', 'boots', 'agility-ladder', 'watch-dock'}
+
+# Tripo stood these on corner feet with the rest held off the floor; the concept lies flat (flatten)
+FLATTEN = {'agility-ladder'}
+
+def flatten(ms, name):
+    """Lower the model by the gap under its middle (the lowest point of its central 60% along the long side) and press
+    everything below the floor flat onto it: the rails then lie on the ground and the corner feet lose only their foot."""
+    w = world_verts(ms); ext = np.ptp(w[:, :2], axis=0); ax = int(np.argmax(ext)); c = w[:, ax].mean()
+    mid = np.abs(w[:, ax] - c) < 0.3 * ext[ax]; g = w[mid, 2].min() - w[:, 2].min()
+    if g <= 0: return
+    z0 = w[:, 2].min()
+    for o in ms:
+        mw = np.array(o.matrix_world); inv = np.linalg.inv(mw); me = o.data
+        v = np.empty(len(me.vertices) * 3); me.vertices.foreach_get('co', v); v = v.reshape(-1, 3)
+        ww = v @ mw[:3, :3].T + mw[:3, 3]; ww[:, 2] = np.maximum(z0, ww[:, 2] - g)
+        me.vertices.foreach_set('co', (ww @ inv[:3, :3].T + inv[:3, 3]).ravel()); me.update()
+    bpy.context.view_layer.update()
+    print(f'flatten {name}: lowered {g * 100:.1f} cm onto the floor', flush=True)
 
 def apply_m(ms, M):
     for o in ms:
@@ -190,10 +208,10 @@ def unskew(ms, name):
     hs = wall_hist(ms, 180)
     i1 = int(np.argmax(hs)); d = np.minimum(abs(np.arange(720) - i1), 720 - abs(np.arange(720) - i1))
     hs2 = np.where(d >= 160, hs, 0); i2 = int(np.argmax(hs2))
-    if hs2[i2] < 0.25 * hs[i1]: return None
+    if hs2[i2] < 0.15 * hs[i1]: return None
     a1, a2 = sorted(((i1 + 0.5) / 4, (i2 + 0.5) / 4)); sep = a2 - a1
     print(f'walls {name}: {a1:.1f} and {a2:.1f}, {sep:.1f} apart', flush=True)
-    if abs(sep - 90) < 3 or abs(sep - 90) > 25: return None
+    if abs(sep - 90) < 1.5 or abs(sep - 90) > 25: return None
     # wall runs (perpendicular to the normals) -> two runs 90 apart about the same middle, lengths kept
     r1, r2 = math.radians(a1 + 90), math.radians(a2 + 90); mid = (r1 + r2) / 2
     D = np.array([[math.cos(r1), math.cos(r2)], [math.sin(r1), math.sin(r2)]])
@@ -266,6 +284,7 @@ for name, (size, axis, _) in ITEMS.items():
         lo, hi = bounds(ms); ext = hi - lo
         s = size / (ext.z if axis == 'z' else max(ext.x, ext.y))
         root.scale = (s, s, s); bpy.context.view_layer.update(); ground(root, ms)
+        if name[:-4] in FLATTEN: flatten(ms, name); ground(root, ms)
         if os.environ.get('CHECK'):
             print(f'check {name} t{turn}: walls at {wall_angle(ms, np.eye(3))[0]:.1f} deg', flush=True); continue
         setup(ms, px_per_unit=PPM, samples=64, map_sun=True)

@@ -3188,6 +3188,16 @@ body.pg-mode:has(.dg-screen) .tabs { background: transparent; }
   box-shadow: 0 4px 0 #0B1428, 0 6px 14px rgba(0, 0, 0, .35); -webkit-tap-highlight-color: transparent; }
 .dg-paint-btn img { width: 40px; height: 40px; border-radius: 8px; transform: rotate(45deg) scale(.78); box-shadow: 0 0 0 2px #F1ECE1; }
 .dg-paint-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0B1428; }
+/* the test levels button (admins), above the floor paint one */
+.dg-levels-btn { bottom: calc(176px + env(safe-area-inset-bottom)); }
+.dg-levels-btn b { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #F2C14E; color: #16264D; font-size: 17px; font-weight: 900; }
+.tl-note { margin: 0 16px; }
+.tl-row { display: grid; grid-template-columns: 44px 1fr 40px 52px 40px; align-items: center; gap: 8px; min-height: 52px; color: var(--text-white); }
+.tl-row img { width: 44px; height: 44px; object-fit: contain; }
+.tl-name { font-weight: 700; font-size: 14px; }
+.tl-n { text-align: center; font-variant-numeric: tabular-nums; font-size: 17px; }
+.tl-n small { opacity: .6; font-size: 12px; }
+.tl-row .fe-step:disabled { opacity: .35; }
 .dg-screen.is-painting :is(.dg-side, .dg-row, .dg-pill, .cx-float-slot, .dg-menu, .dg-lift) { display: none !important; }
 .fp-tray { position: absolute; left: 8px; right: 8px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 30; display: grid; gap: 8px; padding: 10px;
   border-radius: 18px; background: rgba(22, 38, 77, .94); box-shadow: 0 8px 24px rgba(0, 0, 0, .4); color: #F1ECE1; }

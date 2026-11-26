@@ -16,6 +16,7 @@
 
 import { BUILDERS, builderId, hasBuilder } from './builders.js';
 import { STALL_ITEMS } from './stall.js';
+import { LEVEL_ITEMS, levelArt } from './item-levels.js';
 
 import { ROOM32 } from './room32-art.js';
 import { PLOT_ART } from './plot-art.js';
@@ -263,7 +264,7 @@ const ITEMS = [
   // console at the far v end), 3 x 2 facing b (long along u, the console at the far u end).
   // Tiers 1 to 4 with the run room's level (4, 7 and 10 step it up).
   { id: 'treadmill', w: 2, h: 3, gift: true, home: 'run', needsRoom: 'run', fit: 0.92, runner3d: true, runner: RUNNER, opens: 'drill', faces: true, face: 'a',
-    art: (o) => `${ITEM3D}/treadmill-t${tierFor(o?.levels?.run, TREADMILL_BANDS)}-${o?.face || 'a'}.webp` },
+    art: (o) => levelArt('treadmill', o?.levels?.items?.treadmill || o?.levels?.run, o?.face) },
   // two showpieces, gifts while the base items are being tried out
   { id: 'road-bike-stand', w: 2, h: 2, gift: true, home: 'bike', needsRoom: 'bike', fit: 0.86, faces: true, face: 'a',
     art: (o) => `${ITEM3D}/road-bike-stand-${o?.face || 'a'}.webp` },
@@ -283,8 +284,6 @@ const ITEMS = [
   stashed('lockers-t1', 'locker', 3, 2, 0.9),
   stashed('lockers-t2', 'locker', 3, 2, 0.9),
   stashed('drinks-fridge', 'locker', 2, 2, 0.62),
-  stashed('massage-table', 'locker', 2, 3, 0.86),
-  stashed('ice-bath', 'locker', 2, 3, 0.9, { opens: 'recovery' }),
   // the trophy cabinets: tap one to choose which trophies stand in it (`slots`: how many)
   stashed('trophy-cabinet-t1', 'locker', 2, 2, 0.62, { opens: 'trophies', slots: 5 }),
   stashed('trophy-cabinet-t2', 'locker', 2, 2, 0.7, { opens: 'trophies', slots: 10 }),
@@ -305,6 +304,12 @@ const ITEMS = [
   ...STALL_ITEMS.map((s) => ({
     id: s.id, w: s.w, h: s.h, home: s.home, fit: s.fit, flat: !!s.flat, art: () => s.art,
     owned: (inv) => (inv || []).some((r) => r.item_id === s.id),
+  })),
+  // the items that come in levels (item-levels.js): the picture of the level set for it (a test level, else 1).
+  // The treadmill is above (everyone's); the ice bath and massage table were here before their levels.
+  ...LEVEL_ITEMS.filter(([id]) => id !== 'treadmill').map(([id, w, h, , kind, x = {}]) => stashed(id, 'locker', w, h, kind === 'decor' ? 0.86 : 0.9, {
+    levelled: true, ...(id === 'ice-bath' ? { opens: 'recovery' } : {}), ...(x.flat ? { flat: true } : {}),
+    art: (o) => levelArt(id, o?.levels?.items?.[id], o?.face),
   })),
   // the kitchen's first two (Items/z_GLB MODELS/map assets, tools/render-items/render-grounds.py)
   stashed('room-pantry', 'locker', 1, 2, 0.8),

@@ -21,9 +21,14 @@ def load(path):
 
 def bounds(meshes):
     bpy.context.view_layer.update()
-    pts = [o.matrix_world @ Vector(c) for o in meshes for c in o.bound_box]
-    lo = Vector((min(p[i] for p in pts) for i in range(3))); hi = Vector((max(p[i] for p in pts) for i in range(3)))
-    return lo, hi
+    # the real vertices, not bound_box corners: once a model is tilted a box corner hangs below the mesh
+    import numpy as np
+    ws = []
+    for o in meshes:
+        m = np.array(o.matrix_world); v = np.empty(len(o.data.vertices) * 3); o.data.vertices.foreach_get('co', v)
+        ws.append(v.reshape(-1, 3) @ m[:3, :3].T + m[:3, 3])
+    w = np.concatenate(ws)
+    return Vector(w.min(0).tolist()), Vector(w.max(0).tolist())
 
 def ground(root, meshes):
     """Stand the item on z = 0, centred on x, y = 0."""
